@@ -614,7 +614,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private isExtensionScript(script: Chrome.Debugger.Script): boolean {
-        return script.isContentScript || !script.url || script.url.startsWith('extensions::') || script.url.startsWith('chrome-extension://');
+        return script.isContentScript || !script.url || script.url.startsWith('extensions::');
     }
 }
 
