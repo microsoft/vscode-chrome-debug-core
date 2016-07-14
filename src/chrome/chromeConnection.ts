@@ -21,7 +21,7 @@ interface IMessageWithId {
  */
 class ResReqWebSocket extends EventEmitter {
     private _pendingRequests = new Map<number, any>();
-    private _wsAttached: Promise<WebSocket>;
+    private _wsAttached: Promise<WebSocket> | null;
 
     public get isOpen(): boolean { return !!this._wsAttached; }
 

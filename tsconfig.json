@@ -7,14 +7,13 @@
         "sourceMap": true,
         "outDir": "out",
         "declaration": true,
-        "noUnusedLocals": true,
         "noImplicitThis": true,
         "noFallthroughCasesInSwitch": true,
-        "noImplicitReturns": true
+        "noImplicitReturns": true,
+        "strictNullChecks": true
     },
     "exclude": [
         "node_modules",
-        "typings/globals",
         "lib"
     ]
 }

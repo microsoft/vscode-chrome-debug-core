@@ -18,6 +18,8 @@ import * as Chrome from './chromeDebugProtocol';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 
+type Maybe<T> = T | null | undefined;
+
 interface IScopeVarHandle {
     objectId: string;
     thisObj?: Chrome.Runtime.RemoteObject;
@@ -31,7 +33,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
     private _clientAttached: boolean;
     private _variableHandles: Handles<IScopeVarHandle>;
-    private _currentStack: Chrome.Debugger.CallFrame[];
+    private _currentStack: Chrome.Debugger.CallFrame[] | null;
     private _committedBreakpointsByUrl: Map<string, Chrome.Debugger.BreakpointId[]>;
     private _overlayHelper: utils.DebounceHelper;
     private _exceptionValueObject: Chrome.Runtime.RemoteObject;
@@ -41,7 +43,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     private _scriptsById: Map<Chrome.Debugger.ScriptId, Chrome.Debugger.Script>;
     private _scriptsByUrl: Map<string, Chrome.Debugger.Script>;
 
-    private _chromeProc: ChildProcess;
+    private _chromeProc: ChildProcess | null;
     private _eventHandler: (event: DebugProtocol.Event) => void;
 
     protected _chromeConnection: ChromeConnection;
@@ -118,12 +120,10 @@ export class ChromeDebugAdapter implements IDebugAdapter {
             chromeArgs.push('--user-data-dir=' + args.userDataDir);
         }
 
-        let launchUrl: string;
-        if (args.file) {
-            launchUrl = utils.pathToFileURL(args.file);
-        } else if (args.url) {
-            launchUrl = args.url;
-        }
+        const launchUrl =
+            args.file ? utils.pathToFileURL(args.file) :
+            args.url ? args.url :
+                undefined;
 
         if (launchUrl) {
             chromeArgs.push(launchUrl);
@@ -236,7 +236,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
         let reason: string;
-        let exceptionText: string;
+        let exceptionText: string | undefined;
         if (notification.reason === 'exception') {
             reason = 'exception';
             if (notification.data && this._currentStack.length) {
@@ -325,7 +325,15 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public setBreakpoints(args: ISetBreakpointsArgs): Promise<ISetBreakpointsResponseBody> {
-        let targetScriptUrl: string;
+        let x: number | null | undefined;
+        if (x) {
+            console.log(x);  // Ok, type of x is number here
+        }
+        else {
+            console.log(x);  // Error, type of x is number? here
+        }
+
+        let targetScriptUrl: string | undefined;
         if (args.source.path) {
             targetScriptUrl = args.source.path;
         } else if (args.source.sourceReference) {
@@ -338,9 +346,9 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         if (targetScriptUrl) {
             // DebugProtocol sends all current breakpoints for the script. Clear all scripts for the breakpoint then add all of them
             const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
-                .then(() => this.clearAllBreakpoints(targetScriptUrl))
-                .then(() => this.addBreakpoints(targetScriptUrl, args.lines, args.cols))
-                .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.lines) }));
+                .then(() => this.clearAllBreakpoints(targetScriptUrl!))
+                .then(() => this.addBreakpoints(targetScriptUrl!, args.lines, args.cols))
+                .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl!, responses, args.lines) }));
 
             const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, /*timeoutMs*/2000, 'Set breakpoints request timed out');
 
