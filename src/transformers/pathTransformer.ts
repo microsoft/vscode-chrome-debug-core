@@ -19,7 +19,7 @@ interface IPendingBreakpoint {
  * Converts a local path from Code to a path on the target.
  */
 export class PathTransformer implements IDebugTransformer {
-    private _webRoot: string;
+    private _webRoot?: string;
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();

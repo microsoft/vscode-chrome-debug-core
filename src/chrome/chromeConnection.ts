@@ -89,6 +89,11 @@ class ResReqWebSocket extends EventEmitter {
      */
     public sendMessage(message: IMessageWithId): Promise<any> {
         return new Promise((resolve, reject) => {
+            if (!this._wsAttached) {
+                reject(new Error('Not attached to the target'));
+                return;
+            }
+
             this._pendingRequests.set(message.id, resolve);
             this._wsAttached.then(ws => {
                 const msgStr = JSON.stringify(message);
@@ -144,7 +149,7 @@ export type ITargetDiscoveryStrategy = (address: string, port: number, targetFil
 export class ChromeConnection {
     private _nextId: number;
     private _socket: ResReqWebSocket;
-    private _targetFilter: ITargetFilter;
+    private _targetFilter?: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
 
     constructor(targetDiscovery: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {

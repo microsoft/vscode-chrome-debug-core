@@ -18,8 +18,6 @@ import * as Chrome from './chromeDebugProtocol';
 import {spawn, ChildProcess} from 'child_process';
 import * as path from 'path';
 
-type Maybe<T> = T | null | undefined;
-
 interface IScopeVarHandle {
     objectId: string;
     thisObj?: Chrome.Runtime.RemoteObject;
@@ -33,7 +31,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
     private _clientAttached: boolean;
     private _variableHandles: Handles<IScopeVarHandle>;
-    private _currentStack: Chrome.Debugger.CallFrame[] | null;
+    private _currentStack?: Chrome.Debugger.CallFrame[];
     private _committedBreakpointsByUrl: Map<string, Chrome.Debugger.BreakpointId[]>;
     private _overlayHelper: utils.DebounceHelper;
     private _exceptionValueObject: Chrome.Runtime.RemoteObject;
@@ -229,7 +227,6 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onDebuggerPaused(notification: Chrome.Debugger.PausedParams): void {
-
         this._overlayHelper.doAndCancel(() => this._chromeConnection.page_setOverlayMessage(ChromeDebugAdapter.PAGE_PAUSE_MESSAGE));
         this._currentStack = notification.callFrames;
 
@@ -266,7 +263,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onDebuggerResumed(): void {
         this._overlayHelper.wait(() => this._chromeConnection.page_clearOverlayMessage());
-        this._currentStack = null;
+        this._currentStack = undefined;
 
         if (!this._expectingResumedEvent) {
             // This is a private undocumented event provided by VS Code to support the 'continue' button on a paused Chrome page
@@ -347,8 +344,8 @@ export class ChromeDebugAdapter implements IDebugAdapter {
             // DebugProtocol sends all current breakpoints for the script. Clear all scripts for the breakpoint then add all of them
             const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                 .then(() => this.clearAllBreakpoints(targetScriptUrl!))
-                .then(() => this.addBreakpoints(targetScriptUrl!, args.lines, args.cols))
-                .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl!, responses, args.lines) }));
+                .then(() => this.addBreakpoints(targetScriptUrl!, args.lines!, args.cols))
+                .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl!, responses, args.lines!) }));
 
             const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, /*timeoutMs*/2000, 'Set breakpoints request timed out');
 
@@ -377,7 +374,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
             return p.then(() => this._chromeConnection.debugger_removeBreakpoint(bpId)).then(() => { });
         }, Promise.resolve<void>()).then(() => {
-            this._committedBreakpointsByUrl.set(url, null);
+            this._committedBreakpointsByUrl.delete(url);
         });
     }
 
@@ -490,6 +487,10 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
+        if (!this._currentStack) {
+            throw new Error('stackTrace requested while target is not paused');
+        }
+
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
@@ -546,11 +547,15 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
+        if (!this._currentStack) {
+            throw new Error('scopes requested while target is not paused');
+        }
+
         const scopes = this._currentStack[args.frameId].scopeChain.map((scope: Chrome.Debugger.Scope, i: number) => {
-            const scopeHandle: IScopeVarHandle = { objectId: scope.object.objectId };
+            const scopeHandle: IScopeVarHandle = { objectId: scope.object.objectId! };
             if (i === 0) {
                 // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
-                scopeHandle.thisObj = this._currentStack[args.frameId]['this'];
+                scopeHandle.thisObj = this._currentStack![args.frameId]['this'];
             }
 
             return <DebugProtocol.Scope>{
@@ -622,8 +627,8 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
         let evalPromise: Promise<any>;
-        if (this.paused) {
-            const callFrameId = this._currentStack[args.frameId].callFrameId;
+        if (this.paused && typeof args.frameId === "number") {
+            const callFrameId = this._currentStack![args.frameId].callFrameId;
             evalPromise = this._chromeConnection.debugger_evaluateOnCallFrame(callFrameId, args.expression);
         } else {
             evalPromise = this._chromeConnection.runtime_evaluate(args.expression);
@@ -652,7 +657,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
             // Node adapter shows 'undefined', Chrome can eval the getter on demand.
             return { name: propDesc.name, value: 'property', variablesReference: 0 };
         } else {
-            const { value, variablesReference } = this.remoteObjectToValueWithHandle(propDesc.value);
+            const { value, variablesReference } = this.remoteObjectToValueWithHandle(propDesc.value!);
             return { name: propDesc.name, value, variablesReference };
         }
     }

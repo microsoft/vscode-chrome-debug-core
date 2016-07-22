@@ -6,6 +6,7 @@ import {SourceMap, MappedPosition} from './sourceMap';
 import {getMapForGeneratedPath} from './sourceMapFactory';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 import * as sourceMapUtils from './sourceMapUtils';
+import {Maybe} from '../utils';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -13,27 +14,29 @@ export class SourceMaps {
     private _authoredPathToSourceMap = new Map<string, SourceMap>();
 
     // Path to resolve / paths against
-    private _webRoot: string;
+    private _webRoot?: string;
 
-    private _sourceMapPathOverrides: ISourceMapPathOverrides;
+    private _sourceMapPathOverrides?: ISourceMapPathOverrides;
 
     public constructor(webRoot?: string, sourceMapPathOverrides?: ISourceMapPathOverrides) {
         this._webRoot = webRoot;
-        this._sourceMapPathOverrides = sourceMapUtils.resolveWebRootPattern(webRoot, sourceMapPathOverrides);
+        if (sourceMapPathOverrides) {
+            this._sourceMapPathOverrides = sourceMapUtils.resolveWebRootPattern(sourceMapPathOverrides, webRoot);
+        }
     }
 
     /**
      * Returns the generated script path for an authored source path
      * @param pathToSource - The absolute path to the authored file
      */
-    public getGeneratedPathFromAuthoredPath(authoredPath: string): string {
+    public getGeneratedPathFromAuthoredPath(authoredPath: string): Maybe<string> {
         authoredPath = authoredPath.toLowerCase();
         return this._authoredPathToSourceMap.has(authoredPath) ?
             this._authoredPathToSourceMap.get(authoredPath).generatedPath() :
             null;
     }
 
-    public mapToGenerated(authoredPath: string, line: number, column: number): MappedPosition {
+    public mapToGenerated(authoredPath: string, line: number, column: number): Maybe<MappedPosition> {
         authoredPath = authoredPath.toLowerCase();
         return this._authoredPathToSourceMap.has(authoredPath) ?
             this._authoredPathToSourceMap.get(authoredPath)
@@ -41,7 +44,7 @@ export class SourceMaps {
             null;
     }
 
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): MappedPosition {
+    public mapToAuthored(pathToGenerated: string, line: number, column: number): Maybe<MappedPosition> {
         pathToGenerated = pathToGenerated.toLowerCase();
         return this._generatedPathToSourceMap.has(pathToGenerated) ?
             this._generatedPathToSourceMap.get(pathToGenerated)
@@ -49,7 +52,7 @@ export class SourceMaps {
             null;
     }
 
-    public allMappedSources(pathToGenerated: string): string[] {
+    public allMappedSources(pathToGenerated: string): Maybe<string[]> {
         pathToGenerated = pathToGenerated.toLowerCase();
         return this._generatedPathToSourceMap.has(pathToGenerated) ?
             this._generatedPathToSourceMap.get(pathToGenerated).authoredSources :
@@ -61,7 +64,7 @@ export class SourceMaps {
      */
     public processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
         return this._generatedPathToSourceMap.has(pathToGenerated.toLowerCase()) ?
-            Promise.resolve(null) :
+            Promise.resolve<void>() :
             getMapForGeneratedPath(pathToGenerated, sourceMapURL, this._webRoot, this._sourceMapPathOverrides).then(sourceMap => {
                 if (sourceMap) {
                     this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);

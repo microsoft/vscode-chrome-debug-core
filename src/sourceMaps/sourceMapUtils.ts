@@ -35,7 +35,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
                 absSourceRoot = resolveRelativeToFile(generatedPath, sourceRoot);
             } else {
                 // generatedPath is a URL so runtime script is not on disk, resolve the sourceRoot location on disk
-                const genDirname = path.dirname(url.parse(generatedPath).pathname);
+                const genDirname = path.dirname(url.parse(generatedPath).pathname!);
                 absSourceRoot =  path.join(webRoot, genDirname, sourceRoot);
             }
         }
@@ -46,7 +46,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         logger.log(`SourceMap: no sourceRoot specified, using script dirname: ${absSourceRoot}`);
     } else {
         // runtime script is not on disk, resolve the sourceRoot location on disk
-        const scriptPathDirname = path.dirname(url.parse(generatedPath).pathname);
+        const scriptPathDirname = path.dirname(url.parse(generatedPath).pathname!);
         absSourceRoot =  path.join(webRoot, scriptPathDirname);
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
     }
@@ -60,7 +60,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
 /**
  * Returns a copy of sourceMapPathOverrides with the ${webRoot} pattern resolved in all entries.
  */
-export function resolveWebRootPattern(webRoot: string, sourceMapPathOverrides: ISourceMapPathOverrides): ISourceMapPathOverrides {
+export function resolveWebRootPattern(sourceMapPathOverrides: ISourceMapPathOverrides, webRoot?: string): ISourceMapPathOverrides {
     const resolvedOverrides: ISourceMapPathOverrides = {};
     for (let pattern in sourceMapPathOverrides) {
         const replacePattern = sourceMapPathOverrides[pattern];

@@ -32,7 +32,7 @@ export function targetUrlToClientPath(webRoot: string, aUrl: string): string {
     }
 
     // Search the filesystem under the webRoot for the file that best matches the given url
-    let pathName = decodeURIComponent(url.parse(canonicalUrl).pathname);
+    let pathName = decodeURIComponent(url.parse(canonicalUrl).pathname || '');
     if (!pathName || pathName === '/') {
         return '';
     }
@@ -58,7 +58,7 @@ export function targetUrlToClientPath(webRoot: string, aUrl: string): string {
  */
 export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
     let value = '';
-    let variableHandleRef: string;
+    let variableHandleRef: string | undefined;
 
     if (object) {
         if (object.type === 'object') {
@@ -66,25 +66,25 @@ export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringi
                 value = 'null';
             } else {
                 // If it's a non-null object, create a variable reference so the client can ask for its props
-                variableHandleRef = object.objectId;
-                value = object.description;
+                variableHandleRef = object.objectId!;
+                value = object.description!;
             }
         } else if (object.type === 'undefined') {
             value = 'undefined';
         } else if (object.type === 'function') {
-            const firstBraceIdx = object.description.indexOf('{');
+            const firstBraceIdx = object.description!.indexOf('{');
             if (firstBraceIdx >= 0) {
-                value = object.description.substring(0, firstBraceIdx) + '{ … }';
+                value = object.description!.substring(0, firstBraceIdx) + '{ … }';
             } else {
-                const firstArrowIdx = object.description.indexOf('=>');
+                const firstArrowIdx = object.description!.indexOf('=>');
                 value = firstArrowIdx >= 0 ?
-                    object.description.substring(0, firstArrowIdx + 2) + ' …' :
-                    object.description;
+                    object.description!.substring(0, firstArrowIdx + 2) + ' …' :
+                    object.description!;
             }
         } else {
             // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
             if (typeof object.value === 'undefined') {
-                value = object.description;
+                value = object.description!;
             } else if (object.type === 'number') {
                 // 3 => "3"
                 // "Infinity" => "Infinity" (not stringified)
