@@ -56,7 +56,7 @@ suite('PathTransformer', () => {
 
         test('resolves correctly when it can map the client script to the target script', () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => CLIENT_PATH).verifiable();
 
             transformer.scriptParsed(<any>{ body: { scriptUrl: TARGET_URL } });
@@ -67,7 +67,7 @@ suite('PathTransformer', () => {
 
         test(`doesn't resolve until it can map the client script to the target script`, () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => CLIENT_PATH).verifiable();
 
             const setBreakpointsP = transformer.setBreakpoints(<any>SET_BP_ARGS).then(() => {
@@ -91,7 +91,7 @@ suite('PathTransformer', () => {
     suite('scriptParsed', () => {
         test('modifies args.source.path of the script parsed event when the file can be mapped', () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => CLIENT_PATH).verifiable();
 
             const scriptParsedArgs = <any>{ body: { scriptUrl: TARGET_URL } };
@@ -102,7 +102,7 @@ suite('PathTransformer', () => {
 
         test(`doesn't modify args.source.path when the file can't be mapped`, () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => '').verifiable();
 
             const scriptParsedArgs = <any>{ body: { scriptUrl: TARGET_URL } };
@@ -117,7 +117,7 @@ suite('PathTransformer', () => {
 
         test('modifies the source path and clears sourceReference when the file can be mapped', () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => CLIENT_PATH).verifiable();
 
             const response = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LINES, [1, 2, 3]);
@@ -129,7 +129,7 @@ suite('PathTransformer', () => {
 
         test(`doesn't modify the source path or clear the sourceReference when the file can't be mapped`, () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
+                .setup(x => x.targetUrlToClientPath(It.isValue(TARGET_URL), It.isValue(undefined)))
                 .returns(() => '').verifiable();
 
             const response = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LINES, [1, 2, 3]);

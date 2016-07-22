@@ -36,7 +36,7 @@ suite('SourceMapFactory', () => {
      * Should take the same args as the SourceMap constructor, but you can't enforce that with TS.
      * Mocks need to be registered before calling this.
      */
-    function setExpectedConstructorArgs(generatedPath: string, json: string, webRoot: string, sourceMapPathOverrides: string = undefined): void {
+    function setExpectedConstructorArgs(generatedPath: string, json: string, webRoot: string, sourceMapPathOverrides?: string): void {
         const expectedArgs = [generatedPath, json, webRoot, sourceMapPathOverrides]; // arguments doesn't have the default param
         function mockSourceMapConstructor(): void {
             assert.deepEqual(
@@ -106,7 +106,7 @@ suite('SourceMapFactory', () => {
         test('looks for a map file next to the script', () => {
             const badMapPath = path.resolve('/files/app.js.map');
             testUtils.registerMockReadFile(
-                { absPath: badMapPath, data: null},
+                { absPath: badMapPath },
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, WEBROOT);
 

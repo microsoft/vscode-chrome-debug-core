@@ -137,8 +137,8 @@ suite('Utils', () => {
         });
 
         test('when not given a promise it resolves', () => {
-            return getUtils().promiseTimeout(null, 5).then(
-                null,
+            return getUtils().promiseTimeout(undefined, 5).then(
+                undefined,
                 () => assert.fail('This promise should pass')
             );
         });
@@ -270,7 +270,7 @@ suite('Utils', () => {
         });
 
         test('rejects the promise on an error', () => {
-            registerMockHTTP(undefined, 'fail');
+            registerMockHTTP([], 'fail');
             return getUtils().getURL(URL).then(
                 response => {
                     assert.fail('Should not be resolved');
@@ -286,7 +286,7 @@ suite('Utils', () => {
             assert(getUtils().isURL(url));
         }
 
-        function assertNotURL(url: string): void {
+        function assertNotURL(url: string | undefined): void {
             assert(!getUtils().isURL(url));
         }
 
@@ -304,7 +304,7 @@ suite('Utils', () => {
             assertNotURL('c:/project/code.js');
             assertNotURL('abc123!@#');
             assertNotURL('');
-            assertNotURL(null);
+            assertNotURL(undefined);
         });
     });
 
@@ -312,7 +312,7 @@ suite('Utils', () => {
         test('does what it says', () => {
             assert.equal(getUtils().lstrip('test', 'te'), 'st');
             assert.equal(getUtils().lstrip('asdf', ''), 'asdf');
-            assert.equal(getUtils().lstrip('asdf', null), 'asdf');
+            assert.equal(getUtils().lstrip('asdf', undefined), 'asdf');
             assert.equal(getUtils().lstrip('asdf', 'asdf'), '');
             assert.equal(getUtils().lstrip('asdf', '123'), 'asdf');
             assert.equal(getUtils().lstrip('asdf', 'sdf'), 'asdf');

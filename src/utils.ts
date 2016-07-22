@@ -265,16 +265,16 @@ export function getURL(aUrl: string): Promise<string> {
 /**
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
-export function isURL(urlOrPath: string): boolean {
-    return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
+export function isURL(urlOrPath?: string): boolean {
+    return !!(urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol);
 }
 
 /**
  * Strip a string from the left side of a string
  */
-export function lstrip(s: string, lStr: string): string {
+export function lstrip(s: string, lStr?: string): string {
     return s.startsWith(lStr) ?
-        s.substr(lStr.length) :
+        s.substr(lStr!.length) :
         s;
 }
 

@@ -51,7 +51,7 @@ suite('SourceMaps', () => {
     });
 
     test('mapToAuthored is case insensitive', () => {
-        const position: MappedPosition = {line: 0, column: 0, name: null, source: AUTHORED_PATH};
+        const position: MappedPosition = {line: 0, column: 0, source: AUTHORED_PATH};
         assert.deepEqual(sourceMaps.mapToAuthored(GENERATED_PATH.toUpperCase(), 0, 0), position);
         assert.deepEqual(sourceMaps.mapToAuthored(GENERATED_PATH.toLowerCase(), 0, 0), position);
     });

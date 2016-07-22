@@ -70,7 +70,7 @@ export class PathTransformer implements IDebugTransformer {
 
     public scriptParsed(event: DebugProtocol.Event): void {
         const targetUrl: string = event.body.scriptUrl;
-        const clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, targetUrl);
+        const clientPath = ChromeUtils.targetUrlToClientPath(targetUrl, this._webRoot);
 
         if (!clientPath) {
             // It's expected that eval scripts (debugadapter:) won't be resolved
@@ -95,12 +95,12 @@ export class PathTransformer implements IDebugTransformer {
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => {
-            if (frame.source.path) {
+            if (frame.source && frame.source.path) {
                 // Try to resolve the url to a path in the workspace. If it's not in the workspace,
                 // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
                 const clientPath = this._targetUrlToClientPath.has(frame.source.path) ?
                     this._targetUrlToClientPath.get(frame.source.path) :
-                    ChromeUtils.targetUrlToClientPath(this._webRoot, frame.source.path);
+                    ChromeUtils.targetUrlToClientPath(frame.source.path, this._webRoot);
 
                 // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
                 // clear the sourceReference since it's not needed.

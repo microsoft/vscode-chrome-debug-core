@@ -90,12 +90,12 @@ suite('SourceMapTransformer', () => {
             mock
                 .setup(x => x.allMappedSources(It.isValue(RUNTIME_PATH)))
                 .returns(() => [AUTHORED_PATH, AUTHORED_PATH2]).verifiable();
-            args.lines.forEach((line, i) => {
+            args.lines!.forEach((line, i) => {
                 mock
                     .setup(x => x.mapToGenerated(It.isValue(AUTHORED_PATH), It.isValue(line), It.isValue(0)))
                     .returns(() => ({ source: RUNTIME_PATH, line: RUNTIME_LINES[i], column: RUNTIME_COLS[i] })).verifiable();
             });
-            args2.lines.forEach((line, i) => {
+            args2.lines!.forEach((line, i) => {
                 mock
                     .setup(x => x.mapToGenerated(It.isValue(AUTHORED_PATH2), It.isValue(line), It.isValue(0)))
                     .returns(() => ({ source: RUNTIME_PATH, line: RUNTIME_LINES2[i], column: RUNTIME_COLS2[i] })).verifiable();
@@ -141,7 +141,7 @@ suite('SourceMapTransformer', () => {
             mock
                 .setup(x => x.processNewSourceMap(It.isValue(RUNTIME_PATH), It.isValue(sourceMapURL)))
                 .returns(() => Promise.resolve<void>()).verifiable();
-            args.lines.forEach((line, i) => {
+            args.lines!.forEach((line, i) => {
                 mock
                     .setup(x => x.mapToGenerated(It.isValue(AUTHORED_PATH), It.isValue(line), It.isValue(0)))
                     .returns(() => ({ source: RUNTIME_PATH, line: RUNTIME_LINES[i], column: RUNTIME_COLS[i] })).verifiable();
@@ -253,7 +253,7 @@ suite('SourceMapTransformer', () => {
         test('clears the path when there are no sourcemaps', () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_LINES, [1, 2, 3]);
             const expected = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_LINES, [1, 2, 3]);
-            expected.stackFrames.forEach(stackFrame => stackFrame.source.path = undefined); // leave name intact
+            expected.stackFrames.forEach(stackFrame => stackFrame.source!.path = undefined); // leave name intact
 
             getTransformer(/*sourceMaps=*/false).stackTraceResponse(response);
             assert.deepEqual(response, expected);
@@ -296,8 +296,8 @@ suite('SourceMapTransformer', () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_LINES, [1, 2, 3]);
             const expected = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_LINES, [1, 2, 3]);
             expected.stackFrames.forEach(stackFrame => {
-                stackFrame.source.name = 'eval: ' + stackFrame.source.sourceReference;
-                stackFrame.source.path = undefined;
+                stackFrame.source!.name = 'eval: ' + stackFrame.source!.sourceReference;
+                stackFrame.source!.path = undefined;
             });
 
             getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);

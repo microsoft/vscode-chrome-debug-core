@@ -52,11 +52,11 @@ export class SourceMaps {
             null;
     }
 
-    public allMappedSources(pathToGenerated: string): Maybe<string[]> {
+    public allMappedSources(pathToGenerated: string): string[] {
         pathToGenerated = pathToGenerated.toLowerCase();
         return this._generatedPathToSourceMap.has(pathToGenerated) ?
             this._generatedPathToSourceMap.get(pathToGenerated).authoredSources :
-            null;
+            [];
     }
 
     /**

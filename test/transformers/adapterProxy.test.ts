@@ -18,7 +18,7 @@ suite('AdapterProxy', () => {
 
     suite('request', () => {
         test('if an unknown command is issued, dispatchRequest fails', () => {
-            const ap = new AdapterProxy(null, <any>{ registerEventHandler: () => { } }, null);
+            const ap = new AdapterProxy([], <any>{ registerEventHandler: () => { } }, e => { });
             return ap.dispatchRequest(<any>{ command: 'abc' }).then(
                 () => assert.fail('Expected to fail'),
                 e => {

@@ -83,20 +83,20 @@ suite('SourceMapUtils', () => {
         test('does nothing when no ${webRoot} present', () => {
             const overrides: ISourceMapPathOverrides = { '/src': '/project' };
             assert.deepEqual(
-                resolveWebRootPattern(WEBROOT, overrides),
+                resolveWebRootPattern(overrides, WEBROOT),
                 overrides);
         });
 
         test('resolves the webRoot pattern', () => {
             assert.deepEqual(
-                resolveWebRootPattern(WEBROOT, <ISourceMapPathOverrides>{ '/src': '${webRoot}/app/src'}),
+                resolveWebRootPattern(<ISourceMapPathOverrides>{ '/src': '${webRoot}/app/src'}, WEBROOT),
                 { '/src': WEBROOT + '/app/src' });
         });
 
         test(`ignores the webRoot pattern when it's not at the beginning of the string`, () => {
             const overrides: ISourceMapPathOverrides = { '/src': '/app/${webRoot}/src'};
             assert.deepEqual(
-                resolveWebRootPattern(WEBROOT, overrides),
+                resolveWebRootPattern(overrides, WEBROOT),
                 overrides);
         });
 
@@ -116,7 +116,7 @@ suite('SourceMapUtils', () => {
             };
 
             assert.deepEqual(
-                resolveWebRootPattern(WEBROOT, overrides),
+                resolveWebRootPattern(overrides, WEBROOT),
                 expOverrides);
         });
     });

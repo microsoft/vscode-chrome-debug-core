@@ -92,7 +92,7 @@ export function pathResolve(...segments: string[]): string {
     return aPath;
 }
 
-export function registerMockReadFile(...entries: { absPath: string; data: string }[]): void {
+export function registerMockReadFile(...entries: { absPath: string; data?: string }[]): void {
     const fsMock = Mock.ofInstance(fs, MockBehavior.Strict);
     mockery.registerMock('fs', fsMock.object);
 
@@ -107,7 +107,7 @@ export function registerMockReadFile(...entries: { absPath: string; data: string
  * Mock utils.getURL to return the specified contents.
  * Note that if you call this twice, the second call will overwrite the first.
  */
-export function registerMockGetURL(utilsRelativePath: string, url: string, contents: string, isError = false): void {
+export function registerMockGetURL(utilsRelativePath: string, url: string, contents?: string, isError = false): void {
     const utilsMock = Mock.ofInstance(utils);
     utilsMock.callBase = true;
     mockery.registerMock(utilsRelativePath, utilsMock.object);

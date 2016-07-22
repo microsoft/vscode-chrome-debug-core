@@ -14,7 +14,7 @@ import * as Chrome from './chromeDebugProtocol';
  * http://localhost/scripts/code.js => d:/app/scripts/code.js
  * file:///d:/scripts/code.js => d:/scripts/code.js
  */
-export function targetUrlToClientPath(webRoot: string, aUrl: string): string {
+export function targetUrlToClientPath(aUrl: string, webRoot?: string): string {
     if (!aUrl) {
         return '';
     }
