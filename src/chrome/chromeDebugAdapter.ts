@@ -63,7 +63,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsByUrl = new Map<string, Chrome.Debugger.Script>();
 
         this._committedBreakpointsByUrl = new Map<string, Chrome.Debugger.BreakpointId[]>();
-        this._setBreakpointsRequestQ = Promise.resolve<void>();
+        this._setBreakpointsRequestQ = Promise.resolve();
 
         this.fireEvent(new Event('clearTargetContext'));
     }
@@ -209,7 +209,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
                     return utils.errP(e);
                 });
         } else {
-            return Promise.resolve<void>();
+            return Promise.resolve();
         }
     }
 
@@ -318,7 +318,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
         this.clearEverything();
 
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 
     public setBreakpoints(args: ISetBreakpointsArgs): Promise<ISetBreakpointsResponseBody> {
@@ -359,21 +359,21 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public setFunctionBreakpoints(): Promise<any> {
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 
     private clearAllBreakpoints(url: string): Promise<void> {
         if (!this._committedBreakpointsByUrl.has(url)) {
-            return Promise.resolve<void>();
+            return Promise.resolve();
         }
 
         // Remove breakpoints one at a time. Seems like it would be ok to send the removes all at once,
         // but there is a chrome bug where when removing 5+ or so breakpoints at once, it gets into a weird
         // state where later adds on the same line will fail with 'breakpoint already exists' even though it
         // does not break there.
-        return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
+        return this._committedBreakpointsByUrl.get(url)!.reduce((p, bpId) => {
             return p.then(() => this._chromeConnection.debugger_removeBreakpoint(bpId)).then(() => { });
-        }, Promise.resolve<void>()).then(() => {
+        }, Promise.resolve()).then(() => {
             this._committedBreakpointsByUrl.delete(url);
         });
     }
@@ -385,10 +385,14 @@ export class ChromeDebugAdapter implements IDebugAdapter {
             const scriptId = utils.lstrip(url, ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL);
             responsePs = lines.map((lineNumber, i) => this._chromeConnection.debugger_setBreakpoint({ scriptId, lineNumber, columnNumber: cols ? cols[i] : 0 }));
         } else {
+            const script = this._scriptsByUrl.get(url);
+            if (!script) {
+                return utils.errP(`No script cached with url: ${url}`);
+            }
+
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
             // after refreshing the page. This is the only way to allow hitting breakpoints in code that runs immediately when
             // the page loads.
-            const script = this._scriptsByUrl.get(url);
             responsePs = lines.map((lineNumber, i) => {
                 return this._chromeConnection.debugger_setBreakpointByUrl(url, lineNumber, cols ? cols[i] : 0).then(response => {
                     // Now convert the response to a SetBreakpointResponse so both response types can be handled the same
@@ -522,7 +526,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
                     // If the frame doesn't have a function name, it's either an anonymous function
                     // or eval script. If its source has a name, it's probably an anonymous function.
-                    const frameName = functionName || (script.url ? '(anonymous function)' : '(eval code)');
+                    const frameName = functionName || (script && script.url ? '(anonymous function)' : '(eval code)');
                     return {
                         id: i,
                         name: frameName,
@@ -536,7 +540,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
                     return {
                         id: i,
                         name: 'Unknown',
-                        source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
+                        source: {name: 'eval: Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
                         line,
                         column
                     };
@@ -571,7 +575,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
         const handle = this._variableHandles.get(args.variablesReference);
         if (!handle) {
-            return Promise.resolve<IVariablesResponseBody>(undefined);
+            return utils.errP(`Unknown variablesReference`);
         }
 
         // If this is the special marker for an exception value, create a fake property descriptor so the usual route can be used

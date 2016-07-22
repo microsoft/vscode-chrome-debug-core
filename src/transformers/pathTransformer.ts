@@ -85,9 +85,9 @@ export class PathTransformer implements IDebugTransformer {
             event.body.scriptUrl = clientPath;
         }
 
-        if (this._pendingBreakpointsByPath.has(event.body.scriptUrl)) {
+        const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
+        if (pendingBreakpoint) {
             logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
-            const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
             this._pendingBreakpointsByPath.delete(event.body.scriptUrl);
             this.setBreakpoints(pendingBreakpoint.args).then(pendingBreakpoint.resolve, pendingBreakpoint.reject);
         }

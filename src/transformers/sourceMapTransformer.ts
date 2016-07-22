@@ -129,7 +129,7 @@ export class SourceMapTransformer implements IDebugTransformer {
      */
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody, requestSeq: number): void {
         if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
-            const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
+            const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq)!;
             if (args.authoredPath) {
                 const sourceBPLines = this._authoredPathsToMappedBPLines.get(args.authoredPath);
                 if (sourceBPLines) {
@@ -226,10 +226,10 @@ export class SourceMapTransformer implements IDebugTransformer {
      * Resolve any pending breakpoints for this script
      */
     private resolvePendingBreakpointsForScript(scriptUrl: string): void {
-        if (this._pendingBreakpointsByPath.has(scriptUrl)) {
+        const pendingBreakpoints = this._pendingBreakpointsByPath.get(scriptUrl);
+        if (pendingBreakpoints) {
             logger.log(`SourceMaps.scriptParsed: Resolving pending breakpoints for ${scriptUrl}`);
 
-            let pendingBreakpoints = this._pendingBreakpointsByPath.get(scriptUrl);
             this._pendingBreakpointsByPath.delete(scriptUrl);
 
             // If there's a setBreakpoints request waiting on this script, go through setBreakpoints again

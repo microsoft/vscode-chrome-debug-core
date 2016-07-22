@@ -140,7 +140,7 @@ suite('SourceMapTransformer', () => {
                 .returns(() => [AUTHORED_PATH]).verifiable();
             mock
                 .setup(x => x.processNewSourceMap(It.isValue(RUNTIME_PATH), It.isValue(sourceMapURL)))
-                .returns(() => Promise.resolve<void>()).verifiable();
+                .returns(() => Promise.resolve()).verifiable();
             args.lines!.forEach((line, i) => {
                 mock
                     .setup(x => x.mapToGenerated(It.isValue(AUTHORED_PATH), It.isValue(line), It.isValue(0)))
@@ -337,6 +337,6 @@ class StubSourceMaps {
     }
 
     public processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
-        return Promise.resolve<void>();
+        return Promise.resolve();
     }
 }

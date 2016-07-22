@@ -137,10 +137,8 @@ suite('Utils', () => {
         });
 
         test('when not given a promise it resolves', () => {
-            return getUtils().promiseTimeout(undefined, 5).then(
-                undefined,
-                () => assert.fail('This promise should pass')
-            );
+            return getUtils().promiseTimeout(undefined, 5)
+                .catch(() => assert.fail('This promise should pass'));
         });
     });
 

@@ -42,7 +42,7 @@ suite('ChromeDebugAdapter', () => {
             .callback((eventName: string, handler: (msg: any) => void) => mockEventEmitter.on(eventName, handler));
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isAnyNumber(), It.isValue(undefined)))
-            .returns(() => Promise.resolve<void>());
+            .returns(() => Promise.resolve());
         mockChromeConnection
             .setup(x => x.isAttached)
             .returns(() => false);
@@ -277,7 +277,7 @@ suite('ChromeDebugAdapter', () => {
 
             mockChromeConnection
                 .setup(x => x.attach(It.isValue(undefined), It.isAnyNumber(), It.isAnyString()))
-                .returns(() => Promise.resolve<void>())
+                .returns(() => Promise.resolve())
                 .verifiable();
 
             return chromeDebugAdapter.launch({ file: 'c:\\path with space\\index.html', runtimeArgs: ['abc', 'def'] })

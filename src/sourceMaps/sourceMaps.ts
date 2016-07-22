@@ -30,32 +30,24 @@ export class SourceMaps {
      * @param pathToSource - The absolute path to the authored file
      */
     public getGeneratedPathFromAuthoredPath(authoredPath: string): Maybe<string> {
-        authoredPath = authoredPath.toLowerCase();
-        return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath).generatedPath() :
-            null;
+        const sourceMap = this._authoredPathToSourceMap.get(authoredPath.toLowerCase())
+        return sourceMap && sourceMap.generatedPath();
     }
 
     public mapToGenerated(authoredPath: string, line: number, column: number): Maybe<MappedPosition> {
-        authoredPath = authoredPath.toLowerCase();
-        return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath)
-                .generatedPositionFor(authoredPath, line, column) :
-            null;
+        const sourceMap = this._authoredPathToSourceMap.get(authoredPath.toLowerCase());
+        return sourceMap && sourceMap.generatedPositionFor(authoredPath, line, column);
     }
 
     public mapToAuthored(pathToGenerated: string, line: number, column: number): Maybe<MappedPosition> {
-        pathToGenerated = pathToGenerated.toLowerCase();
-        return this._generatedPathToSourceMap.has(pathToGenerated) ?
-            this._generatedPathToSourceMap.get(pathToGenerated)
-                .authoredPositionFor(line, column) :
-            null;
+        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated.toLowerCase());
+        return sourceMap && sourceMap.authoredPositionFor(line, column);
     }
 
     public allMappedSources(pathToGenerated: string): string[] {
-        pathToGenerated = pathToGenerated.toLowerCase();
-        return this._generatedPathToSourceMap.has(pathToGenerated) ?
-            this._generatedPathToSourceMap.get(pathToGenerated).authoredSources :
+        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated.toLowerCase());
+        return sourceMap ?
+            sourceMap.authoredSources :
             [];
     }
 
@@ -64,7 +56,7 @@ export class SourceMaps {
      */
     public processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
         return this._generatedPathToSourceMap.has(pathToGenerated.toLowerCase()) ?
-            Promise.resolve<void>() :
+            Promise.resolve() :
             getMapForGeneratedPath(pathToGenerated, sourceMapURL, this._webRoot, this._sourceMapPathOverrides).then(sourceMap => {
                 if (sourceMap) {
                     this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);

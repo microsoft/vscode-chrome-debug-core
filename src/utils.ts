@@ -273,8 +273,10 @@ export function isURL(urlOrPath?: string): boolean {
  * Strip a string from the left side of a string
  */
 export function lstrip(s: string, lStr?: string): string {
+    if (!lStr) return s;
+
     return s.startsWith(lStr) ?
-        s.substr(lStr!.length) :
+        s.substr(lStr.length) :
         s;
 }
 
