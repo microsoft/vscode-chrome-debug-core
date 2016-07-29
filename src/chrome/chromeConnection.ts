@@ -233,6 +233,16 @@ export class ChromeConnection {
         return this.sendMessage('Runtime.getProperties', <Chrome.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly });
     }
 
+    public runtime_getProperty(objectId: string, property: string) {
+        return this.sendMessage('Runtime.callFunctionOn', <Chrome.Runtime.CallFunctionOnParams>{
+            objectId: objectId,
+            arguments: [{ value: property}],
+            functionDeclaration: 'function remoteFunction(property){var result=this;result=result[property];return result;}',
+            returnByValue: false,
+            doNotPauseOnExceptionsAndMuteConsole: true
+        });
+    }
+
     public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<Chrome.Runtime.EvaluateResponse> {
         return this.sendMessage('Runtime.evaluate', <Chrome.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
     }
