@@ -6,7 +6,7 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {StoppedEvent, InitializedEvent, TerminatedEvent, OutputEvent, Handles, Event} from 'vscode-debugadapter';
 
 import {IDebugAdapter, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
-    IAttachRequestArgs, IBreakpoint, IScopesResponseBody, IVariablesResponseBody,
+    IAttachRequestArgs, IBreakpoint, IScopesResponseBody, IVariablesResponseBody, IGetVariableResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody} from '../debugAdapterInterfaces';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -595,6 +595,18 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
+    public getVariable(args: DebugProtocol.GetVariableArguments): Promise<IGetVariableResponseBody> {
+        const handle = this._variableHandles.get(args.variablesReference);
+        if (handle != null) {
+            return this._chromeConnection.runtime_getProperty(handle.objectId, args.name).then(getPropResponse => {
+                const { value, variablesReference } = this.remoteObjectToValueWithHandle(getPropResponse.result.result);
+                return { value: value, variablesReference: variablesReference };
+            });
+        } else {
+            return Promise.resolve<IGetVariableResponseBody>(undefined);
+        }
+    }
+
     public source(args: DebugProtocol.SourceArguments): Promise<ISourceResponseBody> {
         return this._chromeConnection.debugger_getScriptSource(sourceReferenceToScriptId(args.sourceReference)).then(chromeResponse => {
             return { content: chromeResponse.result.scriptSource };
@@ -642,7 +654,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         if (propDesc.get || propDesc.set) {
             // A property doesn't have a value here, and we shouldn't evaluate the getter because it may have side effects.
             // Node adapter shows 'undefined', Chrome can eval the getter on demand.
-            return { name: propDesc.name, value: 'property', variablesReference: 0 };
+            return { name: propDesc.name, value: 'property', variablesReference: 0, unsolved: true };
         } else {
             const { value, variablesReference } = this.remoteObjectToValueWithHandle(propDesc.value);
             return { name: propDesc.name, value, variablesReference };

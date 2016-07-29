@@ -75,6 +75,11 @@ export interface IVariablesResponseBody {
     variables: DebugProtocol.Variable[];
 }
 
+export interface IGetVariableResponseBody {
+    value: string;
+    variablesReference: number;
+}
+
 export interface IEvaluateResponseBody {
     result: string;
     variablesReference: number;
