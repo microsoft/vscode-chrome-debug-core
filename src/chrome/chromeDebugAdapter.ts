@@ -654,7 +654,11 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         if (propDesc.get || propDesc.set) {
             // A property doesn't have a value here, and we shouldn't evaluate the getter because it may have side effects.
             // Node adapter shows 'undefined', Chrome can eval the getter on demand.
-            return { name: propDesc.name, value: 'property', variablesReference: 0, unsolved: true };
+            const variable: DebugProtocol.Variable = { name: propDesc.name, value: 'property', variablesReference: 0 };
+            if (propDesc.get) {
+                variable.unsolved = true;
+            }
+            return variable;
         } else {
             const { value, variablesReference } = this.remoteObjectToValueWithHandle(propDesc.value);
             return { name: propDesc.name, value, variablesReference };

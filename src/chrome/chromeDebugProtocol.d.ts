@@ -215,6 +215,20 @@ export namespace Runtime {
         callFrames: CallFrame[];
         parent?: StackTrace;
     }
+
+    export interface CallArgument {
+        objectId?: string;
+        type?: string;
+        value?: any;
+    }
+
+    export interface CallFunctionOnParams {
+        objectId: string;
+        functionDeclaration: string;
+        arguments?: CallArgument[];
+        doNotPauseOnExceptionsAndMuteConsole?: boolean;
+        returnByValue?: boolean;
+    }
 }
 
 export namespace Page {

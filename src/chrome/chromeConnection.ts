@@ -234,7 +234,7 @@ export class ChromeConnection {
     }
 
     public runtime_getProperty(objectId: string, property: string) {
-        return this.sendMessage('Runtime.callFunctionOn', {
+        return this.sendMessage('Runtime.callFunctionOn', <Chrome.Runtime.CallFunctionOnParams>{
             objectId: objectId,
             arguments: [{ value: property}],
             functionDeclaration: 'function remoteFunction(property){var result=this;result=result[property];return result;}',
