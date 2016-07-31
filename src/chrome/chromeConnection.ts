@@ -166,7 +166,7 @@ export class ChromeConnection {
     public attach(address = '127.0.0.1', port = 9222, targetUrl?: string): Promise<void> {
         return this._attach(address, port, targetUrl)
             .then(() => this.sendMessage('Debugger.enable'))
-            .then(() => this.sendMessage('Console.enable'))
+            .then(() => this.sendMessage('Runtime.enable'))
             .then(() => { });
     }
 

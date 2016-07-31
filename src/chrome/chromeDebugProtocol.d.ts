@@ -215,6 +215,14 @@ export namespace Runtime {
         callFrames: CallFrame[];
         parent?: StackTrace;
     }
+
+    export interface ConsoleAPICalledParams {
+        type: string;
+        args: RemoteObject[];
+        executionContextId: number;
+        timestamp: number;
+        stackTrace?: StackTrace;
+    }
 }
 
 export namespace Page {
