@@ -5,7 +5,6 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ISetBreakpointsResponseBody} from '../../src/debugAdapterInterfaces';
-import * as Chrome from '../../src/chrome/chromeDebugProtocol';
 import {ChromeConnection} from '../../src/chrome/chromeConnection';
 
 import * as mockery from 'mockery';

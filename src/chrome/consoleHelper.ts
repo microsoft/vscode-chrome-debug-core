@@ -4,9 +4,9 @@
 
 import * as url from 'url';
 import * as ChromeUtils from './chromeUtils';
-import * as Chrome from './chromeDebugProtocol';
+import Crdp from 'chrome-remote-debug-protocol';
 
-export function formatConsoleMessage(m: Chrome.Runtime.ConsoleAPICalledParams): { text: string, isError: boolean } {
+export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { text: string, isError: boolean } {
     // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
     // startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd
     let outputText: string;
@@ -51,7 +51,7 @@ export function formatConsoleMessage(m: Chrome.Runtime.ConsoleAPICalledParams): 
     return { text: outputText, isError };
 }
 
-function resolveParams(m: Chrome.Runtime.ConsoleAPICalledParams): string {
+function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent): string {
     const textArg = m.args[0];
     let text = remoteObjectToString(textArg);
     m.args.shift();
@@ -92,7 +92,7 @@ function resolveParams(m: Chrome.Runtime.ConsoleAPICalledParams): string {
     return text;
 }
 
-function remoteObjectToString(obj: Chrome.Runtime.RemoteObject): string {
+function remoteObjectToString(obj: Crdp.Runtime.RemoteObject): string {
     const result = ChromeUtils.remoteObjectToValue(obj, /*stringify=*/false);
     if (result.variableHandleRef) {
         // The DebugProtocol console API doesn't support returning a variable reference, so do our best to
@@ -124,7 +124,7 @@ function remoteObjectToString(obj: Chrome.Runtime.RemoteObject): string {
     }
 }
 
-function arrayRemoteObjToString(obj: Chrome.Runtime.RemoteObject): string {
+function arrayRemoteObjToString(obj: Crdp.Runtime.RemoteObject): string {
     if (obj.preview && obj.preview.properties) {
         let props: string = obj.preview.properties
             .map(prop => prop.value)
@@ -140,7 +140,7 @@ function arrayRemoteObjToString(obj: Chrome.Runtime.RemoteObject): string {
     }
 }
 
-function stackTraceToString(stackTrace: Chrome.Runtime.StackTrace): string {
+function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
     return stackTrace.callFrames
         .map(frame => {
             const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');

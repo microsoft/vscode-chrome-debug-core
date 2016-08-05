@@ -4,9 +4,10 @@
 
 import * as url from 'url';
 import * as path from 'path';
+import Crdp from 'chrome-remote-debug-protocol';
 
 import * as utils from '../utils';
-import * as Chrome from './chromeDebugProtocol';
+import {ITarget} from './chromeConnection';
 
 /**
  * Maps a url from target to an absolute local path.
@@ -56,7 +57,7 @@ export function targetUrlToClientPath(webRoot: string, aUrl: string): string {
 /**
  * Convert a RemoteObject to a value+variableHandleRef for the client.
  */
-export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
+export function remoteObjectToValue(object: Crdp.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
     let value = '';
     let variableHandleRef: string;
 
@@ -102,7 +103,7 @@ export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringi
  * Returns the targets from the given list that match the targetUrl, which may have * wildcards.
  * Ignores the protocol and is case-insensitive.
  */
-export function getMatchingTargets(targets: Chrome.ITarget[], targetUrlPattern: string): Chrome.ITarget[] {
+export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string): ITarget[] {
     const standardizeMatch = aUrl => {
         // Strip file:///, if present
         aUrl = utils.fileUrlToPath(aUrl).toLowerCase();

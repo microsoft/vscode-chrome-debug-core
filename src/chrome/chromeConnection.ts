@@ -7,7 +7,20 @@ import {EventEmitter} from 'events';
 
 import * as utils from '../utils';
 import * as logger from '../logger';
-import * as Chrome from './chromeDebugProtocol';
+
+import {Client} from 'noice-json-rpc';
+import Crdp from 'chrome-remote-debug-protocol';
+
+export interface ITarget {
+    description: string;
+    devtoolsFrontendUrl: string;
+    id: string;
+    thumbnailUrl?: string;
+    title: string;
+    type: string;
+    url?: string;
+    webSocketDebuggerUrl: string;
+}
 
 interface IMessageWithId {
     id: number;
@@ -134,7 +147,7 @@ class ResReqWebSocket extends EventEmitter {
     }
 }
 
-export type ITargetFilter = (target: Chrome.ITarget) => boolean;
+export type ITargetFilter = (target: ITarget) => boolean;
 export type ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string) => Promise<string>;
 
 /**
@@ -142,7 +155,8 @@ export type ITargetDiscoveryStrategy = (address: string, port: number, targetFil
  */
 export class ChromeConnection {
     private _nextId: number;
-    private _socket: ResReqWebSocket;
+    private _socket: WebSocket;
+    private _client: Client;
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
 
@@ -154,25 +168,25 @@ export class ChromeConnection {
         this.reset();
     }
 
-    public get isAttached(): boolean { return this._socket.isOpen; }
+    public get isAttached(): boolean { return !!this._client; }
 
     public on(eventName: string, handler: (msg: any) => void): void {
-        this._socket.on(eventName, handler);
+        this._client.on(eventName, handler);
+    }
+
+    public get api(): Crdp.CrdpClient {
+        return this._client.api();
     }
 
     /**
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
     public attach(address = '127.0.0.1', port = 9222, targetUrl?: string): Promise<void> {
-        return this._attach(address, port, targetUrl)
-            .then(() => this.sendMessage('Debugger.enable'))
-            .then(() => this.sendMessage('Runtime.enable'))
-            .then(() => { });
-    }
-
-    private _attach(address: string, port: number, targetUrl?: string): Promise<void> {
         return utils.retryAsync(() => this._targetDiscoveryStrategy(address, port, this._targetFilter, targetUrl), /*timeoutMs=*/7000, /*intervalDelay=*/200)
-            .then(wsUrl => this._socket.open(wsUrl));
+            .then(wsUrl => {
+                this._socket = new WebSocket(wsUrl);
+                this._client = new Client(this._socket);
+            });
     }
 
     public close(): void {
@@ -182,100 +196,7 @@ export class ChromeConnection {
 
     private reset(): void {
         this._nextId = 1;
-        this._socket = new ResReqWebSocket();
-    }
-
-    public debugger_setBreakpoint(location: Chrome.Debugger.Location, condition?: string): Promise<Chrome.Debugger.SetBreakpointResponse> {
-        return this.sendMessage('Debugger.setBreakpoint', <Chrome.Debugger.SetBreakpointParams>{ location, condition });
-    }
-
-    public debugger_setBreakpointByUrl(url: string, lineNumber: number, columnNumber: number): Promise<Chrome.Debugger.SetBreakpointByUrlResponse> {
-        return this.sendMessage('Debugger.setBreakpointByUrl', <Chrome.Debugger.SetBreakpointByUrlParams>{ url, lineNumber, columnNumber });
-    }
-
-    public debugger_removeBreakpoint(breakpointId: string): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.removeBreakpoint', <Chrome.Debugger.RemoveBreakpointParams>{ breakpointId });
-    }
-
-    public debugger_stepOver(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepOver');
-    }
-
-    public debugger_stepIn(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepInto');
-    }
-
-    public debugger_stepOut(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepOut');
-    }
-
-    public debugger_resume(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.resume');
-    }
-
-    public debugger_pause(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.pause');
-    }
-
-    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean): Promise<Chrome.Debugger.EvaluateOnCallFrameResponse> {
-        return this.sendMessage('Debugger.evaluateOnCallFrame', <Chrome.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue });
-    }
-
-    public debugger_setPauseOnExceptions(state: string): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.setPauseOnExceptions', <Chrome.Debugger.SetPauseOnExceptionsParams>{ state });
-    }
-
-    public debugger_getScriptSource(scriptId: Chrome.Debugger.ScriptId): Promise<Chrome.Debugger.GetScriptSourceResponse> {
-        return this.sendMessage('Debugger.getScriptSource', <Chrome.Debugger.GetScriptSourceParams>{ scriptId });
-    }
-
-    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean): Promise<Chrome.Runtime.GetPropertiesResponse> {
-        return this.sendMessage('Runtime.getProperties', <Chrome.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly });
-    }
-
-    public runtime_evaluate(expression: string, objectGroup = 'dummyObjectGroup', contextId?: number, returnByValue = false): Promise<Chrome.Runtime.EvaluateResponse> {
-        return this.sendMessage('Runtime.evaluate', <Chrome.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue });
-    }
-
-    public page_setOverlayMessage(message: string): Promise<Chrome.Response> {
-        return this.sendMessage('Page.setOverlayMessage', { message });
-    }
-
-    public page_clearOverlayMessage(): Promise<Chrome.Response> {
-        return this.sendMessage('Page.setOverlayMessage');
-    }
-
-    public emulation_clearDeviceMetricsOverride(): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.clearDeviceMetricsOverride');
-    }
-
-    public emulation_setEmulatedMedia(media: string): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.setEmulatedMedia', { media });
-    }
-
-    public emulation_setTouchEmulationEnabled(enabled: boolean, configuration?: string): Promise<Chrome.Response> {
-        let messageData: { enabled: boolean; configuration?: string; } = { enabled };
-
-        if (configuration) {
-            messageData.configuration = configuration;
-        }
-
-        return this.sendMessage('Emulation.setTouchEmulationEnabled', messageData);
-    }
-
-    public emulation_resetScrollAndPageScaleFactor(): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.resetScrollAndPageScaleFactor');
-    }
-
-    public emulation_setDeviceMetricsOverride(metrics: Chrome.Emulation.SetDeviceMetricsOverrideParams): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.setDeviceMetricsOverride', metrics);
-    }
-
-    private sendMessage(method: any, params?: any): Promise<Chrome.Response> {
-        return this._socket.sendMessage({
-            id: this._nextId++,
-            method,
-            params
-        });
+        this._socket = null;
+        this._client = null;
     }
 }
