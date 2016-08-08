@@ -7,6 +7,7 @@ import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
+import {Maybe} from '../utils';
 import * as logger from '../logger';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
@@ -108,7 +109,7 @@ export class SourceMap {
      * Finds the nearest source location for the given location in the generated file.
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
-    public authoredPositionFor(line: number, column: number): MappedPosition {
+    public authoredPositionFor(line: number, column: number): Maybe<MappedPosition> {
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -145,7 +146,7 @@ export class SourceMap {
      * Finds the nearest location in the generated file for the given source location.
      * Will return a mapping on the next line, if there is no subsequent mapping on the expected line.
      */
-    public generatedPositionFor(source: string, line: number, column: number): MappedPosition {
+    public generatedPositionFor(source: string, line: number, column: number): Maybe<MappedPosition> {
         // source-map lib uses 1-indexed lines.
         line++;
 

@@ -8,6 +8,7 @@ import * as fs from 'fs';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
+import {Maybe} from '../utils';
 import * as logger from '../logger';
 import {SourceMap} from './sourceMap';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
@@ -48,7 +49,7 @@ export function getMapForGeneratedPath(pathToGenerated: string, mapPath: string,
 /**
  * Parses sourcemap contents from inlined base64-encoded data
  */
-function getInlineSourceMapContents(sourceMapData: string): string {
+function getInlineSourceMapContents(sourceMapData: string): Maybe<string> {
     const lastCommaPos = sourceMapData.lastIndexOf(',');
     if (lastCommaPos < 0) {
         logger.log(`SourceMaps.getInlineSourceMapContents: Inline sourcemap is malformed. Starts with: ${sourceMapData.substr(0, 200)}`);
@@ -78,7 +79,7 @@ function getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<
         } else {
             // runtime script is not on disk, resolve a URL for the map relative to the script
             const scriptUrl = url.parse(pathToGenerated);
-            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname), mapPath);
+            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname!), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
         }
     }
@@ -96,8 +97,8 @@ function getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<
     });
 }
 
-function loadSourceMapContents(mapPathOrURL: string): Promise<string> {
-    let contentsP: Promise<string>;
+function loadSourceMapContents(mapPathOrURL: string): Promise<Maybe<string>> {
+    let contentsP: Promise<Maybe<string>>;
     if (utils.isURL(mapPathOrURL)) {
         logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
         contentsP = utils.getURL(mapPathOrURL).catch(e => {
@@ -105,14 +106,14 @@ function loadSourceMapContents(mapPathOrURL: string): Promise<string> {
             return null;
         });
     } else {
-        contentsP = new Promise((resolve, reject) => {
+        contentsP = new Promise<Maybe<string>>((resolve, reject) => {
             logger.log(`SourceMaps.loadSourceMapContents: Reading local sourcemap file from ${mapPathOrURL}`);
             fs.readFile(mapPathOrURL, (err, data) => {
                 if (err) {
                     logger.error(`SourceMaps.loadSourceMapContents: Could not read sourcemap from ${mapPathOrURL}`);
                     resolve(null);
                 } else {
-                    resolve(data);
+                    resolve(data.toString());
                 }
             });
         });

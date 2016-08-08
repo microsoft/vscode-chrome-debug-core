@@ -25,7 +25,7 @@ export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { t
                 outputText += ': ' + m.args.map(p => p.value).join(' ');
             }
 
-            outputText += '\n' + stackTraceToString(m.stackTrace);
+            outputText += '\n' + stackTraceToString(m.stackTrace!);
             break;
         case 'startGroup':
         case 'startGroupCollapsed':
@@ -39,7 +39,7 @@ export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { t
             outputText = '‹End group›';
             break;
         case 'trace':
-            outputText = 'console.trace()\n' + stackTraceToString(m.stackTrace);
+            outputText = 'console.trace()\n' + stackTraceToString(m.stackTrace!);
             break;
         default:
             // Some types we have to ignore
@@ -119,9 +119,9 @@ function remoteObjectToString(obj: Crdp.Runtime.RemoteObject): string {
 
             return `${obj.className} {${props}}`;
         }
-    } else {
-        return result.value;
     }
+
+    return result.value;
 }
 
 function arrayRemoteObjToString(obj: Crdp.Runtime.RemoteObject): string {
@@ -136,7 +136,7 @@ function arrayRemoteObjToString(obj: Crdp.Runtime.RemoteObject): string {
 
         return `[${props}]`;
     } else {
-        return obj.description;
+        return obj.description!;
     }
 }
 

@@ -3,13 +3,17 @@
         "module": "commonjs",
         "moduleResolution": "node",
         "noImplicitAny": false,
-        "target": "ES5",
+        "target": "ES6",
         "sourceMap": true,
-        "outDir": "out"
+        "outDir": "out",
+        "declaration": true,
+        "noImplicitThis": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "strictNullChecks": true
     },
     "exclude": [
         "node_modules",
-        "typings/globals",
         "lib"
     ]
 }

@@ -36,21 +36,16 @@ const lintSources = [
     'test'
 ].map(tsFolder => tsFolder + '/**/*.ts');
 
-const projectConfig = {
-    noImplicitAny: false,
-    target: 'ES5',
-    module: 'commonjs',
-    moduleResolution: 'node',
-    declaration: true,
-    typescript,
-    outDir: 'out'
-};
-
 function computeSourceRoot(file) {
     return path.relative(path.dirname(file.path), __dirname);
 }
 
-const tsProject = ts.createProject(projectConfig);
+const tsProject = ts.createProject(
+    'tsconfig.json',
+    {
+        typescript,
+        noUnusedLocals: true // Annoying underlines in VS Code but I want the build errors
+    });
 gulp.task('build', () => {
     const tsResult = gulp.src(tsBuildSources, { base: '.' })
         .pipe(plumber())

@@ -25,6 +25,7 @@
             },
             "stopOnEntry": false,
             "args": [ "--server=4712" ],
+            "runtimeArgs": ["--harmony", "--harmony-destructuring", "--harmony_concat_spreadable", "--harmony_default_parameters"],
             "sourceMaps": true,
             "outDir": "${workspaceRoot}/out"
         }

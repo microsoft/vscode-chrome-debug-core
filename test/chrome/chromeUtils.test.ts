@@ -49,11 +49,11 @@ suite('ChromeUtils', () => {
         });
 
         test('an empty string is returned when the webRoot is missing', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(null, TEST_TARGET_HTTP_URL), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, undefined), '');
         });
 
         test('a url without a path returns an empty string', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, 'http://site.com'), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com', TEST_WEB_ROOT), '');
         });
 
         test('it searches the disk for a path that exists, built from the url', () => {
@@ -61,7 +61,7 @@ suite('ChromeUtils', () => {
                 if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');
             };
             mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, TEST_TARGET_HTTP_URL), TEST_CLIENT_PATH);
+            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, TEST_WEB_ROOT), TEST_CLIENT_PATH);
         });
 
         test(`returns an empty string when it can't resolve a url`, () => {
@@ -69,23 +69,23 @@ suite('ChromeUtils', () => {
                 throw new Error('Not found');
             };
             mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, TEST_TARGET_HTTP_URL), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, TEST_WEB_ROOT), '');
         });
 
         test('file:/// urls are returned canonicalized', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('', TEST_TARGET_LOCAL_URL), TEST_CLIENT_PATH);
+            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_LOCAL_URL, ''), TEST_CLIENT_PATH);
         });
 
         test('uri encodings are fixed for file:/// paths', () => {
             const clientPath = 'c:\\project\\path with spaces\\script.js';
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, 'file:///' + encodeURI(clientPath)), clientPath);
+            assert.equal(getChromeUtils().targetUrlToClientPath('file:///' + encodeURI(clientPath), TEST_WEB_ROOT), clientPath);
         });
 
         test('uri encodings are fixed in URLs', () => {
             const pathSegment = 'path with spaces\\script.js';
             const url = 'http:\\' + encodeURIComponent(pathSegment);
 
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, url), path.join(TEST_WEB_ROOT, pathSegment));
+            assert.equal(getChromeUtils().targetUrlToClientPath(url, TEST_WEB_ROOT), path.join(TEST_WEB_ROOT, pathSegment));
         });
     });
 

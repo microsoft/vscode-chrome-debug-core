@@ -72,8 +72,8 @@ export class SourceMapTransformer implements IDebugTransformer {
                     args.source.path = mappedPath;
 
                     // DebugProtocol doesn't send cols, but they need to be added from sourcemaps
-                    const mappedCols = [];
-                    const mappedLines = args.lines.map((line, i) => {
+                    const mappedCols: number[] = [];
+                    const mappedLines = args.lines!.map((line, i) => {
                         const mapped = this._sourceMaps.mapToGenerated(argsPath, line, /*column=*/0);
                         if (mapped) {
                             logger.log(`SourceMaps.setBP: Mapped ${argsPath}:${line + 1}:1 to ${mappedPath}:${mapped.line + 1}:${mapped.column + 1}`);
@@ -102,8 +102,8 @@ export class SourceMapTransformer implements IDebugTransformer {
 
                         if (sourceBPLines && sourceBPCols) {
                             // Don't modify the cached array
-                            args.lines = args.lines.concat(sourceBPLines);
-                            args.cols = args.cols.concat(sourceBPCols);
+                            args.lines = args.lines!.concat(sourceBPLines);
+                            args.cols = args.cols!.concat(sourceBPCols);
                         }
                     });
                 } else if (this._allRuntimeScriptPaths.has(argsPath)) {
@@ -129,7 +129,7 @@ export class SourceMapTransformer implements IDebugTransformer {
      */
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody, requestSeq: number): void {
         if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
-            const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
+            const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq)!;
             if (args.authoredPath) {
                 const sourceBPLines = this._authoredPathsToMappedBPLines.get(args.authoredPath);
                 if (sourceBPLines) {
@@ -137,7 +137,7 @@ export class SourceMapTransformer implements IDebugTransformer {
                     // Remove breakpoints from files that map to the same file, and map back to source.
                     response.breakpoints = response.breakpoints.filter((_, i) => i < sourceBPLines.length);
                     response.breakpoints.forEach(bp => {
-                        const mapped = this._sourceMaps.mapToAuthored(args.source.path, bp.line, bp.column);
+                        const mapped = this._sourceMaps.mapToAuthored(args.source.path!, bp.line!, bp.column!);
                         if (mapped) {
                             logger.log(`SourceMaps.setBP: Mapped ${args.source.path}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
                             bp.line = mapped.line;
@@ -164,27 +164,35 @@ export class SourceMapTransformer implements IDebugTransformer {
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         if (this._sourceMaps) {
             response.stackFrames.forEach(stackFrame => {
-                const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
-                if (mapped && utils.existsSync(mapped.source)) {
-                    // Script was mapped to a valid path
-                    stackFrame.source.path = mapped.source;
-                    stackFrame.source.sourceReference = 0;
-                    stackFrame.source.name = path.basename(mapped.source);
-                    stackFrame.line = mapped.line;
-                    stackFrame.column = mapped.column;
-                } else if (utils.existsSync(stackFrame.source.path)) {
-                    // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
-                    stackFrame.source.sourceReference = 0;
-                } else {
-                    // Script could not be mapped and doesn't exist on disk. Clear the path, use sourceReference.
-                    stackFrame.source.name = 'eval: ' + stackFrame.source.sourceReference;
-                    stackFrame.source.path = undefined;
+                if (!stackFrame.source) {
+                    return;
                 }
+
+                if (stackFrame.source.path) {
+                    const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
+                    if (mapped && utils.existsSync(mapped.source)) {
+                        // Script was mapped to a valid path
+                        stackFrame.source.path = mapped.source;
+                        stackFrame.source.sourceReference = 0;
+                        stackFrame.source.name = path.basename(mapped.source);
+                        stackFrame.line = mapped.line;
+                        stackFrame.column = mapped.column;
+                        return;
+                    } else if (utils.existsSync(stackFrame.source.path)) {
+                        // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
+                        stackFrame.source.sourceReference = 0;
+                        return;
+                    }
+                }
+
+                // Script could not be mapped and doesn't exist on disk. Clear the path, use sourceReference.
+                stackFrame.source.name = 'eval: ' + stackFrame.source.sourceReference;
+                stackFrame.source.path = undefined;
             });
         } else {
             response.stackFrames.forEach(stackFrame => {
                 // PathTransformer needs to leave the frame in an unfinished state because it doesn't know whether sourcemaps are enabled
-                if (stackFrame.source.path && stackFrame.source.sourceReference) {
+                if (stackFrame.source && stackFrame.source.path && stackFrame.source.sourceReference) {
                     stackFrame.source.path = undefined;
                 }
             });
@@ -218,10 +226,10 @@ export class SourceMapTransformer implements IDebugTransformer {
      * Resolve any pending breakpoints for this script
      */
     private resolvePendingBreakpointsForScript(scriptUrl: string): void {
-        if (this._pendingBreakpointsByPath.has(scriptUrl)) {
+        const pendingBreakpoints = this._pendingBreakpointsByPath.get(scriptUrl);
+        if (pendingBreakpoints) {
             logger.log(`SourceMaps.scriptParsed: Resolving pending breakpoints for ${scriptUrl}`);
 
-            let pendingBreakpoints = this._pendingBreakpointsByPath.get(scriptUrl);
             this._pendingBreakpointsByPath.delete(scriptUrl);
 
             // If there's a setBreakpoints request waiting on this script, go through setBreakpoints again

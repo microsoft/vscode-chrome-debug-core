@@ -111,7 +111,6 @@ suite('SourceMap', () => {
             return {
                 line,
                 column,
-                name: null,
                 source
             };
         }

@@ -4,6 +4,8 @@
 
 import * as fs from 'fs';
 
+import {Maybe} from './utils';
+
 export enum LogLevel {
     Verbose = 0,
     Log = 1,
@@ -19,7 +21,7 @@ interface ILogItem {
 
 /** Logger singleton */
 let _logger: Logger;
-let _pendingLogQ: ILogItem[] = [];
+let _pendingLogQ: Maybe<ILogItem[]> = [];
 export function log(msg: string, forceDiagnosticLogging = false, level = LogLevel.Log): void {
     // [null, undefined] => string
     msg = msg + '';
@@ -69,7 +71,7 @@ export function init(logCallback: ILogCallback, logFilePath?: string): void {
  */
 class Logger {
     /** The directory in which to log vscode-chrome-debug.txt */
-    private _logFilePath: string;
+    private _logFilePath?: string;
 
     /** True when logging is enabled outside of server mode */
     private _minLogLevel: LogLevel;

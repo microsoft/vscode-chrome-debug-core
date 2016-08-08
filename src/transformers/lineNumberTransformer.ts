@@ -11,7 +11,7 @@ import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody}
  */
 export class LineNumberTransformer implements IDebugTransformer  {
     private _targetLinesStartAt1: boolean;
-    private _clientLinesStartAt1: boolean;
+    private _clientLinesStartAt1?: boolean;
 
     constructor(targetLinesStartAt1: boolean) {
         this._targetLinesStartAt1 = targetLinesStartAt1;
@@ -22,11 +22,11 @@ export class LineNumberTransformer implements IDebugTransformer  {
     }
 
     public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): void {
-        args.lines = args.lines.map(line => this.convertClientLineToTarget(line));
+        args.lines = args.lines!.map(line => this.convertClientLineToTarget(line));
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
-        response.breakpoints.forEach(bp => bp.line = this.convertTargetLineToClient(bp.line));
+        response.breakpoints.forEach(bp => bp.line = this.convertTargetLineToClient(bp.line!));
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {

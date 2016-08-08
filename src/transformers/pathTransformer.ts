@@ -19,7 +19,7 @@ interface IPendingBreakpoint {
  * Converts a local path from Code to a path on the target.
  */
 export class PathTransformer implements IDebugTransformer {
-    private _webRoot: string;
+    private _webRoot?: string;
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
     private _pendingBreakpointsByPath = new Map<string, IPendingBreakpoint>();
@@ -70,7 +70,7 @@ export class PathTransformer implements IDebugTransformer {
 
     public scriptParsed(event: DebugProtocol.Event): void {
         const targetUrl: string = event.body.scriptUrl;
-        const clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, targetUrl);
+        const clientPath = ChromeUtils.targetUrlToClientPath(targetUrl, this._webRoot);
 
         if (!clientPath) {
             // It's expected that eval scripts (debugadapter:) won't be resolved
@@ -85,9 +85,9 @@ export class PathTransformer implements IDebugTransformer {
             event.body.scriptUrl = clientPath;
         }
 
-        if (this._pendingBreakpointsByPath.has(event.body.scriptUrl)) {
+        const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
+        if (pendingBreakpoint) {
             logger.log(`Paths.scriptParsed: Resolving pending breakpoints for ${event.body.scriptUrl}`);
-            const pendingBreakpoint = this._pendingBreakpointsByPath.get(event.body.scriptUrl);
             this._pendingBreakpointsByPath.delete(event.body.scriptUrl);
             this.setBreakpoints(pendingBreakpoint.args).then(pendingBreakpoint.resolve, pendingBreakpoint.reject);
         }
@@ -95,12 +95,12 @@ export class PathTransformer implements IDebugTransformer {
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => {
-            if (frame.source.path) {
+            if (frame.source && frame.source.path) {
                 // Try to resolve the url to a path in the workspace. If it's not in the workspace,
                 // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
                 const clientPath = this._targetUrlToClientPath.has(frame.source.path) ?
                     this._targetUrlToClientPath.get(frame.source.path) :
-                    ChromeUtils.targetUrlToClientPath(this._webRoot, frame.source.path);
+                    ChromeUtils.targetUrlToClientPath(frame.source.path, this._webRoot);
 
                 // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
                 // clear the sourceReference since it's not needed.

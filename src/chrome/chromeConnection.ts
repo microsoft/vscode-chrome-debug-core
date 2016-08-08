@@ -34,7 +34,7 @@ interface IMessageWithId {
  */
 class ResReqWebSocket extends EventEmitter {
     private _pendingRequests = new Map<number, any>();
-    private _wsAttached: Promise<WebSocket>;
+    private _wsAttached: Promise<WebSocket> | null;
 
     public get isOpen(): boolean { return !!this._wsAttached; }
 
@@ -102,6 +102,11 @@ class ResReqWebSocket extends EventEmitter {
      */
     public sendMessage(message: IMessageWithId): Promise<any> {
         return new Promise((resolve, reject) => {
+            if (!this._wsAttached) {
+                reject(new Error('Not attached to the target'));
+                return;
+            }
+
             this._pendingRequests.set(message.id, resolve);
             this._wsAttached.then(ws => {
                 const msgStr = JSON.stringify(message);
@@ -119,6 +124,7 @@ class ResReqWebSocket extends EventEmitter {
             return super.emit.apply(this, arguments);
         } catch (e) {
             logger.error('Error while handling target event: ' + e.stack);
+            return false;
         }
     }
 
@@ -155,9 +161,9 @@ export type ITargetDiscoveryStrategy = (address: string, port: number, targetFil
  */
 export class ChromeConnection {
     private _nextId: number;
-    private _socket: WebSocket;
-    private _client: Client;
-    private _targetFilter: ITargetFilter;
+    private _socket: utils.Maybe<WebSocket>;
+    private _client: utils.Maybe<Client>;
+    private _targetFilter?: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
 
     constructor(targetDiscovery: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
@@ -171,11 +177,13 @@ export class ChromeConnection {
     public get isAttached(): boolean { return !!this._client; }
 
     public on(eventName: string, handler: (msg: any) => void): void {
-        this._client.on(eventName, handler);
+        if (this._client) {
+            this._client.on(eventName, handler);
+        }
     }
 
     public get api(): Crdp.CrdpClient {
-        return this._client.api();
+        return this._client && this._client.api();
     }
 
     /**
@@ -190,7 +198,10 @@ export class ChromeConnection {
     }
 
     public close(): void {
-        this._socket.close();
+        if (this._socket) {
+            this._socket.close();
+        }
+
         this.reset();
     }
 

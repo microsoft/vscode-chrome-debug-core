@@ -10,6 +10,8 @@ import * as path from 'path';
 
 import * as logger from './logger';
 
+export type Maybe<T> = T | null | undefined;
+
 const WIN_APPDATA = process.env.LOCALAPPDATA || '/';
 const DEFAULT_CHROME_PATH = {
     OSX: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -22,7 +24,7 @@ const DEFAULT_CHROME_PATH = {
 export function getBrowserPath(): string {
     const platform = getPlatform();
     if (platform === Platform.OSX) {
-        return existsSync(DEFAULT_CHROME_PATH.OSX) ? DEFAULT_CHROME_PATH.OSX : null;
+        return existsSync(DEFAULT_CHROME_PATH.OSX) ? DEFAULT_CHROME_PATH.OSX : '';
     } else if (platform === Platform.Windows) {
         if (existsSync(DEFAULT_CHROME_PATH.WINx86)) {
             return DEFAULT_CHROME_PATH.WINx86;
@@ -31,10 +33,10 @@ export function getBrowserPath(): string {
         } else if (existsSync(DEFAULT_CHROME_PATH.WIN_LOCALAPPDATA)) {
             return DEFAULT_CHROME_PATH.WIN_LOCALAPPDATA;
         } else {
-            return null;
+            return '';
         }
     } else {
-        return existsSync(DEFAULT_CHROME_PATH.LINUX) ? DEFAULT_CHROME_PATH.LINUX : null;
+        return existsSync(DEFAULT_CHROME_PATH.LINUX) ? DEFAULT_CHROME_PATH.LINUX : '';
     }
 }
 
@@ -63,7 +65,7 @@ export function existsSync(path: string): boolean {
 }
 
 export class DebounceHelper {
-    private waitToken: NodeJS.Timer;
+    private waitToken?: NodeJS.Timer;
 
     constructor(private timeoutMs: number) { }
 
@@ -73,7 +75,7 @@ export class DebounceHelper {
     public wait(fn: () => any): void {
         if (!this.waitToken) {
             this.waitToken = setTimeout(() => {
-                this.waitToken = null;
+                this.waitToken = undefined;
                 fn();
             },
                 this.timeoutMs);
@@ -86,7 +88,7 @@ export class DebounceHelper {
     public doAndCancel(fn: () => any): void {
         if (this.waitToken) {
             clearTimeout(this.waitToken);
-            this.waitToken = null;
+            this.waitToken = undefined;
         }
 
         fn();
@@ -130,7 +132,7 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDe
         return fn().catch(
             e => {
                 if (Date.now() - startTime < (timeoutMs - intervalDelay)) {
-                    return promiseTimeout(null, intervalDelay).then(tryUntilTimeout);
+                    return promiseTimeout(undefined, intervalDelay).then(tryUntilTimeout);
                 } else {
                     return errP(e);
                 }
@@ -254,7 +256,7 @@ export function getURL(aUrl: string): Promise<string> {
                 if (response.statusCode === 200) {
                     resolve(responseData);
                 } else {
-                    logger.error('HTTP GET failed with: ' + response.statusCode.toString() + ' ' + response.statusMessage.toString());
+                    logger.error('HTTP GET failed with: ' + response.statusCode + ' ' + response.statusMessage);
                     reject(responseData);
                 }
             });
@@ -267,14 +269,16 @@ export function getURL(aUrl: string): Promise<string> {
 /**
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
-export function isURL(urlOrPath: string): boolean {
-    return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
+export function isURL(urlOrPath?: string): boolean {
+    return !!(urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol);
 }
 
 /**
  * Strip a string from the left side of a string
  */
-export function lstrip(s: string, lStr: string): string {
+export function lstrip(s: string, lStr?: string): string {
+    if (!lStr) return s;
+
     return s.startsWith(lStr) ?
         s.substr(lStr.length) :
         s;
