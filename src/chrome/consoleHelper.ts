@@ -10,7 +10,7 @@ export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { t
     // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
     // startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd
     let outputText: string;
-    switch(m.type) {
+    switch (m.type) {
         case 'log':
         case 'debug':
         case 'info':
