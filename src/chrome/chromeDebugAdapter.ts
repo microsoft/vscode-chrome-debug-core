@@ -239,7 +239,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onDebuggerPaused(notification: Crdp.Debugger.PausedEvent): void {
 
-        this._overlayHelper.doAndCancel(() => this.chrome.Page.setOverlayMessage(ChromeDebugAdapter.PAGE_PAUSE_MESSAGE));
+        this._overlayHelper.doAndCancel(() => this.chrome.Page.configureOverlay({ message: ChromeDebugAdapter.PAGE_PAUSE_MESSAGE }));
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -274,7 +274,7 @@ export class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onDebuggerResumed(): void {
-        this._overlayHelper.wait(() => this.chrome.Page.setOverlayMessage(''));
+        this._overlayHelper.wait(() => this.chrome.Page.configureOverlay({ message: '' }));
         this._currentStack = null;
 
         if (!this._expectingResumedEvent) {
@@ -628,14 +628,8 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return evalPromise.then(evalResponse => {
-            if (evalResponse.wasThrown) {
-                let errorMessage = 'Error';
-                if (evalResponse.exceptionDetails) {
-                    errorMessage = evalResponse.exceptionDetails.text;
-                } else if (evalResponse.result && evalResponse.result.description) {
-                    errorMessage = evalResponse.result.description;
-                }
-                return utils.errP(errorMessage);
+            if (evalResponse.exceptionDetails) {
+                return utils.errP(evalResponse.exceptionDetails.text);
             }
 
             const { value, variablesReference } = this.remoteObjectToValueWithHandle(evalResponse.result);
