@@ -26,7 +26,32 @@ export abstract class BaseVariableContainer implements IVariableContainer {
 
 export class PropertyContainer extends BaseVariableContainer {
     public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
-        return adapter._setPropertyValue(this.objectId, name, value);
+        return adapter.setPropertyValue(this.objectId, name, value);
+    }
+}
+
+export class SetMapContainer extends BaseVariableContainer {
+    private _subtype: string;
+
+    constructor(objectId: string, subtype: string) {
+        super(objectId);
+        this._subtype = subtype;
+    }
+
+    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+        if (typeof start === 'number' && typeof count === 'number') {
+            if (this._subtype === 'set') {
+                return adapter.getSetIndexedProperties(this.objectId, start, count);
+            } else {
+                return adapter.getMapIndexedProperties(this.objectId, start, count);
+            }
+		} else {
+            return super.expand(adapter, filter, start, count);
+        }
+    }
+
+    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+        return Promise.reject('sdklf');
     }
 }
 
@@ -62,7 +87,7 @@ export class ScopeContainer extends BaseVariableContainer {
     }
 
     public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
-        return adapter._setVariableValue(this._frameId, this._scopeIndex, name, value);
+        return adapter.setVariableValue(this._frameId, this._scopeIndex, name, value);
     }
 }
 
