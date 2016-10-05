@@ -61,6 +61,10 @@ export function init(logCallback: ILogCallback, logFilePath?: string, logToConso
     _logger = new Logger(logCallback, logFilePath, logToConsole);
     if (logFilePath) {
         log(`Verbose logs are written to ${logFilePath}`);
+
+        const d = new Date();
+        const timestamp = d.toLocaleTimeString() + ', ' + d.toLocaleDateString();
+        log(timestamp);
     }
 }
 
