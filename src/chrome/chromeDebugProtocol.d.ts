@@ -257,6 +257,14 @@ export namespace Runtime {
     }
 
     export type UnserializableValue = "Infinity" | "NaN" | "-Infinity" | "-0";
+
+    export interface ConsoleAPICalledParams {
+        type: string;
+        args: RemoteObject[];
+        executionContextId: number;
+        timestamp: number;
+        stackTrace?: StackTrace;
+    }
 }
 
 export namespace Page {

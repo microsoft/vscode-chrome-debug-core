@@ -230,7 +230,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._chromeConnection.on('Debugger.globalObjectCleared', () => this.onGlobalObjectCleared());
             this._chromeConnection.on('Debugger.breakpointResolved', params => this.onBreakpointResolved(params));
 
-            this._chromeConnection.on('Console.messageAdded', params => this.onConsoleMessage(params));
+            this._chromeConnection.on('Runtime.consoleAPICalled', params => this.onConsoleMessage(params));
 
             this._chromeConnection.on('Inspector.detached', () => this.terminateSession('Debug connection detached'));
             this._chromeConnection.on('close', () => this.terminateSession('Debug connection closed'));
@@ -377,8 +377,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.sendEvent(new BreakpointEvent('new', bp));
     }
 
-    protected onConsoleMessage(params: Chrome.Console.MessageAddedParams): void {
-        const formattedMessage = formatConsoleMessage(params.message);
+    protected onConsoleMessage(params: Chrome.Runtime.ConsoleAPICalledParams): void {
+        const formattedMessage = formatConsoleMessage(params);
         if (formattedMessage) {
             this._session.sendEvent(new OutputEvent(
                 formattedMessage.text + '\n',

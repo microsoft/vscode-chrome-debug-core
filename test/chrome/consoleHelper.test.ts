@@ -17,46 +17,44 @@ suite('ConsoleHelper', () => {
         testUtils.removeUnhandledRejectionListener();
     });
 
-    function doAssert(message: Chrome.Console.Message, expectedText: string, expectedIsError = false): void {
-        assert.deepEqual(ConsoleHelper.formatConsoleMessage(message), { text: expectedText, isError: expectedIsError });
+    function doAssert(params: Chrome.Runtime.ConsoleAPICalledParams, expectedText: string, expectedIsError = false): void {
+        assert.deepEqual(ConsoleHelper.formatConsoleMessage(params), { text: expectedText, isError: expectedIsError });
     }
 
     suite('console.log()', () => {
         test('simple log', () => {
-            doAssert(Console.makeLog('Hello'), 'Hello');
-            doAssert(Console.makeLog('Hello', 123, 'world!'), 'Hello 123 world!');
+            doAssert(Runtime.makeLog('Hello'), 'Hello');
+            doAssert(Runtime.makeLog('Hello', 123, 'world!'), 'Hello 123 world!');
         });
 
         test('basic format specifiers', () => {
-            doAssert(Console.makeLog('%s, %d', 'test', 123), 'test, 123');
+            doAssert(Runtime.makeLog('%s, %d', 'test', 123), 'test, 123');
         });
 
         test('numeric format specifiers correctly', () => {
-            doAssert(Console.makeLog('%d %i %f', 1.9, 324, 9.4), '1 324 9.4');
-            doAssert(Console.makeLog('%d %i %f', -19, -32.5, -9.4), '-19 -33 -9.4');
-            doAssert(Console.makeLog('%d %i %f', 'not', 'a', 'number'), 'NaN NaN NaN');
+            doAssert(Runtime.makeLog('%d %i %f', 1.9, 324, 9.4), '1 324 9.4');
+            doAssert(Runtime.makeLog('%d %i %f', -19, -32.5, -9.4), '-19 -33 -9.4');
+            doAssert(Runtime.makeLog('%d %i %f', 'not', 'a', 'number'), 'NaN NaN NaN');
         });
 
         test('unmatched format specifiers', () => {
-            doAssert(Console.makeLog('%s %s %s', 'test'), 'test %s %s');
-            doAssert(Console.makeLog('%s %s end', 'test1', 'test2', 'test3'), 'test1 test2 end test3');
+            doAssert(Runtime.makeLog('%s %s %s', 'test'), 'test %s %s');
+            doAssert(Runtime.makeLog('%s %s end', 'test1', 'test2', 'test3'), 'test1 test2 end test3');
         });
 
         test('null/undefined cases', () => {
-            doAssert(Console.makeLog('%s %s %s', null, undefined, 'test'), 'null undefined test');
-            doAssert(Console.makeLog('test', null, undefined), 'test null undefined');
+            doAssert(Runtime.makeLog('%s %s %s', null, undefined, 'test'), 'null undefined test');
+            doAssert(Runtime.makeLog('test', null, undefined), 'test null undefined');
         });
 
-        test('network error', () => {
-            doAssert(Console.makeNetworkLog('neterror', 'myurl'), 'neterror (myurl)', true);
-        });
+        test('network error - need Log domain');
 
         test('objects- waiting on Microsoft/vscode-node-debug#4');
     });
 
     suite('console.assert()', () => {
         test(`Prints params and doesn't resolve format specifiers`, () => {
-            doAssert(Console.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n-  myFn @/script/a.js:4', true);
+            doAssert(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n-  myFn @/script/a.js:4', true);
         });
     });
 });
@@ -64,26 +62,20 @@ suite('ConsoleHelper', () => {
 /**
  * Build the Chrome notifications objects for various console APIs.
  */
-namespace Console {
+namespace Runtime {
     /**
      * Make a mock message of any type.
      * @param type - The type of the message
      * @param params - The list of parameters passed to the log function
      * @param overrideProps - An object of props that the message should have. The rest are filled in with defaults.
      */
-    function makeMockMessage(type: string, params: any[], overrideProps?: any): Chrome.Console.Message {
-        const message = {
-            source: 'console-api',
-            level: 'log',
+    function makeMockMessage(type: string, args: any[], overrideProps?: any): Chrome.Runtime.ConsoleAPICalledParams {
+        const message: Chrome.Runtime.ConsoleAPICalledParams = {
             type,
-            text: params[0],
-            timestamp: Date.now(),
-            line: 2,
-            column: 13,
-            url: 'file:///c:/page/script.js',
             executionContextId: 2,
-            parameters: params.map(param => {
-                const remoteObj = { type: typeof param, value: param, description: param };
+            timestamp: Date.now(),
+            args: args.map(param => {
+                const remoteObj = { type: typeof param, value: param, description: '' + param };
                 if (param === null) {
                     (<any>remoteObj).subtype = 'null';
                 }
@@ -103,18 +95,18 @@ namespace Console {
         return message;
     }
 
-    export function makeLog(...params: any[]): Chrome.Console.Message {
-        return makeMockMessage('log', params);
+    export function makeLog(...args: any[]): Chrome.Runtime.ConsoleAPICalledParams {
+        return makeMockMessage('log', args);
     }
 
-    export function makeAssert(...params: any[]): Chrome.Console.Message {
-        const fakeStackTrace = {
-            callFrames: [{ url: '/script/a.js', lineNumber: 4, functionName: 'myFn' }]
+    export function makeAssert(...args: any[]): Chrome.Runtime.ConsoleAPICalledParams {
+        const fakeStackTrace: Chrome.Runtime.StackTrace = {
+            callFrames: [{ url: '/script/a.js', lineNumber: 4, columnNumber: 0, scriptId: '1', functionName: 'myFn' }]
         };
-        return makeMockMessage('assert', params, { level: 'error', stack: fakeStackTrace });
+        return makeMockMessage('assert', args, { level: 'error', stackTrace: fakeStackTrace });
     }
 
-    export function makeNetworkLog(text: string, url: string): Chrome.Console.Message {
+    export function makeNetworkLog(text: string, url: string): Chrome.Runtime.ConsoleAPICalledParams {
         return makeMockMessage('log', [text], { source: 'network', url, level: 'error' });
     }
 }

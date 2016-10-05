@@ -173,7 +173,6 @@ export class ChromeConnection {
             .then(() => Promise.all([
                     this.sendMessage('Runtime.enable'),
                     this.sendMessage('Debugger.enable'),
-                    this.sendMessage('Console.enable'),
                     this.run()]))
             .then(() => { });
     }

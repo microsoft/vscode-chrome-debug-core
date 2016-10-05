@@ -6,59 +6,65 @@ import * as url from 'url';
 import * as ChromeUtils from './chromeUtils';
 import * as Chrome from './chromeDebugProtocol';
 
-export function formatConsoleMessage(m: Chrome.Console.Message): { text: string, isError: boolean } {
+export function formatConsoleMessage(m: Chrome.Runtime.ConsoleAPICalledParams): { text: string, isError: boolean } {
+    // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
+    // startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd
     let outputText: string;
-    if (m.type === 'log') {
-        outputText = resolveParams(m);
-        if (m.source === 'network') {
-            outputText += ` (${m.url})`;
-        }
-    } else if (m.type === 'assert') {
-        outputText = 'Assertion failed';
-        if (m.parameters && m.parameters.length) {
-            outputText += ': ' + m.parameters.map(p => p.value).join(' ');
-        }
+    switch(m.type) {
+        case 'log':
+        case 'debug':
+        case 'info':
+        case 'error':
+        case 'warning':
+            outputText = resolveParams(m);
+            break;
+        case 'assert':
+            outputText = 'Assertion failed';
+            if (m.args.length) {
+                // 'assert' doesn't support format specifiers
+                outputText += ': ' + m.args.map(p => p.value).join(' ');
+            }
 
-        outputText += '\n' + stackTraceToString(m.stack);
-    } else if (m.type === 'startGroup' || m.type === 'startGroupCollapsed') {
-        outputText = '‹Start group›';
-        if (m.text) {
-            // Or wherever the label is
-            outputText += ': ' + m.text;
-        }
-    } else if (m.type === 'endGroup') {
-        outputText = '‹End group›';
-    } else if (m.type === 'trace') {
-        outputText = 'console.trace()\n' + stackTraceToString(m.stack);
-    } else if (m.text) {
-        // Chrome >= 54 (Console.consoleMessageAdded deprecated)
-        outputText = m.text;
-    } else {
-        // Some types we have to ignore
-        outputText = 'Unimplemented console API: ' + m.type;
+            outputText += '\n' + stackTraceToString(m.stackTrace);
+            break;
+        case 'startGroup':
+        case 'startGroupCollapsed':
+            outputText = '‹Start group›';
+            const groupTitle = resolveParams(m);
+            if (groupTitle) {
+                outputText += ': ' + groupTitle;
+            }
+            break;
+        case 'endGroup':
+            outputText = '‹End group›';
+            break;
+        case 'trace':
+            outputText = 'console.trace()\n' + stackTraceToString(m.stackTrace);
+            break;
+        default:
+            // Some types we have to ignore
+            outputText = 'Unimplemented console API: ' + m.type;
+            break;
     }
 
-    return { text: outputText, isError: m.level === 'error' };
+    const isError = m.type === 'assert' || m.type === 'error';
+    return { text: outputText, isError };
 }
 
-function resolveParams(m: Chrome.Console.Message): string {
-    if (!m.parameters || !m.parameters.length) {
-        return m.text;
-    }
-
-    const textParam = m.parameters[0];
-    let text = remoteObjectToString(textParam);
-    m.parameters.shift();
+function resolveParams(m: Chrome.Runtime.ConsoleAPICalledParams): string {
+    const textArg = m.args[0];
+    let text = remoteObjectToString(textArg);
+    m.args.shift();
 
     // Find all %s, %i, etc in the first parameter, which is always the main text. Strip %
     let formatSpecifiers: string[] = [];
-    if (textParam.type === 'string') {
-        formatSpecifiers = textParam.value.match(/\%[sidfoOc]/g) || [];
+    if (textArg.type === 'string') {
+        formatSpecifiers = textArg.value.match(/\%[sidfoOc]/g) || [];
         formatSpecifiers = formatSpecifiers.map(spec => spec[1]);
     }
 
     // Append all parameters, formatting properly if there's a format specifier
-    m.parameters.forEach((param, i) => {
+    m.args.forEach((param, i) => {
         let formatted: any;
         if (formatSpecifiers[i] === 's') {
             formatted = param.value;
@@ -67,7 +73,10 @@ function resolveParams(m: Chrome.Console.Message): string {
         } else if (formatSpecifiers[i] === 'f') {
             formatted = +param.value;
         } else if (['o', 'O', 'c'].indexOf(formatSpecifiers[i]) >= 0) {
-            // um
+            // Not supported -
+            // %o - expandable DOM element
+            // %O - expandable JS object
+            // %c - Applies CSS color rules
             formatted = param.value;
         }
 
