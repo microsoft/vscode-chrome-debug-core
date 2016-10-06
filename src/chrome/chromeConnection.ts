@@ -3,141 +3,61 @@
  *--------------------------------------------------------*/
 
 import * as WebSocket from 'ws';
-import {EventEmitter} from 'events';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
 import * as logger from '../logger';
-import * as Chrome from './chromeDebugProtocol';
 import {getChromeTargetWebSocketURL} from './chromeTargetDiscoveryStrategy';
 
-interface IMessageWithId {
-    id: number;
-    method: string;
-    params?: string[];
+import {Client} from 'noice-json-rpc';
+import Crdp from 'chrome-remote-debug-protocol';
+
+export interface ITarget {
+    description: string;
+    devtoolsFrontendUrl: string;
+    id: string;
+    thumbnailUrl?: string;
+    title: string;
+    type: string;
+    url?: string;
+    webSocketDebuggerUrl: string;
 }
 
 /**
- * Implements a Request/Response API on top of a WebSocket for messages that are marked with an `id` property.
- * Emits `message.method` for messages that don't have `id`.
+ * A subclass of WebSocket that logs all traffic
  */
-class ResReqWebSocket extends EventEmitter {
-    private _pendingRequests = new Map<number, any>();
-    private _wsAttached: Promise<WebSocket>;
+class LoggingSocket extends WebSocket {
+    constructor(address: string, protocols?: string | string[], options?: WebSocket.IClientOptions) {
+        super(address, protocols, options);
 
-    public get isOpen(): boolean { return !!this._wsAttached; }
-
-    /**
-     * Attach to the given websocket url
-     */
-    public open(wsUrl: string): Promise<void> {
-        this._wsAttached = new Promise((resolve, reject) => {
-            let ws: WebSocket;
-            try {
-                ws = new WebSocket(wsUrl);
-            } catch (e) {
-                // invalid url e.g.
-                reject(e.message);
-                return;
-            }
-
-            // WebSocket will try to connect for 20+ seconds before timing out.
-            // Implement a shorter timeout here
-            setTimeout(() => reject('WebSocket connection timed out'), 10000);
-
-            // if 'error' is fired while connecting, reject the promise
-            ws.on('error', reject);
-            ws.on('open', () => {
-                // Replace the promise-rejecting handler
-                ws.removeListener('error', reject);
-
-                ws.on('error', e => {
-                    logger.log('Websocket error: ' + e.toString());
-                    this.emit('error', e);
-                });
-
-                resolve(ws);
-            });
-            ws.on('message', msgStr => {
-                const msgObj = JSON.parse(msgStr);
-                if (msgObj
-                    && !(msgObj.method === 'Debugger.scriptParsed' && msgObj.params && msgObj.params.isContentScript)
-                    && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)) {
-                    // Not really the right place to examine the content of the message, but don't log annoying extension script notifications.
-                    logger.verbose('From target: ' + msgStr);
-                }
-
-                this.onMessage(msgObj);
-            });
-            ws.on('close', () => {
-                logger.log('Websocket closed');
-                this.emit('close');
-            });
+        this.on('error', e => {
+            logger.log('Websocket error: ' + e.toString());
         });
 
-        return this._wsAttached.then(() => { });
-    }
+        this.on('close', () => {
+            logger.log('Websocket closed');
+        });
 
-    public close(): void {
-        if (this._wsAttached) {
-            this._wsAttached.then(ws => ws.close());
-            this._wsAttached = null;
-        }
-    }
-
-    /**
-     * Send a message which must have an id. Ok to call immediately after attach. Messages will be queued until
-     * the websocket actually attaches.
-     */
-    public sendMessage(message: IMessageWithId): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this._pendingRequests.set(message.id, resolve);
-            this._wsAttached.then(ws => {
-                const msgStr = JSON.stringify(message);
-                logger.verbose('To target: ' + msgStr);
-                ws.send(msgStr);
-            });
+        this.on('message', msgStr => {
+            const msgObj = JSON.parse(msgStr);
+            if (msgObj
+                && !(msgObj.method === 'Debugger.scriptParsed' && msgObj.params && msgObj.params.isContentScript)
+                && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)) {
+                // Not really the right place to examine the content of the message, but don't log annoying extension script notifications.
+                logger.verbose('From target: ' + msgStr);
+            }
         });
     }
 
-    /**
-     * Wrap EventEmitter.emit in try/catch and log, for errors thrown in subscribers
-     */
-    public emit(event: string, ...args: any[]): boolean {
-        try {
-            return super.emit.apply(this, arguments);
-        } catch (e) {
-            logger.error('Error while handling target event: ' + e.stack);
-            return false;
-        }
-    }
+    public send(data: any, cb?: (err: Error) => void): void {
+        super.send.apply(this, arguments);
 
-    private onMessage(message: any): void {
-        if (typeof message.id === 'number') {
-            if (this._pendingRequests.has(message.id)) {
-                // Resolve the pending request with this response
-                this._pendingRequests.get(message.id)(message);
-                this._pendingRequests.delete(message.id);
-            } else {
-                logger.error(`Got a response with id ${message.id} for which there is no pending request.`);
-            }
-        } else if (message.method) {
-            this.emit(message.method, message.params);
-        } else {
-            // Message is malformed - safely stringify and log it
-            let messageStr: string;
-            try {
-                messageStr = JSON.stringify(message);
-            } catch (e) {
-                messageStr = '' + message;
-            }
-
-            logger.error(`Got a response with no id nor method property: ${messageStr}`);
-        }
+        const msgStr = JSON.stringify(data);
+        logger.verbose('To target: ' + msgStr);
     }
 }
 
-export type ITargetFilter = (target: Chrome.ITarget) => boolean;
+export type ITargetFilter = (target: ITarget) => boolean;
 export type ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string) => Promise<string>;
 
 /**
@@ -146,23 +66,24 @@ export type ITargetDiscoveryStrategy = (address: string, port: number, targetFil
 export class ChromeConnection {
     private static ATTACH_TIMEOUT = 10000; // ms
 
-    private _nextId: number;
-    private _socket: ResReqWebSocket;
+    private _socket: WebSocket;
+    private _client: Client;
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
 
     constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
         this._targetDiscoveryStrategy = targetDiscovery || getChromeTargetWebSocketURL;
-
-        // this._socket should exist before attaching so consumers can call on() before attach, which fires events
-        this.reset();
     }
 
-    public get isAttached(): boolean { return this._socket.isOpen; }
+    public get isAttached(): boolean { return !!this._client; }
 
     public on(eventName: string, handler: (msg: any) => void): void {
-        this._socket.on(eventName, handler);
+        this._client.on(eventName, handler);
+    }
+
+    public get api(): Crdp.CrdpClient {
+        return this._client.api();
     }
 
     /**
@@ -170,143 +91,29 @@ export class ChromeConnection {
      */
     public attach(address = '127.0.0.1', port = 9222, targetUrl?: string): Promise<void> {
         return this._attach(address, port, targetUrl)
-            .then(() => Promise.all([
-                    this.sendMessage('Runtime.enable'),
-                    this.sendMessage('Debugger.enable'),
-                    this.run()]))
             .then(() => { });
     }
 
     private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT): Promise<void> {
         return utils.retryAsync(() => this._targetDiscoveryStrategy(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
             .catch(err => Promise.reject(errors.runtimeConnectionTimeout(timeout, err.message)))
-            .then(wsUrl => this._socket.open(wsUrl));
+            .then(wsUrl => {
+                this._socket = new LoggingSocket(wsUrl);
+                this._client = new Client(this._socket);
+            });
     }
 
-    private run(): Promise<void> {
+    public run(): Promise<void> {
         // This is a CDP version difference which will have to be handled more elegantly with others later...
         // For now, we need to send both messages and ignore a failing one.
         return Promise.all([
-            this.runtime_runIfWaitingForDebugger(),
-            this.runtime_run()
+            this.api.Runtime.runIfWaitingForDebugger(),
+            (<any>this.api.Runtime).run()
         ])
         .then(() => { }, e => { });
     }
 
     public close(): void {
         this._socket.close();
-        this.reset();
-    }
-
-    private reset(): void {
-        this._nextId = 1;
-        this._socket = new ResReqWebSocket();
-    }
-
-    public debugger_setBreakpoint(location: Chrome.Debugger.Location, condition?: string): Promise<Chrome.Debugger.SetBreakpointResponse> {
-        return this.sendMessage('Debugger.setBreakpoint', <Chrome.Debugger.SetBreakpointParams>{ location, condition });
-    }
-
-    public debugger_setBreakpointByUrlRegex(urlRegex: string, lineNumber: number, columnNumber: number, condition?: string): Promise<Chrome.Debugger.SetBreakpointByUrlResponse> {
-        return this.sendMessage('Debugger.setBreakpointByUrl', <Chrome.Debugger.SetBreakpointByUrlParams>{ urlRegex, lineNumber, columnNumber, condition });
-    }
-
-    public debugger_removeBreakpoint(breakpointId: string): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.removeBreakpoint', <Chrome.Debugger.RemoveBreakpointParams>{ breakpointId });
-    }
-
-    public debugger_stepOver(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepOver');
-    }
-
-    public debugger_stepIn(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepInto');
-    }
-
-    public debugger_stepOut(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.stepOut');
-    }
-
-    public debugger_resume(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.resume');
-    }
-
-    public debugger_pause(): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.pause');
-    }
-
-    public debugger_evaluateOnCallFrame(callFrameId: string, expression: string, objectGroup = 'dummyObjectGroup', returnByValue?: boolean, silent?: boolean): Promise<Chrome.Debugger.EvaluateOnCallFrameResponse> {
-        return this.sendMessage('Debugger.evaluateOnCallFrame', <Chrome.Debugger.EvaluateOnCallFrameParams>{ callFrameId, expression, objectGroup, returnByValue, silent });
-    }
-
-    public debugger_setPauseOnExceptions(state: string): Promise<Chrome.Response> {
-        return this.sendMessage('Debugger.setPauseOnExceptions', <Chrome.Debugger.SetPauseOnExceptionsParams>{ state });
-    }
-
-    public debugger_getScriptSource(scriptId: Chrome.Debugger.ScriptId): Promise<Chrome.Debugger.GetScriptSourceResponse> {
-        return this.sendMessage('Debugger.getScriptSource', <Chrome.Debugger.GetScriptSourceParams>{ scriptId });
-    }
-
-    public debugger_setVariableValue(callFrameId: string, scopeNumber: number, variableName: string, newValue: Chrome.Runtime.CallArgument): Promise<Chrome.Debugger.SetVariableResponse> {
-        return this.sendMessage('Debugger.setVariableValue', <Chrome.Debugger.SetVariableParams>{ callFrameId, scopeNumber, variableName, newValue });
-    }
-
-    public runtime_getProperties(objectId: string, ownProperties: boolean, accessorPropertiesOnly: boolean, generatePreview?: boolean): Promise<Chrome.Runtime.GetPropertiesResponse> {
-        return this.sendMessage('Runtime.getProperties', <Chrome.Runtime.GetPropertiesParams>{ objectId, ownProperties, accessorPropertiesOnly, generatePreview });
-    }
-
-    public runtime_evaluate(expression: string, objectGroup?: string, contextId = 1, returnByValue = false, silent?: boolean): Promise<Chrome.Runtime.EvaluateResponse> {
-        return this.sendMessage('Runtime.evaluate', <Chrome.Runtime.EvaluateParams>{ expression, objectGroup, contextId, returnByValue, silent });
-    }
-
-    public runtime_callFunctionOn(objectId: string, functionDeclaration: string, args?: Chrome.Runtime.CallArgument[], silent?: boolean, returnByValue?: boolean,
-        generatePreview?: boolean, userGesture?: boolean, awaitPromise?: boolean): Promise<Chrome.Runtime.CallFunctionOnResponse> {
-        return this.sendMessage('Runtime.callFunctionOn', { objectId, functionDeclaration, arguments: args, silent, returnByValue, generatePreview, userGesture, awaitPromise });
-    }
-
-    public runtime_runIfWaitingForDebugger(): Promise<Chrome.Response> {
-        return this.sendMessage('Runtime.runIfWaitingForDebugger');
-    }
-
-    public runtime_run(): Promise<Chrome.Response> {
-        return this.sendMessage('Runtime.run');
-    }
-
-    public page_configureOverlay(message: string): Promise<Chrome.Response> {
-        return this.sendMessage('Page.setOverlayMessage', { message });
-    }
-
-    public emulation_clearDeviceMetricsOverride(): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.clearDeviceMetricsOverride');
-    }
-
-    public emulation_setEmulatedMedia(media: string): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.setEmulatedMedia', { media });
-    }
-
-    public emulation_setTouchEmulationEnabled(enabled: boolean, configuration?: string): Promise<Chrome.Response> {
-        let messageData: { enabled: boolean; configuration?: string; } = { enabled };
-
-        if (configuration) {
-            messageData.configuration = configuration;
-        }
-
-        return this.sendMessage('Emulation.setTouchEmulationEnabled', messageData);
-    }
-
-    public emulation_resetScrollAndPageScaleFactor(): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.resetScrollAndPageScaleFactor');
-    }
-
-    public emulation_setDeviceMetricsOverride(metrics: Chrome.Emulation.SetDeviceMetricsOverrideParams): Promise<Chrome.Response> {
-        return this.sendMessage('Emulation.setDeviceMetricsOverride', metrics);
-    }
-
-    private sendMessage(method: any, params?: any): Promise<Chrome.Response> {
-        return this._socket.sendMessage({
-            id: this._nextId++,
-            method,
-            params
-        });
     }
 }

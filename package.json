@@ -14,6 +14,7 @@
   "dependencies": {
     "glob": "^7.0.6",
     "request-light": "^0.1.0",
+    "noice-json-rpc": "^1.0.0",
     "source-map": "^0.5.6",
     "vscode-debugadapter": "^1.13.0",
     "vscode-debugprotocol": "^1.13.0",
@@ -28,6 +29,7 @@
     "@types/source-map": "^0.1.27",
     "@types/ws": "0.0.32",
     "del": "^2.2.2",
+    "chrome-remote-debug-protocol": "^1.1.20160730",
     "gulp": "^3.9.1",
     "gulp-debug": "^2.1.2",
     "gulp-mocha": "^3.0.1",

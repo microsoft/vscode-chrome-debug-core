@@ -163,7 +163,7 @@ suite('ChromeUtils', () => {
     suite('getMatchingTargets()', () => {
         const chromeUtils = getChromeUtils();
 
-        function makeTargets(...urls): Chrome.ITarget[] {
+        function makeTargets(...urls): Crdp.ITarget[] {
             // Only the url prop is used
             return <any>urls.map(url => ({ url }));
         }

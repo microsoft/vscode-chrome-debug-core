@@ -4,9 +4,10 @@
 
 import * as url from 'url';
 import * as path from 'path';
+import Crdp from 'chrome-remote-debug-protocol';
 
-import * as Chrome from './chromeDebugProtocol';
 import * as utils from '../utils';
+import {ITarget} from './chromeConnection';
 
 /**
  * Maps a url from target to an absolute local path.
@@ -57,7 +58,7 @@ export function targetUrlToClientPath(webRoot: string, aUrl: string): string {
  * Convert a RemoteObject to a value+variableHandleRef for the client.
  * TODO - Delete after Microsoft/vscode#12019!!
  */
-export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
+export function remoteObjectToValue(object: Crdp.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
     let value = '';
     let variableHandleRef: string;
 
@@ -103,7 +104,7 @@ export function remoteObjectToValue(object: Chrome.Runtime.RemoteObject, stringi
  * Returns the targets from the given list that match the targetUrl, which may have * wildcards.
  * Ignores the protocol and is case-insensitive.
  */
-export function getMatchingTargets(targets: Chrome.ITarget[], targetUrlPattern: string): Chrome.ITarget[] {
+export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string): ITarget[] {
     const standardizeMatch = aUrl => {
         // Strip file:///, if present
         aUrl = utils.fileUrlToPath(aUrl).toLowerCase();
@@ -156,7 +157,7 @@ export function compareVariableNames(var1: string, var2: string): number {
     return var1.localeCompare(var2);
 }
 
-export function remoteObjectToCallArgument(object: Chrome.Runtime.RemoteObject): Chrome.Runtime.CallArgument {
+export function remoteObjectToCallArgument(object: Crdp.Runtime.RemoteObject): Crdp.Runtime.CallArgument {
     return {
         objectId: object.objectId,
         unserializableValue: object.unserializableValue,

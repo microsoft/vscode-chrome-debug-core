@@ -6,9 +6,8 @@ import * as logger from '../logger';
 import * as utils from '../utils';
 
 import * as chromeUtils from './chromeUtils';
-import * as Chrome from './chromeDebugProtocol';
 
-import {ITargetDiscoveryStrategy, ITargetFilter} from './chromeConnection';
+import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnection';
 
 export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<string> => {
     // Take the custom targetFilter, default to taking all targets
@@ -29,14 +28,14 @@ export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: s
     });
 };
 
-function _getTargets(address: string, port: number, targetFilter: ITargetFilter): Promise<Chrome.ITarget[]> {
+function _getTargets(address: string, port: number, targetFilter: ITargetFilter): Promise<ITarget[]> {
     const url = `http://${address}:${port}/json`;
     logger.log(`Discovering targets via ${url}`);
     return utils.getURL(url).then(jsonResponse => {
         try {
             const responseArray = JSON.parse(jsonResponse);
             if (Array.isArray(responseArray)) {
-                return (responseArray as Chrome.ITarget[])
+                return (responseArray as ITarget[])
                     .map(target => _fixRemoteUrl(address, target))
                     // Filter out some targets as specified by the extension
                     .filter(targetFilter);
@@ -52,7 +51,7 @@ function _getTargets(address: string, port: number, targetFilter: ITargetFilter)
     });
 }
 
-function _selectTarget(targets: Chrome.ITarget[], targetUrl?: string): Chrome.ITarget {
+function _selectTarget(targets: ITarget[], targetUrl?: string): ITarget {
     if (targetUrl) {
         // If a url was specified, try to filter to that url
         const filteredTargets = chromeUtils.getMatchingTargets(targets, targetUrl);
@@ -76,7 +75,7 @@ function _selectTarget(targets: Chrome.ITarget[], targetUrl?: string): Chrome.IT
     return targets[0];
 }
 
-function _fixRemoteUrl(remoteAddress: string, target: Chrome.ITarget): Chrome.ITarget {
+function _fixRemoteUrl(remoteAddress: string, target: ITarget): ITarget {
     if (target.webSocketDebuggerUrl) {
         const replaceAddress = '//' + remoteAddress;
         target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace('//127.0.0.1', replaceAddress);

@@ -17,7 +17,7 @@ suite('ConsoleHelper', () => {
         testUtils.removeUnhandledRejectionListener();
     });
 
-    function doAssert(params: Chrome.Runtime.ConsoleAPICalledParams, expectedText: string, expectedIsError = false): void {
+    function doAssert(params: Crdp.Runtime.ConsoleAPICalledParams, expectedText: string, expectedIsError = false): void {
         assert.deepEqual(ConsoleHelper.formatConsoleMessage(params), { text: expectedText, isError: expectedIsError });
     }
 
@@ -69,8 +69,8 @@ namespace Runtime {
      * @param params - The list of parameters passed to the log function
      * @param overrideProps - An object of props that the message should have. The rest are filled in with defaults.
      */
-    function makeMockMessage(type: string, args: any[], overrideProps?: any): Chrome.Runtime.ConsoleAPICalledParams {
-        const message: Chrome.Runtime.ConsoleAPICalledParams = {
+    function makeMockMessage(type: string, args: any[], overrideProps?: any): Crdp.Runtime.ConsoleAPICalledParams {
+        const message: Crdp.Runtime.ConsoleAPICalledParams = {
             type,
             executionContextId: 2,
             timestamp: Date.now(),
@@ -95,18 +95,18 @@ namespace Runtime {
         return message;
     }
 
-    export function makeLog(...args: any[]): Chrome.Runtime.ConsoleAPICalledParams {
+    export function makeLog(...args: any[]): Crdp.Runtime.ConsoleAPICalledParams {
         return makeMockMessage('log', args);
     }
 
-    export function makeAssert(...args: any[]): Chrome.Runtime.ConsoleAPICalledParams {
-        const fakeStackTrace: Chrome.Runtime.StackTrace = {
+    export function makeAssert(...args: any[]): Crdp.Runtime.ConsoleAPICalledParams {
+        const fakeStackTrace: Crdp.Runtime.StackTrace = {
             callFrames: [{ url: '/script/a.js', lineNumber: 4, columnNumber: 0, scriptId: '1', functionName: 'myFn' }]
         };
         return makeMockMessage('assert', args, { level: 'error', stackTrace: fakeStackTrace });
     }
 
-    export function makeNetworkLog(text: string, url: string): Chrome.Runtime.ConsoleAPICalledParams {
+    export function makeNetworkLog(text: string, url: string): Crdp.Runtime.ConsoleAPICalledParams {
         return makeMockMessage('log', [text], { source: 'network', url, level: 'error' });
     }
 }
