@@ -17,6 +17,7 @@ import * as mockery from 'mockery';
 import {EventEmitter} from 'events';
 import * as assert from 'assert';
 import {Mock, MockBehavior, It} from 'typemoq';
+import Crdp from 'chrome-remote-debug-protocol';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
@@ -28,6 +29,7 @@ const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
     const ATTACH_ARGS = { port: 9222 };
 
+    let mockDebugger: Mock<Crdp.DebuggerClient>;
     let mockChromeConnection: Mock<ChromeConnection>;
     let mockEventEmitter: EventEmitter;
     let mockLineNumberTransformer: Mock<LineColTransformer>;
@@ -59,7 +61,32 @@ suite('ChromeDebugAdapter', () => {
         mockSourceMapTransformer = getMockSourceMapTransformer();
         mockPathTransformer = getMockPathTransformer();
 
+        // Mock calls like chromeConnection.api.Debugger.setBreakpoint().
+        // Need an object that actually has these properties, (and our rpc connection uses a Proxy)
+        const debuggerStubs = {
+            setBreakpoint: () => { },
+            setBreakpointByUrl: () => { },
+            removeBreakpoint: () => { },
+            enable: () => { }
+        };
+        mockDebugger = Mock.ofInstance<Crdp.DebuggerClient>(<any>debuggerStubs, MockBehavior.Strict);
+        mockDebugger
+            .setup(x => x.enable())
+            .returns(() => Promise.resolve());
+
+        const chromeConnectionAPI: Crdp.CrdpClient = <any>{
+            Debugger: mockDebugger.object,
+            Runtime: { enable: () => Promise.resolve() }
+         };
+        mockChromeConnection
+            .setup(x => x.api)
+            .returns(() => chromeConnectionAPI);
+        mockChromeConnection
+            .setup(x => x.run())
+            .returns(() => Promise.resolve());
+
         // Instantiate the ChromeDebugAdapter, injecting the mock ChromeConnection
+        /* tslint:disable:no-function-expression */
         chromeDebugAdapter = new (require(MODULE_UNDER_TEST).ChromeDebugAdapter)({
             chromeConnection: function() { return mockChromeConnection.object; },
             lineColTransformer: function() { return mockLineNumberTransformer.object; },
@@ -69,6 +96,7 @@ suite('ChromeDebugAdapter', () => {
         {
             sendEvent: e => sendEventHandler && sendEventHandler(e)
         });
+        /* tslint:enable:no-function-expression */
     });
 
     teardown(() => {
@@ -76,7 +104,9 @@ suite('ChromeDebugAdapter', () => {
         testUtils.removeUnhandledRejectionListener();
         mockery.deregisterAll();
         mockery.disable();
+
         mockChromeConnection.verifyAll();
+        mockDebugger.verifyAll();
     });
 
     suite('attach()', () => {
@@ -120,16 +150,17 @@ suite('ChromeDebugAdapter', () => {
                 const { line: lineNumber, column: columnNumber, condition } = bp;
 
                 if (url) {
-                    mockChromeConnection
-                        .setup(x => x.debugger_setBreakpointByUrlRegex(utils.pathToRegex(url), lineNumber, columnNumber, condition))
+                    const urlRegex = utils.pathToRegex(url);
+                    mockDebugger
+                        .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(location => Promise.resolve(
-                            <Crdp.Debugger.SetBreakpointByUrlResponse>{ id: 0, result: { breakpointId: BP_ID + i, locations: [{ scriptId, lineNumber, columnNumber }] } }))
+                            <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID + i, locations: [{ scriptId, lineNumber, columnNumber }] }))
                         .verifiable();
                 } else {
-                    mockChromeConnection
-                        .setup(x => x.debugger_setBreakpoint(It.isAny(), condition))
+                    mockDebugger
+                        .setup(x => x.setBreakpoint(It.isValue({ location: { lineNumber, columnNumber, scriptId }, condition })))
                         .returns(location => Promise.resolve(
-                            <Crdp.Debugger.SetBreakpointResponse>{ id: 0, result: { breakpointId: BP_ID + i, actualLocation: { scriptId, lineNumber, columnNumber } } }))
+                            <Crdp.Debugger.SetBreakpointResponse>{ breakpointId: BP_ID + i, actualLocation: { scriptId, lineNumber, columnNumber } }))
                         .verifiable();
                 }
             });
@@ -137,9 +168,9 @@ suite('ChromeDebugAdapter', () => {
 
         function expectRemoveBreakpoint(indicies: number[]): void {
             indicies.forEach(i => {
-                mockChromeConnection
-                    .setup(x => x.debugger_removeBreakpoint(It.isValue(BP_ID + i)))
-                    .returns(() => Promise.resolve(<Crdp.Response>{ id: 0 }))
+                mockDebugger
+                    .setup(x => x.removeBreakpoint(It.isValue({ breakpointId: BP_ID + i })))
+                    .returns(() => Promise.resolve())
                     .verifiable();
             });
         }
@@ -252,8 +283,8 @@ suite('ChromeDebugAdapter', () => {
                     expectRemoveBreakpoint([2, 3]);
                     mockEventEmitter.emit('Debugger.globalObjectCleared');
                     mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId: 'afterRefreshScriptId', url: FILE_NAME });
-                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedParams>{ breakpointId: BP_ID + 2, location: { scriptId: 'afterRefreshScriptId' } });
-                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedParams>{ breakpointId: BP_ID + 3, location: { scriptId: 'afterRefreshScriptId' } });
+                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 2, location: { scriptId: 'afterRefreshScriptId' } });
+                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 3, location: { scriptId: 'afterRefreshScriptId' } });
 
                     breakpoints.push({ line: 321, column: 123 });
                     expectSetBreakpoint(breakpoints, FILE_NAME, 'afterRefreshScriptId');
@@ -274,10 +305,10 @@ suite('ChromeDebugAdapter', () => {
                 breakpoints: [{ line: location.lineNumber, column: location.columnNumber, verified: true, id: 1000 }]};
 
             const expectedRegex = utils.pathToRegex(FILE_NAME);
-            mockChromeConnection
-                .setup(x => x.debugger_setBreakpointByUrlRegex(expectedRegex, breakpoints[0].line, breakpoints[0].column, undefined))
+            mockDebugger
+                .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex: expectedRegex, lineNumber: breakpoints[0].line, columnNumber: breakpoints[0].column, condition: undefined })))
                 .returns(() => Promise.resolve(
-                    <Crdp.Debugger.SetBreakpointByUrlResponse>{ id: 0, result: { breakpointId: BP_ID, locations: [location] } }))
+                    <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID, locations: [location] }))
                 .verifiable();
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
@@ -355,16 +386,6 @@ suite('ChromeDebugAdapter', () => {
 
                 emitScriptParsed(/*url=*/'');
                 assert(scriptParsedFired);
-            });
-        });
-
-        test('ignores internal scripts', () => {
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
-                sendEventHandler = (event: DebugProtocol.Event) => {
-                    testUtils.assertFail('No event should be fired: ' + event.event);
-                };
-
-                emitScriptParsed(/*url=*/'', undefined, { isInternalScript: true });
             });
         });
     });

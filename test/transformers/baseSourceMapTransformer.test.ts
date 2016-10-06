@@ -15,6 +15,8 @@ import {SourceMaps} from '../../src/sourceMaps/sourceMaps';
 import {MappedPosition} from '../../src/sourceMaps/sourceMap';
 import * as utils from '../../src/utils';
 
+/* tslint:disable:no-function-expression */
+
 const MODULE_UNDER_TEST = '../../src/transformers/baseSourceMapTransformer';
 
 const AUTHORED_PATH = testUtils.pathResolve('/project/authored.ts');

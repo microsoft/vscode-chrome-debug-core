@@ -6,7 +6,7 @@ import * as mockery from 'mockery';
 import * as assert from 'assert';
 import * as _path from 'path';
 
-import * as Chrome from '../../src/chrome/chromeDebugProtocol';
+import {ITarget} from '../../src/chrome/chromeConnection';
 import * as testUtils from '../testUtils';
 
 /** ChromeUtils without mocks - use for type only */
@@ -163,7 +163,7 @@ suite('ChromeUtils', () => {
     suite('getMatchingTargets()', () => {
         const chromeUtils = getChromeUtils();
 
-        function makeTargets(...urls): Crdp.ITarget[] {
+        function makeTargets(...urls): ITarget[] {
             // Only the url prop is used
             return <any>urls.map(url => ({ url }));
         }
