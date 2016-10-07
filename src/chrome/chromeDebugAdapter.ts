@@ -299,7 +299,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private setOverlay(msg: string): void {
-        this._overlayHelper.doAndCancel(() => this.chrome.Page.configureOverlay({ message: ChromeDebugAdapter.PAGE_PAUSE_MESSAGE }).catch(() => { }));
+        this._overlayHelper.doAndCancel(() => this.chrome.Page.configureOverlay({ message: msg }).catch(() => { }));
     }
 
     private stopReasonText(reason: string): string {
