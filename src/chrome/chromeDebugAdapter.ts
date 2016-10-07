@@ -554,12 +554,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // unverified breakpoints.
                 if (!response) {
                     return <DebugProtocol.Breakpoint>{
-                        verified: false,
-                        line: requestBps[i].line,
-                        column: requestBps[i].column || 0,
+                        verified: false
                     };
                 }
 
+                if (!response.actualLocation) {
+                    return <DebugProtocol.Breakpoint>{
+                        id: this._breakpointIdHandles.create(response.breakpointId),
+                        verified: false
+                    };
+                }
+
+                // May not have actualLocation, fix
                 return <DebugProtocol.Breakpoint>{
                     id: this._breakpointIdHandles.create(response.breakpointId),
                     verified: true,
