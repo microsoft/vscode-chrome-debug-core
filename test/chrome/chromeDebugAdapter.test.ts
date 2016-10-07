@@ -5,8 +5,9 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer} from '../mocks/transformerMocks';
+import {getMockChromeConnectionApi, IMockChromeConnectionAPI} from '../mocks/debugProtocolMocks';
 
-import {ISetBreakpointsResponseBody} from '../../src/debugAdapterInterfaces';
+import {ISetBreakpointsResponseBody, IEvaluateResponseBody} from '../../src/debugAdapterInterfaces';
 import {ChromeConnection} from '../../src/chrome/chromeConnection';
 
 import {LineColTransformer} from '../../src/transformers/lineNumberTransformer';
@@ -29,12 +30,12 @@ const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
     const ATTACH_ARGS = { port: 9222 };
 
-    let mockDebugger: Mock<Crdp.DebuggerClient>;
     let mockChromeConnection: Mock<ChromeConnection>;
     let mockEventEmitter: EventEmitter;
     let mockLineNumberTransformer: Mock<LineColTransformer>;
     let mockSourceMapTransformer: Mock<BaseSourceMapTransformer>;
     let mockPathTransformer: Mock<UrlPathTransformer>;
+    let mockChrome: IMockChromeConnectionAPI;
 
     let chromeDebugAdapter: _ChromeDebugAdapter;
     let sendEventHandler: (e: DebugProtocol.Event) => void;
@@ -57,33 +58,17 @@ suite('ChromeDebugAdapter', () => {
             .setup(x => x.isAttached)
             .returns(() => false);
 
-        mockLineNumberTransformer = getMockLineNumberTransformer();
-        mockSourceMapTransformer = getMockSourceMapTransformer();
-        mockPathTransformer = getMockPathTransformer();
-
-        // Mock calls like chromeConnection.api.Debugger.setBreakpoint().
-        // Need an object that actually has these properties, (and our rpc connection uses a Proxy)
-        const debuggerStubs = {
-            setBreakpoint: () => { },
-            setBreakpointByUrl: () => { },
-            removeBreakpoint: () => { },
-            enable: () => { }
-        };
-        mockDebugger = Mock.ofInstance<Crdp.DebuggerClient>(<any>debuggerStubs, MockBehavior.Strict);
-        mockDebugger
-            .setup(x => x.enable())
-            .returns(() => Promise.resolve());
-
-        const chromeConnectionAPI: Crdp.CrdpClient = <any>{
-            Debugger: mockDebugger.object,
-            Runtime: { enable: () => Promise.resolve() }
-         };
+        mockChrome = getMockChromeConnectionApi();
         mockChromeConnection
             .setup(x => x.api)
-            .returns(() => chromeConnectionAPI);
+            .returns(() => mockChrome.apiObjects);
         mockChromeConnection
             .setup(x => x.run())
             .returns(() => Promise.resolve());
+
+        mockLineNumberTransformer = getMockLineNumberTransformer();
+        mockSourceMapTransformer = getMockSourceMapTransformer();
+        mockPathTransformer = getMockPathTransformer();
 
         // Instantiate the ChromeDebugAdapter, injecting the mock ChromeConnection
         /* tslint:disable:no-function-expression */
@@ -106,7 +91,7 @@ suite('ChromeDebugAdapter', () => {
         mockery.disable();
 
         mockChromeConnection.verifyAll();
-        mockDebugger.verifyAll();
+        mockChrome.Debugger.verifyAll();
     });
 
     suite('attach()', () => {
@@ -151,13 +136,13 @@ suite('ChromeDebugAdapter', () => {
 
                 if (url) {
                     const urlRegex = utils.pathToRegex(url);
-                    mockDebugger
+                    mockChrome.Debugger
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(location => Promise.resolve(
                             <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID + i, locations: [{ scriptId, lineNumber, columnNumber }] }))
                         .verifiable();
                 } else {
-                    mockDebugger
+                    mockChrome.Debugger
                         .setup(x => x.setBreakpoint(It.isValue({ location: { lineNumber, columnNumber, scriptId }, condition })))
                         .returns(location => Promise.resolve(
                             <Crdp.Debugger.SetBreakpointResponse>{ breakpointId: BP_ID + i, actualLocation: { scriptId, lineNumber, columnNumber } }))
@@ -168,7 +153,7 @@ suite('ChromeDebugAdapter', () => {
 
         function expectRemoveBreakpoint(indicies: number[]): void {
             indicies.forEach(i => {
-                mockDebugger
+                mockChrome.Debugger
                     .setup(x => x.removeBreakpoint(It.isValue({ breakpointId: BP_ID + i })))
                     .returns(() => Promise.resolve())
                     .verifiable();
@@ -305,7 +290,7 @@ suite('ChromeDebugAdapter', () => {
                 breakpoints: [{ line: location.lineNumber, column: location.columnNumber, verified: true, id: 1000 }]};
 
             const expectedRegex = utils.pathToRegex(FILE_NAME);
-            mockDebugger
+            mockChrome.Debugger
                 .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex: expectedRegex, lineNumber: breakpoints[0].line, columnNumber: breakpoints[0].column, condition: undefined })))
                 .returns(() => Promise.resolve(
                     <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID, locations: [location] }))
@@ -388,6 +373,60 @@ suite('ChromeDebugAdapter', () => {
                 assert(scriptParsedFired);
             });
         });
+
+    });
+
+    suite('evaluate()', () => {
+        function getExpectedValueResponse(resultObj: Crdp.Runtime.RemoteObject): IEvaluateResponseBody {
+            let result: string;
+            let variablesReference = 0;
+            if (resultObj.type === 'string') {
+                result = resultObj.description;
+            }
+
+            return {
+                result,
+                variablesReference,
+                indexedVariables: undefined,
+                namedVariables: undefined
+            };
+        }
+
+        function setupEvalMock(expression: string, result: Crdp.Runtime.RemoteObject): void {
+            mockChrome.Runtime
+                .setup(x => x.evaluate(It.isValue({ expression, silent: true, contextId: 1 })))
+                .returns(() => Promise.resolve(<Crdp.Runtime.EvaluateResponse>{ result }));
+        }
+
+        function setupEvalOnCallFrameMock(expression: string, callFrameId: string, result: Crdp.Runtime.RemoteObject): void {
+            mockChrome.Debugger
+                .setup(x => x.evaluateOnCallFrame(It.isValue({ expression, callFrameId, silent: true })))
+                .returns(() => Promise.resolve(<Crdp.Runtime.EvaluateResponse>{ result }));
+        }
+
+        test('calls Runtime.evaluate when not paused', () => {
+            const expression = '1+1';
+            const result: Crdp.Runtime.RemoteObject = { type: 'string', description: '2' };
+            setupEvalMock(expression, result);
+
+            return chromeDebugAdapter.evaluate({ expression }).then(response => {
+                assert.deepEqual(response, getExpectedValueResponse(result));
+            });
+        });
+
+        test('calls Debugger.evaluateOnCallFrame when paused', () => {
+            const callFrameId = '1';
+            const expression = '1+1';
+            const result: Crdp.Runtime.RemoteObject = { type: 'string', description: '2' };
+            setupEvalOnCallFrameMock(expression, callFrameId, result);
+
+            // Sue me (just easier than sending a Debugger.paused event)
+            (<any>chromeDebugAdapter)._currentStack = <Crdp.Debugger.CallFrame[]>[{ callFrameId }];
+
+            return chromeDebugAdapter.evaluate({ expression, frameId: 0 }).then(response => {
+                assert.deepEqual(response, getExpectedValueResponse(result));
+            });
+        });
     });
 
     suite('setExceptionBreakpoints()', () => { });
@@ -397,7 +436,6 @@ suite('ChromeDebugAdapter', () => {
     suite('variables()', () => { });
     suite('source()', () => { });
     suite('threads()', () => { });
-    suite('evaluate()', () => { });
 
     suite('Debugger.resume', () => { });
     suite('Debugger.pause', () => { });
