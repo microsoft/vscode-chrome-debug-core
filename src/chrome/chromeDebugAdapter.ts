@@ -861,35 +861,30 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
-        let evalPromise: Promise<any>;
+        // These two responses are shaped exactly the same
+        let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
         if (this.paused) {
             const callFrameId = this._currentStack[args.frameId].callFrameId;
             evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true });
         } else {
-            evalPromise = this.chrome.Runtime.evaluate({ expression: args.expression, silent: true });
+            // contextId: 1 - see https://github.com/nodejs/node/issues/8426
+            evalPromise = this.chrome.Runtime.evaluate({ expression: args.expression, silent: true, contextId: 1 });
         }
 
         return evalPromise.then(evalResponse => {
-            if (evalResponse.result.wasThrown) {
-                const evalResult = evalResponse.result;
-                let errorMessage = 'Error';
-                if (evalResult.exceptionDetails) {
-                    errorMessage = evalResult.exceptionDetails.text;
-                } else if (evalResult.result && evalResult.result.description) {
-                    errorMessage = evalResult.result.description;
-                }
-                return utils.errP(errorMessage);
-            }
-
             // Convert to a Variable object then just copy the relevant fields off
-            return this.remoteObjectToVariable('', evalResponse.result.result);
-        }).then(variable => {
-            return <IEvaluateResponseBody>{
-                result: variable.value,
-                variablesReference: variable.variablesReference,
-                indexedVariables: variable.indexedVariables,
-                namedVariables: variable.namedVariables
-            };
+            return this.remoteObjectToVariable('', evalResponse.result).then(variable => {
+                if (evalResponse.exceptionDetails) {
+                    return utils.errP(variable.value);
+                }
+
+                return <IEvaluateResponseBody>{
+                    result: variable.value,
+                    variablesReference: variable.variablesReference,
+                    indexedVariables: variable.indexedVariables,
+                    namedVariables: variable.namedVariables
+                };
+            });
         });
     }
 
