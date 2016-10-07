@@ -36,7 +36,9 @@
     "no-bitwise": true,
     "no-conditional-assignment": true,
     "no-consecutive-blank-lines": true,
-    "no-console": false,
+    "no-console": [
+      false
+    ],
     "no-construct": true,
     "no-debugger": true,
     "no-duplicate-key": true,
@@ -66,7 +68,9 @@
       "check-whitespace"
     ],
     "radix": true,
-    "semicolon": true,
+    "semicolon": [
+      "always"
+    ],
     "switch-default": true,
     "trailing-comma": false,
     "triple-equals": [
@@ -126,7 +130,6 @@
     "no-increment-decrement": false,
     "no-invalid-regexp": true,
     "no-for-in": false,
-    "no-missing-visibility-modifiers": true,
     "no-multiline-string": false,
     "no-multiple-var-decl": true,
     "no-unnecessary-bind": true,
@@ -150,13 +153,8 @@
     }],
     "no-constructor-vars": false,
     "typedef": [true,
-      "callSignature",
-      "indexSignature",
-      // "parameter",
-      "propertySignature",
-      "variableDeclarator",
-      "memberVariableDeclarator"],
-    "use-strict": false,
+      "call-signature",
+      "property-declaration"],
 
 
     // tslint-eslint-rules

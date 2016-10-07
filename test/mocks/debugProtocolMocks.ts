@@ -1,6 +1,7 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+/* tslint:disable:typedef */
 
 import {Mock, MockBehavior} from 'typemoq';
 import Crdp from 'chrome-remote-debug-protocol';

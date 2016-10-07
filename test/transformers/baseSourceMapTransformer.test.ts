@@ -1,6 +1,7 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+/* tslint:disable:typedef */
 
 import {DebugProtocol} from 'vscode-debugprotocol';
 
@@ -100,7 +101,7 @@ suite('BaseSourceMapTransformer', () => {
 
         function createMergedSourcesMock(args: ISetBreakpointsArgs, args2: ISetBreakpointsArgs): Mock<SourceMaps> {
             const mock = Mock.ofType(SourceMaps, MockBehavior.Strict);
-            mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function() { return mock.object; } });
+            mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function(): any { return mock.object; } });
             mock
                 .setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(AUTHORED_PATH)))
                 .returns(() => RUNTIME_PATH).verifiable();

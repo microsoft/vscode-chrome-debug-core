@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Test",
-            "type": "node",
+            "type": "node2",
             "request": "launch",
             "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
             "args": [ "test" ],

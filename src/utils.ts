@@ -315,7 +315,7 @@ export function writeFileP(filePath: string, data: string): Promise<string> {
 /**
  * Make sure that all directories of the given path exist (like mkdir -p).
  */
-export function mkdirs(dirsPath: string) {
+export function mkdirs(dirsPath: string): void {
     if (!fs.existsSync(dirsPath)) {
         mkdirs(path.dirname(dirsPath));
         fs.mkdirSync(dirsPath);
@@ -333,7 +333,7 @@ export function extendObject<T>(objectCopy: T, object: T): T {
     return objectCopy;
 }
 
-function isExclude(pattern: string) {
+function isExclude(pattern: string): boolean {
     return pattern[0] === '!';
 }
 

@@ -21,7 +21,7 @@ export function removeUnhandledRejectionListener(): void {
     process.removeListener('unhandledRejection', unhandledRejectionListener);
 }
 
-function unhandledRejectionListener(reason: any, p: Promise<any>) {
+function unhandledRejectionListener(reason: any, p: Promise<any>): void {
     console.log('*');
     console.log('**');
     console.log('***');

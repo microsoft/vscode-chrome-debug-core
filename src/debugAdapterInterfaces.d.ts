@@ -138,5 +138,5 @@ export interface IDebugTransformer {
     threadsResponse?(response: IThreadsResponseBody, requestSeq?: number): PromiseOrNot<void>;
     evaluateResponse?(response: IEvaluateResponseBody, requestSeq?: number): PromiseOrNot<void>;
 
-    scriptParsed?(event: DebugProtocol.Event);
+    scriptParsed?(event: DebugProtocol.Event): any;
 }

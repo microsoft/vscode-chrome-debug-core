@@ -17,14 +17,8 @@ const plumber = require('gulp-plumber');
 
 const sources = [
     'src',
-    'node_modules/@types',
     'test',
 ].map(tsFolder => tsFolder + '/**/*.ts');
-
-// tsBuildSources needs to explicitly exclude testData because it's built and copied separately.
-const testDataDir = 'test/**/testData/';
-const tsBuildSources = sources.slice();
-tsBuildSources.push('!' + testDataDir + '**');
 
 const libs = [
     'src'
@@ -34,6 +28,13 @@ const lintSources = [
     'src',
     'test'
 ].map(tsFolder => tsFolder + '/**/*.ts');
+
+// tsBuildSources needs to explicitly exclude testData because it's built and copied separately.
+const testDataDir = 'test/**/testData/';
+const tsBuildSources = sources.slice();
+const exclusion = '!' + testDataDir + '**';
+tsBuildSources.push(exclusion);
+lintSources.push(exclusion);
 
 function computeSourceRoot(file) {
     return path.relative(path.dirname(file.path), __dirname);

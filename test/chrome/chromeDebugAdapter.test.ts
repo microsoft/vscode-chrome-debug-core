@@ -71,7 +71,7 @@ suite('ChromeDebugAdapter', () => {
         mockPathTransformer = getMockPathTransformer();
 
         // Instantiate the ChromeDebugAdapter, injecting the mock ChromeConnection
-        /* tslint:disable:no-function-expression */
+        /* tslint:disable */
         chromeDebugAdapter = new (require(MODULE_UNDER_TEST).ChromeDebugAdapter)({
             chromeConnection: function() { return mockChromeConnection.object; },
             lineColTransformer: function() { return mockLineNumberTransformer.object; },
@@ -81,7 +81,7 @@ suite('ChromeDebugAdapter', () => {
         {
             sendEvent: e => sendEventHandler && sendEventHandler(e)
         });
-        /* tslint:enable:no-function-expression */
+        /* tslint:enable */
     });
 
     teardown(() => {
