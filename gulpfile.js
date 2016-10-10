@@ -14,11 +14,10 @@ const merge = require('merge2');
 const debug = require('gulp-debug');
 const del = require('del');
 const plumber = require('gulp-plumber');
+const crdp = require('chrome-remote-debug-protocol');
 
-const sources = [
-    'src',
-    'test',
-].map(tsFolder => tsFolder + '/**/*.ts');
+const tsconfig = require('./tsconfig.json');
+const sources = tsconfig.include;
 
 const libs = [
     'src'
@@ -91,4 +90,9 @@ gulp.task('test', test);
 
 gulp.task('watch-build-test', ['build', 'build-test'], () => {
     return gulp.watch(sources, ['build', 'build-test']);
+});
+
+gulp.task('regenerate-crdp', cb => {
+    crdp.downloadAndGenerate(path.join(__dirname, 'crdp/crdp.d.ts'))
+        .then(cb);
 });

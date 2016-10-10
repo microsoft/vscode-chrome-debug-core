@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as assert from 'assert';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 import * as testUtils from '../testUtils';
 import * as ConsoleHelper from '../../src/chrome/consoleHelper';

@@ -4,7 +4,7 @@
 
 import * as url from 'url';
 import * as ChromeUtils from './chromeUtils';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { text: string, isError: boolean } {
     // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,

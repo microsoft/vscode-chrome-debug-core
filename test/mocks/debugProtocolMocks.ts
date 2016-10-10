@@ -4,7 +4,7 @@
 /* tslint:disable:typedef */
 
 import {Mock, MockBehavior} from 'typemoq';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 export interface IMockChromeConnectionAPI {
     apiObjects: Crdp.CrdpClient;

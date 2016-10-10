@@ -11,7 +11,7 @@ import {ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IS
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, IVariableContainer, ExceptionContainer, isIndexedPropName} from './variables';
 
 import {formatConsoleMessage} from './consoleHelper';

@@ -10,7 +10,7 @@ import * as logger from '../logger';
 import {getChromeTargetWebSocketURL} from './chromeTargetDiscoveryStrategy';
 
 import {Client} from 'noice-json-rpc';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 export interface ITarget {
     description: string;

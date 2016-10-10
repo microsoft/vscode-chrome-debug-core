@@ -5,7 +5,7 @@
 import * as DebugProtocol from 'vscode-debugadapter';
 
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 export interface IVariableContainer {
     objectId: string;

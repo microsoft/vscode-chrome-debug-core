@@ -18,7 +18,7 @@ import * as mockery from 'mockery';
 import {EventEmitter} from 'events';
 import * as assert from 'assert';
 import {Mock, MockBehavior, It} from 'typemoq';
-import Crdp from 'chrome-remote-debug-protocol';
+import Crdp from '../../crdp/crdp';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
