@@ -20,7 +20,8 @@ const tsconfig = require('./tsconfig.json');
 const sources = tsconfig.include;
 
 const libs = [
-    'src'
+    'src',
+    'crdp'
 ].map(libFolder => libFolder + '/**/*.d.ts');
 
 const lintSources = [
