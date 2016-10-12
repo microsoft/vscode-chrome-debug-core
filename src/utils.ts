@@ -169,6 +169,8 @@ export function forceForwardSlashes(aUrl: string): string {
  * Ensure lower case drive letter and \ on Windows
  */
 export function fixDriveLetterAndSlashes(aPath: string, uppercaseDriveLetter = false): string {
+    if (!aPath) return aPath;
+
     if (aPath.match(/file:\/\/\/[A-Za-z]:/)) {
         const prefixLen = 'file:///'.length;
         aPath =
