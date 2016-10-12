@@ -177,6 +177,6 @@ export class ChromeDebugSession extends DebugSession {
 
 function logVersionInfo(): void {
     logger.log(`OS: ${os.platform()} ${os.arch()}`);
-    logger.log('Node: ' + process.version);
+    logger.log(`Adapter node: ${process.version} ${process.arch}`);
     logger.log('vscode-chrome-debug-core: ' + require('../../../package.json').version);
 }
