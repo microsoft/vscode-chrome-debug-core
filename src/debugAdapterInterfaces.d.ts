@@ -85,6 +85,11 @@ export interface ISetVariableResponseBody {
     value: string;
 }
 
+export interface ICompletionsResponseBody {
+    /** The possible completions for . */
+    targets: DebugProtocol.CompletionItem[];
+}
+
 declare type PromiseOrNot<T> = T | Promise<T>;
 
 /**

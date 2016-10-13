@@ -77,3 +77,11 @@ export function runtimeConnectionTimeout(timeoutMs: number, errMsg: string): Deb
         variables: { _error: errMsg, _timeout: timeoutMs + '' }
     };
 }
+
+export function completionsStackFrameNotValid(): DebugProtocol.Message {
+    return {
+        id: 2020,
+        format: 'stack frame not valid',
+        sendTelemetry: true
+    };
+}

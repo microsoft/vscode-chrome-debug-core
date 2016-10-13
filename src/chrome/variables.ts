@@ -56,7 +56,6 @@ export class ScopeContainer extends BaseVariableContainer {
             }
 
             return variables;
-
         }).then(variables => {
             if (this._returnValue) {
                 return this.insertRemoteObject(adapter, variables, 'Return value', this._returnValue);

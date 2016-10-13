@@ -7,7 +7,8 @@ import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent
 
 import {ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
-    ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter} from '../debugAdapterInterfaces';
+    ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
+    ICompletionsResponseBody} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -157,7 +158,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             ],
             supportsConfigurationDoneRequest: true,
             supportsSetVariable: true,
-            supportsConditionalBreakpoints: true
+            supportsConditionalBreakpoints: true,
+            supportsCompletionsRequest: true
         };
     }
 
@@ -1044,6 +1046,78 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             indexedVariables,
             namedVariables
         }));
+    }
+
+    public completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {
+        const text = args.text;
+        const column = args.column;
+
+        const prefix = text.substring(0, column);
+
+        let expression: string;
+        const dot = prefix.lastIndexOf('.');
+        if (dot >= 0) {
+            expression = prefix.substr(0, dot);
+        }
+
+        if (expression) {
+            const getCompletionsFn = `(function(x){var a=[];for(var o=x;o;o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
+
+            let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
+            if (typeof args.frameId === 'number') {
+                if (!this.paused || !this._currentStack[args.frameId]) {
+                    return Promise.reject(errors.completionsStackFrameNotValid());
+                }
+
+                const callFrameId = this._currentStack[args.frameId].callFrameId;
+                evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: getCompletionsFn, silent: true, returnByValue: true });
+            } else {
+                // contextId: 1 - see https://github.com/nodejs/node/issues/8426
+                evalPromise = this.chrome.Runtime.evaluate({ expression: getCompletionsFn, silent: true, contextId: 1, returnByValue: true });
+            }
+
+            return evalPromise.then(response => {
+                if (response.exceptionDetails) {
+                    return { targets: [] };
+                } else {
+                    return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
+                }
+            });
+        } else {
+            // If no expression was passed, we must be getting global completions at a breakpoint
+            if (typeof args.frameId !== "number" || !this.paused || !this._currentStack[args.frameId]) {
+                return Promise.reject(errors.completionsStackFrameNotValid());
+            }
+
+            const callFrame = this._currentStack[args.frameId];
+            const scopeExpandPs = callFrame.scopeChain
+                .map(scope => new ScopeContainer(callFrame.callFrameId, undefined, scope.object.objectId).expand(this));
+            return Promise.all(scopeExpandPs)
+                .then((variableArrs: DebugProtocol.Variable[][]) => {
+                    const targets = this.getFlatAndUniqueCompletionItems(
+                        variableArrs.map(variableArr => variableArr.map(variable => variable.name)));
+                    return { targets };
+                });
+        }
+    }
+
+    private getFlatAndUniqueCompletionItems(arrays: string[][]): DebugProtocol.CompletionItem[] {
+        const set = new Set<string>();
+        const items: DebugProtocol.CompletionItem[] = [];
+
+        for (let i = 0; i < arrays.length; i++) {
+            for (let name of arrays[i]) {
+                if (!isIndexedPropName(name) && !set.has(name)) {
+                    set.add(name);
+                    items.push({
+                        label: <string>name,
+                        type: 'property'
+                    });
+                }
+            }
+        }
+
+        return items;
     }
 
     private getArrayNumPropsByEval(objectId: string): Promise<IPropCount> {
