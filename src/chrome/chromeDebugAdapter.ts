@@ -1052,7 +1052,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const text = args.text;
         const column = args.column;
 
-        const prefix = text.substring(0, column);
+        // 1-indexed column
+        const prefix = text.substring(0, column - 1);
 
         let expression: string;
         const dot = prefix.lastIndexOf('.');
@@ -1061,7 +1062,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         if (expression) {
-            const getCompletionsFn = `(function(x){var a=[];for(var o=x;o;o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
+            logger.verbose(`Completions: Returning for expression '${expression}'`);
+            const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
 
             let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
             if (typeof args.frameId === 'number') {
@@ -1084,6 +1086,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
             });
         } else {
+            logger.verbose(`Completions: Returning global completions`);
+
             // If no expression was passed, we must be getting global completions at a breakpoint
             if (typeof args.frameId !== "number" || !this.paused || !this._currentStack[args.frameId]) {
                 return Promise.reject(errors.completionsStackFrameNotValid());
