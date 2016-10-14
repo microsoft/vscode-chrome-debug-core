@@ -78,10 +78,6 @@ export class ChromeConnection {
 
     public get isAttached(): boolean { return !!this._client; }
 
-    public on(eventName: string, handler: (msg: any) => void): void {
-        this._client.on(eventName, handler);
-    }
-
     public get api(): Crdp.CrdpClient {
         return this._client.api();
     }

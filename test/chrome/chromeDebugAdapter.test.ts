@@ -46,11 +46,7 @@ suite('ChromeDebugAdapter', () => {
         testUtils.registerWin32Mocks();
 
         // Create a ChromeConnection mock with .on and .attach. Tests can fire events via mockEventEmitter
-        mockEventEmitter = new EventEmitter();
         mockChromeConnection = Mock.ofType(ChromeConnection, MockBehavior.Strict);
-        mockChromeConnection
-            .setup(x => x.on(It.isAnyString(), It.isAny()))
-            .callback((eventName: string, handler: (msg: any) => void) => mockEventEmitter.on(eventName, handler));
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isAnyNumber(), It.isValue(undefined)))
             .returns(() => Promise.resolve());
@@ -59,6 +55,7 @@ suite('ChromeDebugAdapter', () => {
             .returns(() => false);
 
         mockChrome = getMockChromeConnectionApi();
+        mockEventEmitter = mockChrome.mockEventEmitter;
         mockChromeConnection
             .setup(x => x.api)
             .returns(() => mockChrome.apiObjects);

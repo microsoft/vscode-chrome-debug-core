@@ -93,7 +93,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _smartStep = false;
     private _smartStepCount = 0;
 
-    public constructor({chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
 
@@ -238,17 +238,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             return this._chromeConnection.attach(address, port, targetUrl)
                 .then(() => {
-                    this._chromeConnection.on('Debugger.paused', params => this.onDebuggerPaused(params));
-                    this._chromeConnection.on('Debugger.resumed', () => this.onDebuggerResumed());
-                    this._chromeConnection.on('Debugger.scriptParsed', params => this.onScriptParsed(params));
-                    this._chromeConnection.on('Debugger.globalObjectCleared', () => this.onGlobalObjectCleared());
-                    this._chromeConnection.on('Debugger.breakpointResolved', params => this.onBreakpointResolved(params));
+                    this.chrome.Debugger.onPaused(params => this.onPaused(params));
+                    this.chrome.Debugger.onResumed(() => this.onResumed());
+                    this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
+                    this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
 
-                    this._chromeConnection.on('Runtime.consoleAPICalled', params => this.onConsoleMessage(params));
+                    this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
+                    this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
-                    this._chromeConnection.on('Inspector.detached', () => this.terminateSession('Debug connection detached'));
-                    this._chromeConnection.on('close', () => this.terminateSession('Debug connection closed'));
-                    this._chromeConnection.on('error', e => this.terminateSession('Debug connection error: ' + e));
+                    this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
 
                     return Promise.all([
                         this.chrome.Debugger.enable(),
@@ -273,11 +271,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     /**
      * e.g. the target navigated
      */
-    private onGlobalObjectCleared(): void {
+    private onExecutionContextsCleared(): void {
         this.clearTargetContext();
     }
 
-    protected onDebuggerPaused(notification: Crdp.Debugger.PausedEvent): void {
+    protected onPaused(notification: Crdp.Debugger.PausedEvent): void {
         this._variableHandles.reset();
         this._frameHandles.reset();
         this._sourceHandles.reset();
@@ -309,7 +307,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         smartStepP.then(should => {
             if (should) {
                 this._smartStepCount++;
-                this.stepIn();
+                return this.stepIn();
             } else {
                 if (this._smartStepCount > 0) {
                     logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
@@ -320,10 +318,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Also with a timeout just to ensure things keep moving
                 const sendStoppedEvent = () =>
                     this._session.sendEvent(new StoppedEvent(this.stopReasonText(reason), /*threadId=*/ChromeDebugAdapter.THREAD_ID));
-                utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
+                return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
                     .then(sendStoppedEvent, sendStoppedEvent);
             }
-        });
+        }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
     }
 
     private shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
@@ -362,7 +360,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected onDebuggerResumed(): void {
+    protected onResumed(): void {
         this.setOverlay(undefined);
         this._currentStack = null;
 
@@ -433,7 +431,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.sendEvent(new BreakpointEvent('new', bp));
     }
 
-    protected onConsoleMessage(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
+    protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const formattedMessage = formatConsoleMessage(params);
         if (formattedMessage) {
             this._session.sendEvent(new OutputEvent(
