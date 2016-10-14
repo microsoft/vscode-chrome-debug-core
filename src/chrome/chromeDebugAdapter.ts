@@ -53,7 +53,6 @@ interface IPendingBreakpoint {
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private static THREAD_ID = 1;
-    private static PAGE_PAUSE_MESSAGE = 'Paused in Visual Studio Code';
     private static PLACEHOLDER_URL_PROTOCOL = 'debugadapter://';
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
 
@@ -292,7 +291,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._variableHandles.reset();
         this._frameHandles.reset();
         this._exception = undefined;
-        this.setOverlay(ChromeDebugAdapter.PAGE_PAUSE_MESSAGE);
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -346,10 +344,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private setOverlay(msg: string): void {
-        this._overlayHelper.doAndCancel(() => this.chrome.Page.configureOverlay({ message: msg }).catch(() => { }));
-    }
-
     private stopReasonText(reason: string): string {
         const comment = ['https://github.com/Microsoft/vscode/issues/4568'];
         switch (reason) {
@@ -373,7 +367,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onResumed(): void {
-        this.setOverlay(undefined);
         this._currentStack = null;
 
         if (!this._expectingResumedEvent) {

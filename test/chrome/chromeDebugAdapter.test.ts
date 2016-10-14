@@ -29,6 +29,7 @@ import {ChromeDebugAdapter as _ChromeDebugAdapter} from '../../src/chrome/chrome
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
     const ATTACH_ARGS = { port: 9222 };
+    const THREAD_ID = 1;
 
     let mockChromeConnection: Mock<ChromeConnection>;
     let mockEventEmitter: EventEmitter;
@@ -90,6 +91,13 @@ suite('ChromeDebugAdapter', () => {
         mockChromeConnection.verifyAll();
         mockChrome.Debugger.verifyAll();
     });
+
+    function emitScriptParsed(url, scriptId): void {
+        mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), It.isValue(undefined)))
+            .returns(() => Promise.resolve([]));
+
+        mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId, url });
+    }
 
     suite('attach()', () => {
         test('if successful, an initialized event is fired', () => {
@@ -177,11 +185,8 @@ suite('ChromeDebugAdapter', () => {
             assert.deepEqual(response, makeExpectedResponse(breakpoints));
         }
 
-        function emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID): void {
-            mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), It.isValue(undefined)))
-                .returns(() => Promise.resolve([]));
-
-            mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId, url });
+        function setBp_emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID): void {
+            emitScriptParsed(url, scriptId);
         }
 
         test('When setting one breakpoint, returns the correct result', () => {
@@ -191,7 +196,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints, FILE_NAME);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -205,7 +210,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints, FILE_NAME);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -218,7 +223,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints, FILE_NAME);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
                 .then(response => {
                     breakpoints.push({ line: 321, column: 123 });
@@ -239,7 +244,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints, FILE_NAME);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, 0))
                 .then(response => {
                     breakpoints.shift();
@@ -259,7 +264,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints, FILE_NAME);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
                 .then(response => {
                     expectRemoveBreakpoint([2, 3]);
@@ -294,7 +299,7 @@ suite('ChromeDebugAdapter', () => {
                 .verifiable();
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed())
+                .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
                 .then(response => assert.deepEqual(response, expectedResponse));
         });
@@ -306,7 +311,7 @@ suite('ChromeDebugAdapter', () => {
             expectSetBreakpoint(breakpoints);
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
-                .then(() => emitScriptParsed(/*url=*/'', SCRIPT_ID))
+                .then(() => setBp_emitScriptParsed(/*url=*/'', SCRIPT_ID))
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'debugadapter://' + SCRIPT_ID }, breakpoints }, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -426,6 +431,32 @@ suite('ChromeDebugAdapter', () => {
         });
     });
 
+    suite('Debugger.pause', () => {
+        test('returns the same sourceReferences for the same scripts', () => {
+            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+                const scriptId = 'script1';
+                const location: Crdp.Debugger.Location = { lineNumber: 0, columnNumber: 0, scriptId };
+                const callFrame = { callFrameId: 'id1', location };
+                emitScriptParsed('', scriptId);
+                mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
+
+                const stackFrames = chromeDebugAdapter.stackTrace({ threadId: THREAD_ID }).stackFrames;
+
+                // Should have two stack frames with the same sourceReferences
+                assert.equal(stackFrames.length, 2);
+                assert.equal(stackFrames[0].source.sourceReference, stackFrames[1].source.sourceReference);
+                const sourceReference = stackFrames[0].source.sourceReference;
+
+                // If it pauses a second time, and we request another stackTrace, should have the same result
+                mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
+                const stackFrames2 = chromeDebugAdapter.stackTrace({ threadId: THREAD_ID }).stackFrames;
+                assert.equal(stackFrames2.length, 2);
+                assert.equal(stackFrames2[0].source.sourceReference, sourceReference);
+                assert.equal(stackFrames2[1].source.sourceReference, sourceReference);
+            });
+        });
+    });
+
     suite('setExceptionBreakpoints()', () => { });
     suite('stepping', () => { });
     suite('stackTrace()', () => { });
@@ -435,6 +466,5 @@ suite('ChromeDebugAdapter', () => {
     suite('threads()', () => { });
 
     suite('Debugger.resume', () => { });
-    suite('Debugger.pause', () => { });
     suite('target close/error/detach', () => { });
 });
