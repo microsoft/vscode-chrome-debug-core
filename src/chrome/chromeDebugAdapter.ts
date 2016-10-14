@@ -338,15 +338,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (sources) {
                 sources.forEach(source => {
                     if (this._pendingBreakpointsByUrl.has(source)) {
-                        this.resolvePendingBreakpoints(this._pendingBreakpointsByUrl.get(source));
+                        this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
+                            .then(() => this._pendingBreakpointsByUrl.delete(source));
                     }
                 });
             }
         });
     }
 
-    private resolvePendingBreakpoints(pendingBP: IPendingBreakpoint): void {
-        this.setBreakpoints(pendingBP.args, 0).then(response => {
+    private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
+        return this.setBreakpoints(pendingBP.args, 0).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this._session.sendEvent(new BreakpointEvent('new', bp));
