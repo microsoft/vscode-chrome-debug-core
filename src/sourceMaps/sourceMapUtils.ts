@@ -47,7 +47,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
     } else {
         // runtime script is not on disk, resolve the sourceRoot location on disk
         const urlPath = url.parse(generatedPath).pathname;
-        const scriptPathDirname = urlPath ? path.dirname(urlPath) : ''; // could be debugadapter:///123. No other info.
+        const scriptPathDirname = urlPath ? path.dirname(urlPath) : ''; // could be debugadapter://123, no other info.
         absSourceRoot =  path.join(webRoot, scriptPathDirname);
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
     }
