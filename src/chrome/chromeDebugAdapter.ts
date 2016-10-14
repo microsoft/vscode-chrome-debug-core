@@ -852,14 +852,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return evalPromise.then(evalResponse => {
-            if (evalResponse.result.wasThrown) {
-                const evalResult = evalResponse.result;
-                let errorMessage = 'Error';
-                if (evalResult.exceptionDetails) {
-                    errorMessage = evalResult.exceptionDetails.text;
-                } else if (evalResult.result && evalResult.result.description) {
-                    errorMessage = evalResult.result.description;
-                }
+            const evalResult = evalResponse.result;
+            if (evalResult.exceptionDetails) {
+                let errorMessage = evalResult.exceptionDetails.exception.description;
                 return utils.errP(errorMessage);
             }
 
