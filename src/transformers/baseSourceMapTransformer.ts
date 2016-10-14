@@ -4,7 +4,6 @@
 
 import * as path from 'path';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {Handles} from 'vscode-debugadapter';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
     ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../debugAdapterInterfaces';
@@ -19,7 +18,7 @@ import {ISourceContainer} from '../chrome/chromeDebugAdapter';
  */
 export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps;
-    protected _sourceHandles: Handles<ISourceContainer>;
+    protected _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
     private _requestSeqToSetBreakpointsArgs: Map<number, ISetBreakpointsArgs>;
     private _allRuntimeScriptPaths: Set<string>;
@@ -27,7 +26,7 @@ export class BaseSourceMapTransformer {
 
     protected _preLoad = Promise.resolve();
 
-    constructor(sourceHandles: Handles<ISourceContainer>) {
+    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>) {
         this._sourceHandles = sourceHandles;
     }
 
@@ -176,7 +175,7 @@ export class BaseSourceMapTransformer {
                         // the source later and it will be returned from the sourcemap
                         stackFrame.source.path = undefined;
                         stackFrame.source.name = path.basename(mapped.source);
-                        stackFrame.source.sourceReference = this._sourceHandles.create({ contents: inlinedSource, mappedPath: mapped.source });
+                        stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
                         stackFrame.line = mapped.line;
                         stackFrame.column = mapped.column;
                     } else if (utils.existsSync(stackFrame.source.path)) {
@@ -196,6 +195,14 @@ export class BaseSourceMapTransformer {
                 }
             });
         }
+    }
+
+    /**
+     * Get the existing handle for this script, identified by runtime scriptId, or create a new one
+     */
+    private getSourceReferenceForScriptPath(mappedPath: string, contents: string): number {
+        return this._sourceHandles.lookupF(container => container.mappedPath === mappedPath) ||
+            this._sourceHandles.create({ contents, mappedPath });
     }
 
     public scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {

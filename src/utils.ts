@@ -400,6 +400,9 @@ export function multiGlob(patterns: string[], opts?: any): Promise<string[]> {
     });
 }
 
+/**
+ * A reversable subclass of the Handles helper
+ */
 export class ReverseHandles<T> extends Handles<T> {
     private _reverseMap = new Map<T, number>();
 
@@ -412,6 +415,14 @@ export class ReverseHandles<T> extends Handles<T> {
 
     public lookup(value: T): number {
         return this._reverseMap.get(value);
+    }
+
+    public lookupF(idFn: (value: T) => boolean): number {
+        for (let key of this._reverseMap.keys()) {
+            if (idFn(key)) return this._reverseMap.get(key);
+        }
+
+        return undefined;
     }
 }
 

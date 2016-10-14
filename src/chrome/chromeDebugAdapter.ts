@@ -70,7 +70,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
     private _variableHandles: Handles<IVariableContainer>;
     private _breakpointIdHandles: utils.ReverseHandles<string>;
-    private _sourceHandles: Handles<ISourceContainer>;
+    private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
     private _scriptsById: Map<Crdp.Runtime.ScriptId, Crdp.Debugger.ScriptParsedEvent>;
     private _scriptsByUrl: Map<string, Crdp.Debugger.ScriptParsedEvent>;
@@ -100,7 +100,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new Handles<IVariableContainer>();
         this._breakpointIdHandles = new utils.ReverseHandles<string>();
-        this._sourceHandles = new Handles<ISourceContainer>();
+        this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
 
         this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
@@ -291,7 +291,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected onPaused(notification: Crdp.Debugger.PausedEvent): void {
         this._variableHandles.reset();
         this._frameHandles.reset();
-        this._sourceHandles.reset();
         this._exception = undefined;
         this.setOverlay(ChromeDebugAdapter.PAGE_PAUSE_MESSAGE);
         this._currentStack = notification.callFrames;
@@ -704,12 +703,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     {
                         name: path.basename(script.url),
                         path: script.url,
-                        sourceReference: this._sourceHandles.create({ scriptId: script.scriptId })
+                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
                     } :
                     {
                         name: script && path.basename(script.url),
                         path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + location.scriptId,
-                        sourceReference: this._sourceHandles.create({ scriptId: location.scriptId })
+                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
                     };
 
             // If the frame doesn't have a function name, it's either an anonymous function
@@ -733,6 +732,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 column
             };
         }
+    }
+
+    /**
+     * Get the existing handle for this script, identified by runtime scriptId, or create a new one
+     */
+    private getSourceReferenceForScriptId(scriptId: Crdp.Runtime.ScriptId): number {
+        return this._sourceHandles.lookupF(container => container.scriptId === scriptId) ||
+            this._sourceHandles.create({ scriptId });
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
