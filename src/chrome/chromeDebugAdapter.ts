@@ -67,6 +67,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _expectingResumedEvent: boolean;
     protected _expectingStopReason: string;
 
+    private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
     private _variableHandles: Handles<IVariableContainer>;
     private _breakpointIdHandles: utils.ReverseHandles<string>;
     private _sourceHandles: Handles<ISourceContainer>;
@@ -92,6 +93,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
 
+        this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new Handles<IVariableContainer>();
         this._breakpointIdHandles = new utils.ReverseHandles<string>();
         this._sourceHandles = new Handles<ISourceContainer>();
@@ -104,10 +106,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer = new (pathTransformer || RemotePathTransformer)();
 
         this.clearTargetContext();
-    }
-
-    private get paused(): boolean {
-        return !!this._currentStack;
     }
 
     protected get chrome(): Crdp.CrdpClient {
@@ -273,6 +271,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onDebuggerPaused(notification: Crdp.Debugger.PausedEvent): void {
+        this._variableHandles.reset();
+        this._frameHandles.reset();
+        this._sourceHandles.reset();
         this._exception = undefined;
         this.setOverlay(ChromeDebugAdapter.PAGE_PAUSE_MESSAGE);
         this._currentStack = notification.callFrames;
@@ -634,7 +635,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const stackFrames: DebugProtocol.StackFrame[] = stack
-            .map(({ location, functionName }, i: number) => {
+            .map((frame, i: number) => {
+                const { location, functionName } = frame;
                 const line = location.lineNumber;
                 const column = location.columnNumber;
                 const script = this._scriptsById.get(location.scriptId);
@@ -659,7 +661,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     // or eval script. If its source has a name, it's probably an anonymous function.
                     const frameName = functionName || (script.url ? '(anonymous function)' : '(eval code)');
                     return {
-                        id: i,
+                        id: this._frameHandles.create(frame),
                         name: frameName,
                         source,
                         line: line,
@@ -669,7 +671,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     // Some targets such as the iOS simulator behave badly and return nonsense callFrames.
                     // In these cases, return a dummy stack frame
                     return {
-                        id: i,
+                        id: this._frameHandles.create(null /*todo*/),
                         name: 'Unknown',
                         source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
                         line,
@@ -687,7 +689,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
-        const currentFrame = this._currentStack[args.frameId];
+        const currentFrame = this._frameHandles.get(args.frameId);
         const scopes = currentFrame.scopeChain.map((scope: Crdp.Debugger.Scope, i: number) => {
             // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
             const thisObj = i === 0 && currentFrame.this;
@@ -873,8 +875,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
         // These two responses are shaped exactly the same
         let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
-        if (this.paused) {
-            const callFrameId = this._currentStack[args.frameId].callFrameId;
+        if (typeof args.frameId === 'number') {
+            const callFrameId = this._frameHandles.get(args.frameId).callFrameId;
             evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true });
         } else {
             // contextId: 1 - see https://github.com/nodejs/node/issues/8426
@@ -1067,11 +1069,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
             if (typeof args.frameId === 'number') {
-                if (!this.paused || !this._currentStack[args.frameId]) {
+                const frame = this._frameHandles.get(args.frameId);
+                if (!frame) {
                     return Promise.reject(errors.completionsStackFrameNotValid());
                 }
 
-                const callFrameId = this._currentStack[args.frameId].callFrameId;
+                const callFrameId = frame.callFrameId;
                 evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: getCompletionsFn, silent: true, returnByValue: true });
             } else {
                 // contextId: 1 - see https://github.com/nodejs/node/issues/8426
@@ -1089,11 +1092,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             logger.verbose(`Completions: Returning global completions`);
 
             // If no expression was passed, we must be getting global completions at a breakpoint
-            if (typeof args.frameId !== "number" || !this.paused || !this._currentStack[args.frameId]) {
+            if (typeof args.frameId !== "number" || !this._frameHandles.get(args.frameId)) {
                 return Promise.reject(errors.completionsStackFrameNotValid());
             }
 
-            const callFrame = this._currentStack[args.frameId];
+            const callFrame = this._frameHandles.get(args.frameId);
             const scopeExpandPs = callFrame.scopeChain
                 .map(scope => new ScopeContainer(callFrame.callFrameId, undefined, scope.object.objectId).expand(this));
             return Promise.all(scopeExpandPs)

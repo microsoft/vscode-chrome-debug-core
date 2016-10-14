@@ -421,7 +421,7 @@ suite('ChromeDebugAdapter', () => {
             setupEvalOnCallFrameMock(expression, callFrameId, result);
 
             // Sue me (just easier than sending a Debugger.paused event)
-            (<any>chromeDebugAdapter)._currentStack = <Crdp.Debugger.CallFrame[]>[{ callFrameId }];
+            (<any>chromeDebugAdapter)._frameHandles = { get: () => ({ callFrameId })};
 
             return chromeDebugAdapter.evaluate({ expression, frameId: 0 }).then(response => {
                 assert.deepEqual(response, getExpectedValueResponse(result));
