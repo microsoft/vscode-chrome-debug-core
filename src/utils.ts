@@ -10,8 +10,6 @@ import * as glob from 'glob';
 import {Handles} from 'vscode-debugadapter';
 import * as http from 'http';
 
-import * as xhr from 'request-light';
-
 import * as logger from './logger';
 
 export const enum Platform {
@@ -220,24 +218,6 @@ export function errP(msg: string|Error): Promise<any> {
  * Helper function to GET the contents of a url
  */
 export function getURL(aUrl: string): Promise<string> {
-    const options: xhr.XHROptions = {
-        url: aUrl,
-        followRedirects: 5
-    };
-
-    return xhr.xhr(options)
-        .then(xhrResponse => xhrResponse.responseText)
-        .catch(e => {
-            const errMsg = typeof e.status === 'number' ?
-                e.status + ' - ' + xhr.getErrorStatusDescription(e.status) :
-                e.toString();
-
-            logger.log('HTTP - GET failed with: ' + errMsg);
-            return errP(errMsg);
-        });
-}
-
-export function httpGet(aUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
         http.get(aUrl, response => {
             let responseData = '';
