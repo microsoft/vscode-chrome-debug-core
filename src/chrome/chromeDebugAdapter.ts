@@ -88,6 +88,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
+    private _sourceMaps = false;
+
+    private _smartStep = false;
+    private _smartStepCount = 0;
 
     public constructor({chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         this._session = session;
@@ -169,7 +173,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        this.setupLogging(args);
+        this.commonArgs(args);
 
         return Promise.resolve();
     }
@@ -183,12 +187,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP('The "port" field is required in the attach config.');
         }
 
-        this.setupLogging(args);
+        this.commonArgs(args);
 
         return this.doAttach(args.port, args.url, args.address);
     }
 
-    public setupLogging(args: IAttachRequestArgs | ILaunchRequestArgs): void {
+    public commonArgs(args: IAttachRequestArgs | ILaunchRequestArgs): void {
         const minLogLevel =
             args.verboseDiagnosticLogging ?
                 logger.LogLevel.Verbose :
@@ -197,6 +201,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 logger.LogLevel.Error;
 
         logger.setMinLogLevel(minLogLevel);
+
+        this._sourceMaps = args.sourceMaps;
+        this._smartStep = args.smartStep;
     }
 
     /**
@@ -281,24 +288,52 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
         let reason: string;
-        let exceptionText: string;
+        let smartStepP = Promise.resolve(false);
         if (notification.reason === 'exception') {
             reason = 'exception';
             this._exception = notification.data;
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
+        } else if (this._expectingStopReason) {
+            // If this was a step, check whether to smart step
+            reason = this._expectingStopReason;
+            if (this._smartStep) {
+                smartStepP = this.shouldSmartStep(this._currentStack[0]);
+            }
         } else {
-            reason = this._expectingStopReason || 'debugger';
+            reason = 'debugger';
         }
 
         this._expectingStopReason = undefined;
 
-        // Enforce that the stopped event is not fired until we've send the response to the step that induced it.
-        // Also with a timeout just to ensure things keep moving
-        const sendStoppedEvent = () =>
-            this._session.sendEvent(new StoppedEvent(this.stopReasonText(reason), /*threadId=*/ChromeDebugAdapter.THREAD_ID, exceptionText));
-        utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
-            .then(sendStoppedEvent, sendStoppedEvent);
+        smartStepP.then(should => {
+            if (should) {
+                this._smartStepCount++;
+                this.stepIn();
+            } else {
+                if (this._smartStepCount > 0) {
+                    logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
+                    this._smartStepCount = 0;
+                }
+
+                // Enforce that the stopped event is not fired until we've send the response to the step that induced it.
+                // Also with a timeout just to ensure things keep moving
+                const sendStoppedEvent = () =>
+                    this._session.sendEvent(new StoppedEvent(this.stopReasonText(reason), /*threadId=*/ChromeDebugAdapter.THREAD_ID));
+                utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
+                    .then(sendStoppedEvent, sendStoppedEvent);
+            }
+        });
+    }
+
+    private shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
+        if (!this._sourceMaps) return Promise.resolve(false);
+
+        const stackFrame = this.callFrameToStackFrame(frame);
+        const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path);
+        return this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber).then(mapping => {
+            return !mapping;
+        });
     }
 
     private setOverlay(msg: string): void {
@@ -634,58 +669,59 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             stack = this._currentStack.filter((_, i) => i < args.levels);
         }
 
-        const stackFrames: DebugProtocol.StackFrame[] = stack
-            .map((frame, i: number) => {
-                const { location, functionName } = frame;
-                const line = location.lineNumber;
-                const column = location.columnNumber;
-                const script = this._scriptsById.get(location.scriptId);
-
-                try {
-                    // When the script has a url and isn't one we're ignoring, send the name and path fields. PathTransformer will
-                    // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
-                    const source: DebugProtocol.Source =
-                        script && !this.shouldIgnoreScript(script) ?
-                            {
-                                name: path.basename(script.url),
-                                path: script.url,
-                                sourceReference: this._sourceHandles.create({ scriptId: script.scriptId })
-                            } :
-                            {
-                                name: script && path.basename(script.url),
-                                path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + location.scriptId,
-                                sourceReference: this._sourceHandles.create({ scriptId: location.scriptId })
-                            };
-
-                    // If the frame doesn't have a function name, it's either an anonymous function
-                    // or eval script. If its source has a name, it's probably an anonymous function.
-                    const frameName = functionName || (script.url ? '(anonymous function)' : '(eval code)');
-                    return {
-                        id: this._frameHandles.create(frame),
-                        name: frameName,
-                        source,
-                        line: line,
-                        column
-                    };
-                } catch (e) {
-                    // Some targets such as the iOS simulator behave badly and return nonsense callFrames.
-                    // In these cases, return a dummy stack frame
-                    return {
-                        id: this._frameHandles.create(null /*todo*/),
-                        name: 'Unknown',
-                        source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
-                        line,
-                        column
-                    };
-                }
-            });
-
-        const stackTraceResponse = { stackFrames };
+        const stackTraceResponse = {
+            stackFrames: stack.map(frame => this.callFrameToStackFrame(frame))
+        };
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         return stackTraceResponse;
+    }
+
+    private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
+        const { location, functionName } = frame;
+        const line = location.lineNumber;
+        const column = location.columnNumber;
+        const script = this._scriptsById.get(location.scriptId);
+
+        try {
+            // When the script has a url and isn't one we're ignoring, send the name and path fields. PathTransformer will
+            // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
+            const source: DebugProtocol.Source =
+                script && !this.shouldIgnoreScript(script) ?
+                    {
+                        name: path.basename(script.url),
+                        path: script.url,
+                        sourceReference: this._sourceHandles.create({ scriptId: script.scriptId })
+                    } :
+                    {
+                        name: script && path.basename(script.url),
+                        path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + location.scriptId,
+                        sourceReference: this._sourceHandles.create({ scriptId: location.scriptId })
+                    };
+
+            // If the frame doesn't have a function name, it's either an anonymous function
+            // or eval script. If its source has a name, it's probably an anonymous function.
+            const frameName = functionName || (script.url ? '(anonymous function)' : '(eval code)');
+            return {
+                id: this._frameHandles.create(frame),
+                name: frameName,
+                source,
+                line: line,
+                column
+            };
+        } catch (e) {
+            // Some targets such as the iOS simulator behave badly and return nonsense callFrames.
+            // In these cases, return a dummy stack frame
+            return {
+                id: this._frameHandles.create(null /*todo*/),
+                name: 'Unknown',
+                source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
+                line,
+                column
+            };
+        }
     }
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {

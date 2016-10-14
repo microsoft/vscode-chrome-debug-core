@@ -21,6 +21,7 @@ export interface CommonRequestArgs {
     diagnosticLogging?: boolean;
     verboseDiagnosticLogging?: boolean;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
+    smartStep?: boolean;
 }
 
 /**
