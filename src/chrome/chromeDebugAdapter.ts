@@ -231,6 +231,32 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
+    /**
+     * Hook up all connection events
+     */
+    protected hookConnectionEvents(): void {
+        this.chrome.Debugger.onPaused(params => this.onPaused(params));
+        this.chrome.Debugger.onResumed(() => this.onResumed());
+        this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
+        this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
+
+        this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
+        this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
+
+        this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
+    }
+
+    /**
+     * Enable clients and run connection
+     */
+    protected runConnection(): Promise<void>[] {
+        return [
+            this.chrome.Debugger.enable(),
+            this.chrome.Runtime.enable(),
+            this._chromeConnection.run()
+        ];
+    }
+
     protected doAttach(port: number, targetUrl?: string, address?: string, timeout?: number): Promise<void> {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
@@ -238,21 +264,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             return this._chromeConnection.attach(address, port, targetUrl)
                 .then(() => {
-                    this.chrome.Debugger.onPaused(params => this.onPaused(params));
-                    this.chrome.Debugger.onResumed(() => this.onResumed());
-                    this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
-                    this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
-
-                    this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
-                    this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
-
-                    this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
-
-                    return Promise.all([
-                        this.chrome.Debugger.enable(),
-                        this.chrome.Runtime.enable(),
-                        this._chromeConnection.run()
-                    ]);
+                    this.hookConnectionEvents();
+                    return Promise.all(this.runConnection());
                 })
                 .then(() => this.sendInitializedEvent());
         } else {
