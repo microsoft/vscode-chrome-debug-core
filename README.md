@@ -6,7 +6,7 @@ A library for building VS Code debug adapters for targets that support the [Chro
 
 # Debuggers using this library
 - VS Code Chrome Debugger https://github.com/Microsoft/vscode-chrome-debug
-- VS Code iOS Web Debugger. https://github.com/iradul/vscode-ios-web-debug
+- VS Code iOS Web Debugger. https://github.com/Microsoft/vscode-ios-web-debug
 - VS Code PhatomJS Debugger. https://github.com/iradul/vscode-phantomjs-debug
 - VS Code Node Debugger. https://github.com/Microsoft/vscode-node-debug2
 
