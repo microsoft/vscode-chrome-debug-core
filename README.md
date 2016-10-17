@@ -4,5 +4,11 @@
 
 A library for building VS Code debug adapters for targets that support the [Chrome Debugging Protocol](https://chromedevtools.github.io/debugger-protocol-viewer/).
 
+# Debuggers using this library
+- VS Code Chrome Debugger https://github.com/Microsoft/vscode-chrome-debug
+- VS Code iOS Web Debugger. https://github.com/iradul/vscode-ios-web-debug
+- VS Code PhatomJS Debugger. https://github.com/iradul/vscode-phantomjs-debug
+- VS Code Node Debugger. https://github.com/Microsoft/vscode-node-debug2
+
 ===
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
