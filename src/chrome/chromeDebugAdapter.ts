@@ -718,7 +718,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // Some targets such as the iOS simulator behave badly and return nonsense callFrames.
             // In these cases, return a dummy stack frame
             return {
-                id: this._frameHandles.create(null /*todo*/),
+                id: this._frameHandles.create(<any>{ }),
                 name: 'Unknown',
                 source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
                 line,
