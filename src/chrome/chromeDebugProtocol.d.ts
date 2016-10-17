@@ -75,7 +75,7 @@ export namespace Debugger {
     }
 
     export interface SetBreakpointResponse extends Response {
-        result: {
+        result?: {
             breakpointId: BreakpointId;
             actualLocation: Location;
         };
@@ -90,7 +90,7 @@ export namespace Debugger {
     }
 
     export interface SetBreakpointByUrlResponse extends Response {
-        result: {
+        result?: {
             breakpointId: BreakpointId;
             locations: Location[];
         };

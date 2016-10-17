@@ -481,7 +481,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._committedBreakpointsByUrl.get(url).reduce((p, bpId) => {
             return p.then(() => this._chromeConnection.debugger_removeBreakpoint(bpId)).then(() => { });
         }, Promise.resolve()).then(() => {
-            this._committedBreakpointsByUrl.set(url, null);
+            this._committedBreakpointsByUrl.delete(url);
         });
     }
 
@@ -505,19 +505,25 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                 return this._chromeConnection.debugger_setBreakpointByUrlRegex(urlRegex, line, column, condition).then(response => {
                     // Now convert the response to a SetBreakpointResponse so both response types can be handled the same
-                    const locations = response.result.locations;
-                    return <Chrome.Debugger.SetBreakpointResponse>{
-                        id: response.id,
-                        error: response.error,
-                        result: {
-                            breakpointId: response.result.breakpointId,
-                            actualLocation: locations[0] && {
-                                lineNumber: locations[0].lineNumber,
-                                columnNumber: locations[0].columnNumber,
-                                scriptId: script.scriptId
+                    if (response.error) {
+                        return <Chrome.Debugger.SetBreakpointResponse>{
+                            id: response.id,
+                            error: response.error
+                        };
+                    } else {
+                        const locations = response.result ? response.result.locations : [];
+                        return <Chrome.Debugger.SetBreakpointResponse>{
+                            id: response.id,
+                            result: {
+                                breakpointId: response.result.breakpointId,
+                                actualLocation: locations[0] && {
+                                    lineNumber: locations[0].lineNumber,
+                                    columnNumber: locations[0].columnNumber,
+                                    scriptId: script.scriptId
+                                }
                             }
-                        }
-                    };
+                        };
+                    }
                 });
             });
         }
