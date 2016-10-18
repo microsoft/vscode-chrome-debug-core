@@ -92,6 +92,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _smartStep = false;
     private _smartStepCount = 0;
 
+    private _initialSourceMapsP = Promise.resolve();
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
@@ -260,9 +262,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
-
             return this._chromeConnection.attach(address, port, targetUrl)
-                .then(() => {
+                .then(e => {
                     this.hookConnectionEvents();
                     return Promise.all(this.runConnection());
                 })
@@ -277,7 +278,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * to send it at a later time of their choosing.
      */
     protected sendInitializedEvent(): void {
-        this._session.sendEvent(new InitializedEvent());
+        // Wait to finish loading sourcemaps from the initial scriptParsed events
+        this._initialSourceMapsP.then(() => {
+            this._session.sendEvent(new InitializedEvent());
+            this._initialSourceMapsP = null;
+        });
     }
 
     /**
@@ -393,7 +398,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsByUrl.set(script.url, script);
 
         const mappedUrl = this._pathTransformer.scriptParsed(script.url);
-        this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
+        const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
             if (sources) {
                 sources.forEach(source => {
                     if (this._pendingBreakpointsByUrl.has(source)) {
@@ -402,6 +407,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 });
             }
         });
+
+        if (this._initialSourceMapsP) {
+            this._initialSourceMapsP = Promise.all([this._initialSourceMapsP, sourceMapsP]);
+        }
     }
 
     private resolvePendingBreakpoints(pendingBP: IPendingBreakpoint): void {

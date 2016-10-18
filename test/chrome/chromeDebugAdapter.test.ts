@@ -28,7 +28,9 @@ import {ChromeDebugAdapter as _ChromeDebugAdapter} from '../../src/chrome/chrome
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
-    const ATTACH_ARGS = { port: 9222 };
+    const ATTACH_SUCCESS_PORT = 9222;
+    const ATTACH_FAIL_PORT = 2992;
+    const ATTACH_ARGS = { port: ATTACH_SUCCESS_PORT };
     const THREAD_ID = 1;
 
     let mockChromeConnection: Mock<ChromeConnection>;
@@ -49,8 +51,11 @@ suite('ChromeDebugAdapter', () => {
         // Create a ChromeConnection mock with .on and .attach. Tests can fire events via mockEventEmitter
         mockChromeConnection = Mock.ofType(ChromeConnection, MockBehavior.Strict);
         mockChromeConnection
-            .setup(x => x.attach(It.isValue(undefined), It.isAnyNumber(), It.isValue(undefined)))
+            .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_SUCCESS_PORT), It.isValue(undefined)))
             .returns(() => Promise.resolve());
+        mockChromeConnection
+            .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined)))
+            .returns(() => utils.errP('Testing attach failed'));
         mockChromeConnection
             .setup(x => x.isAttached)
             .returns(() => false);
@@ -116,18 +121,14 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
-        test('if unsuccessful, the promise is rejected and an initialized event is not fired', () => {
-            mockChromeConnection
-                .setup(x => x.attach(It.isValue(undefined), It.isAnyNumber()))
-                .returns(() => utils.errP('Testing attach failed'));
-
+        test('if unsuccessful, the promise is rejected and an initialized event is not fired', (done) => {
             sendEventHandler = (event: DebugProtocol.Event) => {
-                testUtils.assertFail('Not expecting any event in this scenario');
+                done(new Error('Not expecting any event in this scenario: ' + event.event));
             };
 
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(
-                () => testUtils.assertFail('Expecting promise to be rejected'),
-                e => { /* Expecting promise to be rejected */ });
+            chromeDebugAdapter.attach({ port: ATTACH_FAIL_PORT }).then(
+                () => done(new Error('Expecting promise to be rejected')),
+                e => { done(); /* Expecting promise to be rejected */ });
         });
     });
 
