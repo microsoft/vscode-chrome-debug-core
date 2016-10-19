@@ -17,6 +17,7 @@ export * from './debugAdapterInterfaces';
 
 import * as utils from './utils';
 import * as logger from './logger';
+import * as telemetry from './telemetry';
 
 export {
     ChromeConnection,
@@ -32,5 +33,6 @@ export {
     BaseSourceMapTransformer,
 
     utils,
-    logger
+    logger,
+    telemetry
 }

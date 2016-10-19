@@ -19,6 +19,7 @@ import {formatConsoleMessage} from './consoleHelper';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import * as logger from '../logger';
+import * as telemetry from '../telemetry';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
@@ -95,6 +96,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _initialSourceMapsP = Promise.resolve();
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
+        telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
 
@@ -176,6 +178,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this.commonArgs(args);
 
+        telemetry.reportEvent('debugStarted', { request: 'launch' });
         return Promise.resolve();
     }
 
@@ -190,6 +193,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this.commonArgs(args);
 
+        telemetry.reportEvent('debugStarted', { request: 'attach' });
         return this.doAttach(args.port, args.url, args.address);
     }
 
@@ -221,6 +225,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         logger.log('Terminated: ' + reason);
 
         if (!this._hasTerminated) {
+            telemetry.reportEvent('debugStopped', { reason });
             this._hasTerminated = true;
             if (this._clientAttached) {
                 this._session.sendEvent(new TerminatedEvent(restart));
@@ -459,6 +464,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): Promise<ISetBreakpointsResponseBody> {
+        this.reportBpTelemetry(args);
         return this.validateBreakpointsPath(args)
             .then(() => {
                 this._lineColTransformer.setBreakpoints(args);
@@ -498,6 +504,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
             },
             e => this.unverifiedBpResponse(args, e.message));
+    }
+
+    private reportBpTelemetry(args: ISetBreakpointsArgs): void {
+        let fileExt = '';
+        if (args.source.path) {
+            fileExt = path.extname(args.source.path);
+        }
+
+        telemetry.reportEvent('setBreakpointsRequest', { fileExt });
     }
 
     private validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
@@ -641,13 +656,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    public continue(): Promise<void> {
+    /**
+     * internal -> suppress telemetry
+     */
+    public continue(internal = false): Promise<void> {
+        if (!internal) telemetry.reportEvent('continueRequest');
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.resume()
             .then(() => { });
     }
 
     public next(): Promise<void> {
+        telemetry.reportEvent('nextRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOver()
@@ -655,6 +675,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public stepIn(): Promise<void> {
+        telemetry.reportEvent('stepInRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepInto()
@@ -662,6 +683,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public stepOut(): Promise<void> {
+        telemetry.reportEvent('stepOutRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOut()
@@ -669,6 +691,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public pause(): Promise<void> {
+        telemetry.reportEvent('pauseRequest');
         this._expectingStopReason = 'user_request';
         return this._currentStep = this.chrome.Debugger.pause()
             .then(() => { });

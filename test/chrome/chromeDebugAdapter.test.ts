@@ -82,7 +82,14 @@ suite('ChromeDebugAdapter', () => {
             pathTransformer: function() { return mockPathTransformer.object; }
         },
         {
-            sendEvent: e => sendEventHandler && sendEventHandler(e)
+            sendEvent: (e: DebugProtocol.Event) => {
+                if (sendEventHandler) {
+                    // Filter telemetry events
+                    if (!(e.event === 'output' && (<DebugProtocol.OutputEvent>e).body.category === 'telemetry')) {
+                        sendEventHandler(e);
+                    }
+                }
+            }
         });
         /* tslint:enable */
     });

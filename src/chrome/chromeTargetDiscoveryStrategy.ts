@@ -4,6 +4,7 @@
 
 import * as logger from '../logger';
 import * as utils from '../utils';
+import * as telemetry from '../telemetry';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -14,6 +15,7 @@ export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: s
     targetFilter = targetFilter || (target => true);
 
     return _getTargets(address, port, targetFilter).then(targets => {
+        telemetry.reportEvent('targetCount', { numTargets: targets.length });
         if (!targets.length) {
             return utils.errP('Got a response from the target app, but no target pages found');
         }
