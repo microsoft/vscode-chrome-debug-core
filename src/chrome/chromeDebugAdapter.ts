@@ -815,9 +815,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }).then(response => {
                 if (response.exceptionDetails) {
                     // Not an error, getter could be `get foo() { throw new Error('bar'); }`
-                    const exceptionDetails = response.exceptionDetails;
-                    logger.log('Exception thrown evaluating getter - ' + JSON.stringify(exceptionDetails));
-                    return { name: propDesc.name, value: ChromeUtils.descriptionFromExceptionDetails(exceptionDetails), variablesReference: 0 };
+                    const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
+                    logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
+                    return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
                 } else {
                     return this.remoteObjectToVariable(propDesc.name, response.result);
                 }
