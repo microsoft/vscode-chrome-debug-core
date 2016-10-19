@@ -141,15 +141,12 @@ export class ChromeDebugSession extends DebugSession {
                     // Errors from evaluate show up in the console or watches pane. Doesn't seem right
                     // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
                     response.message = eStr;
+                    response.success = false;
+                    this.sendResponse(response);
+                    return;
                 } else {
-                    // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
-                    // come from the adapter
-                    response.message = `[${this._extensionName}] ${eStr}`;
-                    logger.log('Error: ' + e ? e.stack : eStr);
+                    this.failedRequest(request.command, response, e);
                 }
-
-                response.success = false;
-                this.sendResponse(response);
             });
     }
 
@@ -170,8 +167,21 @@ export class ChromeDebugSession extends DebugSession {
                 response,
                 responseP);
         } catch (e) {
-            this.sendErrorResponse(response, 1104, 'Exception while processing request (exception: {_exception})', { _exception: e.message }, ErrorDestination.Telemetry);
+            this.failedRequest(request.command, response, e);
         }
+    }
+
+    private failedRequest(requestType: string, response: DebugProtocol.Response, error: Error): void {
+        logger.error(`Error processing "${requestType}": ${error.stack}`);
+
+        // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
+        // come from the adapter, so add extensionName
+        this.sendErrorResponse(
+            response,
+            1104,
+            '[{_extensionName}] Error processing "{_requestType}": {_stack}',
+            { _extensionName: this._extensionName, _requestType: requestType, _stack: error.stack },
+            ErrorDestination.Telemetry);
     }
 }
 
