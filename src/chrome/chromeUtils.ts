@@ -165,7 +165,19 @@ export function remoteObjectToCallArgument(object: Crdp.Runtime.RemoteObject): C
     };
 }
 
-export function errorMessageFromExceptionDetails(exceptionDetails: any): string {
-    const description: string = exceptionDetails.exception.description;
+/**
+ * .exception is not present in Node < 6.6 - TODO this would be part of a generic solution for handling
+ * protocol differences in the future.
+ * This includes the error message and full stack
+ */
+export function descriptionFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
+    return exceptionDetails.exception ? exceptionDetails.exception.description : exceptionDetails.text;
+}
+
+/**
+ * Get just the error message from the exception details - the first line without the full stack
+ */
+export function errorMessageFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
+    const description = descriptionFromExceptionDetails(exceptionDetails);
     return description.substr(0, description.indexOf('\n'));
 }
