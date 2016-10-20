@@ -8,8 +8,7 @@ import * as url from 'url';
 import * as path from 'path';
 import * as glob from 'glob';
 import {Handles} from 'vscode-debugadapter';
-
-import * as xhr from 'request-light';
+import * as http from 'http';
 
 import * as logger from './logger';
 
@@ -221,21 +220,24 @@ export function errP(msg: string|Error): Promise<any> {
  * Helper function to GET the contents of a url
  */
 export function getURL(aUrl: string): Promise<string> {
-    const options: xhr.XHROptions = {
-        url: aUrl,
-        followRedirects: 5
-    };
-
-    return xhr.xhr(options)
-        .then(xhrResponse => xhrResponse.responseText)
-        .catch(e => {
-            const errMsg = typeof e.status === 'number' ?
-                e.status + ' - ' + xhr.getErrorStatusDescription(e.status) :
-                e.toString();
-
-            logger.log('HTTP - GET failed with: ' + errMsg);
-            return errP(errMsg);
+    return new Promise((resolve, reject) => {
+        http.get(aUrl, response => {
+            let responseData = '';
+            response.on('data', chunk => responseData += chunk);
+            response.on('end', () => {
+                // Sometimes the 'error' event is not fired. Double check here.
+                if (response.statusCode === 200) {
+                    resolve(responseData);
+                } else {
+                    logger.log('HTTP GET failed with: ' + response.statusCode.toString() + ' ' + response.statusMessage.toString());
+                    reject(responseData);
+                }
+            });
+        }).on('error', e => {
+            logger.log('HTTP GET failed: ' + e.toString());
+            reject(e);
         });
+    });
 }
 
 /**

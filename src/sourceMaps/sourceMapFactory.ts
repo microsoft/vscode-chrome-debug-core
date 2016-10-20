@@ -5,8 +5,6 @@
 import * as path from 'path';
 import * as url from 'url';
 import * as fs from 'fs';
-import * as os from 'os';
-import * as crypto from 'crypto';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
@@ -130,19 +128,19 @@ function loadSourceMapContents(mapPathOrURL: string): Promise<string> {
 
 function downloadSourceMapContents(sourceMapUri: string): Promise<string> {
     // use sha256 to ensure the hash value can be used in filenames
-    const hash = crypto.createHash('sha256').update(sourceMapUri).digest('hex');
+    // const hash = crypto.createHash('sha256').update(sourceMapUri).digest('hex');
 
-    const cachePath = path.join(os.tmpdir(), 'com.microsoft.VSCode', 'node-debug2', 'sm-cache');
-    const sourceMapPath = path.join(cachePath, hash);
+    // const cachePath = path.join(os.tmpdir(), 'com.microsoft.VSCode', 'node-debug2', 'sm-cache');
+    // const sourceMapPath = path.join(cachePath, hash);
 
-    const exists = utils.existsSync(sourceMapPath);
-    if (exists) {
-        return loadSourceMapContents(sourceMapPath);
-    }
+    // const exists = utils.existsSync(sourceMapPath);
+    // if (exists) {
+    //     return loadSourceMapContents(sourceMapPath);
+    // }
 
-    return utils.getURL(sourceMapUri)
-        .then(responseText => {
-            return utils.writeFileP(sourceMapPath, responseText)
-                .then(() => responseText);
-        });
+    return utils.getURL(sourceMapUri);
+        // .then(responseText => {
+        //     return utils.writeFileP(sourceMapPath, responseText)
+        //         .then(() => responseText);
+        // });
 }

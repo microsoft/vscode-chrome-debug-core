@@ -71,6 +71,12 @@ suite('SourceMapUtils', () => {
                 getComputedSourceRoot('', GEN_URL, WEBROOT),
                 testUtils.pathResolve('/project/webroot/code'));
         });
+
+        test('no crash on debugadapter:// urls', () => {
+            assert.equal(
+                getComputedSourceRoot('', 'debugadapter://123', WEBROOT),
+                testUtils.pathResolve(WEBROOT));
+        });
     });
 
     suite('resolveWebRootPattern', () => {

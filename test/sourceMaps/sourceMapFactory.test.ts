@@ -97,18 +97,9 @@ suite('SourceMapFactory', () => {
         });
 
         test('handles a relative path with a generated script url', () => {
-            // mock so it doesn't try to use the cache
             const utilsMock = Mock.ofInstance(utils, MockBehavior.Strict);
             utilsMock.callBase = true;
             mockery.registerMock('../utils', utilsMock.object);
-            utilsMock
-                .setup(x => x.existsSync(It.isAnyString()))
-                .returns(() => false)
-                .verifiable();
-            utilsMock
-                .setup(x => x.writeFileP(It.isAnyString(), It.isAnyString()))
-                .returns(() => Promise.resolve())
-                .verifiable();
 
             testUtils.registerMockGetURL('../utils', GENERATED_SCRIPT_URL + '.map', FILEDATA, utilsMock);
             setExpectedConstructorArgs(GENERATED_SCRIPT_URL, FILEDATA, WEBROOT);

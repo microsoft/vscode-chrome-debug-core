@@ -407,7 +407,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (sources) {
                 sources.forEach(source => {
                     if (this._pendingBreakpointsByUrl.has(source)) {
-                        this.resolvePendingBreakpoints(this._pendingBreakpointsByUrl.get(source));
+                        this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
+                            .then(() => this._pendingBreakpointsByUrl.delete(source));
                     }
                 });
             }
@@ -418,8 +419,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private resolvePendingBreakpoints(pendingBP: IPendingBreakpoint): void {
-        this.setBreakpoints(pendingBP.args, 0).then(response => {
+    private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
+        return this.setBreakpoints(pendingBP.args, 0).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this._session.sendEvent(new BreakpointEvent('new', bp));
@@ -563,7 +564,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._committedBreakpointsByUrl.get(url).reduce((p, breakpointId) => {
             return p.then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId })).then(() => { });
         }, Promise.resolve()).then(() => {
-            this._committedBreakpointsByUrl.set(url, null);
+            this._committedBreakpointsByUrl.delete(url);
         });
     }
 
