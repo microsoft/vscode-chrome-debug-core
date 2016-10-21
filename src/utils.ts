@@ -36,37 +36,6 @@ export function existsSync(path: string): boolean {
     }
 }
 
-export class DebounceHelper {
-    private waitToken: NodeJS.Timer;
-
-    constructor(private timeoutMs: number) { }
-
-    /**
-     * If not waiting already, call fn after the timeout
-     */
-    public wait(fn: () => any): void {
-        if (!this.waitToken) {
-            this.waitToken = setTimeout(() => {
-                this.waitToken = null;
-                fn();
-            },
-                this.timeoutMs);
-        }
-    }
-
-    /**
-     * If waiting for something, cancel it and call fn immediately
-     */
-    public doAndCancel(fn: () => any): void {
-        if (this.waitToken) {
-            clearTimeout(this.waitToken);
-            this.waitToken = null;
-        }
-
-        fn();
-    }
-}
-
 /**
  * Returns a reversed version of arr. Doesn't modify the input.
  */

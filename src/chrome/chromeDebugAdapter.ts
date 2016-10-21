@@ -61,7 +61,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _clientAttached: boolean;
     private _currentStack: Crdp.Debugger.CallFrame[];
     private _committedBreakpointsByUrl: Map<string, Crdp.Debugger.BreakpointId[]>;
-    private _overlayHelper: utils.DebounceHelper;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
     private _expectingResumedEvent: boolean;
@@ -105,8 +104,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._breakpointIdHandles = new utils.ReverseHandles<string>();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
-
-        this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
 
         this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
         this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles);
