@@ -5,7 +5,7 @@
 import * as assert from 'assert';
 import * as mockery from 'mockery';
 import * as path from 'path';
-import {Mock, It, MockBehavior} from 'typemoq';
+import {Mock, MockBehavior} from 'typemoq';
 
 import * as utils from '../../src/utils';
 import * as testUtils from '../testUtils';
