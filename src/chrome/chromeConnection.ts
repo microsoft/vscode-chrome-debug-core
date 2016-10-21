@@ -112,4 +112,8 @@ export class ChromeConnection {
     public close(): void {
         this._socket.close();
     }
+
+    public onClose(handler: () => void): void {
+        this._socket.on('close', handler);
+    }
 }

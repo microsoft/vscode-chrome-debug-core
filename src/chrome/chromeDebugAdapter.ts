@@ -247,6 +247,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
         this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
+
+        this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
 
     /**
