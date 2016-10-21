@@ -59,6 +59,8 @@ suite('ChromeDebugAdapter', () => {
         mockChromeConnection
             .setup(x => x.isAttached)
             .returns(() => false);
+        mockChromeConnection
+            .setup(x => x.onClose(It.isAny()));
 
         mockChrome = getMockChromeConnectionApi();
         mockEventEmitter = mockChrome.mockEventEmitter;
