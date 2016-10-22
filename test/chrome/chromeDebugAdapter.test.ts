@@ -406,7 +406,7 @@ suite('ChromeDebugAdapter', () => {
 
         function setupEvalMock(expression: string, result: Crdp.Runtime.RemoteObject): void {
             mockChrome.Runtime
-                .setup(x => x.evaluate(It.isValue({ expression, silent: true, contextId: 1 })))
+                .setup(x => x.evaluate(It.isValue({ expression, silent: true })))
                 .returns(() => Promise.resolve(<Crdp.Runtime.EvaluateResponse>{ result }));
         }
 
