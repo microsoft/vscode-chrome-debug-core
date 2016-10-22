@@ -347,7 +347,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (!this._sourceMaps) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
-        const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path);
+        const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
         return this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber).then(mapping => {
             return !mapping;
         });

@@ -83,7 +83,7 @@ suite('UrlPathTransformer', () => {
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
 
-            assert.deepEqual(transformer.scriptParsed(TARGET_URL), CLIENT_PATH);
+            assert.equal(transformer.scriptParsed(TARGET_URL), CLIENT_PATH);
         });
 
         test(`returns the given path when the file can't be mapped`, () => {
@@ -91,7 +91,17 @@ suite('UrlPathTransformer', () => {
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => '').verifiable();
 
-            assert.deepEqual(transformer.scriptParsed(TARGET_URL), TARGET_URL);
+            assert.equal(transformer.scriptParsed(TARGET_URL), TARGET_URL);
+        });
+
+        test('ok with uncanonicalized paths', () => {
+            chromeUtilsMock
+                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL + '?queryparam')))
+                .returns(() => CLIENT_PATH).verifiable();
+
+            assert.equal(transformer.scriptParsed(TARGET_URL + '?queryparam'), CLIENT_PATH);
+            assert.equal(transformer.getClientPathFromTargetPath(TARGET_URL + '?queryparam'), CLIENT_PATH);
+            assert.equal(transformer.getTargetPathFromClientPath(CLIENT_PATH), TARGET_URL + '?queryparam');
         });
     });
 
