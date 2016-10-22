@@ -958,8 +958,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const callFrameId = this._frameHandles.get(args.frameId).callFrameId;
             evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true });
         } else {
-            // contextId: 1 - see https://github.com/nodejs/node/issues/8426
-            evalPromise = this.chrome.Runtime.evaluate({ expression: args.expression, silent: true, contextId: 1 });
+            evalPromise = this.globalEvaluate({ expression: args.expression, silent: true });
         }
 
         return evalPromise.then(evalResponse => {
@@ -982,6 +981,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 };
             });
         });
+    }
+
+    /**
+     * Allow consumers to override just because of https://github.com/nodejs/node/issues/8426
+     */
+    protected globalEvaluate(args: Crdp.Runtime.EvaluateRequest): Promise<Crdp.Runtime.EvaluateResponse> {
+        return this.chrome.Runtime.evaluate(args);
     }
 
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
@@ -1156,8 +1162,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 const callFrameId = frame.callFrameId;
                 evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: getCompletionsFn, silent: true, returnByValue: true });
             } else {
-                // contextId: 1 - see https://github.com/nodejs/node/issues/8426
-                evalPromise = this.chrome.Runtime.evaluate({ expression: getCompletionsFn, silent: true, contextId: 1, returnByValue: true });
+                evalPromise = this.globalEvaluate({ expression: getCompletionsFn, silent: true, returnByValue: true });
             }
 
             return evalPromise.then(response => {
