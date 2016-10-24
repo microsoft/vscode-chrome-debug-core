@@ -127,8 +127,8 @@ export function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: str
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
         const props = object.preview.properties.slice(0, numProps);
         let propsPreview = props.map(prop => {
-            const value = propertyPreviewToString(prop);
-            return trimProperty(value);
+            const propValue = propertyPreviewToString(prop);
+            return trimProperty(propValue);
         }).join(', ');
 
         if (object.preview.overflow || object.preview.properties.length > numProps) {
@@ -147,8 +147,8 @@ export function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: st
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
         const props = object.preview.properties.slice(0, numProps);
         let propsPreview = props.map(prop => {
-            const value = propertyPreviewToString(prop);
-            return trimProperty(`${prop.name}: ${value}`);
+            const propValue = propertyPreviewToString(prop);
+            return trimProperty(`${prop.name}: ${propValue}`);
         }).join(', ');
 
         if (object.preview.overflow || object.preview.properties.length > numProps) {
@@ -162,8 +162,9 @@ export function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: st
 }
 
 function propertyPreviewToString(prop: Crdp.Runtime.PropertyPreview): string {
-    if (prop.type === 'string') return `"${prop.value}"`;
-    else return prop.value;
+    return prop.type === 'string' ?
+        `"${prop.value}"` :
+        prop.value;
 }
 
 function trimProperty(value: string): string {

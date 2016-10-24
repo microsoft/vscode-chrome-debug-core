@@ -406,13 +406,13 @@ suite('ChromeDebugAdapter', () => {
 
         function setupEvalMock(expression: string, result: Crdp.Runtime.RemoteObject): void {
             mockChrome.Runtime
-                .setup(x => x.evaluate(It.isValue({ expression, silent: true })))
+                .setup(x => x.evaluate(It.isValue({ expression, silent: true, generatePreview: true })))
                 .returns(() => Promise.resolve(<Crdp.Runtime.EvaluateResponse>{ result }));
         }
 
         function setupEvalOnCallFrameMock(expression: string, callFrameId: string, result: Crdp.Runtime.RemoteObject): void {
             mockChrome.Debugger
-                .setup(x => x.evaluateOnCallFrame(It.isValue({ expression, callFrameId, silent: true })))
+                .setup(x => x.evaluateOnCallFrame(It.isValue({ expression, callFrameId, silent: true, generatePreview: true })))
                 .returns(() => Promise.resolve(<Crdp.Runtime.EvaluateResponse>{ result }));
         }
 
