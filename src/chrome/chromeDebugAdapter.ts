@@ -1217,13 +1217,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getArrayNumPropsByEval(objectId: string): Promise<IPropCount> {
-        const getNumPropsFn = `function() { return [this.length, Object.keys(this).length - this.length]; }`;
+        // +2 for __proto__ and length
+        const getNumPropsFn = `function() { return [this.length, Object.keys(this).length - this.length + 2]; }`;
         return this.getNumPropsByEval(objectId, getNumPropsFn);
     }
 
     private getArrayNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
         let indexedVariables = 0;
-        let namedVariables = 0;
+        let namedVariables = 2; // 2 for __proto__ and length
         object.preview.properties.forEach(prop => isIndexedPropName(prop.name) ? indexedVariables++ : namedVariables++);
         return { indexedVariables, namedVariables };
     }
