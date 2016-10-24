@@ -14,6 +14,7 @@ import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, IVariableContainer, ExceptionContainer, isIndexedPropName} from './variables';
+import * as Variables from './variables';
 
 import {formatConsoleMessage} from './consoleHelper';
 import * as errors from '../errors';
@@ -956,14 +957,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
         if (typeof args.frameId === 'number') {
             const callFrameId = this._frameHandles.get(args.frameId).callFrameId;
-            evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true });
+            evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true, generatePreview: true });
         } else {
-            evalPromise = this.globalEvaluate({ expression: args.expression, silent: true });
+            evalPromise = this.globalEvaluate({ expression: args.expression, silent: true, generatePreview: true });
         }
 
         return evalPromise.then(evalResponse => {
             // Convert to a Variable object then just copy the relevant fields off
-            return this.remoteObjectToVariable('', evalResponse.result).then(variable => {
+            return this.remoteObjectToVariable('', evalResponse.result, /*stringify=*/undefined, args.context).then(variable => {
                 if (evalResponse.exceptionDetails) {
                     let resultValue = variable.value;
                     if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {
@@ -1034,7 +1035,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
     }
 
-    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, stringify = true): Promise<DebugProtocol.Variable> {
+    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, stringify = true, context = 'variables'): Promise<DebugProtocol.Variable> {
         let value = '';
 
         if (object) {
@@ -1045,7 +1046,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 } else if (object.subtype === 'null') {
                     value = 'null';
                 } else {
-                    return this.createObjectVariable(name, object);
+                    return this.createObjectVariable(name, object, context);
                 }
             } else if (object.type === 'undefined') {
                 value = 'undefined';
@@ -1092,10 +1093,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, stringify?: boolean): Promise<DebugProtocol.Variable> {
+    public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, context: string): Promise<DebugProtocol.Variable> {
         let value = object.description;
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
+            value = Variables.getArrayPreview(object, context);
+
             if (object.preview && !object.preview.overflow) {
                 propCountP = Promise.resolve(this.getArrayNumPropsByPreview(object));
             } else {
@@ -1119,6 +1122,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else if (object.subtype === 'generator' && object.preview) {
                 const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
                 if (generatorStatus) value = object.description + ' { ' + generatorStatus.value + ' }';
+            } else if (object.type === 'object' && object.preview) {
+                value = Variables.getObjectPreview(object, context);
             }
 
             propCountP = Promise.resolve({ });

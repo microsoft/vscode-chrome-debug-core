@@ -116,3 +116,58 @@ export class ExceptionValueContainer extends ExceptionContainer {
 export function isIndexedPropName(name: string): boolean {
     return !isNaN(parseInt(name, 10));
 }
+
+const PREVIEW_PROPS_DEFAULT = 3;
+const PREVIEW_PROPS_CONSOLE = 8;
+const PREVIEW_PROP_LENGTH = 50;
+const ELLIPSIS = '…';
+export function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    let value = object.description;
+    if (object.preview) {
+        const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
+        const props = object.preview.properties.slice(0, numProps);
+        let propsPreview = props.map(prop => {
+            const value = propertyPreviewToString(prop);
+            return trimProperty(value);
+        }).join(', ');
+
+        if (object.preview.overflow || object.preview.properties.length > numProps) {
+            propsPreview += ', …';
+        }
+
+        value += ` [${propsPreview}]`;
+    }
+
+    return value;
+}
+
+export function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    let value = object.description;
+    if (object.preview) {
+        const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
+        const props = object.preview.properties.slice(0, numProps);
+        let propsPreview = props.map(prop => {
+            const value = propertyPreviewToString(prop);
+            return trimProperty(`${prop.name}: ${value}`);
+        }).join(', ');
+
+        if (object.preview.overflow || object.preview.properties.length > numProps) {
+            propsPreview += ', …';
+        }
+
+        value += ` {${propsPreview}}`;
+    }
+
+    return value;
+}
+
+function propertyPreviewToString(prop: Crdp.Runtime.PropertyPreview): string {
+    if (prop.type === 'string') return `"${prop.value}"`;
+    else return prop.value;
+}
+
+function trimProperty(value: string): string {
+    return (value.length > PREVIEW_PROP_LENGTH) ?
+        value.substr(0, PREVIEW_PROP_LENGTH) + ELLIPSIS :
+        value;
+}
