@@ -841,6 +841,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this.getFilteredVariablesForObject(objectId, filter, start, count);
         }
 
+        // Remove for 1.7 TODO
+        filter = filter === 'indexed' ? 'all' : filter;
+
         return Promise.all([
             // Need to make two requests to get all properties
             this.chrome.Runtime.getProperties({ objectId, ownProperties: false, accessorPropertiesOnly: true, generatePreview: true }),
@@ -864,8 +867,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // Convert Chrome prop descriptors to DebugProtocol vars
             const variables: Promise<DebugProtocol.Variable>[] = [];
-            propsByName.forEach(propDesc => variables.push(this.propertyDescriptorToVariable(propDesc, objectId)));
-            internalPropsByName.forEach(internalProp => variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp))));
+            propsByName.forEach(propDesc => {
+                if (!filter || filter === 'all' || (isIndexedPropName(propDesc.name) === (filter === 'indexed'))) {
+                    variables.push(this.propertyDescriptorToVariable(propDesc, objectId));
+                }
+            });
+
+            internalPropsByName.forEach(internalProp => {
+                if (!filter || filter === 'all' || (isIndexedPropName(internalProp.name) === (filter === 'indexed'))) {
+                    variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp)));
+                }
+            });
 
             return Promise.all(variables);
         }).then(variables => {
