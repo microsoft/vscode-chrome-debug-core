@@ -112,7 +112,7 @@ export class ChromeDebugSession extends DebugSession {
             msg = `  ›${msg}`;
         }
 
-        this.sendEvent(new OutputEvent(msg + '\n', outputCategory));
+        this.sendEvent(new OutputEvent(msg, outputCategory));
     }
 
     /**

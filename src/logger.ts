@@ -21,13 +21,8 @@ interface ILogItem {
 let _logger: Logger;
 let _pendingLogQ: ILogItem[] = [];
 export function log(msg: string, forceLog = false, level = LogLevel.Log): void {
-    // [null, undefined] => string
-    msg = msg + '';
-    if (_pendingLogQ) {
-        _pendingLogQ.push({ msg, level });
-    } else {
-        _logger.log(msg, level, forceLog);
-    }
+    msg = msg + '\n';
+    write(msg, forceLog, level);
 }
 
 export function verbose(msg: string): void {
@@ -36,6 +31,19 @@ export function verbose(msg: string): void {
 
 export function error(msg: string, forceLog = true): void {
     log(msg, forceLog, LogLevel.Error);
+}
+
+/**
+ * `log` adds a newline, this one doesn't
+ */
+export function write(msg: string, forceLog = false, level = LogLevel.Log): void {
+    // [null, undefined] => string
+    msg = msg + '';
+    if (_pendingLogQ) {
+        _pendingLogQ.push({ msg, level });
+    } else {
+        _logger.log(msg, level, forceLog);
+    }
 }
 
 /**
@@ -50,7 +58,7 @@ export function setMinLogLevel(logLevel: LogLevel): void {
         if (_pendingLogQ) {
             const logQ = _pendingLogQ;
             _pendingLogQ = null;
-            logQ.forEach(item => log(item.msg, undefined, item.level));
+            logQ.forEach(item => write(item.msg, undefined, item.level));
         }
     }
 }
@@ -126,7 +134,7 @@ class Logger {
         }
 
         if (this._logFileStream) {
-            this._logFileStream.write(msg + '\n');
+            this._logFileStream.write(msg);
         }
     }
 
