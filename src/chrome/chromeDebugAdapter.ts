@@ -209,11 +209,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._smartStep = args.smartStep;
     }
 
-    /**
-     * From DebugSession
-     */
     public shutdown(): void {
         this._inShutdown = true;
+        this._session.shutdown();
     }
 
     /**
@@ -461,6 +459,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public disconnect(): void {
+        this.shutdown();
         return this.terminateSession('Got disconnect request');
     }
 
