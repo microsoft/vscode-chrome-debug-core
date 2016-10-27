@@ -255,4 +255,30 @@ suite('Utils', () => {
             assert.equal(getUtils().pathToFileURL('c:\\path with spaces\\blah.js'), 'file:///c:/path%20with%20spaces/blah.js');
         });
     });
+
+    suite('pathToRegex', () => {
+        function testPathToRegex(aPath: string, expectedRegex: string): void {
+            assert.equal(getUtils().pathToRegex(aPath), expectedRegex)
+        }
+
+        test('works for a simple posix path', () => {
+            testPathToRegex('/a/b.js', '\\/a\\/b\\.js');
+        });
+
+        test('works for a simple windows path', () => {
+            testPathToRegex('c:\\a\\b.js', '[Cc]:\\\\a\\\\b\\.js');
+        });
+
+        test('works for a url', () => {
+            testPathToRegex('http://localhost:8080/a/b.js', 'http:\\/\\/localhost:8080\\/a\\/b\\.js');
+        });
+
+        test('works for a posix file url', () => {
+            testPathToRegex('file:///a/b.js', 'file:\\/\\/\\/a\\/b\\.js');
+        });
+
+        test('escapes the drive letter for a windows file url', () => {
+            testPathToRegex('file:///c:\\a\\b.js', 'file:\\/\\/\\/[Cc]:\\\\a\\\\b\\.js');
+        });
+    });
 });

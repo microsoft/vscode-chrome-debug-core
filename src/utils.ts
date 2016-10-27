@@ -401,7 +401,15 @@ export class ReverseHandles<T> extends Handles<T> {
  * Return a regex for the given path to set a breakpoint on
  */
 export function pathToRegex(aPath: string): string {
-    aPath = aPath.replace(/([/\\.?*()^${}|[\]])/g, '\\$1');
+    const fileUrlPrefix = 'file:///';
+    let isFileUrl = aPath.startsWith(fileUrlPrefix);
+    if (isFileUrl) {
+        // Purposely avoiding fileUrlToPath/pathToFileUrl for this, because it does decodeURI/encodeURI
+        // for special URL chars and I don't want to think about that interacting with special regex chars
+        aPath = aPath.substr(fileUrlPrefix.length);
+    }
+
+    aPath = escapeRegexSpecialChars(aPath);
 
     if (aPath.match(/^[a-zA-Z]:/)) {
         const driveLetter = aPath.charAt(0);
@@ -410,5 +418,13 @@ export function pathToRegex(aPath: string): string {
         aPath = `[${u}${l}]${aPath.substr(1)}`;
     }
 
+    if (isFileUrl) {
+        aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
+    }
+
     return aPath;
+}
+
+function escapeRegexSpecialChars(str: string): string {
+    return str.replace(/([/\\.?*()^${}|[\]])/g, '\\$1');
 }
