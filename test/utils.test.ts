@@ -206,7 +206,7 @@ suite('Utils', () => {
         test('does not impact posix cases', () => {
             assert.equal(getUtils().fixDriveLetterAndSlashes('file:///a/b'), 'file:///a/b');
             assert.equal(getUtils().fixDriveLetterAndSlashes('/a/b'), '/a/b');
-        })
+        });
     });
 
     suite('isURL', () => {
@@ -263,7 +263,7 @@ suite('Utils', () => {
 
     suite('pathToRegex', () => {
         function testPathToRegex(aPath: string, expectedRegex: string): void {
-            assert.equal(getUtils().pathToRegex(aPath), expectedRegex)
+            assert.equal(getUtils().pathToRegex(aPath), expectedRegex);
         }
 
         test('works for a simple posix path', () => {
