@@ -202,6 +202,11 @@ suite('Utils', () => {
             assert.equal(getUtils().fixDriveLetterAndSlashes('file:///C:\\path'), 'file:///c:\\path');
             assert.equal(getUtils().fixDriveLetterAndSlashes('file:///C:\\'), 'file:///c:\\');
         });
+
+        test('does not impact posix cases', () => {
+            assert.equal(getUtils().fixDriveLetterAndSlashes('file:///a/b'), 'file:///a/b');
+            assert.equal(getUtils().fixDriveLetterAndSlashes('/a/b'), '/a/b');
+        })
     });
 
     suite('isURL', () => {

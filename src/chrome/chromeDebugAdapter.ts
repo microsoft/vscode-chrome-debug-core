@@ -392,7 +392,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         if (script.url) {
-            script.url = utils.fixDriveLetterAndSlashes(script.url);
+            script.url = utils.fixDriveLetter(script.url);
         } else {
             script.url = ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + script.scriptId;
         }
