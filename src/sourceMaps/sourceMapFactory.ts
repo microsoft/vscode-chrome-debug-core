@@ -2,8 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as path from 'path';
-import * as url from 'url';
 import * as fs from 'fs';
 
 import * as sourceMapUtils from './sourceMapUtils';
@@ -75,18 +73,7 @@ function getInlineSourceMapContents(sourceMapData: string): string {
  * Resolves a sourcemap's path and loads the data
  */
 function getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<string> {
-    if (!path.isAbsolute(mapPath)) {
-        // mapPath needs to be resolved to an absolute path or a URL
-        if (path.isAbsolute(pathToGenerated)) {
-            // runtime script is on disk, so map should be too
-            mapPath = sourceMapUtils.resolveRelativeToFile(pathToGenerated, mapPath);
-        } else {
-            // runtime script is not on disk, resolve a URL for the map relative to the script
-            const scriptUrl = url.parse(pathToGenerated);
-            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname), mapPath);
-            mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
-        }
-    }
+    mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPath);
 
     return loadSourceMapContents(mapPath).then(contents => {
         if (!contents) {

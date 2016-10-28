@@ -7,7 +7,7 @@ import * as mockery from 'mockery';
 
 import * as testUtils from '../testUtils';
 
-import {getComputedSourceRoot, applySourceMapPathOverrides, resolveWebRootPattern} from '../../src/sourceMaps/sourceMapUtils';
+import {getComputedSourceRoot, applySourceMapPathOverrides, resolveWebRootPattern, resolveMapPath} from '../../src/sourceMaps/sourceMapUtils';
 import {ISourceMapPathOverrides} from '../../src/debugAdapterInterfaces';
 
 suite('SourceMapUtils', () => {
@@ -195,6 +195,55 @@ suite('SourceMapUtils', () => {
                         '/something/*/else.js': 'main.js'
                     }),
                 testUtils.pathResolve('/project/src/app.js'));
+        });
+    });
+
+    suite('resolveMapPath', () => {
+        test('works for a relative local path', () => {
+            const scriptPath = testUtils.pathResolve('/project/app.js');
+            assert.equal(resolveMapPath(scriptPath, 'app.js.map'), scriptPath + '.map');
+            assert.equal(resolveMapPath(scriptPath, './app.js.map'), scriptPath + '.map');
+        });
+
+        test('works for a web relative path', () => {
+            const scriptUrl = 'http://localhost:8080/project/app.js';
+            assert.equal(resolveMapPath(scriptUrl, 'app.js.map'), scriptUrl + '.map');
+            assert.equal(resolveMapPath(scriptUrl, './app.js.map'), scriptUrl + '.map');
+        });
+
+        test('works for a full url with local script', () => {
+            const urlMap = 'http://localhost/app.js.map';
+            const scriptUrl = testUtils.pathResolve('/project/app.js');
+            assert.equal(resolveMapPath(scriptUrl, urlMap), urlMap);
+        });
+
+        test('works for a full url with url script', () => {
+            const urlMap = 'http://localhost/app.js.map';
+            const scriptUrl = 'http://localhost:8080/project/app.js';
+            assert.equal(resolveMapPath(scriptUrl, urlMap), urlMap);
+        });
+
+        test('works for a /path', () => {
+            const slashPath = '/maps/app.js.map';
+            const scriptUrl = 'http://localhost:8080/project/app.js';
+            assert.equal(resolveMapPath(scriptUrl, slashPath), 'http://localhost:8080/maps/app.js.map');
+        });
+
+        test('works for a file:/// url', () => {
+            const winFileUrl = 'file:///c:/project/app.js.map';
+            const notWinFileUrl = 'file:///project/app.js.map';
+            const scriptUrl = 'http://localhost:8080/project/app.js';
+            assert.equal(resolveMapPath(scriptUrl, winFileUrl), winFileUrl);
+            assert.equal(resolveMapPath(scriptUrl, notWinFileUrl), notWinFileUrl);
+        });
+
+        // I'm not sure this is valid but we have the technology
+        test('works for a local absolute path', () => {
+            const scriptPath = testUtils.pathResolve('/projects/app.js');
+            const winAbsolutePath = 'C:\\projects\\app.js.map';
+            const notWinAbsolutePath = '/projects/app.js.map';
+            assert.equal(resolveMapPath(scriptPath, winAbsolutePath), winAbsolutePath);
+            assert.equal(resolveMapPath(scriptPath, notWinAbsolutePath), notWinAbsolutePath);
         });
     });
 });

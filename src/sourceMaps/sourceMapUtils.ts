@@ -127,3 +127,22 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
 
     return sourcePath;
 }
+
+export function resolveMapPath(pathToGenerated: string, mapPath: string): string {
+    const mapPathUrl = url.parse(mapPath);
+    if (!mapPathUrl.protocol) {
+        // mapPath is not a url
+        const scriptUrl = url.parse(pathToGenerated);
+        if (scriptUrl.protocol) {
+            // runtime script is not on disk, map won't be either, resolve a URL for the map relative to the script
+            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname), mapPath);
+            mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
+        } else if (path.isAbsolute(pathToGenerated)) {
+            // mapPath needs to be resolved to an absolute path or a URL
+            // runtime script is on disk, so map should be too
+            mapPath = resolveRelativeToFile(pathToGenerated, mapPath);
+        }
+    }
+
+    return mapPath;
+}
