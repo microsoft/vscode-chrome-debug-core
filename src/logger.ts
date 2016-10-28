@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as fs from 'fs';
+import * as utils from './utils';
 
 export enum LogLevel {
     Verbose = 0,
@@ -125,6 +126,7 @@ class Logger {
 
         if (this._logToConsole) {
             const logFn = level === LogLevel.Error ? console.error : console.log;
+            msg = utils.trimLastNewline(msg);
             logFn(msg);
         }
 

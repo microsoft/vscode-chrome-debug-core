@@ -443,3 +443,7 @@ export function pathToRegex(aPath: string): string {
 function escapeRegexSpecialChars(str: string): string {
     return str.replace(/([/\\.?*()^${}|[\]])/g, '\\$1');
 }
+
+export function trimLastNewline(msg: string): string {
+    return msg.replace(/(\n|\r\n)$/, '');
+}
