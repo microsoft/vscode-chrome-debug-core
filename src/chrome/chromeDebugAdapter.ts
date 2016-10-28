@@ -840,9 +840,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this.getFilteredVariablesForObject(objectId, filter, start, count);
         }
 
-        // Remove for 1.7 TODO
-        filter = filter === 'indexed' ? 'all' : filter;
-
         return Promise.all([
             // Need to make two requests to get all properties
             this.chrome.Runtime.getProperties({ objectId, ownProperties: false, accessorPropertiesOnly: true, generatePreview: true }),
