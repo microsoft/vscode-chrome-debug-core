@@ -400,16 +400,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsById.set(script.scriptId, script);
         this._scriptsByUrl.set(script.url, script);
 
+        const tryToResolve = source => {
+            if (this._pendingBreakpointsByUrl.has(source)) {
+                this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
+                    .then(() => this._pendingBreakpointsByUrl.delete(source));
+            }
+        };
+
         const mappedUrl = this._pathTransformer.scriptParsed(script.url);
         const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
             if (sources) {
-                sources.forEach(source => {
-                    if (this._pendingBreakpointsByUrl.has(source)) {
-                        this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
-                            .then(() => this._pendingBreakpointsByUrl.delete(source));
-                    }
-                });
+                sources.forEach(tryToResolve);
             }
+
+            tryToResolve(mappedUrl);
         });
 
         if (this._initialSourceMapsP) {
