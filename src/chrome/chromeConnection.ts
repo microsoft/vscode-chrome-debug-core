@@ -39,7 +39,14 @@ class LoggingSocket extends WebSocket {
         });
 
         this.on('message', msgStr => {
-            const msgObj = JSON.parse(msgStr);
+            let msgObj: any;
+            try {
+                msgObj = JSON.parse(msgStr);
+            } catch (e) {
+                logger.error(`Invalid JSON from target: (${e.message}): ${msgStr}`);
+                return;
+            }
+
             if (msgObj
                 && !(msgObj.method === 'Debugger.scriptParsed' && msgObj.params && msgObj.params.isContentScript)
                 && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)) {
@@ -96,6 +103,7 @@ export class ChromeConnection {
             .then(wsUrl => {
                 this._socket = new LoggingSocket(wsUrl);
                 this._client = new Client(this._socket);
+                this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
             });
     }
 
