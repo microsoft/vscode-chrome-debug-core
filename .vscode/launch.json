@@ -23,7 +23,8 @@
             "program": "${workspaceRoot}/../vscode-node-debug2/out/src/nodeDebug.js",
             "args": [ "--server=4712" ],
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/out/**/*.js"]
+            "outFiles": ["${workspaceRoot}/out/**/*.js"],
+            "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "name": "launch chrome-debug",
@@ -35,7 +36,8 @@
             "program": "${workspaceRoot}/../vscode-chrome-debug/out/src/chromeDebug.js",
             "args": [ "--server=4712" ],
             "sourceMaps": true,
-            "outFiles": ["${workspaceRoot}/out/**/*.js"]
+            "outFiles": ["${workspaceRoot}/out/**/*.js"],
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
