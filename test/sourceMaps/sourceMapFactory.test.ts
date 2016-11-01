@@ -5,7 +5,7 @@
 import * as assert from 'assert';
 import * as mockery from 'mockery';
 import * as path from 'path';
-import {Mock, MockBehavior} from 'typemoq';
+import {Mock} from 'typemoq';
 
 import * as utils from '../../src/utils';
 import * as testUtils from '../testUtils';
@@ -97,7 +97,7 @@ suite('SourceMapFactory', () => {
         });
 
         test('handles a relative path with a generated script url', () => {
-            const utilsMock = Mock.ofInstance(utils, MockBehavior.Strict);
+            const utilsMock = Mock.ofInstance(utils);
             utilsMock.callBase = true;
             mockery.registerMock('../utils', utilsMock.object);
 

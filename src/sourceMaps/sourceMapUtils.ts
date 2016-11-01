@@ -129,11 +129,9 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
 }
 
 export function resolveMapPath(pathToGenerated: string, mapPath: string): string {
-    const mapPathUrl = url.parse(mapPath);
-    if (!mapPathUrl.protocol) {
-        // mapPath is not a url
-        const scriptUrl = url.parse(pathToGenerated);
-        if (scriptUrl.protocol) {
+    if (!utils.isURL(mapPath)) {
+        if (utils.isURL(pathToGenerated)) {
+            const scriptUrl = url.parse(pathToGenerated);
             // runtime script is not on disk, map won't be either, resolve a URL for the map relative to the script
             const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
