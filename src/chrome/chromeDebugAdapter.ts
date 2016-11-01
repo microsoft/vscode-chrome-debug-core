@@ -5,7 +5,7 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent} from 'vscode-debugadapter';
 
-import {ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
+import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody} from '../debugAdapterInterfaces';
@@ -85,12 +85,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _hasTerminated: boolean;
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
+    protected _launchAttachArgs: ICommonRequestArgs;
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
-    private _sourceMaps = false;
 
-    private _smartStep = false;
     private _smartStepCount = 0;
 
     private _initialSourceMapsP = Promise.resolve();
@@ -195,7 +194,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.doAttach(args.port, args.url, args.address);
     }
 
-    public commonArgs(args: IAttachRequestArgs | ILaunchRequestArgs): void {
+    public commonArgs(args: ICommonRequestArgs): void {
         const minLogLevel =
             args.verboseDiagnosticLogging ?
                 logger.LogLevel.Verbose :
@@ -205,8 +204,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         logger.setMinLogLevel(minLogLevel);
 
-        this._sourceMaps = args.sourceMaps;
-        this._smartStep = args.smartStep;
+        this._launchAttachArgs = args;
     }
 
     public shutdown(): void {
@@ -268,6 +266,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this._chromeConnection.attach(address, port, targetUrl)
                 .then(e => {
                     this.hookConnectionEvents();
+                    if (this._launchAttachArgs.experimentalLibraryCode) {
+                        this.chrome.Debugger.setBlackboxPatterns({ patterns: this._launchAttachArgs.experimentalLibraryCode });
+                    }
+
                     return Promise.all(this.runConnection());
                 })
                 .then(() => this.sendInitializedEvent());
@@ -313,7 +315,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (this._expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = this._expectingStopReason;
-            if (this._smartStep) {
+            if (this._launchAttachArgs.smartStep) {
                 smartStepP = this.shouldSmartStep(this._currentStack[0]);
             }
         } else {
@@ -343,7 +345,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        if (!this._sourceMaps) return Promise.resolve(false);
+        if (!this._launchAttachArgs.sourceMaps) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;

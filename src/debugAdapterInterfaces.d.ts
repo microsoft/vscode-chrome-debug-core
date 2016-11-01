@@ -13,7 +13,7 @@ export type ISourceMapPathOverrides = { [pattern: string]: string };
 /**
  * Properties valid for both Launch and Attach
  */
-export interface CommonRequestArgs {
+export interface ICommonRequestArgs {
     webRoot?: string;
     outDir?: string;
     outFiles?: string[];
@@ -22,16 +22,17 @@ export interface CommonRequestArgs {
     verboseDiagnosticLogging?: boolean;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
+    experimentalLibraryCode?: string[]; // an array of file names or regexps
 }
 
 /**
  * Properties needed by -core, just a subset of the properties needed for launch in general
  */
-export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, CommonRequestArgs {
+export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
     userDataDir?: string;
 }
 
-export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, CommonRequestArgs {
+export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {
     port: number;
     url?: string;
     address?: string;
