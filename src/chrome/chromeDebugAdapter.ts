@@ -782,11 +782,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const variablesReference = this._variableHandles.create(
                 new ScopeContainer(currentFrame.callFrameId, i, scope.object.objectId, thisObj, returnValue));
 
-            return <DebugProtocol.Scope>{
+            const resultScope = <DebugProtocol.Scope>{
                 name: scope.type.substr(0, 1).toUpperCase() + scope.type.substr(1), // Take Chrome's scope, uppercase the first letter
                 variablesReference,
                 expensive: scope.type === 'global'
             };
+
+            if (scope.startLocation && scope.endLocation) {
+                resultScope.column = scope.startLocation.columnNumber;
+                resultScope.line = scope.startLocation.lineNumber;
+                resultScope.endColumn = scope.endLocation.columnNumber;
+                resultScope.endLine = scope.endLocation.lineNumber;
+            }
+
+            return resultScope;
         });
 
         if (this._exception) {
