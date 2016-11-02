@@ -322,7 +322,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed(/*url=*/'', SCRIPT_ID))
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'debugadapter://' + SCRIPT_ID }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'eval://' + SCRIPT_ID }, breakpoints }, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
     });

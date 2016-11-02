@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {SourceMap, MappedPosition} from './sourceMap';
+import {SourceMap, MappedPosition, ISourcePathDetails} from './sourceMap';
 import {getMapForGeneratedPath} from './sourceMapFactory';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 import * as sourceMapUtils from './sourceMapUtils';
@@ -53,6 +53,13 @@ export class SourceMaps {
         pathToGenerated = pathToGenerated.toLowerCase();
         return this._generatedPathToSourceMap.has(pathToGenerated) ?
             this._generatedPathToSourceMap.get(pathToGenerated).authoredSources :
+            null;
+    }
+
+    public allSourcePathDetails(pathToGenerated: string): ISourcePathDetails[] {
+        pathToGenerated = pathToGenerated.toLowerCase();
+        return this._generatedPathToSourceMap.has(pathToGenerated) ?
+            this._generatedPathToSourceMap.get(pathToGenerated).allSourcePathDetails :
             null;
     }
 

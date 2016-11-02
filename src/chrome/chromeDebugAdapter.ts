@@ -54,8 +54,9 @@ interface IPendingBreakpoint {
 }
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
+    public static PLACEHOLDER_URL_PROTOCOL = 'eval://';
+    private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
-    private static PLACEHOLDER_URL_PROTOCOL = 'debugadapter://';
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
 
     protected _session: ChromeDebugSession;
@@ -978,6 +979,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
+        if (args.expression.startsWith(ChromeDebugAdapter.SCRIPTS_COMMAND)) {
+            return this.handleScriptsCommand(args);
+        }
+
         // These two responses are shaped exactly the same
         let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
         if (typeof args.frameId === 'number') {
@@ -1007,6 +1012,62 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 };
             });
         });
+    }
+
+    /**
+     * Handle the .scripts command, which can be used as `.scripts` to return a list of all script details,
+     * or `.scripts <url>` to show the contents of the given script.
+     */
+    private handleScriptsCommand(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
+        let outputStringP: Promise<string>;
+        const scriptsRest = utils.lstrip(args.expression, ChromeDebugAdapter.SCRIPTS_COMMAND).trim();
+        if (scriptsRest) {
+            // `.scripts <url>` was used, look up the script by url
+            const requestedScript = this._scriptsByUrl.get(scriptsRest);
+            if (requestedScript) {
+                outputStringP = this.chrome.Debugger.getScriptSource({ scriptId: requestedScript.scriptId })
+                    .then(result => {
+                        const maxLength = 1e5;
+                        return result.scriptSource.length > maxLength ?
+                            result.scriptSource.substr(0, maxLength) + '[⋯]' :
+                            result.scriptSource;
+                    });
+            } else {
+                outputStringP = Promise.resolve(`No runtime script with url: ${scriptsRest}`);
+            }
+        } else {
+            outputStringP = this.getAllScriptsString();
+        }
+
+        return outputStringP.then(scriptsStr => {
+            this._session.sendEvent(new OutputEvent(scriptsStr));
+            return <IEvaluateResponseBody>{
+                result: '',
+                variablesReference: 0
+            };
+        });
+    }
+
+    private getAllScriptsString(): Promise<string> {
+        const runtimeScripts = Array.from(this._scriptsByUrl.keys())
+            .sort();
+        return Promise.all(runtimeScripts.map(script => this.getOneScriptString(script))).then(strs => {
+            return strs.join('\n');
+        });
+    }
+
+    private getOneScriptString(runtimeScriptPath: string): Promise<string> {
+        let result = '› ' + runtimeScriptPath;
+        const clientPath = this._pathTransformer.getClientPathFromTargetPath(runtimeScriptPath);
+        if (clientPath && clientPath !== runtimeScriptPath) result += ` (${clientPath})`;
+
+        return this._sourceMapTransformer.allSourcePathDetails(clientPath || runtimeScriptPath).then(sourcePathDetails => {
+            let mappedSourcesStr = sourcePathDetails.map(details => `    - ${details.originalPath} (${details.inferredPath})`).join('\n');
+            if (sourcePathDetails.length) mappedSourcesStr = '\n' + mappedSourcesStr;
+
+            return result + mappedSourcesStr;
+        });
+
     }
 
     /**

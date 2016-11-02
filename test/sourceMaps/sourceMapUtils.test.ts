@@ -74,7 +74,7 @@ suite('SourceMapUtils', () => {
 
         test('no crash on debugadapter:// urls', () => {
             assert.equal(
-                getComputedSourceRoot('', 'debugadapter://123', WEBROOT),
+                getComputedSourceRoot('', 'eval://123', WEBROOT),
                 testUtils.pathResolve(WEBROOT));
         });
     });

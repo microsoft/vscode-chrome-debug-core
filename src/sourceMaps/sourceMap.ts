@@ -12,11 +12,25 @@ import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
 export type MappedPosition = MappedPosition;
 
+/**
+ * A pair of the original path in the sourcemap, and the full absolute path as inferred
+ */
+export interface ISourcePathDetails {
+    originalPath: string;
+    inferredPath: string;
+}
+
 export class SourceMap {
     private _generatedPath: string; // the generated file for this sourcemap (absolute path)
     private _sources: string[]; // list of authored files (absolute paths)
     private _smc: SourceMapConsumer; // the source map
     private _authoredPathCaseMap = new Map<string, string>(); // Maintain pathCase map because VSCode is case sensitive
+
+    private _allSourcePathDetails: ISourcePathDetails[] = []; // A list of all original paths from the sourcemap, and their inferred local paths
+
+    public get allSourcePathDetails(): ISourcePathDetails[] {
+        return this._allSourcePathDetails;
+    }
 
     /**
      * pathToGenerated - an absolute local path or a URL
@@ -68,6 +82,15 @@ export class SourceMap {
             }
 
             return utils.canonicalizeUrl(sourcePath);
+        });
+
+        this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
+            const originalSource = sm.sources[i];
+            const originalPath = origSourceRoot ? (origSourceRoot + originalSource) : originalSource;
+            return <ISourcePathDetails>{
+                inferredPath,
+                originalPath
+            };
         });
 
         // Rewrite sm.sources to same as this._sources but file url with forward slashes

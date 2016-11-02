@@ -8,6 +8,7 @@ import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs, IStackTrace
 import * as utils from '../utils';
 import * as logger from '../logger';
 import * as ChromeUtils from '../chrome/chromeUtils';
+import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 
 import * as path from 'path';
 
@@ -63,8 +64,8 @@ export class UrlPathTransformer extends BasePathTransformer {
         const clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
 
         if (!clientPath) {
-            // It's expected that eval scripts (debugadapter:) won't be resolved
-            if (!scriptUrl.startsWith('debugadapter://')) {
+            // It's expected that eval scripts (eval://) won't be resolved
+            if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL)) {
                 logger.log(`Paths.scriptParsed: could not resolve ${scriptUrl} to a file under webRoot: ${this._webRoot}. It may be external or served directly from the server's memory (and that's OK).`);
             }
         } else {

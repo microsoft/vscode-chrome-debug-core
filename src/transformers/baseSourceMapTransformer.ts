@@ -7,7 +7,7 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
     ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../debugAdapterInterfaces';
-import {MappedPosition} from '../sourceMaps/sourceMap';
+import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
 import {SourceMaps} from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
 import * as logger from '../logger';
@@ -250,6 +250,14 @@ export class BaseSourceMapTransformer {
             // Find the generated path, or check whether this script is actually a runtime path - if so, return that
             return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
                 (this._allRuntimeScriptPaths.has(authoredPath) ? authoredPath : null);
+        });
+    }
+
+    public allSourcePathDetails(pathToGenerated: string): Promise<ISourcePathDetails[]> {
+        if (!this._sourceMaps) return Promise.resolve([]);
+
+        return this._preLoad.then(() => {
+            return this._sourceMaps.allSourcePathDetails(pathToGenerated) || [];
         });
     }
 }
