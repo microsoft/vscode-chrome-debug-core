@@ -10,6 +10,7 @@ import Crdp from '../../crdp/crdp';
 export interface IMockChromeConnectionAPI {
     apiObjects: Crdp.CrdpClient;
 
+    Console: Mock<Crdp.ConsoleClient>;
     Debugger: Mock<Crdp.DebuggerClient>;
     Runtime: Mock<Crdp.RuntimeClient>;
     Inspector: Mock<Crdp.InspectorClient>;
@@ -18,6 +19,13 @@ export interface IMockChromeConnectionAPI {
 }
 
 // See https://github.com/florinn/typemoq/issues/20
+function getConsoleStubs() {
+    return {
+        enable() { },
+        onMessageAdded() { }
+    };
+}
+
 function getDebuggerStubs(mockEventEmitter) {
     return {
         setBreakpoint() { },
@@ -52,6 +60,12 @@ function getInspectorStubs(mockEventEmitter) {
 export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     const mockEventEmitter = new EventEmitter();
 
+    let mockConsole = Mock.ofInstance<Crdp.ConsoleClient>(<any>getConsoleStubs());
+    mockConsole.callBase = true;
+    mockConsole
+        .setup(x => x.enable())
+        .returns(() => Promise.resolve());
+
     let mockDebugger = Mock.ofInstance<Crdp.DebuggerClient>(<any>getDebuggerStubs(mockEventEmitter));
     mockDebugger.callBase = true;
     mockDebugger
@@ -68,6 +82,7 @@ export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     mockInspector.callBase = true;
 
     const chromeConnectionAPI: Crdp.CrdpClient = <any>{
+        Console: mockConsole.object,
         Debugger: mockDebugger.object,
         Runtime: mockRuntime.object,
         Inspector: mockInspector.object
@@ -76,6 +91,7 @@ export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     return {
         apiObjects: chromeConnectionAPI,
 
+        Console: mockConsole,
         Debugger: mockDebugger,
         Runtime: mockRuntime,
         Inspector: mockInspector,

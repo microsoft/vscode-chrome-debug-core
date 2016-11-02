@@ -241,6 +241,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
         this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
 
+        this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
@@ -254,6 +255,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected runConnection(): Promise<void>[] {
         return [
+            this.chrome.Console.enable()
+                .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
             this.chrome.Debugger.enable(),
             this.chrome.Runtime.enable(),
             this._chromeConnection.run()
@@ -462,6 +465,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._session.sendEvent(new OutputEvent(
                 formattedMessage.text + '\n',
                 formattedMessage.isError ? 'stderr' : 'stdout'));
+        }
+    }
+
+    /**
+     * For backcompat, also listen to Console.messageAdded, only if it looks like the old format.
+     */
+    protected onMessageAdded(params: any): void {
+        // message.type is undefined when Runtime.consoleAPICalled is being sent
+        if (params && params.message && params.message.type) {
+            const onConsoleAPICalledParams: Crdp.Runtime.ConsoleAPICalledEvent = {
+                type: params.message.type,
+                timestamp: params.message.timestamp,
+                args: params.message.parameters,
+                stackTrace: params.message.stack,
+                executionContextId: 1
+            };
+            this.onConsoleAPICalled(onConsoleAPICalledParams);
         }
     }
 
