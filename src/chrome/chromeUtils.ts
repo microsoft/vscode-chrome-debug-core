@@ -181,3 +181,18 @@ export function errorMessageFromExceptionDetails(exceptionDetails: Crdp.Runtime.
     const description = descriptionFromExceptionDetails(exceptionDetails);
     return description.substr(0, description.indexOf('\n'));
 }
+
+export function getEvaluateName(parentEvaluateName: string, name: string): string {
+    if (!parentEvaluateName) return name;
+
+    let nameAccessor: string;
+    if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)) {
+        nameAccessor = '.' + name;
+    } else if (/^\d+$/.test(name)) {
+        nameAccessor = `[${name}]`;
+    } else {
+        nameAccessor = `[${JSON.stringify(name)}]`;
+    }
+
+    return parentEvaluateName + nameAccessor;
+}

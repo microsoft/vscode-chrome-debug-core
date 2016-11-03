@@ -251,4 +251,31 @@ suite('ChromeUtils', () => {
             assert.equal(chromeUtils.compareVariableNames('xyz123', '890kjh'), 'xyz123'.localeCompare('890kjh'));
         });
     });
+
+    suite('getEvaluateName', () => {
+        const chromeUtils = getChromeUtils();
+
+        test('Returns the name when there\'s no parent eval name', () => {
+            assert.equal(chromeUtils.getEvaluateName('', 'abc'), 'abc');
+        });
+
+        test('Uses brackets for numbers', () => {
+            assert.equal(chromeUtils.getEvaluateName('arr', '0'), 'arr[0]');
+            assert.equal(chromeUtils.getEvaluateName('arr', '123'), 'arr[123]');
+        });
+
+        test('Uses dot notation when possible', () => {
+            assert.equal(chromeUtils.getEvaluateName('obj', 'abc'), 'obj.abc');
+            assert.equal(chromeUtils.getEvaluateName('obj', '$0'), 'obj.$0');
+            assert.equal(chromeUtils.getEvaluateName('obj', '_a'), 'obj._a');
+        });
+
+        test('Uses brackets with strings for all other cases', () => {
+            assert.equal(chromeUtils.getEvaluateName('obj', '0a'), 'obj["0a"]');
+            assert.equal(chromeUtils.getEvaluateName('obj', '"'), 'obj["\\""]');
+            assert.equal(chromeUtils.getEvaluateName('obj', ''), 'obj[""]');
+            assert.equal(chromeUtils.getEvaluateName('obj', '1.2'), 'obj["1.2"]');
+            assert.equal(chromeUtils.getEvaluateName('obj', 'a-b'), 'obj["a-b"]');
+        });
+    });
 });

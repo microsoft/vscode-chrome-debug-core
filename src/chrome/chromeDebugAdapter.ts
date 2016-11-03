@@ -840,7 +840,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string): Promise<DebugProtocol.Variable> {
+    public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
         if (propDesc.get) {
             // Getter
             const grabGetterValue = 'function remoteFunction(propName) { return this[propName]; }';
@@ -855,7 +855,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
                     return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
                 } else {
-                    return this.remoteObjectToVariable(propDesc.name, response.result);
+                    return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
                 }
             },
             error => {
@@ -867,13 +867,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return Promise.resolve({ name: propDesc.name, value: 'setter', variablesReference: 0 });
         } else {
             // Non getter/setter
-            return this.internalPropertyDescriptorToVariable(propDesc);
+            return this.internalPropertyDescriptorToVariable(propDesc, parentEvaluateName);
         }
     }
 
-    public getVariablesForObjectId(objectId: string, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public getVariablesForObjectId(objectId: string, evaluateName?: string, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         if (typeof start === 'number' && typeof count === 'number') {
-            return this.getFilteredVariablesForObject(objectId, filter, start, count);
+            return this.getFilteredVariablesForObject(objectId, evaluateName, filter, start, count);
         }
 
         filter = filter === 'indexed' ? 'all' : filter;
@@ -903,13 +903,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const variables: Promise<DebugProtocol.Variable>[] = [];
             propsByName.forEach(propDesc => {
                 if (!filter || filter === 'all' || (isIndexedPropName(propDesc.name) === (filter === 'indexed'))) {
-                    variables.push(this.propertyDescriptorToVariable(propDesc, objectId));
+                    variables.push(this.propertyDescriptorToVariable(propDesc, objectId, evaluateName));
                 }
             });
 
             internalPropsByName.forEach(internalProp => {
                 if (!filter || filter === 'all' || (isIndexedPropName(internalProp.name) === (filter === 'indexed'))) {
-                    variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp)));
+                    variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp, evaluateName)));
                 }
             });
 
@@ -920,11 +920,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private internalPropertyDescriptorToVariable(propDesc: Crdp.Runtime.InternalPropertyDescriptor): Promise<DebugProtocol.Variable> {
-        return this.remoteObjectToVariable(propDesc.name, propDesc.value);
+    private internalPropertyDescriptorToVariable(propDesc: Crdp.Runtime.InternalPropertyDescriptor, parentEvaluateName: string): Promise<DebugProtocol.Variable> {
+        return this.remoteObjectToVariable(propDesc.name, propDesc.value, parentEvaluateName);
     }
 
-    private getFilteredVariablesForObject(objectId: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
+    private getFilteredVariablesForObject(objectId: string, evaluateName: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
         // No ES6, in case we talk to an old runtime
         const getIndexedVariablesFn = `
             function getIndexedVariables(start, count) {
@@ -942,10 +942,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }`;
 
         const getVarsFn = filter === 'indexed' ? getIndexedVariablesFn : getNamedVariablesFn;
-        return this.getFilteredVariablesForObjectId(objectId, getVarsFn, filter, start, count);
+        return this.getFilteredVariablesForObjectId(objectId, evaluateName, getVarsFn, filter, start, count);
     }
 
-    private getFilteredVariablesForObjectId(objectId: string, getVarsFn: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
+    private getFilteredVariablesForObjectId(objectId: string, evaluateName: string, getVarsFn: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
         return this.chrome.Runtime.callFunctionOn({
             objectId,
             functionDeclaration: getVarsFn,
@@ -958,7 +958,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 // The eval was successful and returned a reference to the array object. Get the props, then filter
                 // out everything except the index names.
-                return this.getVariablesForObjectId(evalResponse.result.objectId, filter)
+                return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
                     .then(variables => variables.filter(variable => isIndexedPropName(variable.name)));
             }
         },
@@ -1014,7 +1014,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return evalPromise.then(evalResponse => {
             // Convert to a Variable object then just copy the relevant fields off
-            return this.remoteObjectToVariable('', evalResponse.result, /*stringify=*/undefined, args.context).then(variable => {
+            return this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, args.context).then(variable => {
                 if (evalResponse.exceptionDetails) {
                     let resultValue = variable.value;
                     if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {
@@ -1141,7 +1141,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
     }
 
-    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, stringify = true, context = 'variables'): Promise<DebugProtocol.Variable> {
+    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context = 'variables'): Promise<DebugProtocol.Variable> {
         let value = '';
 
         if (object) {
@@ -1152,12 +1152,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 } else if (object.subtype === 'null') {
                     value = 'null';
                 } else {
-                    return this.createObjectVariable(name, object, context);
+                    return this.createObjectVariable(name, object, parentEvaluateName, context);
                 }
             } else if (object.type === 'undefined') {
                 value = 'undefined';
             } else if (object.type === 'function') {
-                return Promise.resolve(this.createFunctionVariable(name, object));
+                return Promise.resolve(this.createFunctionVariable(name, object, parentEvaluateName));
             } else {
                 // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
                 if (typeof object.value === 'undefined') {
@@ -1175,11 +1175,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return Promise.resolve(<DebugProtocol.Variable>{
             name,
             value,
-            variablesReference: 0
+            variablesReference: 0,
+            evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
         });
     }
 
-    public createFunctionVariable(name: string, object: Crdp.Runtime.RemoteObject): DebugProtocol.Variable {
+    public createFunctionVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string): DebugProtocol.Variable {
         let value: string;
         const firstBraceIdx = object.description.indexOf('{');
         if (firstBraceIdx >= 0) {
@@ -1191,15 +1192,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 object.description;
         }
 
+        const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
         return <DebugProtocol.Variable>{
             name,
             value,
-            variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId)),
-            type: value
+            variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName)),
+            type: value,
+            evaluateName
         };
     }
 
-    public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, context: string): Promise<DebugProtocol.Variable> {
+    public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName: string, context: string): Promise<DebugProtocol.Variable> {
         let value = object.description;
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
@@ -1235,14 +1238,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             propCountP = Promise.resolve({ });
         }
 
-        const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId));
+        const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
+        const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName));
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
             name,
             value,
             type: value,
             variablesReference,
             indexedVariables,
-            namedVariables
+            namedVariables,
+            evaluateName
         }));
     }
 

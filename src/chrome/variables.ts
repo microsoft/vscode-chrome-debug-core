@@ -14,11 +14,11 @@ export interface IVariableContainer {
 }
 
 export abstract class BaseVariableContainer implements IVariableContainer {
-    constructor(public objectId: string) {
+    constructor(public objectId: string, protected evaluateName?: string) {
     }
 
     public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
-        return adapter.getVariablesForObjectId(this.objectId, filter, start, count);
+        return adapter.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
     }
 
     public abstract setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string>;
@@ -37,7 +37,7 @@ export class ScopeContainer extends BaseVariableContainer {
     private _origScopeIndex: number;
 
     public constructor(frameId: string, origScopeIndex: number, objectId: string, thisObj?: Crdp.Runtime.RemoteObject, returnValue?: Crdp.Runtime.RemoteObject) {
-        super(objectId);
+        super(objectId, '');
         this._thisObj = thisObj;
         this._returnValue = returnValue;
         this._frameId = frameId;
@@ -81,7 +81,7 @@ export class ExceptionContainer extends PropertyContainer {
     protected _exception: Crdp.Runtime.RemoteObject;
 
     protected constructor(objectId: string, exception: Crdp.Runtime.RemoteObject) {
-        super(exception.objectId);
+        super(exception.objectId, undefined);
         this._exception = exception;
     }
 
