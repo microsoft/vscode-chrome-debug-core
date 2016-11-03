@@ -126,8 +126,7 @@ class Logger {
 
         if (this._logToConsole) {
             const logFn = level === LogLevel.Error ? console.error : console.log;
-            msg = utils.trimLastNewline(msg);
-            logFn(msg);
+            logFn(utils.trimLastNewline(msg));
         }
 
         // If an error, prepend with '[Error]'
