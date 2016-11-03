@@ -86,7 +86,7 @@ export class SourceMap {
 
         this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
             const originalSource = sm.sources[i];
-            const originalPath = origSourceRoot ? (origSourceRoot + originalSource) : originalSource;
+            const originalPath = origSourceRoot ? path.join(origSourceRoot + originalSource) : originalSource;
             return <ISourcePathDetails>{
                 inferredPath,
                 originalPath
