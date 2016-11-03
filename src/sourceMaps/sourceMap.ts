@@ -64,7 +64,7 @@ export class SourceMap {
         // it needs to look them up later in exactly the same format.
         this._sources = sm.sources.map(sourcePath => {
             if (sourceMapPathOverrides) {
-                const fullSourceEntry = origSourceRoot ? path.join(origSourceRoot + sourcePath) : sourcePath;
+                const fullSourceEntry = origSourceRoot ? path.join(origSourceRoot, sourcePath) : sourcePath;
                 const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides);
                 if (fullSourceEntry !== mappedFullSourceEntry) {
                     return utils.canonicalizeUrl(mappedFullSourceEntry);
