@@ -5,7 +5,6 @@
 import {SourceMap, MappedPosition, ISourcePathDetails} from './sourceMap';
 import {getMapForGeneratedPath} from './sourceMapFactory';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
-import * as sourceMapUtils from './sourceMapUtils';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -19,7 +18,7 @@ export class SourceMaps {
 
     public constructor(webRoot?: string, sourceMapPathOverrides?: ISourceMapPathOverrides) {
         this._webRoot = webRoot;
-        this._sourceMapPathOverrides = sourceMapUtils.resolveWebRootPattern(webRoot, sourceMapPathOverrides);
+        this._sourceMapPathOverrides = sourceMapPathOverrides;
     }
 
     /**

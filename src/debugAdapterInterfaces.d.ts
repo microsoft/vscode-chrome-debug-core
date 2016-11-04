@@ -23,13 +23,13 @@ export interface ICommonRequestArgs {
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
     experimentalLibraryCode?: string[]; // an array of file names or regexps
+    timeout?: number;
 }
 
 /**
  * Properties needed by -core, just a subset of the properties needed for launch in general
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
-    userDataDir?: string;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {

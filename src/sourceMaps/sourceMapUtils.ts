@@ -59,35 +59,12 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
 }
 
 /**
- * Returns a copy of sourceMapPathOverrides with the ${webRoot} pattern resolved in all entries.
- */
-export function resolveWebRootPattern(webRoot: string, sourceMapPathOverrides: ISourceMapPathOverrides): ISourceMapPathOverrides {
-    const resolvedOverrides: ISourceMapPathOverrides = {};
-    for (let pattern in sourceMapPathOverrides) {
-        const replacePattern = sourceMapPathOverrides[pattern];
-        resolvedOverrides[pattern] = replacePattern;
-
-        const webRootIndex = replacePattern.indexOf('${webRoot}');
-        if (webRootIndex === 0) {
-            if (webRoot) {
-                resolvedOverrides[pattern] = replacePattern.replace('${webRoot}', webRoot);
-            } else {
-                logger.log('Warning: sourceMapPathOverrides entry contains ${webRoot}, but webRoot is not set');
-            }
-        } else if (webRootIndex > 0) {
-            logger.log('Warning: in a sourceMapPathOverrides entry, ${webRoot} is only valid at the beginning of the path');
-        }
-    }
-
-    return resolvedOverrides;
-}
-
-/**
  * Applies a set of path pattern mappings to the given path. See tests for examples.
  * Returns something validated to be an absolute path.
  */
 export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOverrides: ISourceMapPathOverrides): string {
-    // Iterate the key/vals, only apply the first one that matches
+    // Iterate the key/vals, only apply the first one that matches.
+    // for...in iterates in order, (unless the key is a number)
     for (let pattern in sourceMapPathOverrides) {
         let replacePattern = sourceMapPathOverrides[pattern];
         const entryStr = `"${pattern}": "${replacePattern}"`;
