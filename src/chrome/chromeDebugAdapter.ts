@@ -53,11 +53,17 @@ interface IPendingBreakpoint {
     ids: number[];
 }
 
+interface IHitConditionBreakpoint {
+    numHits: number;
+    shouldPause: (numHits: number) => boolean;
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static PLACEHOLDER_URL_PROTOCOL = 'eval://';
     private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
+    private static HITCONDITION_MATCHER = /^(>|>=|=|<|<=|%)?\s*([0-9]+)$/;
 
     protected _session: ChromeDebugSession;
     private _clientAttached: boolean;
@@ -76,6 +82,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _scriptsById: Map<Crdp.Runtime.ScriptId, Crdp.Debugger.ScriptParsedEvent>;
     private _scriptsByUrl: Map<string, Crdp.Debugger.ScriptParsedEvent>;
     private _pendingBreakpointsByUrl: Map<string, IPendingBreakpoint>;
+    private _hitConditionBreakpointsById: Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>;
 
     private _chromeConnection: ChromeConnection;
 
@@ -105,6 +112,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._breakpointIdHandles = new utils.ReverseHandles<string>();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
+        this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
 
         this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
         this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles);
@@ -162,7 +170,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsConfigurationDoneRequest: true,
             supportsSetVariable: true,
             supportsConditionalBreakpoints: true,
-            supportsCompletionsRequest: true
+            supportsCompletionsRequest: true,
+            supportsHitConditionalBreakpoints: true
         };
     }
 
@@ -316,6 +325,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._exception = notification.data;
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
+
+            // Did we hit a hit condition breakpoint?
+            for (let hitBp of notification.hitBreakpoints) {
+                if (this._hitConditionBreakpointsById.has(hitBp)) {
+                    // Increment the hit count and check whether to pause
+                    const hitConditionBp = this._hitConditionBreakpointsById.get(hitBp);
+                    hitConditionBp.numHits++;
+                    // Only resume if we didn't break for some user action (step, pause button)
+                    if (!this._expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
+                        this.chrome.Debugger.resume();
+                        return;
+                    }
+                }
+            }
         } else if (this._expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = this._expectingStopReason;
@@ -652,21 +675,52 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     };
                 }
 
+                const bpId = this._breakpointIdHandles.create(response.breakpointId);
+
                 if (!response.actualLocation) {
                     return <DebugProtocol.Breakpoint>{
-                        id: this._breakpointIdHandles.create(response.breakpointId),
+                        id: bpId,
                         verified: false
                     };
                 }
 
-                // May not have actualLocation, fix
+                if (requestBps[i].hitCondition) {
+                    if (!this.addHitConditionBreakpoint(requestBps[i], response)) {
+                        return <DebugProtocol.Breakpoint>{
+                            id: bpId,
+                            message: 'Invalid hit condition',
+                            verified: false
+                        };
+                    }
+                }
+
                 return <DebugProtocol.Breakpoint>{
-                    id: this._breakpointIdHandles.create(response.breakpointId),
+                    id: bpId,
                     verified: true,
                     line: response.actualLocation.lineNumber,
                     column: response.actualLocation.columnNumber
                 };
             });
+    }
+
+    private addHitConditionBreakpoint(requestBp: DebugProtocol.SourceBreakpoint, response: Crdp.Debugger.SetBreakpointResponse): boolean {
+        const result = ChromeDebugAdapter.HITCONDITION_MATCHER.exec(requestBp.hitCondition.trim());
+        if (result.length >= 3) {
+            const op = result[1] || '>=';
+            const value = result[2];
+            const expr = op === '%'
+                ? `return (numHits % ${value}) === 0;`
+                : `return numHits ${op} ${value};`;
+
+            // eval safe because of the regex, and this is only a string that the current user will type in
+            /* tslint:disable:no-function-constructor-with-string-args */
+            const shouldPause: (numHits: number) => boolean = <any>new Function('numHits', expr);
+            /* tslint:enable:no-function-constructor-with-string-args */
+            this._hitConditionBreakpointsById.set(response.breakpointId, { numHits: 0, shouldPause });
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public setExceptionBreakpoints(args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<void> {
