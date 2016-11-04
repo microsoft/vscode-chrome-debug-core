@@ -192,7 +192,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.commonArgs(args);
 
         telemetry.reportEvent('debugStarted', { request: 'attach' });
-        return this.doAttach(args.port, args.url, args.address);
+        return this.doAttach(args.port, args.url, args.address, args.timeout);
     }
 
     public commonArgs(args: ICommonRequestArgs): void {
