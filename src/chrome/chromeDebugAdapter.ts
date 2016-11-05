@@ -708,7 +708,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private addHitConditionBreakpoint(requestBp: DebugProtocol.SourceBreakpoint, response: Crdp.Debugger.SetBreakpointResponse): boolean {
         const result = ChromeDebugAdapter.HITCONDITION_MATCHER.exec(requestBp.hitCondition.trim());
         if (result && result.length >= 3) {
-            const op = result[1] || '>=';
+            let op = result[1] || '>=';
+            if (op === '=') op = '==';
             const value = result[2];
             const expr = op === '%'
                 ? `return (numHits % ${value}) === 0;`
