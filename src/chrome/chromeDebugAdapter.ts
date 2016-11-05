@@ -51,6 +51,7 @@ export interface ISourceContainer {
 interface IPendingBreakpoint {
     args: ISetBreakpointsArgs;
     ids: number[];
+    requestSeq: number;
 }
 
 interface IHitConditionBreakpoint {
@@ -451,7 +452,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
-        return this.setBreakpoints(pendingBP.args, 0).then(response => {
+        return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this._session.sendEvent(new BreakpointEvent('new', bp));
@@ -550,10 +551,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                         return body;
                     });
                 } else {
-                    return Promise.resolve(this.unverifiedBpResponse(args, utils.localize('bp.fail.noscript', `Can't find script for breakpoint request`)));
+                    return Promise.resolve(this.unverifiedBpResponse(args, requestSeq, utils.localize('bp.fail.noscript', `Can't find script for breakpoint request`)));
                 }
             },
-            e => this.unverifiedBpResponse(args, e.message));
+            e => this.unverifiedBpResponse(args, requestSeq, e.message));
     }
 
     private reportBpTelemetry(args: ISetBreakpointsArgs): void {
@@ -582,7 +583,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    private unverifiedBpResponse(args: ISetBreakpointsArgs, message?: string): ISetBreakpointsResponseBody {
+    private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, message?: string): ISetBreakpointsResponseBody {
         const breakpoints = args.breakpoints.map(bp => {
             return <DebugProtocol.Breakpoint>{
                 verified: false,
@@ -595,7 +596,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
-            this._pendingBreakpointsByUrl.set(args.source.path, { args, ids });
+            this._pendingBreakpointsByUrl.set(args.source.path, { args, ids, requestSeq });
         }
 
         return { breakpoints };
