@@ -684,11 +684,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     };
                 }
 
-                if (requestBps[i].hitCondition) {
-                    if (!this.addHitConditionBreakpoint(requestBps[i], response)) {
+                const thisBpRequest = requestBps[i];
+                if (thisBpRequest.hitCondition) {
+                    if (!this.addHitConditionBreakpoint(thisBpRequest, response)) {
                         return <DebugProtocol.Breakpoint>{
                             id: bpId,
-                            message: 'Invalid hit condition',
+                            message: 'Invalid hit condition: ' + thisBpRequest.hitCondition,
                             verified: false
                         };
                     }
@@ -705,7 +706,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private addHitConditionBreakpoint(requestBp: DebugProtocol.SourceBreakpoint, response: Crdp.Debugger.SetBreakpointResponse): boolean {
         const result = ChromeDebugAdapter.HITCONDITION_MATCHER.exec(requestBp.hitCondition.trim());
-        if (result.length >= 3) {
+        if (result && result.length >= 3) {
             const op = result[1] || '>=';
             const value = result[2];
             const expr = op === '%'
