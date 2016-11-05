@@ -63,10 +63,25 @@ export class ChromeDebugSession extends DebugSession {
         logger.init((msg, level) => this.onLog(msg, level), logFilePath, isServer);
         logVersionInfo();
 
+        const safeGetErrDetails = err => {
+            let errMsg;
+            try {
+                errMsg = (<Error>err).stack ? (<Error>err).stack : JSON.stringify(err);
+            } catch (e) {
+                errMsg = 'Error while handling previous error: ' + e.stack;
+            }
+
+            return errMsg;
+        };
+
+        process.on('uncaughtException', function(err) {
+            logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
+            throw err;
+        });
+
         process.addListener('unhandledRejection', (err: Error|DebugProtocol.Message) => {
             // Node tests are watching for the ********, so fix the tests if it's changed
-            const errMsg = (<Error>err).stack ? (<Error>err).stack : JSON.stringify(err);
-            logger.error(`******** Error in debug adapter - Unhandled promise rejection: ${errMsg}`);
+            logger.error(`******** Unhandled error in debug adapter - Unhandled promise rejection: ${safeGetErrDetails(err)}`);
         });
     }
 
