@@ -74,7 +74,7 @@ export class ChromeDebugSession extends DebugSession {
             return errMsg;
         };
 
-        process.on('uncaughtException', function(err) {
+        process.on('uncaughtException', (err: any) => {
             logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
             throw err;
         });
