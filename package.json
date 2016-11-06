@@ -48,6 +48,6 @@
     "typescript": "^2.0.3"
   },
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha --recursive -u tdd ./out/test/"
+    "test": "mocha --recursive -u tdd ./out/test/"
   }
 }
