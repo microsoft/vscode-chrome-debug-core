@@ -501,7 +501,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const onConsoleAPICalledParams: Crdp.Runtime.ConsoleAPICalledEvent = {
                 type: params.message.type,
                 timestamp: params.message.timestamp,
-                args: params.message.parameters,
+                args: params.message.parameters || [{ type: 'string', value: params.message.text }],
                 stackTrace: params.message.stack,
                 executionContextId: 1
             };
