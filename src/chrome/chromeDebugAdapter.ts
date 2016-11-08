@@ -534,7 +534,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 if (targetScriptUrl) {
-                    // DebugProtocol sends all current breakpoints for the script. Clear all scripts for the breakpoint then add all of them
+                    // DebugProtocol sends all current breakpoints for the script. Clear all breakpoints for the script then add all of them
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
                         .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
