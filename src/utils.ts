@@ -410,6 +410,11 @@ export class ReverseHandles<T> extends Handles<T> {
 
         return undefined;
     }
+
+    public set(handle: number, value: T): void {
+        (<any>this)._handleMap.set(handle, value);
+        this._reverseMap.set(value, handle);
+    }
 }
 
 /**

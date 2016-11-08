@@ -452,7 +452,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
-        return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq).then(response => {
+        return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this._session.sendEvent(new BreakpointEvent('new', bp));
@@ -514,7 +514,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.terminateSession('Got disconnect request');
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): Promise<ISetBreakpointsResponseBody> {
+    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         this.reportBpTelemetry(args);
         return this.validateBreakpointsPath(args)
             .then(() => {
@@ -538,7 +538,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
                         .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
-                        .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.breakpoints) }));
+                        .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.breakpoints, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, 'Set breakpoints request timed out');
 
@@ -656,7 +656,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return Promise.all(responsePs);
     }
 
-    private chromeBreakpointResponsesToODPBreakpoints(url: string, responses: Crdp.Debugger.SetBreakpointResponse[], requestBps: DebugProtocol.SourceBreakpoint[]): DebugProtocol.Breakpoint[] {
+    private chromeBreakpointResponsesToODPBreakpoints(url: string, responses: Crdp.Debugger.SetBreakpointResponse[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
         // Don't cache errored responses
         const committedBpIds = responses
             .filter(response => !!response.breakpointId)
@@ -676,7 +676,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     };
                 }
 
-                const bpId = this._breakpointIdHandles.create(response.breakpointId);
+                let bpId: number;
+                if (ids && ids[i]) {
+                    bpId = ids[i];
+                    this._breakpointIdHandles.set(bpId, response.breakpointId);
+                } else {
+                    bpId = this._breakpointIdHandles.lookup(response.breakpointId) ||
+                        this._breakpointIdHandles.create(response.breakpointId);
+                }
 
                 if (!response.actualLocation) {
                     return <DebugProtocol.Breakpoint>{
