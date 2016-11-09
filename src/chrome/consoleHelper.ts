@@ -72,11 +72,14 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent): string {
             formatted = Math.floor(+param.value);
         } else if (formatSpecifiers[i] === 'f') {
             formatted = +param.value;
-        } else if (['o', 'O', 'c'].indexOf(formatSpecifiers[i]) >= 0) {
+        } else if (formatSpecifiers[i] === 'c') {
+            // %c - Applies CSS color rules
+            // Could use terminal color codes in the future
+            formatted = '';
+        } else if (['o', 'O'].indexOf(formatSpecifiers[i]) >= 0) {
             // Not supported -
             // %o - expandable DOM element
             // %O - expandable JS object
-            // %c - Applies CSS color rules
             formatted = param.value;
         }
 

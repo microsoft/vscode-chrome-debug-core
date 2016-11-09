@@ -47,6 +47,10 @@ suite('ConsoleHelper', () => {
             doAssert(Runtime.makeLog('test', null, undefined), 'test null undefined');
         });
 
+        test('strips %c patterns', () => {
+            doAssert(Runtime.makeLog('foo %cbar', 'color: red'), 'foo bar');
+        });
+
         test('network error - need Log domain');
 
         test('objects- waiting on Microsoft/vscode-node-debug#4');
