@@ -286,4 +286,30 @@ suite('Utils', () => {
             testPathToRegex('file:///c:\\a\\b.js', 'file:\\/\\/\\/[Cc]:\\\\a\\\\b\\.js');
         });
     });
+
+    suite('pathGlobToRegex', () => {
+        function testPathGlobToBlackboxedScript(glob: string, expected: string): void {
+            assert.equal(getUtils().pathGlobToBlackboxedRegex(glob), expected);
+        }
+
+        test('universal', () => {
+            testPathGlobToBlackboxedScript('*', '.*');
+        });
+
+        test('url', () => {
+            testPathGlobToBlackboxedScript('http://localhost:8080/node_modules/**/*.js', 'http:\\/\\/localhost:8080\\/node_modules\\/.*\\.js');
+        });
+
+        test('path segment', () => {
+            testPathGlobToBlackboxedScript('node_modules', 'node_modules');
+        });
+
+        test('file extension', () => {
+            testPathGlobToBlackboxedScript('*.foo.bar', '.*\\.foo\\.bar');
+        });
+
+        test('escapes special chars except asterisk', () => {
+            testPathGlobToBlackboxedScript('*.+\\[(', '.*\\.\\+\\\\\\[\\(');
+        });
+    });
 });

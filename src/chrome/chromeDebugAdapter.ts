@@ -281,7 +281,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 .then(e => {
                     this.hookConnectionEvents();
                     if (this._launchAttachArgs.experimentalLibraryCode) {
-                        this.chrome.Debugger.setBlackboxPatterns({ patterns: this._launchAttachArgs.experimentalLibraryCode });
+                        const patterns = this._launchAttachArgs.experimentalLibraryCode.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                        this.chrome.Debugger.setBlackboxPatterns({ patterns });
                     }
 
                     return Promise.all(this.runConnection());

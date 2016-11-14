@@ -445,8 +445,22 @@ export function pathToRegex(aPath: string): string {
     return aPath;
 }
 
+export function pathGlobToBlackboxedRegex(glob: string): string {
+    return escapeRegexSpecialCharsForBlackbox(glob)
+        .replace(/\*\*/g, '.*') // ** -> .*
+        .replace(/([^\.]|^)\*/g, '$1.*') // * -> .*
+
+        // Just to simplify
+        .replace(/\.\*\\\/\.\*/g, '.*') // .*\/.* -> .*
+        .replace(/\.\*\.\*/g, '.*'); // .*.* -> .*
+}
+
 function escapeRegexSpecialChars(str: string): string {
-    return str.replace(/([/\\.?*()^${}|[\]])/g, '\\$1');
+    return str.replace(/([/\\.?*()^${}|[\]+])/g, '\\$1');
+}
+
+function escapeRegexSpecialCharsForBlackbox(str: string): string {
+    return str.replace(/([/\\.?()^${}|[\]+])/g, '\\$1');
 }
 
 export function trimLastNewline(msg: string): string {
