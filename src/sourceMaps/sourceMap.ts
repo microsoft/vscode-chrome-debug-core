@@ -18,6 +18,7 @@ export type MappedPosition = MappedPosition;
 export interface ISourcePathDetails {
     originalPath: string;
     inferredPath: string;
+    startPosition: MappedPosition;
 }
 
 export class SourceMap {
@@ -26,9 +27,37 @@ export class SourceMap {
     private _smc: SourceMapConsumer; // the source map
     private _authoredPathCaseMap = new Map<string, string>(); // Maintain pathCase map because VSCode is case sensitive
 
-    private _allSourcePathDetails: ISourcePathDetails[] = []; // A list of all original paths from the sourcemap, and their inferred local paths
+    private _allSourcePathDetails: ISourcePathDetails[]; // A list of all original paths from the sourcemap, and their inferred local paths
 
+    // Original sourcemap details
+    private _originalSources: string[];
+    private _originalSourceRoot: string;
+
+    /**
+     * Returns list of ISourcePathDetails for all sources in this sourcemap, sorted by their
+     * positions within the sourcemap.
+     */
     public get allSourcePathDetails(): ISourcePathDetails[] {
+        if (!this._allSourcePathDetails) {
+            // Lazy compute because the source-map lib handles the bulk of the sourcemap parsing lazily, and this info
+            // is not always needed.
+            this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
+                const originalSource = this._originalSources[i];
+                const originalPath = this._originalSourceRoot ? path.join(this._originalSourceRoot, originalSource) : originalSource;
+                return <ISourcePathDetails>{
+                    inferredPath,
+                    originalPath,
+                    startPosition: this.generatedPositionFor(inferredPath, 0, 0)
+                };
+            }).sort((a, b) => {
+                if (a.startPosition.line === b.startPosition.line) {
+                    return a.startPosition.column - b.startPosition.column;
+                } else {
+                    return a.startPosition.line - b.startPosition.line;
+                }
+            });
+        }
+
         return this._allSourcePathDetails;
     }
 
@@ -56,7 +85,7 @@ export class SourceMap {
 
         // Overwrite the sourcemap's sourceRoot with the version that's resolved to an absolute path,
         // so the work above only has to be done once
-        const origSourceRoot = sm.sourceRoot;
+        this._originalSourceRoot = sm.sourceRoot;
         sm.sourceRoot = null;
 
         // sm.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
@@ -64,7 +93,7 @@ export class SourceMap {
         // it needs to look them up later in exactly the same format.
         this._sources = sm.sources.map(sourcePath => {
             if (sourceMapPathOverrides) {
-                const fullSourceEntry = origSourceRoot ? path.join(origSourceRoot, sourcePath) : sourcePath;
+                const fullSourceEntry = this._originalSourceRoot ? path.join(this._originalSourceRoot, sourcePath) : sourcePath;
                 const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides);
                 if (fullSourceEntry !== mappedFullSourceEntry) {
                     return utils.canonicalizeUrl(mappedFullSourceEntry);
@@ -84,16 +113,8 @@ export class SourceMap {
             return utils.canonicalizeUrl(sourcePath);
         });
 
-        this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
-            const originalSource = sm.sources[i];
-            const originalPath = origSourceRoot ? path.join(origSourceRoot, originalSource) : originalSource;
-            return <ISourcePathDetails>{
-                inferredPath,
-                originalPath
-            };
-        });
-
         // Rewrite sm.sources to same as this._sources but file url with forward slashes
+        this._originalSources = sm.sources;
         sm.sources = this._sources.map(sourceAbsPath => {
             // Convert to file:/// url. After this, it's a file URL for an absolute path to a file on disk with forward slashes.
             // We lowercase so authored <-> generated mapping is not case sensitive.

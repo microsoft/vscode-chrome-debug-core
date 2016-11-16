@@ -95,6 +95,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
+    private _libCodeRegexes: RegExp[];
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
@@ -282,6 +283,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     this.hookConnectionEvents();
                     if (this._launchAttachArgs.experimentalLibraryCode) {
                         const patterns = this._launchAttachArgs.experimentalLibraryCode.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                        this._libCodeRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
                         this.chrome.Debugger.setBlackboxPatterns({ patterns });
                     }
 
@@ -431,7 +433,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsById.set(script.scriptId, script);
         this._scriptsByUrl.set(script.url, script);
 
-        const tryToResolve = source => {
+        const resolvePendingBPs = source => {
             if (this._pendingBreakpointsByUrl.has(source)) {
                 this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
@@ -441,15 +443,56 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const mappedUrl = this._pathTransformer.scriptParsed(script.url);
         const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
             if (sources) {
-                sources.forEach(tryToResolve);
+                sources.forEach(resolvePendingBPs);
             }
 
-            tryToResolve(mappedUrl);
+            resolvePendingBPs(mappedUrl);
+            this.resolveLibCode(script.scriptId, mappedUrl, sources);
         });
 
         if (this._initialSourceMapsP) {
             this._initialSourceMapsP = Promise.all([this._initialSourceMapsP, sourceMapsP]);
         }
+    }
+
+    private resolveLibCode(scriptId: string, mappedUrl: string, sources: string[]): void {
+        if (this.isLibCode(mappedUrl)) {
+            // set the whole script as lib code
+            this.chrome.Debugger.setBlackboxedRanges({
+                scriptId: scriptId,
+                positions: [{ lineNumber: 0, columnNumber: 0 }]
+            });
+        } else if (sources) {
+            const librarySources = new Set(sources.filter(sourcePath => this.isLibCode(sourcePath)));
+            if (librarySources.size) {
+                this._sourceMapTransformer.allSourcePathDetails(mappedUrl).then(details => {
+                    const libPositions: Crdp.Debugger.ScriptPosition[] = [];
+
+                    let inLibRange = false;
+                    details.forEach((detail, i) => {
+                        const isLibCode = librarySources.has(detail.inferredPath);
+                        if ((isLibCode && !inLibRange) || (!isLibCode && inLibRange)) {
+                            libPositions.push({
+                                lineNumber: detail.startPosition.line,
+                                columnNumber: detail.startPosition.column
+                            });
+                            inLibRange = !inLibRange;
+                        }
+                    });
+
+                    this.chrome.Debugger.setBlackboxedRanges({
+                        scriptId: scriptId,
+                        positions: libPositions
+                    });
+                });
+            }
+        }
+    }
+
+    private isLibCode(sourcePath: string): boolean {
+        return this._libCodeRegexes.some(regex => {
+            return regex.test(sourcePath);
+        });
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
@@ -1232,7 +1275,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     // Should be like '3' or 'Infinity'.
                     value = object.description;
                 } else {
-                    value = stringify ? JSON.stringify(object.value) : object.value;
+                    value = stringify ? `"${object.value}"` : object.value;
                 }
             }
         }
