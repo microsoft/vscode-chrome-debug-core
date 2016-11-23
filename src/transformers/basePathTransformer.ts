@@ -28,8 +28,8 @@ export class BasePathTransformer {
         return scriptPath;
     }
 
-    public breakpointResolved(bp: DebugProtocol.Breakpoint, scriptPath: string): string {
-        return scriptPath;
+    public breakpointResolved(bp: DebugProtocol.Breakpoint, targetPath: string): string {
+        return this.getClientPathFromTargetPath(targetPath);
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
