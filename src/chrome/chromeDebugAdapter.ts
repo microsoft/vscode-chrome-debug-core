@@ -490,7 +490,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private isLibCode(sourcePath: string): boolean {
-        return this._libCodeRegexes.some(regex => {
+        return this._libCodeRegexes && this._libCodeRegexes.some(regex => {
             return regex.test(sourcePath);
         });
     }
