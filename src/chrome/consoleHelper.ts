@@ -52,6 +52,8 @@ export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { t
 }
 
 function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent): string {
+    if(!m || !m.args || m.args.length < 1)
+        return "";
     const textArg = m.args[0];
     let text = remoteObjectToString(textArg);
     m.args.shift();
