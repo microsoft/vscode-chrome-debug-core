@@ -200,5 +200,12 @@ suite('SourceMapUtils', () => {
             assert.equal(resolveMapPath(scriptPath, winAbsolutePath), winAbsolutePath);
             assert.equal(resolveMapPath(scriptPath, notWinAbsolutePath), notWinAbsolutePath);
         });
+
+        // https://github.com/Microsoft/vscode-chrome-debug/issues/268
+        test('works for an eval script', () => {
+            const scriptPath = 'eval://53';
+            const sourceMapPath = 'foo.min.js';
+            assert.equal(resolveMapPath(scriptPath, sourceMapPath), null);
+        });
     });
 });

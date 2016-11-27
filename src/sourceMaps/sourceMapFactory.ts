@@ -74,6 +74,9 @@ function getInlineSourceMapContents(sourceMapData: string): string {
  */
 function getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<string> {
     mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPath);
+    if (!mapPath) {
+        return Promise.resolve(null);
+    }
 
     return loadSourceMapContents(mapPath).then(contents => {
         if (!contents) {

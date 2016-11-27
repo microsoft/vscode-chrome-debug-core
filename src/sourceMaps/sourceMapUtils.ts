@@ -109,8 +109,13 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string): string
     if (!utils.isURL(mapPath)) {
         if (utils.isURL(pathToGenerated)) {
             const scriptUrl = url.parse(pathToGenerated);
+            const scriptPath = scriptUrl.pathname;
+            if (!scriptPath) {
+                return null;
+            }
+
             // runtime script is not on disk, map won't be either, resolve a URL for the map relative to the script
-            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptUrl.pathname), mapPath);
+            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptPath), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
         } else if (path.isAbsolute(pathToGenerated)) {
             // mapPath needs to be resolved to an absolute path or a URL
