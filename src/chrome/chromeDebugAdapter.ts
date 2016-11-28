@@ -95,7 +95,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
-    private _libCodeRegexes: RegExp[];
+    private _blackboxedRegexes: RegExp[];
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
@@ -281,16 +281,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     this.hookConnectionEvents();
                     let patterns: string[] = [];
 
-                    if (this._launchAttachArgs.experimentalLibraryCode) {
-                        patterns = this._launchAttachArgs.experimentalLibraryCode.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                    if (this._launchAttachArgs.experimentalSkipFiles) {
+                        patterns = this._launchAttachArgs.experimentalSkipFiles.map(glob => utils.pathGlobToBlackboxedRegex(glob));
                     }
 
-                    if (this._launchAttachArgs.libraryCodeRegExps) {
-                        patterns = patterns.concat(this._launchAttachArgs.libraryCodeRegExps);
+                    if (this._launchAttachArgs.skipFileRegExps) {
+                        patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
                     }
 
                     if (patterns.length) {
-                        this._libCodeRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
+                        this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
                         this.chrome.Debugger.setBlackboxPatterns({ patterns });
                     }
 
@@ -454,7 +454,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             resolvePendingBPs(mappedUrl);
-            this.resolveLibCode(script.scriptId, mappedUrl, sources);
+            this.resolveSkipFiles(script.scriptId, mappedUrl, sources);
         });
 
         if (this._initialSourceMapsP) {
@@ -462,23 +462,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private resolveLibCode(scriptId: string, mappedUrl: string, sources: string[]): void {
-        if (this.isLibCode(mappedUrl)) {
+    private resolveSkipFiles(scriptId: string, mappedUrl: string, sources: string[]): void {
+        if (this.shouldSkipFile(mappedUrl)) {
             // set the whole script as lib code
             this.chrome.Debugger.setBlackboxedRanges({
                 scriptId: scriptId,
                 positions: [{ lineNumber: 0, columnNumber: 0 }]
             });
         } else if (sources) {
-            const librarySources = new Set(sources.filter(sourcePath => this.isLibCode(sourcePath)));
+            const librarySources = new Set(sources.filter(sourcePath => this.shouldSkipFile(sourcePath)));
             if (librarySources.size) {
                 this._sourceMapTransformer.allSourcePathDetails(mappedUrl).then(details => {
                     const libPositions: Crdp.Debugger.ScriptPosition[] = [];
 
                     let inLibRange = false;
                     details.forEach((detail, i) => {
-                        const isLibCode = librarySources.has(detail.inferredPath);
-                        if ((isLibCode && !inLibRange) || (!isLibCode && inLibRange)) {
+                        const isSkippedFile = librarySources.has(detail.inferredPath);
+                        if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
                             libPositions.push({
                                 lineNumber: detail.startPosition.line,
                                 columnNumber: detail.startPosition.column
@@ -496,8 +496,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private isLibCode(sourcePath: string): boolean {
-        return this._libCodeRegexes && this._libCodeRegexes.some(regex => {
+    private shouldSkipFile(sourcePath: string): boolean {
+        return this._blackboxedRegexes && this._blackboxedRegexes.some(regex => {
             return regex.test(sourcePath);
         });
     }

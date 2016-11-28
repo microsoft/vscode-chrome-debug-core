@@ -22,8 +22,8 @@ export interface ICommonRequestArgs {
     verboseDiagnosticLogging?: boolean;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
-    experimentalLibraryCode?: string[]; // an array of file names or glob patterns
-    libraryCodeRegExps?: string[]; // a supplemental array of library code regex patterns
+    experimentalSkipFiles?: string[]; // an array of file names or glob patterns
+    skipFileRegExps?: string[]; // a supplemental array of library code regex patterns
     timeout?: number;
 }
 
