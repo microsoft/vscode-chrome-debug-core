@@ -29,7 +29,7 @@ export class BasePathTransformer {
     }
 
     public breakpointResolved(bp: DebugProtocol.Breakpoint, targetPath: string): string {
-        return this.getClientPathFromTargetPath(targetPath);
+        return this.getClientPathFromTargetPath(targetPath) || targetPath;
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
