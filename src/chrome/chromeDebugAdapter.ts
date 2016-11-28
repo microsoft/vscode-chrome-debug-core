@@ -182,10 +182,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
+        this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
-
-        this.commonArgs(args);
 
         telemetry.reportEvent('debugStarted', { request: 'launch' });
         return Promise.resolve();
@@ -193,14 +192,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public attach(args: IAttachRequestArgs): Promise<void> {
         this._attachMode = true;
+        this.commonArgs(args);
         this._sourceMapTransformer.attach(args);
         this._pathTransformer.attach(args);
 
         if (args.port == null) {
             return utils.errP('The "port" field is required in the attach config.');
         }
-
-        this.commonArgs(args);
 
         telemetry.reportEvent('debugStarted', { request: 'attach' });
         return this.doAttach(args.port, args.url, args.address, args.timeout);
@@ -281,8 +279,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this._chromeConnection.attach(address, port, targetUrl)
                 .then(e => {
                     this.hookConnectionEvents();
+                    let patterns: string[] = [];
+
                     if (this._launchAttachArgs.experimentalLibraryCode) {
-                        const patterns = this._launchAttachArgs.experimentalLibraryCode.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                        patterns = this._launchAttachArgs.experimentalLibraryCode.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                    }
+
+                    if (this._launchAttachArgs.libraryCodeRegExps) {
+                        patterns = patterns.concat(this._launchAttachArgs.libraryCodeRegExps);
+                    }
+
+                    if (patterns.length) {
                         this._libCodeRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
                         this.chrome.Debugger.setBlackboxPatterns({ patterns });
                     }
