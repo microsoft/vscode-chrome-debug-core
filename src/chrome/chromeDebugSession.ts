@@ -181,8 +181,16 @@ export class ChromeDebugSession extends DebugSession {
         }
     }
 
-    private failedRequest(requestType: string, response: DebugProtocol.Response, error: Error): void {
-        logger.error(`Error processing "${requestType}": ${error.stack}`);
+    private failedRequest(requestType: string, response: DebugProtocol.Response, error: any): void {
+        let errMsg: string;
+        if (error.data) {
+            // Error response from runtime
+            errMsg = error.message + ': ' + error.data;
+        } else {
+            errMsg = error.stack || error.message;
+        }
+
+        logger.error(`Error processing "${requestType}": ${errMsg}`);
 
         // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
         // come from the adapter, so add extensionName
@@ -190,7 +198,7 @@ export class ChromeDebugSession extends DebugSession {
             response,
             1104,
             '[{_extensionName}] Error processing "{_requestType}": {_stack}',
-            { _extensionName: this._extensionName, _requestType: requestType, _stack: error.stack },
+            { _extensionName: this._extensionName, _requestType: requestType, _stack: errMsg },
             ErrorDestination.Telemetry);
     }
 }
