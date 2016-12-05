@@ -115,7 +115,7 @@ export class ChromeDebugSession extends DebugSession {
     }
 
     private onLog(msg: string, level: logger.LogLevel): void {
-        const outputCategory = level === logger.LogLevel.Error ? 'stderr' : 'stdout';
+        const outputCategory = level === logger.LogLevel.Error ? 'stderr' : 'console';
 
         if (level === logger.LogLevel.Verbose) {
             // Distinguish verbose messages with this prefix - makes the logs much more readable
