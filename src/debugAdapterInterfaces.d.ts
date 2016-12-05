@@ -22,7 +22,7 @@ export interface ICommonRequestArgs {
     verboseDiagnosticLogging?: boolean;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
-    experimentalSkipFiles?: string[]; // an array of file names or glob patterns
+    skipFiles?: string[]; // an array of file names or glob patterns
     skipFileRegExps?: string[]; // a supplemental array of library code regex patterns
     timeout?: number;
 }

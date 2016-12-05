@@ -281,8 +281,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     this.hookConnectionEvents();
                     let patterns: string[] = [];
 
-                    if (this._launchAttachArgs.experimentalSkipFiles) {
-                        patterns = this._launchAttachArgs.experimentalSkipFiles.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                    if (this._launchAttachArgs.skipFiles) {
+                        patterns = this._launchAttachArgs.skipFiles.map(glob => utils.pathGlobToBlackboxedRegex(glob));
                     }
 
                     if (this._launchAttachArgs.skipFileRegExps) {
