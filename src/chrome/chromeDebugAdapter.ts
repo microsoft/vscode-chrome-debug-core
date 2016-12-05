@@ -282,7 +282,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     let patterns: string[] = [];
 
                     if (this._launchAttachArgs.skipFiles) {
-                        patterns = this._launchAttachArgs.skipFiles.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+                        const skipFilesArgs = this._launchAttachArgs.skipFiles.filter(glob => {
+                            if (glob.startsWith('!')) {
+                                logger.log(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`, /*forceLog=*/true);
+                                return false;
+                            }
+
+                            return true;
+                        });
+
+                        patterns = skipFilesArgs.map(glob => utils.pathGlobToBlackboxedRegex(glob));
                     }
 
                     if (this._launchAttachArgs.skipFileRegExps) {
@@ -841,7 +850,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
         // Only process at the requested number of frames, if 'levels' is specified
+        if (!this._currentStack) {
+
+        }
+
         let stack = this._currentStack;
+
         if (args.levels) {
             stack = this._currentStack.filter((_, i) => i < args.levels);
         }
