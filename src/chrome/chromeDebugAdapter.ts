@@ -925,6 +925,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
         const currentFrame = this._frameHandles.get(args.frameId);
+        const currentScript = this._scriptsById.get(currentFrame.location.scriptId);
+        const currentScriptUrl = currentScript && currentScript.url;
+        const currentScriptPath = currentScriptUrl && this._pathTransformer.getClientPathFromTargetPath(currentScriptUrl);
+
         const scopes = currentFrame.scopeChain.map((scope: Crdp.Debugger.Scope, i: number) => {
             // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
             const thisObj = i === 0 && currentFrame.this;
@@ -955,7 +959,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
         }
 
-        return { scopes };
+        const scopesResponse = { scopes };
+        if (currentScriptPath) {
+            this._sourceMapTransformer.scopesResponse(currentScriptPath, scopesResponse);
+            this._lineColTransformer.scopeResponse(scopesResponse);
+        }
+
+        return scopesResponse;
     }
 
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
@@ -1216,7 +1226,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             return result + mappedSourcesStr;
         });
-
     }
 
     /**

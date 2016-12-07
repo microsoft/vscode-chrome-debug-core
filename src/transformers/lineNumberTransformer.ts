@@ -5,7 +5,7 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ChromeDebugSession} from '../chrome/chromeDebugSession';
-import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../debugAdapterInterfaces';
+import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
@@ -30,15 +30,36 @@ export class LineColTransformer implements IDebugTransformer  {
         this.convertDebuggerLocationToClient(bp);
     }
 
+    public scopeResponse(scopeResponse: IScopesResponseBody): void {
+        scopeResponse.scopes.forEach(scope => this.mapScopeLocations(scope));
+    }
+
+    private mapScopeLocations(scope: DebugProtocol.Scope): void {
+        this.convertDebuggerLocationToClient(scope);
+
+        if (typeof scope.endLine === 'number') {
+            const endScope = { line: scope.endLine, column: scope.endColumn };
+            this.convertDebuggerLocationToClient(endScope);
+            scope.endLine = endScope.line;
+            scope.endColumn = endScope.column;
+        }
+    }
+
     private convertClientLocationToDebugger(location: { line?: number; column?: number }): void {
-        location.line = this.convertClientLineToDebugger(location.line);
+        if (typeof location.line === 'number') {
+            location.line = this.convertClientLineToDebugger(location.line);
+        }
+
         if (typeof location.column === 'number') {
             location.column = this.convertClientColumnToDebugger(location.column);
         }
     }
 
     private convertDebuggerLocationToClient(location: { line?: number; column?: number }): void {
-        location.line = this.convertDebuggerLineToClient(location.line);
+        if (typeof location.line === 'number') {
+            location.line = this.convertDebuggerLineToClient(location.line);
+        }
+
         if (typeof location.column === 'number') {
             location.column = this.convertDebuggerColumnToClient(location.column);
         }

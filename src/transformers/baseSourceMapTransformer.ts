@@ -6,7 +6,7 @@ import * as path from 'path';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IStackTraceResponseBody} from '../debugAdapterInterfaces';
+    ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
 import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
 import {SourceMaps} from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
@@ -232,6 +232,31 @@ export class BaseSourceMapTransformer {
                 // No need to send back the path, the bp can only move within its script
                 bp.line = mapped.line;
                 bp.column = mapped.column;
+            }
+        }
+    }
+
+    public scopesResponse(pathToGenerated: string, scopesResponse: IScopesResponseBody): void {
+        if (this._sourceMaps) {
+            scopesResponse.scopes.forEach(scope => this.mapScopeLocations(pathToGenerated, scope));
+        }
+    }
+
+    private mapScopeLocations(pathToGenerated: string, scope: DebugProtocol.Scope): void {
+        if (typeof scope.line !== 'number') {
+            return;
+        }
+
+        const mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line, scope.column);
+        if (mappedStart) {
+            // Only apply changes if both mappings are found
+            const mappedEnd = this._sourceMaps.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
+            if (mappedEnd) {
+                scope.line = mappedStart.line;
+                scope.column = mappedStart.column;
+
+                scope.endLine = mappedEnd.line;
+                scope.endColumn = mappedEnd.column;
             }
         }
     }
