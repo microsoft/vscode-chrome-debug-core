@@ -14,7 +14,7 @@ export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: s
     // Take the custom targetFilter, default to taking all targets
     targetFilter = targetFilter || (target => true);
 
-    return _getTargets(address, port, targetFilter).then(targets => {
+    return _getTargets(address, port, targetFilter).then<string>(targets => {
         telemetry.reportEvent('targetCount', { numTargets: targets.length });
         if (!targets.length) {
             return utils.errP('Got a response from the target app, but no target pages found');
@@ -33,7 +33,7 @@ export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: s
 function _getTargets(address: string, port: number, targetFilter: ITargetFilter): Promise<ITarget[]> {
     const url = `http://${address}:${port}/json`;
     logger.log(`Discovering targets via ${url}`);
-    return utils.getURL(url).then(jsonResponse => {
+    return utils.getURL(url).then<ITarget[]>(jsonResponse => {
         try {
             const responseArray = JSON.parse(jsonResponse);
             if (Array.isArray(responseArray)) {

@@ -467,7 +467,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
 
         if (this._initialSourceMapsP) {
-            this._initialSourceMapsP = Promise.all([this._initialSourceMapsP, sourceMapsP]);
+            this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
         }
     }
 
@@ -629,7 +629,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
         if (!args.source.path) return Promise.resolve();
 
-        return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then(mappedPath => {
+        return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then<void>(mappedPath => {
             if (!mappedPath) {
                 return utils.errP(utils.localize('sourcemapping.fail.message', "Breakpoint ignored because generated code not found (source map problem?)."));
             }
@@ -1090,7 +1090,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             functionDeclaration: getVarsFn,
             arguments: [{ value: start }, { value: count }],
             silent: true
-        }).then(evalResponse => {
+        }).then<DebugProtocol.Variable[]>(evalResponse => {
             if (evalResponse.exceptionDetails) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
                 return Promise.reject(errors.errorFromEvaluate(errMsg));
@@ -1153,7 +1153,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return evalPromise.then(evalResponse => {
             // Convert to a Variable object then just copy the relevant fields off
-            return this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, args.context).then(variable => {
+            return this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, args.context).then<IEvaluateResponseBody>(variable => {
                 if (evalResponse.exceptionDetails) {
                     let resultValue = variable.value;
                     if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {

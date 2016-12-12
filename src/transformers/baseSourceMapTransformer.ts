@@ -209,7 +209,7 @@ export class BaseSourceMapTransformer {
         if (this._sourceMaps) {
             this._allRuntimeScriptPaths.add(pathToGenerated);
 
-            if (!sourceMapURL) return Promise.resolve();
+            if (!sourceMapURL) return Promise.resolve(null);
 
             // Load the sourcemap for this new script and log its sources
             return this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL).then(() => {
@@ -221,7 +221,7 @@ export class BaseSourceMapTransformer {
                 return sources;
             });
         } else {
-            return Promise.resolve();
+            return Promise.resolve(null);
         }
     }
 
