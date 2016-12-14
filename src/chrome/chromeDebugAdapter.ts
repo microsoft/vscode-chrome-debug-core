@@ -253,6 +253,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
+        this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
         this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
@@ -545,8 +546,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
-        const e: DebugProtocol.OutputEvent = new OutputEvent('foo', 'stdout');
-        e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(params.args), 'repl');
+        const category = (params.type === 'assert' || params.type === 'error') ? 'stderr' : 'stdout';
+        this.logObjects(params.args, category);
+    }
+
+    protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
+        this.logObjects([params.exceptionDetails.exception], 'stderr');
+    }
+
+    private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
+        const e: DebugProtocol.OutputEvent = new OutputEvent('foo', category);
+        e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(objs), 'repl');
 
         this._session.sendEvent(e);
     }
