@@ -36,10 +36,6 @@ const exclusion = '!' + testDataDir + '**';
 tsBuildSources.push(exclusion);
 lintSources.push(exclusion);
 
-function computeSourceRoot(file) {
-    return path.relative(path.dirname(file.path), __dirname);
-}
-
 const tsProject = ts.createProject('tsconfig.json', { typescript });
 gulp.task('build', () => {
     const tsResult = gulp.src(tsBuildSources, { base: '.' })
@@ -51,7 +47,8 @@ gulp.task('build', () => {
 		tsResult.dts
             .pipe(gulp.dest('lib')),
 		tsResult.js
-            .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: computeSourceRoot }))
+            // .. to compensate for TS returning paths from 'out'
+            .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: '..' }))
             .pipe(gulp.dest('out')),
         gulp.src(libs, { base: '.' })
             .pipe(gulp.dest('lib')),

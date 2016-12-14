@@ -38,6 +38,13 @@
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Debug gulpfile",
+            "type": "node2",
+            "cwd": "${workspaceRoot}",
+            "program": "${workspaceRoot}/node_modules/.bin/gulp",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
