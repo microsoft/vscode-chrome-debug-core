@@ -2,9 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as DebugProtocol from 'vscode-debugadapter';
+import {DebugProtocol} from 'vscode-debugprotocol';
+import {Handles} from 'vscode-debugadapter';
 
-import {ChromeDebugAdapter} from './chromeDebugAdapter';
+import {ChromeDebugAdapter, VariableContext} from './chromeDebugAdapter';
 import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 
@@ -38,7 +39,7 @@ export class LoggedObjects extends BaseVariableContainer {
     }
 
     public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
-        return Promise.all(this.args.map(arg => adapter.remoteObjectToVariable('', arg)));
+        return Promise.all(this.args.map((arg, i) => adapter.remoteObjectToVariable('' + i, arg, undefined, undefined, 'repl')));
     }
 }
 
@@ -182,4 +183,28 @@ function trimProperty(value: string): string {
     return (value.length > PREVIEW_PROP_LENGTH) ?
         value.substr(0, PREVIEW_PROP_LENGTH) + ELLIPSIS :
         value;
+}
+
+export class VariableHandles {
+    private _variableHandles = new Handles<IVariableContainer>(0);
+    private _consoleVariableHandles = new Handles<IVariableContainer>(1e5);
+
+    public onPaused(): void {
+        // Only reset the variableHandles, the console vars are still visible
+        this._variableHandles.reset();
+    }
+
+    public create(value: IVariableContainer, context: VariableContext = 'variables'): number {
+        return this.getHandles(context).create(value);
+    }
+
+    public get(handle: number): IVariableContainer {
+        return this._variableHandles.get(handle) || this._consoleVariableHandles.get(handle);
+    }
+
+    private getHandles(context: VariableContext): Handles<IVariableContainer> {
+        return context === 'repl' ?
+            this._consoleVariableHandles :
+            this._variableHandles;
+    }
 }
