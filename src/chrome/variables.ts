@@ -6,27 +6,39 @@ import * as DebugProtocol from 'vscode-debugadapter';
 
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
 import Crdp from '../../crdp/crdp';
+import * as utils from '../utils';
 
 export interface IVariableContainer {
-    objectId: string;
     expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
     setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string>;
 }
 
 export abstract class BaseVariableContainer implements IVariableContainer {
-    constructor(public objectId: string, protected evaluateName?: string) {
+    constructor(protected objectId: string, protected evaluateName?: string) {
     }
 
     public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         return adapter.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
     }
 
-    public abstract setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string>;
+    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+        return utils.errP('setValue not supported by this variable type');
+    }
 }
 
 export class PropertyContainer extends BaseVariableContainer {
     public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
         return adapter.setPropertyValue(this.objectId, name, value);
+    }
+}
+
+export class LoggedObjects extends BaseVariableContainer {
+    constructor(private args: Crdp.Runtime.RemoteObject[]) {
+        super(undefined);
+    }
+
+    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+        return Promise.all(this.args.map(arg => adapter.remoteObjectToVariable('', arg)));
     }
 }
 

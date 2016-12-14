@@ -16,7 +16,6 @@ import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, IVariableContainer, ExceptionContainer, isIndexedPropName} from './variables';
 import * as Variables from './variables';
 
-import {formatConsoleMessage} from './consoleHelper';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import * as logger from '../logger';
@@ -544,12 +543,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
-        const formattedMessage = formatConsoleMessage(params);
-        if (formattedMessage) {
-            this._session.sendEvent(new OutputEvent(
-                formattedMessage.text + '\n',
-                formattedMessage.isError ? 'stderr' : 'stdout'));
-        }
+        const e: DebugProtocol.OutputEvent = new OutputEvent('', 'stdout');
+        e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(params.args));
+
+        this._session.sendEvent(e);
     }
 
     /**
