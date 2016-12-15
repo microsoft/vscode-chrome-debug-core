@@ -63,7 +63,7 @@ suite('ConsoleHelper', () => {
 
         test('starts with non-string', () => {
             doAssertForString(Runtime.makeLog(1, 2, 3), '1 2 3');
-        })
+        });
 
         test('string and object', () => {
             const result = ConsoleHelper.formatConsoleArguments(Runtime.makeLog('foo', '$obj', 'bar'));
