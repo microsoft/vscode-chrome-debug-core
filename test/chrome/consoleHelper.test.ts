@@ -31,17 +31,6 @@ suite('ConsoleHelper', () => {
         assert.equal(result.isError, expectedIsError);
     }
 
-    function doAssert(params: Crdp.Runtime.ConsoleAPICalledEvent, expectedText: string, expectedIsError = false): void {
-        const result = ConsoleHelper.formatConsoleArguments(params);
-
-        // Strings are collapsed to one string
-        assert.equal(result.args.length, 1);
-        assert.equal(result.args[0].type, 'string');
-
-        assert.equal(result.args[0].value, expectedText);
-        assert.equal(result.isError, expectedIsError);
-    }
-
     suite('console.log()', () => {
         test('simple log', () => {
             doAssertForString(Runtime.makeLog('Hello'), 'Hello');
