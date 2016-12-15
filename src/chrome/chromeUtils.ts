@@ -171,15 +171,29 @@ export function remoteObjectToCallArgument(object: Crdp.Runtime.RemoteObject): C
  * This includes the error message and full stack
  */
 export function descriptionFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
-    return exceptionDetails.exception ? exceptionDetails.exception.description : exceptionDetails.text;
+    let description: string;
+    if (exceptionDetails.exception) {
+        // Take exception object description, or if a value was thrown, the value
+        description = exceptionDetails.exception.description ||
+            'Error: ' + exceptionDetails.exception.value;
+    } else {
+        description = exceptionDetails.text;
+    }
+
+    return description || '';
 }
 
 /**
  * Get just the error message from the exception details - the first line without the full stack
  */
 export function errorMessageFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
-    const description = descriptionFromExceptionDetails(exceptionDetails);
-    return description.substr(0, description.indexOf('\n'));
+    let description = descriptionFromExceptionDetails(exceptionDetails);
+    const newlineIdx = description.indexOf('\n');
+    if (newlineIdx >= 0) {
+        description = description.substr(0, newlineIdx);
+    }
+
+    return description;
 }
 
 export function getEvaluateName(parentEvaluateName: string, name: string): string {
