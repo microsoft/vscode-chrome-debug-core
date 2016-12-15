@@ -58,25 +58,15 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
  * Collapse leading non-object arguments, and apply format specifiers (%s, %d, etc)
  */
 function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifiers?: boolean): Crdp.Runtime.RemoteObject[] {
-    // Determine the number of leading non-object arguments
-    let textArgsIdx = 0;
-    while (m.args.length > textArgsIdx && !m.args[textArgsIdx].objectId) {
-        textArgsIdx++;
-    }
-
-    // No leading text args, return as-is
-    if (textArgsIdx === 0) {
+    if (m.args[0].objectId) {
+        // If the first arg is an object, nothing is going to happen here
         return m.args;
     }
 
-    // There is at least one text arg. Separate them into text and non-text args.
-    const textArgs = m.args.slice(0, textArgsIdx);
-    const otherArgs = m.args.slice(textArgsIdx);
-    const firstTextArg = textArgs.shift();
-
     // Find all %s, %i, etc in the first argument, which is always the main text. Strip %
     let formatSpecifiers: string[];
-    let firstTextArgValue = '' + firstTextArg.value;
+    const firstTextArg = m.args.shift();
+    let firstTextArgValue = firstTextArg.value;
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (firstTextArgValue.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
@@ -84,37 +74,47 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
         formatSpecifiers = [];
     }
 
-    // Append all text parameters, formatting properly if there's a format specifier
-    textArgs.forEach((param, i) => {
-        let formatted: any;
-        if (formatSpecifiers[i] === 's') {
-            formatted = param.value;
-        } else if (['i', 'd'].indexOf(formatSpecifiers[i]) >= 0) {
-            formatted = Math.floor(+param.value);
-        } else if (formatSpecifiers[i] === 'f') {
-            formatted = +param.value;
-        } else if (formatSpecifiers[i] === 'c') {
+    // Collapse all text parameters, formatting properly if there's a format specifier
+    let collapsedArgIdx = 0;
+    for (; collapsedArgIdx < m.args.length; collapsedArgIdx++) {
+        const param = m.args[collapsedArgIdx];
+        if (param.objectId && !formatSpecifiers.length) {
+            // If the next arg is an object, and we're done consuming format specifiers, quit
+            break;
+        }
+
+        const formatSpec = formatSpecifiers.shift();
+        let formatted: string|number;
+        const paramValue = typeof param.value !== 'undefined' ? param.value : param.description;
+        if (formatSpec === 's') {
+            formatted = paramValue;
+        } else if (['i', 'd'].indexOf(formatSpec) >= 0) {
+            formatted = Math.floor(+paramValue);
+        } else if (formatSpec === 'f') {
+            formatted = +paramValue;
+        } else if (formatSpec === 'c') {
             // %c - Applies CSS color rules
             // Could use terminal color codes in the future
             formatted = '';
-        } else if (['o', 'O'].indexOf(formatSpecifiers[i]) >= 0) {
+        } else if (['o', 'O'].indexOf(formatSpec) >= 0) {
             // Not supported -
             // %o - expandable DOM element
             // %O - expandable JS object
-            formatted = param.value;
+            formatted = paramValue;
         }
 
         // If this param had a format specifier, search and replace it with the formatted param.
         // Otherwise, append it to the end of the text
-        if (formatSpecifiers[i]) {
-            firstTextArgValue = firstTextArgValue.replace('%' + formatSpecifiers[i], formatted);
+        if (formatSpec) {
+            firstTextArgValue = firstTextArgValue.replace('%' + formatSpec, formatted);
         } else {
             firstTextArgValue += ' ' + param.value;
         }
-    });
+    }
 
     // Return the collapsed text argument, with all others left alone
     const newFormattedTextArg: Crdp.Runtime.RemoteObject = { type: 'string', value: firstTextArgValue };
+    const otherArgs = m.args.slice(collapsedArgIdx);
     return [newFormattedTextArg, ...otherArgs];
 }
 
