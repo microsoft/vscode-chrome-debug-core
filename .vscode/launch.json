@@ -42,6 +42,7 @@
         {
             "name": "Debug gulpfile",
             "type": "node2",
+            "request": "launch",
             "cwd": "${workspaceRoot}",
             "program": "${workspaceRoot}/node_modules/.bin/gulp",
             "internalConsoleOptions": "openOnSessionStart"

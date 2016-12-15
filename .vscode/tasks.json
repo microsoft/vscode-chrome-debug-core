@@ -8,9 +8,21 @@
             "args": [],
             "isBuildCommand": true,
             "isWatching": true,
-            "problemMatcher": [
-                "$tsc"
-            ]
+            "problemMatcher": {
+				"owner": "typescript",
+				"applyTo": "closedDocuments",
+				"fileLocation": ["relative", "${workspaceRoot}"],
+				"pattern": {
+					"regexp": "(.*)\\(\\d+,\\d+\\): error TS\\d+: (.*)$",
+					"file": 1,
+					"location": 2,
+					"message": 3
+				},
+				"watching": {
+					"beginsPattern": "Starting 'build'...",
+					"endsPattern": "Finished 'build'"
+				}
+			}
         },
         {
             "taskName": "watch-build-test",
