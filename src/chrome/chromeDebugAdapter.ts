@@ -15,6 +15,7 @@ import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
 import * as Variables from './variables';
+import {formatConsoleArguments} from './consoleHelper';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -547,7 +548,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const category = (params.type === 'assert' || params.type === 'error') ? 'stderr' : 'stdout';
-        this.logObjects(params.args, category);
+        const result = formatConsoleArguments(params);
+        this.logObjects(result.args, category);
     }
 
     protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
@@ -556,6 +558,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
         const e: DebugProtocol.OutputEvent = new OutputEvent('foo', category);
+
         e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(objs), 'repl');
 
         this._session.sendEvent(e);
