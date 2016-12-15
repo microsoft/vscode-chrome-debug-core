@@ -30,23 +30,25 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
 
             args = [{ type: 'string', value: outputText }, ...formattedParams];
             break;
-        // case 'startGroup':
-        // case 'startGroupCollapsed':
-        //     outputText = '‹Start group›';
-        //     const groupTitle = resolveParams(m);
-        //     if (groupTitle) {
-        //         outputText += ': ' + groupTitle;
-        //     }
-        //     break;
-        // case 'endGroup':
-        //     outputText = '‹End group›';
-        //     break;
-        // case 'trace':
-        //     outputText = 'console.trace()\n' + stackTraceToString(m.stackTrace);
-        //     break;
+        case 'startGroup':
+        case 'startGroupCollapsed':
+            let startMsg = '‹Start group›';
+            const formattedGroupParams = resolveParams(m);
+            if (formattedGroupParams.length && formattedGroupParams[0].type === 'string') {
+                startMsg += ': ' + formattedGroupParams.shift().value;
+            }
+
+            args = [{ type: 'string', value: startMsg}, ...formattedGroupParams];
+            break;
+        case 'endGroup':
+            args = [{ type: 'string', value: '‹End group›' }];
+            break;
+        case 'trace':
+            args = [{ type: 'string', value: 'console.trace()\n' + stackTraceToString(m.stackTrace) }];
+            break;
         default:
             // Some types we have to ignore
-            // outputText = 'Unimplemented console API: ' + m.type;
+            args = [{ type: 'string', value: 'Unimplemented console API: ' + m.type }];
             break;
     }
 
@@ -58,8 +60,8 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
  * Collapse leading non-object arguments, and apply format specifiers (%s, %d, etc)
  */
 function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifiers?: boolean): Crdp.Runtime.RemoteObject[] {
-    if (m.args[0].objectId) {
-        // If the first arg is an object, nothing is going to happen here
+    if (!m.args.length || m.args[0].objectId) {
+        // If the first arg is not text, nothing is going to happen here
         return m.args;
     }
 
