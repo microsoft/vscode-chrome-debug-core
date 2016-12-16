@@ -927,7 +927,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const currentFrame = this._frameHandles.get(args.frameId);
         const currentScript = this._scriptsById.get(currentFrame.location.scriptId);
         const currentScriptUrl = currentScript && currentScript.url;
-        const currentScriptPath = currentScriptUrl && this._pathTransformer.getClientPathFromTargetPath(currentScriptUrl);
+        const currentScriptPath = (currentScriptUrl && this._pathTransformer.getClientPathFromTargetPath(currentScriptUrl)) || currentScriptUrl;
 
         const scopes = currentFrame.scopeChain.map((scope: Crdp.Debugger.Scope, i: number) => {
             // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
