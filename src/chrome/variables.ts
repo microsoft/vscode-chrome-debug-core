@@ -186,7 +186,7 @@ function trimProperty(value: string): string {
 }
 
 export class VariableHandles {
-    private _variableHandles = new Handles<IVariableContainer>(0);
+    private _variableHandles = new Handles<IVariableContainer>(1);
     private _consoleVariableHandles = new Handles<IVariableContainer>(1e5);
 
     public onPaused(): void {
