@@ -68,7 +68,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
     // Find all %s, %i, etc in the first argument, which is always the main text. Strip %
     let formatSpecifiers: string[];
     const firstTextArg = m.args.shift();
-    let firstTextArgValue = firstTextArg.value;
+    let firstTextArgValue = firstTextArg.value + '';
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (firstTextArgValue.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
@@ -86,14 +86,14 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
         }
 
         const formatSpec = formatSpecifiers.shift();
-        let formatted: string|number;
+        let formatted: string;
         const paramValue = typeof param.value !== 'undefined' ? param.value : param.description;
         if (formatSpec === 's') {
             formatted = paramValue;
         } else if (['i', 'd'].indexOf(formatSpec) >= 0) {
-            formatted = Math.floor(+paramValue);
+            formatted = Math.floor(+paramValue) + '';
         } else if (formatSpec === 'f') {
-            formatted = +paramValue;
+            formatted = +paramValue + '';
         } else if (formatSpec === 'c') {
             // %c - Applies CSS color rules
             // Could use terminal color codes in the future
