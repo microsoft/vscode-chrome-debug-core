@@ -72,6 +72,11 @@ suite('Variables', () => {
             const fiftyAs = 'a'.repeat(50);
             testArrayPreview([oneHundredAs], `Array[1] ["${fiftyAs}…"]`);
         });
+
+        test('gaps in array', () => {
+            testArrayPreview([1, , 2, 3], `Array[4] [1, …, 2, 3]`);
+            // testArrayPreview([, , 2, 3, 4], `Array[5] […, 2, 3, ]`);
+        });
     });
 
     suite('getObjectPreview()', () => {
@@ -127,4 +132,19 @@ suite('Variables', () => {
             testObjectPreview({ [oneHundredAs]: oneHundredAs }, `Object {${oneHundredAs}: "${fiftyAs}…"}`);
         });
     });
+
+    suite('isIndexedPropName()', () => {
+        test('true for positive integers', () => {
+            assert(Variables.isIndexedPropName('0'));
+            assert(Variables.isIndexedPropName('5'));
+            assert(Variables.isIndexedPropName('3457098230456'));
+        });
+
+        test('false for anything else', () => {
+            assert(!Variables.isIndexedPropName('1.2'));
+            assert(!Variables.isIndexedPropName('-5'));
+            assert(!Variables.isIndexedPropName('foo'));
+            assert(!Variables.isIndexedPropName('1e6'));
+        });
+    })
 });

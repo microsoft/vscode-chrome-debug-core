@@ -1488,8 +1488,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private getArrayNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
         let indexedVariables = 0;
-        let namedVariables = 2; // 2 for __proto__ and length
-        object.preview.properties.forEach(prop => isIndexedPropName(prop.name) ? indexedVariables++ : namedVariables++);
+        const indexedProps = object.preview.properties
+            .filter(prop => isIndexedPropName(prop.name));
+        if (indexedProps.length) {
+            // +1 because (last index=0) => 1 prop
+            indexedVariables = parseInt(indexedProps[indexedProps.length - 1].name, 10) + 1;
+        }
+
+        const namedVariables = object.preview.properties.length - indexedProps.length + 2; // 2 for __proto__ and length
         return { indexedVariables, namedVariables };
     }
 

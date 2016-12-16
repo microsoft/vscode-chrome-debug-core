@@ -127,7 +127,7 @@ export class ExceptionValueContainer extends ExceptionContainer {
 }
 
 export function isIndexedPropName(name: string): boolean {
-    return !isNaN(parseInt(name, 10));
+    return !!name.match(/^\d+$/);
 }
 
 const PREVIEW_PROPS_DEFAULT = 3;
@@ -138,13 +138,34 @@ export function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: str
     let value = object.description;
     if (object.preview) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
-        const props = object.preview.properties.slice(0, numProps);
-        let propsPreview = props
-            .map(prop => propertyPreviewToString(prop))
-            .join(', ');
+        const indexedProps = object.preview.properties
+            .filter(prop => isIndexedPropName(prop.name));
 
-        if (object.preview.overflow || object.preview.properties.length > numProps) {
-            propsPreview += ', …';
+        // Take the first 3 props, and parse the indexes
+        const propsWithIdx = indexedProps.slice(0, numProps)
+            .map((prop, i) => {
+                return {
+                    idx: parseInt(prop.name, 10),
+                    value: propertyPreviewToString(prop)
+                };
+            });
+
+        // Insert ... where there are undefined indexes
+        const propValues: string[] = [];
+        for (let i = 0; i < propsWithIdx.length; i++) {
+            const prop = propsWithIdx[i];
+
+            const prevIdx = i === 0 ? -1 : propsWithIdx[i - 1].idx;
+            if (prop.idx > prevIdx + 1) {
+                propValues.push(ELLIPSIS);
+            }
+
+            propValues.push(prop.value);
+        }
+
+        let propsPreview = propValues.join(', ');
+        if (object.preview.overflow || indexedProps.length > numProps) {
+            propsPreview += ', ' + ELLIPSIS;
         }
 
         value += ` [${propsPreview}]`;
