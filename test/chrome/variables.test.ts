@@ -74,8 +74,10 @@ suite('Variables', () => {
         });
 
         test('gaps in array', () => {
+            /* tslint:disable:no-sparse-arrays */
             testArrayPreview([1, , 2, 3], `Array[4] [1, …, 2, 3]`);
-            // testArrayPreview([, , 2, 3, 4], `Array[5] […, 2, 3, ]`);
+            testArrayPreview([, , 2, 3, , 4], `Array[6] […, 2, 3, …, 4]`);
+            /* tslint:enable:no-sparse-arrays */
         });
     });
 
@@ -146,5 +148,5 @@ suite('Variables', () => {
             assert(!Variables.isIndexedPropName('foo'));
             assert(!Variables.isIndexedPropName('1e6'));
         });
-    })
+    });
 });
