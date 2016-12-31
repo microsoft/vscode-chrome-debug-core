@@ -865,12 +865,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
         // Only process at the requested number of frames, if 'levels' is specified
-        if (!this._currentStack) {
-
-        }
-
         let stack = this._currentStack;
-
         if (args.levels) {
             stack = this._currentStack.filter((_, i) => i < args.levels);
         }
