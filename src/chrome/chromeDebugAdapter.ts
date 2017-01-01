@@ -1304,6 +1304,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     // .value is truncated, so use .description, the full string representation
                     // Should be like '3' or 'Infinity'.
                     value = object.description;
+                } else if (object.type === 'boolean') {
+                    // Never stringified
+                    value = '' + object.value;
                 } else {
                     value = stringify ? `"${object.value}"` : object.value;
                 }
