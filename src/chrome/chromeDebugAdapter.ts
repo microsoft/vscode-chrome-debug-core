@@ -585,30 +585,30 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
-        const path = utils.fileUrlToPath(args.path);
-        logger.log(`Toggling the skip file status for: ${path}`);
+        const aPath = utils.fileUrlToPath(args.path);
+        logger.log(`Toggling the skip file status for: ${aPath}`);
 
-        if (!await this.isInCurrentStack(path)) {
+        if (!await this.isInCurrentStack(aPath)) {
             // Only valid for files that are in the current stack
-            logger.log(`Can't toggle the skipFile status for ${path} - it's not in the current stack.`);
+            logger.log(`Can't toggle the skipFile status for ${aPath} - it's not in the current stack.`);
             return;
         }
 
-        const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(path);
+        const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(aPath);
         if (!generatedPath) {
             // haven't heard of this script
             return;
         }
 
         const sources = await this._sourceMapTransformer.allSources(generatedPath);
-        if (generatedPath === path && sources.length) {
+        if (generatedPath === aPath && sources.length) {
             // Ignore toggling skip status for generated scripts with sources
-            logger.log(`Can't toggle skipFile status for ${path} - it's a script with a sourcemap`);
+            logger.log(`Can't toggle skipFile status for ${aPath} - it's a script with a sourcemap`);
             return;
         }
 
-        const newStatus = !this.shouldSkipSource(path);
-        this._skipFileStatuses.set(path, newStatus);
+        const newStatus = !this.shouldSkipSource(aPath);
+        this._skipFileStatuses.set(aPath, newStatus);
 
         const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
         const script = this._scriptsByUrl.get(targetPath);
@@ -619,7 +619,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this.removeMatchingRegexes(script.url);
         }
 
-        if (generatedPath === path) {
+        if (generatedPath === aPath) {
             if (newStatus) {
                 this._blackboxedRegexes.push(new RegExp(script.url, 'i'));
             }
