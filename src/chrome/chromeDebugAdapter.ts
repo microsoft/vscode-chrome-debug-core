@@ -16,7 +16,7 @@ import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, IVariableContainer, ExceptionContainer, isIndexedPropName} from './variables';
 import * as Variables from './variables';
 
-import {formatConsoleMessage} from './consoleHelper';
+import {formatConsoleMessage, formatExceptionDetails} from './consoleHelper';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import * as logger from '../logger';
@@ -252,6 +252,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
+        this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
         this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
@@ -550,6 +551,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 formattedMessage.text + '\n',
                 formattedMessage.isError ? 'stderr' : 'stdout'));
         }
+    }
+
+    protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
+        const formattedException = formatExceptionDetails(params.exceptionDetails);
+        this._session.sendEvent(new OutputEvent(
+            formattedException,
+            'stderr'
+        ));
     }
 
     /**

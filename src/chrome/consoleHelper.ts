@@ -6,6 +6,15 @@ import * as url from 'url';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
 
+export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
+    if (!e.exception) {
+        return 'Uncaught Error';
+    }
+
+    return (e.exception.className === 'Error' && e.exception.description) ||
+        (`Error: ${remoteObjectToString(e.exception)}\n${stackTraceToString(e.stackTrace)}`)
+}
+
 export function formatConsoleMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): { text: string, isError: boolean } {
     // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
     // startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd
