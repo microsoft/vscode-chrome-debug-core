@@ -67,6 +67,12 @@ class LoggingSocket extends WebSocket {
 export type ITargetFilter = (target: ITarget) => boolean;
 export type ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string) => Promise<string>;
 
+export interface IChromeError {
+    code: number;
+    message: string;
+    data: string;
+}
+
 /**
  * Connects to a target supporting the Chrome Debug Protocol and sends and receives messages
  */

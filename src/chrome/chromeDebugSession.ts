@@ -7,13 +7,12 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {DebugSession, ErrorDestination, OutputEvent, Response} from 'vscode-debugadapter';
 
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
-import {ITargetFilter, ChromeConnection} from './chromeConnection';
+import {ITargetFilter, ChromeConnection, IChromeError} from './chromeConnection';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 
 import {IDebugAdapter} from '../debugAdapterInterfaces';
-import * as utils from '../utils';
 import * as logger from '../logger';
 
 export interface IChromeDebugAdapterOpts {
@@ -31,6 +30,17 @@ export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {
     /** The class of the adapter, which is instantiated for each session */
     adapter: typeof ChromeDebugAdapter;
     extensionName: string;
+}
+
+// A failed request can return either an Error, an error from Chrome, or a DebugProtocol.Message which is returned as-is to the client
+type RequestHandleError = Error | DebugProtocol.Message | IChromeError;
+
+function isMessage(e: RequestHandleError): e is DebugProtocol.Message {
+    return !!(<DebugProtocol.Message>e).format;
+}
+
+function isChromeError(e: RequestHandleError): e is IChromeError {
+    return !!(<IChromeError>e).data;
 }
 
 export class ChromeDebugSession extends DebugSession {
@@ -135,29 +145,7 @@ export class ChromeDebugSession extends DebugSession {
                 response.body = body;
                 this.sendResponse(response);
             },
-            e => {
-                if (e.format) {
-                    this.sendErrorResponse(response, e as DebugProtocol.Message);
-                    return;
-                }
-
-                const eStr = e ? e.message : 'Unknown error';
-                if (eStr === 'Error: unknowncommand') {
-                    this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${request.command}`, null, ErrorDestination.Telemetry);
-                    return;
-                }
-
-                if (request.command === 'evaluate') {
-                    // Errors from evaluate show up in the console or watches pane. Doesn't seem right
-                    // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
-                    response.message = eStr;
-                    response.success = false;
-                    this.sendResponse(response);
-                    return;
-                } else {
-                    this.failedRequest(request.command, response, e);
-                }
-            });
+            e => this.failedRequest(request.command, response, e));
     }
 
     /**
@@ -168,10 +156,12 @@ export class ChromeDebugSession extends DebugSession {
         try {
             logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
 
-            const responseP = (request.command in this._debugAdapter) ?
-                Promise.resolve(this._debugAdapter[request.command](request.arguments, request.seq)) :
-                utils.errP('unknowncommand');
+            if (!(request.command in this._debugAdapter)) {
+                this.sendUnknownCommandResponse(response, request.command);
+                return;
+            }
 
+            const responseP = Promise.resolve(this._debugAdapter[request.command](request.arguments, request.seq));
             this.sendResponseAsync(
                 request,
                 response,
@@ -181,14 +171,24 @@ export class ChromeDebugSession extends DebugSession {
         }
     }
 
-    private failedRequest(requestType: string, response: DebugProtocol.Response, error: any): void {
-        let errMsg: string;
-        if (error.data) {
-            // Error response from runtime
-            errMsg = error.message + ': ' + error.data;
-        } else {
-            errMsg = error.stack || error.message;
+    private failedRequest(requestType: string, response: DebugProtocol.Response, error: RequestHandleError): void {
+        if (isMessage(error)) {
+            this.sendErrorResponse(response, error as DebugProtocol.Message);
+            return;
         }
+
+        if (requestType === 'evaluate') {
+            // Errors from evaluate show up in the console or watches pane. Doesn't seem right
+            // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
+            response.message = error ? error.message : 'Unknown error';
+            response.success = false;
+            this.sendResponse(response);
+            return;
+        }
+
+        const errMsg = isChromeError(error) ?
+            error.message + ': ' + error.data :
+            (error.stack || error.message);
 
         logger.error(`Error processing "${requestType}": ${errMsg}`);
 
@@ -200,6 +200,10 @@ export class ChromeDebugSession extends DebugSession {
             '[{_extensionName}] Error processing "{_requestType}": {_stack}',
             { _extensionName: this._extensionName, _requestType: requestType, _stack: errMsg },
             ErrorDestination.Telemetry);
+    }
+
+    private sendUnknownCommandResponse(response: DebugProtocol.Response, command: string): void {
+        this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
     }
 }
 
