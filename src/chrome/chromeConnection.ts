@@ -92,7 +92,7 @@ export class ChromeConnection {
     public get isAttached(): boolean { return !!this._client; }
 
     public get api(): Crdp.CrdpClient {
-        return this._client.api();
+        return this._client && this._client.api();
     }
 
     /**

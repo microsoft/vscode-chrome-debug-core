@@ -1148,6 +1148,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         if (args.expression.startsWith(ChromeDebugAdapter.SCRIPTS_COMMAND)) {
             return this.handleScriptsCommand(args);
         }
@@ -1167,7 +1171,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 if (evalResponse.exceptionDetails) {
                     let resultValue = variable.value;
                     if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {
-                        resultValue = utils.localize('eval.not.available', "not available");
+                        resultValue = errors.evalNotAvailableMsg;
                     }
 
                     return utils.errP(resultValue);
