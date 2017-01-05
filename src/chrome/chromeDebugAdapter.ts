@@ -76,6 +76,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _setBreakpointsRequestQ: Promise<any>;
     private _expectingResumedEvent: boolean;
     protected _expectingStopReason: string;
+    private _waitAfterStep = Promise.resolve();
 
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
     private _variableHandles: Variables.VariableHandles;
@@ -429,11 +430,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected onResumed(): void {
         this._currentStack = null;
 
-        if (!this._expectingResumedEvent) {
+        if (this._expectingResumedEvent) {
+            this._expectingResumedEvent = false;
+
+            // Need to wait to eval just a little after each step, because of #148
+            this._waitAfterStep = utils.promiseTimeout(null, 50);
+        } else {
             let resumedEvent = new ContinuedEvent(ChromeDebugAdapter.THREAD_ID);
             this._session.sendEvent(resumedEvent);
-        } else {
-            this._expectingResumedEvent = false;
         }
     }
 
@@ -1246,7 +1250,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Allow consumers to override just because of https://github.com/nodejs/node/issues/8426
      */
     protected globalEvaluate(args: Crdp.Runtime.EvaluateRequest): Promise<Crdp.Runtime.EvaluateResponse> {
-        return this.chrome.Runtime.evaluate(args);
+        return this._waitAfterStep.then(() => this.chrome.Runtime.evaluate(args));
     }
 
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
