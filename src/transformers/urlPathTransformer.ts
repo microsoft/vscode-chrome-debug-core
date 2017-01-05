@@ -11,17 +11,20 @@ import * as ChromeUtils from '../chrome/chromeUtils';
 import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 
 import * as path from 'path';
+import * as url from 'url';
 
 /**
  * Converts a local path from Code to a path on the target.
  */
 export class UrlPathTransformer extends BasePathTransformer {
     private _webRoot: string;
+    private _pathMapping: {[url: string]: string};
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
+        this._pathMapping = args.pathMapping;
         return super.launch(args);
     }
 
@@ -61,8 +64,36 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public scriptParsed(scriptUrl: string): string {
-        const clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
+        let clientPath: string;
+        const parsedUrl = url.parse(scriptUrl);
+        const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
 
+        let p = parsedUrl.pathname;
+        while (p) {
+            let localPath = this._pathMapping[origin + p];
+            if (localPath) {
+                clientPath = path.join(localPath, parsedUrl.pathname.substring(p.length));
+                break;
+            }
+            localPath = this._pathMapping[p];
+            if (localPath) {
+                clientPath = path.join(localPath, parsedUrl.pathname.substring(p.length));
+                break;
+            }
+            if (p === "/") {
+                break;
+            }
+            p = path.dirname(p);
+            if (p !== "/") {
+                // We need to differianciate folder and files by having a leading '/' except for root.
+                p = p + "/";
+            }
+        }
+
+        if (!clientPath) {
+            // Deprecated webRoot
+            clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
+        }
         if (!clientPath) {
             // It's expected that eval scripts (eval://) won't be resolved
             if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL)) {
