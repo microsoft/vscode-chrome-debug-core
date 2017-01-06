@@ -278,6 +278,14 @@ export class BaseSourceMapTransformer {
         });
     }
 
+    public allSources(pathToGenerated: string): Promise<string[]> {
+        if (!this._sourceMaps) return Promise.resolve([]);
+
+        return this._preLoad.then(() => {
+            return this._sourceMaps.allMappedSources(pathToGenerated) || [];
+        });
+    }
+
     public allSourcePathDetails(pathToGenerated: string): Promise<ISourcePathDetails[]> {
         if (!this._sourceMaps) return Promise.resolve([]);
 

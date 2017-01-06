@@ -28,6 +28,7 @@ import {RemotePathTransformer} from '../transformers/remotePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
 
+import * as net from 'net';
 import * as path from 'path';
 
 interface IPropCount {
@@ -98,7 +99,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
-    private _blackboxedRegexes: RegExp[];
+    private _blackboxedRegexes: RegExp[] = [];
+    private _skipFileStatuses = new Map<string, boolean>();
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
@@ -107,7 +109,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _initialSourceMapsP = Promise.resolve();
 
+    private _server: net.Server;
+
+    private _lastPauseNotification: any;
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
+        this._server = net.createServer(this.handleConnection.bind(this));
+        this._server.on('error', () => logger.error('socket server error'));
+        this._server.listen(7890, () => logger.log('socket server listening'));
+
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
@@ -128,6 +138,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected get chrome(): Crdp.CrdpClient {
         return this._chromeConnection.api;
+    }
+
+    private handleConnection(socket: net.Socket): void {
+        socket.on('data', data => {
+            this.onPaused(this._lastPauseNotification);
+            logger.log('skip url: ' + data);
+
+            const url = data.toString();
+            this.toggleSkipFileStatus(utils.fileUrlToPath(url));
+            socket.end();
+        });
     }
 
     /**
@@ -338,6 +359,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._variableHandles.onPaused();
         this._frameHandles.reset();
         this._exception = undefined;
+        this._lastPauseNotification = notification;
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -478,7 +500,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private resolveSkipFiles(scriptId: string, mappedUrl: string, sources: string[]): void {
+    private resolveSkipFiles(scriptId: string, mappedUrl: string, sources: string[], unblackboxIfNeeded?: boolean): void {
         if (this.shouldSkipFile(mappedUrl)) {
             // set the whole script as lib code
             this.chrome.Debugger.setBlackboxedRanges({
@@ -487,7 +509,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
         } else if (sources) {
             const librarySources = new Set(sources.filter(sourcePath => this.shouldSkipFile(sourcePath)));
-            if (librarySources.size) {
+            if (librarySources.size || unblackboxIfNeeded) {
                 this._sourceMapTransformer.allSourcePathDetails(mappedUrl).then(details => {
                     const libPositions: Crdp.Debugger.ScriptPosition[] = [];
 
@@ -513,8 +535,33 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private shouldSkipFile(sourcePath: string): boolean {
-        return this._blackboxedRegexes && this._blackboxedRegexes.some(regex => {
+        if (this._skipFileStatuses.has(sourcePath)) {
+            return this._skipFileStatuses.get(sourcePath);
+        }
+
+        return this._blackboxedRegexes.some(regex => {
             return regex.test(sourcePath);
+        });
+    }
+
+    private toggleSkipFileStatus(path: string): void {
+        this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(path).then(generatedPath => {
+            if (!generatedPath) {
+                // haven't heard of this script
+                return;
+            }
+
+            if (this.shouldSkipFile(path)) {
+                this._skipFileStatuses.set(path, false);
+            } else {
+                this._skipFileStatuses.set(path, true);
+            }
+
+            this._sourceMapTransformer.allSources(generatedPath).then(sources => {
+                const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
+                const script = this._scriptsByUrl.get(targetPath);
+                this.resolveSkipFiles(script.scriptId, generatedPath, sources, /*unblackboxIfNeeded=*/true);
+            });
         });
     }
 
@@ -880,6 +927,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
+
+        stackTraceResponse.stackFrames.forEach(frame => {
+            if (this.shouldSkipFile(frame.source.path)) {
+                frame.name = frame.name + ' (skipped)';
+            }
+        });
 
         return stackTraceResponse;
     }
