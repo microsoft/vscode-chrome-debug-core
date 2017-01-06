@@ -893,17 +893,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         try {
             // When the script has a url and isn't one we're ignoring, send the name and path fields. PathTransformer will
             // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
+            const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
+            const origin = this.getReadonlyOrigin(script.url);
             const source: DebugProtocol.Source =
                 script && !this.shouldIgnoreScript(script) ?
                     {
                         name: path.basename(script.url),
                         path: script.url,
-                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
+                        sourceReference,
+                        origin
                     } :
                     {
                         name: script && path.basename(script.url),
                         path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + location.scriptId,
-                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
+                        sourceReference,
+                        origin
                     };
 
             // If the frame doesn't have a function name, it's either an anonymous function
@@ -927,6 +931,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 column
             };
         }
+    }
+
+    protected getReadonlyOrigin(url: string): string {
+        // To override
+        return undefined;
     }
 
     /**
