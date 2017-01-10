@@ -118,7 +118,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         this._server = net.createServer(this.handleConnection.bind(this));
         this._server.on('error', () => logger.error('socket server error'));
-        this._server.listen(7890, () => logger.log('socket server listening'));
+        this._server.listen(7891, () => logger.log('socket server listening'));
 
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
