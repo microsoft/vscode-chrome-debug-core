@@ -505,7 +505,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
         if (sources && sources.length) {
-            const parentIsSkipped = await this.shouldSkipSource(script.url);
+            const parentIsSkipped = this.shouldSkipSource(script.url);
             const details = await this._sourceMapTransformer.allSourcePathDetails(mappedUrl);
             const libPositions: Crdp.Debugger.ScriptPosition[] = [];
 
@@ -612,7 +612,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        const newStatus = !await this.shouldSkipSource(path);
+        const newStatus = !this.shouldSkipSource(path);
         this._skipFileStatuses.set(path, newStatus);
 
         const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
@@ -987,7 +987,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
+    public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
@@ -1001,8 +1001,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
-        stackTraceResponse.stackFrames.forEach(async frame => {
-            if (frame.source.path && await this.shouldSkipSource(frame.source.path)) {
+        stackTraceResponse.stackFrames.forEach(frame => {
+            if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.name = frame.name + ' (skipped)';
             }
         });
