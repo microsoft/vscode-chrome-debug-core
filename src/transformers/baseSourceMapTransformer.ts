@@ -164,7 +164,7 @@ export class BaseSourceMapTransformer {
                 if (mapped && utils.existsSync(mapped.source)) {
                     // Script was mapped to a valid path
                     stackFrame.source.path = mapped.source;
-                    stackFrame.source.sourceReference = 0;
+                    stackFrame.source.sourceReference = undefined;
                     stackFrame.source.name = path.basename(mapped.source);
                     stackFrame.line = mapped.line;
                     stackFrame.column = mapped.column;
