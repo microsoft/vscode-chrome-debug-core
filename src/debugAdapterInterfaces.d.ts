@@ -41,6 +41,10 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     localRoot?: string;
 }
 
+export interface IToggleSkipFileStatusArgs {
+    path: string;
+}
+
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {
     /** DebugProtocol does not send cols, maybe it will someday, but this is used internally when a location is sourcemapped */
     cols?: number[];

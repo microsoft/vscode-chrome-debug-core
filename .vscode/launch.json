@@ -24,7 +24,8 @@
             "args": [ "--server=4712" ],
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
-            "internalConsoleOptions": "openOnSessionStart"
+            "internalConsoleOptions": "openOnSessionStart",
+            "smartStep": true
         },
         {
             "name": "launch chrome-debug",
