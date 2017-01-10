@@ -113,7 +113,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _server: net.Server;
 
-    private _lastPauseNotification: any;
+    private _lastPauseState: { expecting: string; event: Crdp.Debugger.PausedEvent };
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         this._server = net.createServer(this.handleConnection.bind(this));
@@ -144,9 +144,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private handleConnection(socket: net.Socket): void {
         socket.on('data', data => {
-            this.onPaused(this._lastPauseNotification);
-            logger.log('skip url: ' + data);
-
             const url = data.toString();
             this.toggleSkipFileStatus({ path: utils.fileUrlToPath(url) });
             socket.end();
@@ -358,11 +355,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.clearTargetContext();
     }
 
-    protected onPaused(notification: Crdp.Debugger.PausedEvent): void {
+    protected onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): void {
         this._variableHandles.onPaused();
         this._frameHandles.reset();
         this._exception = undefined;
-        this._lastPauseNotification = notification;
+        this._lastPauseState = { event: notification, expecting: expectingStopReason };
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -382,15 +379,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     const hitConditionBp = this._hitConditionBreakpointsById.get(hitBp);
                     hitConditionBp.numHits++;
                     // Only resume if we didn't break for some user action (step, pause button)
-                    if (!this._expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
+                    if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
                         this.chrome.Debugger.resume();
                         return;
                     }
                 }
             }
-        } else if (this._expectingStopReason) {
+        } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
-            reason = this._expectingStopReason;
+            reason = expectingStopReason;
             if (this._launchAttachArgs.smartStep) {
                 smartStepP = this.shouldSmartStep(this._currentStack[0]);
             }
@@ -629,6 +626,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this._blackboxedRegexes.push(new RegExp(script.url, 'i'));
             }
         }
+
+        this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
     private removeMatchingRegexes(path: string): void {
