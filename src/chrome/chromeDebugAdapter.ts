@@ -218,6 +218,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         logger.setMinLogLevel(minLogLevel);
 
         this._launchAttachArgs = args;
+        args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
     }
 
     public shutdown(): void {
