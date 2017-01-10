@@ -67,6 +67,7 @@ export class RemotePathTransformer extends BasePathTransformer {
                 if (utils.existsSync(localPath)) {
                     frame.source.path = localPath;
                     frame.source.sourceReference = undefined;
+                    frame.source.origin = undefined;
                 }
             }
         });

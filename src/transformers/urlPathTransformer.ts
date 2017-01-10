@@ -91,7 +91,8 @@ export class UrlPathTransformer extends BasePathTransformer {
                 // clear the sourceReference since it's not needed.
                 if (clientPath) {
                     frame.source.path = clientPath;
-                    frame.source.sourceReference = 0;
+                    frame.source.sourceReference = undefined;
+                    frame.source.origin = undefined;
                 }
             }
         });

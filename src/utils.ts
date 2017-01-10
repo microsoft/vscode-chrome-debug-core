@@ -9,6 +9,7 @@ import * as path from 'path';
 import * as glob from 'glob';
 import {Handles} from 'vscode-debugadapter';
 import * as http from 'http';
+import * as https from 'https';
 
 import * as logger from './logger';
 
@@ -205,7 +206,11 @@ export function errP(msg: string|Error): Promise<never> {
  */
 export function getURL(aUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        http.get(aUrl, response => {
+        const parsedUrl = url.parse(aUrl);
+        const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
+        const options = Object.assign({ rejectUnauthorized: false }, parsedUrl) as https.RequestOptions;
+
+        get(options, response => {
             let responseData = '';
             response.on('data', chunk => responseData += chunk);
             response.on('end', () => {
