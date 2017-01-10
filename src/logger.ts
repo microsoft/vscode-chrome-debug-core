@@ -141,7 +141,13 @@ class Logger {
 
     private sendLog(msg: string, level: LogLevel): void {
         // Truncate long messages, they can hang VS Code
-        if (msg.length > 1500) msg = msg.substr(0, 1500) + '[...]';
+        if (msg.length > 1500) {
+            const endsInNewline = !!msg.match(/(\n|\r\n)$/);
+            msg = msg.substr(0, 1500) + '[...]';
+            if (endsInNewline) {
+                msg = msg + '\n';
+            }
+        }
 
         if (this._logCallback) {
             this._logCallback(msg, level);
