@@ -176,7 +176,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsSetVariable: true,
             supportsConditionalBreakpoints: true,
             supportsCompletionsRequest: true,
-            supportsHitConditionalBreakpoints: true
+            supportsHitConditionalBreakpoints: true,
+            supportsRestartFrame: true
         };
     }
 
@@ -1420,6 +1421,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }));
     }
 
+    public async restartFrame(args: DebugProtocol.RestartFrameArguments): Promise<void> {
+        const callFrame = this._frameHandles.get(args.frameId);
+        if (!callFrame) {
+            return Promise.reject(errors.stackFrameNotValid());
+        }
+
+        await this.chrome.Debugger.restartFrame({ callFrameId: callFrame.callFrameId });
+        this._expectingStopReason = 'frame_entry';
+        return this.chrome.Debugger.stepInto();
+    }
+
     public completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {
         const text = args.text;
         const column = args.column;
@@ -1441,7 +1453,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (typeof args.frameId === 'number') {
                 const frame = this._frameHandles.get(args.frameId);
                 if (!frame) {
-                    return Promise.reject(errors.completionsStackFrameNotValid());
+                    return Promise.reject(errors.stackFrameNotValid());
                 }
 
                 const callFrameId = frame.callFrameId;
@@ -1462,7 +1474,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // If no expression was passed, we must be getting global completions at a breakpoint
             if (typeof args.frameId !== "number" || !this._frameHandles.get(args.frameId)) {
-                return Promise.reject(errors.completionsStackFrameNotValid());
+                return Promise.reject(errors.stackFrameNotValid());
             }
 
             const callFrame = this._frameHandles.get(args.frameId);
