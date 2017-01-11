@@ -116,5 +116,5 @@ function relative(a: string, b: string): string {
 function join(a: string, b: string): string {
     return a.match(/^[A-Za-z]:/) ?
         path.win32.join(a, b) :
-        path.posix.join(a, b);
+        utils.forceForwardSlashes(path.posix.join(a, b))
 }
