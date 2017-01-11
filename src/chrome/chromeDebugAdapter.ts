@@ -1002,7 +1002,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         stackTraceResponse.stackFrames.forEach(frame => {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
-                frame.name = frame.name + ' (skipped)';
+                // frame.name = frame.name + ' (skipped)';
+                frame.source.name = `(skipped) ${frame.source.name}`;
+                frame.source.presentationHint = 'deemphasize';
             }
         });
 
