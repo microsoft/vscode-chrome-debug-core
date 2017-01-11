@@ -417,14 +417,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
     }
 
-    private shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
+    private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
         if (!this._launchAttachArgs.sourceMaps) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
-        return this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber).then(mapping => {
-            return !mapping;
-        });
+        const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
+
+        return !mapping;
     }
 
     private stopReasonText(reason: string): string {
@@ -986,7 +986,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
+    public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
@@ -1000,13 +1000,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
-        stackTraceResponse.stackFrames.forEach(frame => {
+        await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
-                // frame.name = frame.name + ' (skipped)';
                 frame.source.name = `(skipped) ${frame.source.name}`;
                 frame.source.presentationHint = 'deemphasize';
+            } else if (await this.shouldSmartStep(stack[i])) {
+                frame.source.name = `(smartStep) ${frame.source.name}`;
+                frame.source.presentationHint = 'deemphasize';
             }
-        });
+        }));
 
         return stackTraceResponse;
     }

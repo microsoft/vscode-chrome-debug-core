@@ -442,28 +442,29 @@ suite('ChromeDebugAdapter', () => {
     });
 
     suite('Debugger.pause', () => {
-        test('returns the same sourceReferences for the same scripts', () => {
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
-                const scriptId = 'script1';
-                const location: Crdp.Debugger.Location = { lineNumber: 0, columnNumber: 0, scriptId };
-                const callFrame = { callFrameId: 'id1', location };
-                emitScriptParsed('', scriptId);
-                mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
+        test('returns the same sourceReferences for the same scripts', async () => {
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
 
-                const stackFrames = chromeDebugAdapter.stackTrace({ threadId: THREAD_ID }).stackFrames;
+            const scriptId = 'script1';
+            const location: Crdp.Debugger.Location = { lineNumber: 0, columnNumber: 0, scriptId };
+            const callFrame = { callFrameId: 'id1', location };
+            emitScriptParsed('', scriptId);
+            mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
 
-                // Should have two stack frames with the same sourceReferences
-                assert.equal(stackFrames.length, 2);
-                assert.equal(stackFrames[0].source.sourceReference, stackFrames[1].source.sourceReference);
-                const sourceReference = stackFrames[0].source.sourceReference;
+            const { stackFrames } = await chromeDebugAdapter.stackTrace({ threadId: THREAD_ID });
 
-                // If it pauses a second time, and we request another stackTrace, should have the same result
-                mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
-                const stackFrames2 = chromeDebugAdapter.stackTrace({ threadId: THREAD_ID }).stackFrames;
-                assert.equal(stackFrames2.length, 2);
-                assert.equal(stackFrames2[0].source.sourceReference, sourceReference);
-                assert.equal(stackFrames2[1].source.sourceReference, sourceReference);
-            });
+            // Should have two stack frames with the same sourceReferences
+            assert.equal(stackFrames.length, 2);
+            assert.equal(stackFrames[0].source.sourceReference, stackFrames[1].source.sourceReference);
+            const sourceReference = stackFrames[0].source.sourceReference;
+
+            // If it pauses a second time, and we request another stackTrace, should have the same result
+            mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
+            const { stackFrames: stackFrames2 } = await chromeDebugAdapter.stackTrace({ threadId: THREAD_ID });
+
+            assert.equal(stackFrames2.length, 2);
+            assert.equal(stackFrames2[0].source.sourceReference, sourceReference);
+            assert.equal(stackFrames2[1].source.sourceReference, sourceReference);
         });
     });
 
