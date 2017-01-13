@@ -588,9 +588,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
         const path = utils.fileUrlToPath(args.path);
+        logger.log(`Toggling the skip file status for: ${path}`);
 
         if (!await this.isInCurrentStack(path)) {
             // Only valid for files that are in the current stack
+            logger.log(`Can't toggle the skipFile status for ${path} - it's not in the current stack.`);
             return;
         }
 
@@ -603,6 +605,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const sources = await this._sourceMapTransformer.allSources(generatedPath);
         if (generatedPath === path && sources.length) {
             // Ignore toggling skip status for generated scripts with sources
+            logger.log(`Can't toggle skipFile status for ${path} - it's a script with a sourcemap`);
             return;
         }
 
