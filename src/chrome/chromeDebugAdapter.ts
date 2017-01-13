@@ -311,7 +311,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                     if (patterns.length) {
                         this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
-                        this.chrome.Debugger.setBlackboxPatterns({ patterns });
+                        this.chrome.Debugger.setBlackboxPatterns({ patterns })
+                            .catch(() => this.warnNoSkipFiles());
                     }
 
                     return Promise.all(this.runConnection());
@@ -521,13 +522,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 await this.chrome.Debugger.setBlackboxedRanges({
                     scriptId: script.scriptId,
                     positions: []
-                });
+                }).catch(() => this.warnNoSkipFiles());
 
                 if (libPositions.length) {
                     this.chrome.Debugger.setBlackboxedRanges({
                         scriptId: script.scriptId,
                         positions: libPositions
-                    });
+                    }).catch(() => this.warnNoSkipFiles());
                 }
             }
         } else {
@@ -539,9 +540,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this.chrome.Debugger.setBlackboxedRanges({
                     scriptId: script.scriptId,
                     positions
-                });
+                }).catch(() => this.warnNoSkipFiles());
             }
         }
+    }
+
+    private warnNoSkipFiles(): void {
+        logger.log('Warning: this runtime does not support skipFiles');
     }
 
     /**
@@ -631,7 +636,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._blackboxedRegexes = this._blackboxedRegexes.filter(regex => !regex.test(path));
         this.chrome.Debugger.setBlackboxPatterns({
             patterns: this._blackboxedRegexes.map(regex => regex.source)
-        });
+        }).catch(() => this.warnNoSkipFiles());
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
