@@ -596,7 +596,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
-        const path = args.path;
+        const path = utils.fileUrlToPath(args.path);
+
+        if (!await this.isInCurrentStack(path)) {
+            // Only valid for files that are in the current stack
+            return;
+        }
+
         const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(path);
         if (!generatedPath) {
             // haven't heard of this script
@@ -628,6 +634,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
+    }
+
+    private async isInCurrentStack(path: string): Promise<boolean> {
+        const currentStack = await this.stackTrace({ threadId: undefined });
+        return currentStack.stackFrames.some(frame => frame.source.path === path);
     }
 
     private removeMatchingRegexes(path: string): void {
