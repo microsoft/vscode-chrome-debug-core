@@ -28,7 +28,6 @@ import {RemotePathTransformer} from '../transformers/remotePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
 
-import * as net from 'net';
 import * as path from 'path';
 
 interface IPropCount {
@@ -111,15 +110,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _initialSourceMapsP = Promise.resolve();
 
-    private _server: net.Server;
-
     private _lastPauseState: { expecting: string; event: Crdp.Debugger.PausedEvent };
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
-        this._server = net.createServer(this.handleConnection.bind(this));
-        this._server.on('error', () => logger.error('socket server error'));
-        this._server.listen(7891, () => logger.log('socket server listening'));
-
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)();
@@ -140,14 +133,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected get chrome(): Crdp.CrdpClient {
         return this._chromeConnection.api;
-    }
-
-    private handleConnection(socket: net.Socket): void {
-        socket.on('data', data => {
-            const url = data.toString();
-            this.toggleSkipFileStatus({ path: utils.fileUrlToPath(url) });
-            socket.end();
-        });
     }
 
     /**
