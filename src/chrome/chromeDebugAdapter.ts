@@ -94,7 +94,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _lineColTransformer: LineColTransformer;
     protected _sourceMapTransformer: BaseSourceMapTransformer;
-    private _pathTransformer: BasePathTransformer;
+    protected _pathTransformer: BasePathTransformer;
 
     private _hasTerminated: boolean;
     protected _inShutdown: boolean;
