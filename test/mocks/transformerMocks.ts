@@ -20,6 +20,9 @@ export function getMockSourceMapTransformer(): Mock<BaseSourceMapTransformer> {
     mock.setup(m => m.getGeneratedPathFromAuthoredPath(It.isAnyString()))
         .returns(somePath => Promise.resolve(somePath));
 
+    mock.setup(m => m.mapToAuthored(It.isAnyString(), It.isAnyNumber(), It.isAnyNumber()))
+        .returns(somePath => Promise.resolve(somePath));
+
     return mock;
 }
 

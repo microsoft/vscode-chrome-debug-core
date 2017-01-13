@@ -8,7 +8,7 @@ import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -61,6 +61,8 @@ interface IHitConditionBreakpoint {
 
 export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
+type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static PLACEHOLDER_URL_PROTOCOL = 'eval://';
     private static SCRIPTS_COMMAND = '.scripts';
@@ -83,8 +85,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _breakpointIdHandles: utils.ReverseHandles<string>;
     private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
-    private _scriptsById: Map<Crdp.Runtime.ScriptId, Crdp.Debugger.ScriptParsedEvent>;
-    private _scriptsByUrl: Map<string, Crdp.Debugger.ScriptParsedEvent>;
+    private _scriptsById: Map<Crdp.Runtime.ScriptId, CrdpScript>;
+    private _scriptsByUrl: Map<string, CrdpScript>;
     private _pendingBreakpointsByUrl: Map<string, IPendingBreakpoint>;
     private _hitConditionBreakpointsById: Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>;
 
@@ -98,7 +100,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
-    private _blackboxedRegexes: RegExp[];
+    private _blackboxedRegexes: RegExp[] = [];
+    private _skipFileStatuses = new Map<string, boolean>();
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
@@ -106,6 +109,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _smartStepCount = 0;
 
     private _initialSourceMapsP = Promise.resolve();
+
+    private _lastPauseState: { expecting: string; event: Crdp.Debugger.PausedEvent };
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -336,10 +341,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.clearTargetContext();
     }
 
-    protected onPaused(notification: Crdp.Debugger.PausedEvent): void {
+    protected onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): void {
         this._variableHandles.onPaused();
         this._frameHandles.reset();
         this._exception = undefined;
+        this._lastPauseState = { event: notification, expecting: expectingStopReason };
         this._currentStack = notification.callFrames;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -359,15 +365,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     const hitConditionBp = this._hitConditionBreakpointsById.get(hitBp);
                     hitConditionBp.numHits++;
                     // Only resume if we didn't break for some user action (step, pause button)
-                    if (!this._expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
+                    if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
                         this.chrome.Debugger.resume();
                         return;
                     }
                 }
             }
-        } else if (this._expectingStopReason) {
+        } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
-            reason = this._expectingStopReason;
+            reason = expectingStopReason;
             if (this._launchAttachArgs.smartStep) {
                 smartStepP = this.shouldSmartStep(this._currentStack[0]);
             }
@@ -397,14 +403,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
     }
 
-    private shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
+    private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
         if (!this._launchAttachArgs.sourceMaps) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
-        return this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber).then(mapping => {
-            return !mapping;
-        });
+        const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
+
+        return !mapping;
     }
 
     private stopReasonText(reason: string): string {
@@ -443,7 +449,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): void {
+    protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
         // Totally ignore extension scripts, internal Chrome scripts, and so on
         if (this.shouldIgnoreScript(script)) {
             return;
@@ -472,7 +478,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             resolvePendingBPs(mappedUrl);
-            this.resolveSkipFiles(script.scriptId, mappedUrl, sources);
+            return this.resolveSkipFiles(script, mappedUrl, sources);
         });
 
         if (this._initialSourceMapsP) {
@@ -480,43 +486,151 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private resolveSkipFiles(scriptId: string, mappedUrl: string, sources: string[]): void {
-        if (this.shouldSkipFile(mappedUrl)) {
-            // set the whole script as lib code
-            this.chrome.Debugger.setBlackboxedRanges({
-                scriptId: scriptId,
-                positions: [{ lineNumber: 0, columnNumber: 0 }]
-            });
-        } else if (sources) {
-            const librarySources = new Set(sources.filter(sourcePath => this.shouldSkipFile(sourcePath)));
-            if (librarySources.size) {
-                this._sourceMapTransformer.allSourcePathDetails(mappedUrl).then(details => {
-                    const libPositions: Crdp.Debugger.ScriptPosition[] = [];
+    private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
+        if (sources && sources.length) {
+            const parentIsSkipped = this.shouldSkipSource(script.url);
+            const details = await this._sourceMapTransformer.allSourcePathDetails(mappedUrl);
+            const libPositions: Crdp.Debugger.ScriptPosition[] = [];
 
-                    let inLibRange = false;
-                    details.forEach((detail, i) => {
-                        const isSkippedFile = librarySources.has(detail.inferredPath);
-                        if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
-                            libPositions.push({
-                                lineNumber: detail.startPosition.line,
-                                columnNumber: detail.startPosition.column
-                            });
-                            inLibRange = !inLibRange;
-                        }
+            // Figure out skip/noskip transitions within script
+            let inLibRange = parentIsSkipped;
+            details.forEach(async (detail, i) => {
+                let isSkippedFile = this.shouldSkipSource(detail.inferredPath);
+                if (typeof isSkippedFile !== 'boolean') {
+                    // Inherit the parent's status
+                    isSkippedFile = parentIsSkipped;
+                }
+
+                this._skipFileStatuses.set(detail.inferredPath, isSkippedFile);
+
+                if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
+                    libPositions.push({
+                        lineNumber: detail.startPosition.line,
+                        columnNumber: detail.startPosition.column
                     });
+                    inLibRange = !inLibRange;
+                }
+            });
 
+            // If there's any change from the default, set proper blackboxed ranges
+            if (libPositions.length || toggling) {
+                if (parentIsSkipped) {
+                    libPositions.splice(0, 0, { lineNumber: 0, columnNumber: 0});
+                }
+
+                await this.chrome.Debugger.setBlackboxedRanges({
+                    scriptId: script.scriptId,
+                    positions: []
+                });
+
+                if (libPositions.length) {
                     this.chrome.Debugger.setBlackboxedRanges({
-                        scriptId: scriptId,
+                        scriptId: script.scriptId,
                         positions: libPositions
                     });
+                }
+            }
+        } else {
+            // Dynamically skip or un-skip non-sourcemapped script if needed
+            const status = await this.getSkipStatus(mappedUrl);
+            const skippedByPattern = this.matchesSkipFilesPatterns(mappedUrl);
+            if (typeof status === 'boolean' && status !== skippedByPattern) {
+                const positions = status ? [{ lineNumber: 0, columnNumber: 0 }] : [];
+                this.chrome.Debugger.setBlackboxedRanges({
+                    scriptId: script.scriptId,
+                    positions
                 });
             }
         }
     }
 
-    private shouldSkipFile(sourcePath: string): boolean {
-        return this._blackboxedRegexes && this._blackboxedRegexes.some(regex => {
+    /**
+     * If the source has a saved skip status, return that, whether true or false.
+     * If not, check it against the patterns list.
+     */
+    private shouldSkipSource(sourcePath: string): boolean|undefined {
+        const status = this.getSkipStatus(sourcePath);
+        if (typeof status === 'boolean') {
+            return status;
+        }
+
+        if (this.matchesSkipFilesPatterns(sourcePath)) {
+            return true;
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Returns true if this path matches one of the static skip patterns
+     */
+    private matchesSkipFilesPatterns(sourcePath: string): boolean {
+        return this._blackboxedRegexes.some(regex => {
             return regex.test(sourcePath);
+        });
+    }
+
+    /**
+     * Returns the current skip status for this path, which is either an authored or generated script.
+     */
+    private getSkipStatus(sourcePath: string): boolean|undefined {
+        if (this._skipFileStatuses.has(sourcePath)) {
+            return this._skipFileStatuses.get(sourcePath);
+        }
+
+        return undefined;
+    }
+
+    public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
+        const path = utils.fileUrlToPath(args.path);
+
+        if (!await this.isInCurrentStack(path)) {
+            // Only valid for files that are in the current stack
+            return;
+        }
+
+        const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(path);
+        if (!generatedPath) {
+            // haven't heard of this script
+            return;
+        }
+
+        const sources = await this._sourceMapTransformer.allSources(generatedPath);
+        if (generatedPath === path && sources.length) {
+            // Ignore toggling skip status for generated scripts with sources
+            return;
+        }
+
+        const newStatus = !this.shouldSkipSource(path);
+        this._skipFileStatuses.set(path, newStatus);
+
+        const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
+        const script = this._scriptsByUrl.get(targetPath);
+
+        await this.resolveSkipFiles(script, generatedPath, sources, /*toggling=*/true);
+
+        if (!newStatus) {
+            this.removeMatchingRegexes(script.url);
+        }
+
+        if (generatedPath === path) {
+            if (newStatus) {
+                this._blackboxedRegexes.push(new RegExp(script.url, 'i'));
+            }
+        }
+
+        this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
+    }
+
+    private async isInCurrentStack(path: string): Promise<boolean> {
+        const currentStack = await this.stackTrace({ threadId: undefined });
+        return currentStack.stackFrames.some(frame => frame.source.path === path);
+    }
+
+    private removeMatchingRegexes(path: string): void {
+        this._blackboxedRegexes = this._blackboxedRegexes.filter(regex => !regex.test(path));
+        this.chrome.Debugger.setBlackboxPatterns({
+            patterns: this._blackboxedRegexes.map(regex => regex.source)
         });
     }
 
@@ -869,7 +983,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    public stackTrace(args: DebugProtocol.StackTraceArguments): IStackTraceResponseBody {
+    public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentStack;
         if (args.levels) {
@@ -882,6 +996,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
+
+        await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
+            if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
+                frame.source.name = `(skipped) ${frame.source.name}`;
+                frame.source.presentationHint = 'deemphasize';
+            } else if (await this.shouldSmartStep(stack[i])) {
+                frame.source.name = `(smartStep) ${frame.source.name}`;
+                frame.source.presentationHint = 'deemphasize';
+            }
+        }));
 
         return stackTraceResponse;
     }
