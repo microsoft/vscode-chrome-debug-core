@@ -288,28 +288,32 @@ suite('Utils', () => {
     });
 
     suite('pathGlobToRegex', () => {
-        function testPathGlobToBlackboxedScript(glob: string, expected: string): void {
+        function testPathGlobToBlackboxedRegex(glob: string, expected: string): void {
             assert.equal(getUtils().pathGlobToBlackboxedRegex(glob), expected);
         }
 
         test('universal', () => {
-            testPathGlobToBlackboxedScript('*', '.*');
+            testPathGlobToBlackboxedRegex('*', '.*');
         });
 
         test('url', () => {
-            testPathGlobToBlackboxedScript('http://localhost:8080/node_modules/**/*.js', 'http:\\/\\/localhost:8080\\/node_modules\\/.*\\.js');
+            testPathGlobToBlackboxedRegex('http://localhost:8080/node_modules/**/*.js', 'http:[/\\\\][/\\\\]localhost:8080[/\\\\]node_modules[/\\\\].*\\.js');
         });
 
         test('path segment', () => {
-            testPathGlobToBlackboxedScript('node_modules', 'node_modules');
+            testPathGlobToBlackboxedRegex('node_modules', 'node_modules');
         });
 
         test('file extension', () => {
-            testPathGlobToBlackboxedScript('*.foo.bar', '.*\\.foo\\.bar');
+            testPathGlobToBlackboxedRegex('*.foo.bar', '.*\\.foo\\.bar');
         });
 
         test('escapes special chars except asterisk', () => {
-            testPathGlobToBlackboxedScript('*.+\\[(', '.*\\.\\+\\\\\\[\\(');
+            testPathGlobToBlackboxedRegex('*.+[(', '.*\\.\\+\\[\\(');
+        });
+
+        test('slash-agnostic', () => {
+            testPathGlobToBlackboxedRegex('a/b\\c', 'a[/\\\\]b[/\\\\]c');
         });
     });
 });

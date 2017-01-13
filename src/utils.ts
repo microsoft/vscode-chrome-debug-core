@@ -457,7 +457,10 @@ export function pathGlobToBlackboxedRegex(glob: string): string {
 
         // Just to simplify
         .replace(/\.\*\\\/\.\*/g, '.*') // .*\/.* -> .*
-        .replace(/\.\*\.\*/g, '.*'); // .*.* -> .*
+        .replace(/\.\*\.\*/g, '.*') // .*.* -> .*
+
+        // Match either slash direction
+        .replace(/\\\/|\\\\/g, '[\/\\\\]'); // / -> [/|\], \ -> [/|\]
 }
 
 function escapeRegexSpecialChars(str: string): string {
