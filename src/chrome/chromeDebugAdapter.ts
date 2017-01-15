@@ -375,9 +375,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
-            if (this._launchAttachArgs.smartStep) {
-                smartStepP = this.shouldSmartStep(this._currentStack[0]);
-            }
+            smartStepP = this.shouldSmartStep(this._currentStack[0]);
         } else {
             reason = 'debugger';
         }
@@ -405,7 +403,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        if (!this._launchAttachArgs.sourceMaps) return Promise.resolve(false);
+        if (!this._launchAttachArgs.sourceMaps || !this._launchAttachArgs.smartStep) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
