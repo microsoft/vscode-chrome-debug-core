@@ -15,6 +15,7 @@ export type ISourceMapPathOverrides = { [pattern: string]: string };
  */
 export interface ICommonRequestArgs {
     webRoot?: string;
+    pathMapping?: {[url: string]: string};
     outDir?: string;
     outFiles?: string[];
     sourceMaps?: boolean;
