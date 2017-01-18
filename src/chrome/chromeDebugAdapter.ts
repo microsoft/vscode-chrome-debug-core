@@ -635,13 +635,29 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private makeRegexesNotSkip(noSkipPath: string): void {
-        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => utils.makeRegexNotMatchPath(regex, noSkipPath));
-        this.refreshBlackboxPatterns();
+        let somethingChanged = false;
+        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => {
+            const result = utils.makeRegexNotMatchPath(regex, noSkipPath);
+            somethingChanged = somethingChanged || (result !== regex);
+            return result;
+        });
+
+        if (somethingChanged) {
+            this.refreshBlackboxPatterns();
+        }
     }
 
     private makeRegexesSkip(skipPath: string): void {
-        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => utils.makeRegexMatchPath(regex, skipPath));
-        this.refreshBlackboxPatterns();
+        let somethingChanged = false;
+        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => {
+            const result = utils.makeRegexMatchPath(regex, skipPath);
+            somethingChanged = somethingChanged || (result !== regex);
+            return result;
+        });
+
+        if (somethingChanged) {
+            this.refreshBlackboxPatterns();
+        }
     }
 
     private refreshBlackboxPatterns(): void {
