@@ -1031,10 +1031,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
-                frame.source.origin = (frame.source.origin ? frame.source.origin + '\n' : '') + `(skipped by 'skipFiles')`;
+                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'skipFiles')`;
                 frame.source.presentationHint = 'deemphasize';
             } else if (await this.shouldSmartStep(stack[i])) {
-                frame.source.origin = (frame.source.origin ? frame.source.origin + '\n' : '') + `(skipped by 'smartStep')`;
+                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'smartStep')`;
                 frame.source.presentationHint = 'deemphasize';
             }
         }));
