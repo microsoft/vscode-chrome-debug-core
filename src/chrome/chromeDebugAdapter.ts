@@ -64,7 +64,7 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
-    public static PLACEHOLDER_URL_PROTOCOL = 'eval://';
+    public static PLACEHOLDER_EVAL_URL_PROTOCOL = 'eval://';
     private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
@@ -456,7 +456,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
         } else {
-            script.url = ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + script.scriptId;
+            script.url = ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + script.scriptId;
         }
 
         this._scriptsById.set(script.scriptId, script);
@@ -852,9 +852,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected addBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<Crdp.Debugger.SetBreakpointResponse[]> {
         let responsePs: Promise<Crdp.Debugger.SetBreakpointResponse>[];
-        if (url.startsWith(ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL)) {
+        if (url.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
             // eval script with no real url - use debugger_setBreakpoint
-            const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL);
+            const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => this.chrome.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
         } else {
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
@@ -1030,12 +1030,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
+            // Apply hints to skipped frames
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'skipFiles')`;
                 frame.source.presentationHint = 'deemphasize';
             } else if (await this.shouldSmartStep(stack[i])) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'smartStep')`;
                 frame.source.presentationHint = 'deemphasize';
+            }
+
+            // Allow consumer to adjust final path
+            if (frame.source.path && frame.source.sourceReference) {
+                frame.source.path = this.getDisplayPath(frame.source.path);
             }
         }));
 
@@ -1063,7 +1069,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     } :
                     {
                         name: script && path.basename(script.url),
-                        path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + location.scriptId,
+                        path: ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + location.scriptId,
                         sourceReference,
                         origin
                     };
@@ -1084,7 +1090,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return {
                 id: this._frameHandles.create(<any>{ }),
                 name: 'Unknown',
-                source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL + 'Unknown'},
+                source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + 'Unknown'},
                 line,
                 column
             };
@@ -1094,6 +1100,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected getReadonlyOrigin(url: string): string {
         // To override
         return undefined;
+    }
+
+    /**
+     * Called when returning a stack trace, for the path for Sources that have a sourceReference, so consumers can
+     * tweak it, since it's only for display.
+     */
+    protected getDisplayPath(aPath: string): string {
+        // To override
+        return aPath;
     }
 
     /**

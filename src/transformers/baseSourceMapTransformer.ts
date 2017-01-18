@@ -173,7 +173,6 @@ export class BaseSourceMapTransformer {
                     if (mapped && inlinedSource) {
                         // Clear the path and set the sourceReference - the client will ask for
                         // the source later and it will be returned from the sourcemap
-                        stackFrame.source.path = undefined;
                         stackFrame.source.name = path.basename(mapped.source);
                         stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
                         stackFrame.source.origin = utils.localize('origin.inlined.source.map', "read-only inlined content from source map");
@@ -183,9 +182,6 @@ export class BaseSourceMapTransformer {
                         // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
                         stackFrame.source.sourceReference = undefined;
                         stackFrame.source.origin = undefined;
-                    } else {
-                        // Script could not be mapped and doesn't exist on disk. Clear the path, use sourceReference.
-                        stackFrame.source.path = undefined;
                     }
                 }
             });
