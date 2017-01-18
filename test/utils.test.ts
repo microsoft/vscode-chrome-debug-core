@@ -287,7 +287,7 @@ suite('Utils', () => {
         });
     });
 
-    suite('pathGlobToRegex', () => {
+    suite('pathGlobToBlackboxedRegex', () => {
         function testPathGlobToBlackboxedRegex(glob: string, expected: string): void {
             assert.equal(getUtils().pathGlobToBlackboxedRegex(glob), expected);
         }
@@ -314,6 +314,43 @@ suite('Utils', () => {
 
         test('slash-agnostic', () => {
             testPathGlobToBlackboxedRegex('a/b\\c', 'a[/\\\\]b[/\\\\]c');
+        });
+    });
+
+    suite('makeRegexNotMatchPath/makeRegexMatchPath', () => {
+        function testMakeRegexNotMatchPath(regex: RegExp, noMatchPath: string, matchPath?: string): void {
+            const noMatchResult = getUtils().makeRegexNotMatchPath(regex, noMatchPath);
+            assert(!noMatchResult.test(noMatchPath), `shouldn't match noMatchPath`);
+            if (matchPath) {
+                assert(noMatchResult.test(matchPath), `should still match matchPath`);
+            }
+
+            // Reverse it, and assert that it now matches again
+            const matchResult = getUtils().makeRegexMatchPath(noMatchResult, noMatchPath);
+            assert(matchResult.test(noMatchPath), 'should now match noMatchPath');
+            if (matchPath) {
+                assert(matchResult.test(matchPath), 'should now match matchPath');
+            }
+        }
+
+        test('simple path', () => {
+            testMakeRegexNotMatchPath(/\/foo/, '/foo');
+        });
+
+        test('still matches other path', () => {
+            testMakeRegexNotMatchPath(/\/[a-z]{3}/, '/foo', '/bar');
+        });
+
+        test('longer path', () => {
+            testMakeRegexNotMatchPath(/foo\/bar\/some\-thing\d\.js/, '/foo/bar/some-thing1.js', '/foo/bar/some-thing2.js');
+        });
+
+        test(`case insensitive`, () => {
+            testMakeRegexNotMatchPath(/\/FOO/i, '/foo');
+        });
+
+        test('path segment', () => {
+            testMakeRegexNotMatchPath(/bar\d/, '/foo/bar1', '/foo/bar2');
         });
     });
 });
