@@ -311,8 +311,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                     if (patterns.length) {
                         this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
-                        this.chrome.Debugger.setBlackboxPatterns({ patterns })
-                            .catch(() => this.warnNoSkipFiles());
+                        this.refreshBlackboxPatterns();
                     }
 
                     return Promise.all(this.runConnection());
@@ -615,8 +614,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         await this.resolveSkipFiles(script, generatedPath, sources, /*toggling=*/true);
 
-        if (!newStatus) {
-            this.removeMatchingRegexes(script.url);
+        if (newStatus) {
+            this.makeRegexesSkip(script.url);
+        } else {
+            this.makeRegexesNotSkip(script.url);
         }
 
         if (generatedPath === aPath) {
@@ -633,8 +634,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return currentStack.stackFrames.some(frame => frame.source.path === path);
     }
 
-    private removeMatchingRegexes(path: string): void {
-        this._blackboxedRegexes = this._blackboxedRegexes.filter(regex => !regex.test(path));
+    private makeRegexesNotSkip(noSkipPath: string): void {
+        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => utils.makeRegexNotMatchPath(noSkipPath, regex));
+        this.refreshBlackboxPatterns();
+    }
+
+    private makeRegexesSkip(skipPath: string): void {
+        this._blackboxedRegexes = this._blackboxedRegexes.map(regex => utils.makeRegexMatchPath(skipPath, regex));
+        this.refreshBlackboxPatterns();
+    }
+
+    private refreshBlackboxPatterns(): void {
         this.chrome.Debugger.setBlackboxPatterns({
             patterns: this._blackboxedRegexes.map(regex => regex.source)
         }).catch(() => this.warnNoSkipFiles());

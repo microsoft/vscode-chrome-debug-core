@@ -467,10 +467,37 @@ function escapeRegexSpecialChars(str: string): string {
     return str.replace(/([/\\.?*()^${}|[\]+])/g, '\\$1');
 }
 
+/**
+ * Does not escape *, as str is a simple glob pattern
+ */
 function escapeRegexSpecialCharsForBlackbox(str: string): string {
     return str.replace(/([/\\.?()^${}|[\]+])/g, '\\$1');
 }
 
 export function trimLastNewline(msg: string): string {
     return msg.replace(/(\n|\r\n)$/, '');
+}
+
+function blackboxNegativeLookaheadPattern(aPath: string): string {
+    return `(?!${escapeRegexSpecialChars(aPath)})`;
+}
+
+export function makeRegexNotMatchPath(aPath: string, regex: RegExp): RegExp {
+    if (regex.test(aPath)) {
+        const regSourceWithoutCaret = regex.source.replace(/^\^/, '');
+        const source = `^${blackboxNegativeLookaheadPattern(aPath)}.*${regSourceWithoutCaret}`;
+        return new RegExp(source, 'i');
+    } else {
+        return regex;
+    }
+}
+
+export function makeRegexMatchPath(aPath: string, regex: RegExp): RegExp {
+    const negativePattern = blackboxNegativeLookaheadPattern(aPath);
+    if (regex.source.indexOf(negativePattern) >= 0) {
+        const newSource = regex.source.replace(negativePattern, '');
+        return new RegExp(newSource, 'i');
+    } else {
+        return regex;
+    }
 }
