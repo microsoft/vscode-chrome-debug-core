@@ -18,13 +18,13 @@ import * as url from 'url';
  */
 export class UrlPathTransformer extends BasePathTransformer {
     private _webRoot: string;
-    private _pathMapping: {[url: string]: string};
+    private _pathMapping: {[url: string]: string} = {};
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
-        this._pathMapping = args.pathMapping;
+        this._pathMapping = args.pathMapping || {};
         return super.launch(args);
     }
 
