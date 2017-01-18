@@ -750,14 +750,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this._pathTransformer.setBreakpoints(args);
 
                 let targetScriptUrl: string;
-                if (args.source.path) {
-                    targetScriptUrl = args.source.path;
-                } else if (args.source.sourceReference) {
+                if (args.source.sourceReference) {
                     const handle = this._sourceHandles.get(args.source.sourceReference);
                     const targetScript = this._scriptsById.get(handle.scriptId);
                     if (targetScript) {
                         targetScriptUrl = targetScript.url;
                     }
+                } else if (args.source.path) {
+                    targetScriptUrl = args.source.path;
                 }
 
                 if (targetScriptUrl) {
@@ -794,7 +794,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
-        if (!args.source.path) return Promise.resolve();
+        if (!args.source.path || args.source.sourceReference) return Promise.resolve();
 
         return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then<void>(mappedPath => {
             if (!mappedPath) {
