@@ -134,7 +134,7 @@ const PREVIEW_PROPS_DEFAULT = 3;
 const PREVIEW_PROPS_CONSOLE = 8;
 const PREVIEW_PROP_LENGTH = 50;
 const ELLIPSIS = '…';
-export function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
+function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
     let value = object.description;
     if (object.preview) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
@@ -174,7 +174,7 @@ export function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: str
     return value;
 }
 
-export function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
+function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
     let value = object.description;
     if (object.preview) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
@@ -204,6 +204,28 @@ function trimProperty(value: string): string {
     return (value.length > PREVIEW_PROP_LENGTH) ?
         value.substr(0, PREVIEW_PROP_LENGTH) + ELLIPSIS :
         value;
+}
+
+export function getRemoteObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    let value = object.description;
+    if (object.subtype === 'array' || object.subtype === 'typedarray') {
+        value = getArrayPreview(object, context);
+    } else if (object.subtype === 'error') {
+        // The Error's description contains the whole stack which is not a nice description.
+        // Up to the first newline is just the error name/message.
+        const firstNewlineIdx = object.description.indexOf('\n');
+        if (firstNewlineIdx >= 0) value = object.description.substr(0, firstNewlineIdx);
+    } else if (object.subtype === 'promise' && object.preview) {
+        const promiseStatus = object.preview.properties.filter(prop => prop.name === '[[PromiseStatus]]')[0];
+        if (promiseStatus) value = object.description + ' { ' + promiseStatus.value + ' }';
+    } else if (object.subtype === 'generator' && object.preview) {
+        const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
+        if (generatorStatus) value = object.description + ' { ' + generatorStatus.value + ' }';
+    } else if (object.type === 'object' && object.preview) {
+        value = getObjectPreview(object, context);
+    }
+
+    return value;
 }
 
 export class VariableHandles {

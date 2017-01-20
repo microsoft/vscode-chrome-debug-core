@@ -3,7 +3,23 @@
  *--------------------------------------------------------*/
 
 import * as url from 'url';
+
 import Crdp from '../../crdp/crdp';
+import * as variables from './variables';
+import * as utils from '../utils';
+
+export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
+    if (!e.exception) {
+        return 'Uncaught Error';
+    }
+
+    if (e.exception.className === 'Error') {
+        return e.exception.description;
+    } else {
+        const preview = variables.getRemoteObjectPreview(e.exception, 'repl');
+        return `Error: ${utils.prettifyNewlines(preview)}\n${stackTraceToString(e.stackTrace)}`;
+    }
+}
 
 export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
     // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
@@ -124,8 +140,8 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
     return stackTrace.callFrames
         .map(frame => {
             const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');
-            const fileName = frame.url ? url.parse(frame.url).pathname : '(eval)';
-            return `-  ${fnName} @${fileName}:${frame.lineNumber}`;
+            const fileName = frame.url ? url.parse(frame.url).pathname : 'eval';
+            return `    at ${fnName} (${fileName}:${frame.lineNumber})`;
         })
         .join('\n');
 }

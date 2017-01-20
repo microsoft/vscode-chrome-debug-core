@@ -15,7 +15,7 @@ import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
 import * as Variables from './variables';
-import {formatConsoleArguments} from './consoleHelper';
+import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -700,14 +700,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.logObjects(result.args, category);
     }
 
-    protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
-        this.logObjects([params.exceptionDetails.exception], 'stderr');
-    }
-
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
         const e: DebugProtocol.OutputEvent = new OutputEvent('', category);
         e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(objs), 'repl');
         this._session.sendEvent(e);
+    }
+
+    protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
+        const formattedException = formatExceptionDetails(params.exceptionDetails);
+        this._session.sendEvent(new OutputEvent(
+            formattedException,
+            'stderr'
+        ));
     }
 
     /**
@@ -1539,11 +1543,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName: string, context: VariableContext): Promise<DebugProtocol.Variable> {
-        let value = object.description;
+        const value = Variables.getRemoteObjectPreview(object, context);
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
-            value = Variables.getArrayPreview(object, context);
-
             if (object.preview && !object.preview.overflow) {
                 propCountP = Promise.resolve(this.getArrayNumPropsByPreview(object));
             } else {
@@ -1556,21 +1558,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 propCountP = this.getCollectionNumPropsByEval(object.objectId);
             }
         } else {
-            if (object.subtype === 'error') {
-                // The Error's description contains the whole stack which is not a nice description.
-                // Up to the first newline is just the error name/message.
-                const firstNewlineIdx = object.description.indexOf('\n');
-                if (firstNewlineIdx >= 0) value = object.description.substr(0, firstNewlineIdx);
-            } else if (object.subtype === 'promise' && object.preview) {
-                const promiseStatus = object.preview.properties.filter(prop => prop.name === '[[PromiseStatus]]')[0];
-                if (promiseStatus) value = object.description + ' { ' + promiseStatus.value + ' }';
-            } else if (object.subtype === 'generator' && object.preview) {
-                const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
-                if (generatorStatus) value = object.description + ' { ' + generatorStatus.value + ' }';
-            } else if (object.type === 'object' && object.preview) {
-                value = Variables.getObjectPreview(object, context);
-            }
-
             propCountP = Promise.resolve({ });
         }
 

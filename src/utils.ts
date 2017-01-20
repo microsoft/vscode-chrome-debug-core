@@ -474,8 +474,12 @@ function escapeRegexSpecialCharsForBlackbox(str: string): string {
     return str.replace(/([/\\.?()^${}|[\]+])/g, '\\$1');
 }
 
-export function trimLastNewline(msg: string): string {
-    return msg.replace(/(\n|\r\n)$/, '');
+export function trimLastNewline(str: string): string {
+    return str.replace(/(\n|\r\n)$/, '');
+}
+
+export function prettifyNewlines(str: string): string {
+    return str.replace(/(\n|\r\n)/, '\\n');
 }
 
 function blackboxNegativeLookaheadPattern(aPath: string): string {
