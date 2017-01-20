@@ -486,6 +486,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
         if (sources && sources.length) {
+            logger.log(`Resolving skipFile statuses for ${mappedUrl} with sourcemaps`);
             const parentIsSkipped = this.shouldSkipSource(script.url);
             const details = await this._sourceMapTransformer.allSourcePathDetails(mappedUrl);
             const libPositions: Crdp.Debugger.ScriptPosition[] = [];
@@ -529,7 +530,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
             }
         } else {
-            // Dynamically skip or un-skip non-sourcemapped script if needed
+            logger.log(`Resolving skipFile statuses for ${mappedUrl} with no sources`);
             const status = await this.getSkipStatus(mappedUrl);
             const skippedByPattern = this.matchesSkipFilesPatterns(mappedUrl);
             if (typeof status === 'boolean' && status !== skippedByPattern) {
@@ -585,8 +586,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
         const aPath = utils.fileUrlToPath(args.path);
-        logger.log(`Toggling the skip file status for: ${aPath}`);
-
         if (!await this.isInCurrentStack(aPath)) {
             // Only valid for files that are in the current stack
             logger.log(`Can't toggle the skipFile status for ${aPath} - it's not in the current stack.`);
@@ -595,7 +594,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(aPath);
         if (!generatedPath) {
-            // haven't heard of this script
+            logger.log(`Can't toggle the skipFile status for: ${aPath} - haven't seen it yet.`);
             return;
         }
 
@@ -607,6 +606,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const newStatus = !this.shouldSkipSource(aPath);
+        logger.log(`Setting the skip file status for: ${aPath} to ${newStatus}`);
         this._skipFileStatuses.set(aPath, newStatus);
 
         const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
