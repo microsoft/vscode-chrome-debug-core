@@ -486,7 +486,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
         if (sources && sources.length) {
-            logger.log(`Resolving skipFile statuses for ${mappedUrl} with sourcemaps`);
             const parentIsSkipped = this.shouldSkipSource(script.url);
             const details = await this._sourceMapTransformer.allSourcePathDetails(mappedUrl);
             const libPositions: Crdp.Debugger.ScriptPosition[] = [];
@@ -530,7 +529,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
             }
         } else {
-            logger.log(`Resolving skipFile statuses for ${mappedUrl} with no sources`);
             const status = await this.getSkipStatus(mappedUrl);
             const skippedByPattern = this.matchesSkipFilesPatterns(mappedUrl);
             if (typeof status === 'boolean' && status !== skippedByPattern) {
