@@ -620,12 +620,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this.makeRegexesNotSkip(script.url);
         }
 
-        if (generatedPath === aPath) {
-            if (newStatus) {
-                this._blackboxedRegexes.push(new RegExp(script.url, 'i'));
-            }
-        }
-
         this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
@@ -655,9 +649,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return result;
         });
 
-        if (somethingChanged) {
-            this.refreshBlackboxPatterns();
+        if (!somethingChanged) {
+            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath), 'i'));
         }
+
+        this.refreshBlackboxPatterns();
     }
 
     private refreshBlackboxPatterns(): void {
