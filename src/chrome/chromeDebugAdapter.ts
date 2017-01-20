@@ -697,12 +697,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const result = formatConsoleArguments(params);
         const category = result.isError ? 'stderr' : 'stdout';
-        if (result.args.length === 1 && result.args[0].type === 'string') {
-            const e = new OutputEvent(result.args[0].value, category);
-            this._session.sendEvent(e);
-        } else {
-            this.logObjects(result.args, category);
-        }
+        this.logObjects(result.args, category);
     }
 
     protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
@@ -710,7 +705,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
-        const e: DebugProtocol.OutputEvent = new OutputEvent('foo', category);
+        const e: DebugProtocol.OutputEvent = new OutputEvent('', category);
         e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(objs), 'repl');
         this._session.sendEvent(e);
     }
@@ -1161,6 +1156,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         const handle = this._variableHandles.get(args.variablesReference);
         if (!handle) {
             return Promise.resolve<IVariablesResponseBody>(undefined);
