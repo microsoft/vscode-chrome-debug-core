@@ -585,12 +585,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
-        const aPath = utils.fileUrlToPath(args.path);
+        let aPath = utils.fileUrlToPath(args.path);
         if (!await this.isInCurrentStack(aPath)) {
             // Only valid for files that are in the current stack
             logger.log(`Can't toggle the skipFile status for ${aPath} - it's not in the current stack.`);
             return;
         }
+
+        // e.g. strip <node_internals>/
+        aPath = this.displayPathToRealPath(aPath);
 
         const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(aPath);
         if (!generatedPath) {
@@ -1036,7 +1039,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // Allow consumer to adjust final path
             if (frame.source.path && frame.source.sourceReference) {
-                frame.source.path = this.getDisplayPath(frame.source.path);
+                frame.source.path = this.realPathToDisplayPath(frame.source.path);
             }
         }));
 
@@ -1101,9 +1104,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Called when returning a stack trace, for the path for Sources that have a sourceReference, so consumers can
      * tweak it, since it's only for display.
      */
-    protected getDisplayPath(aPath: string): string {
+    protected realPathToDisplayPath(realPath: string): string {
         // To override
-        return aPath;
+        return realPath;
+    }
+
+    protected displayPathToRealPath(displayPath: string): string {
+        return displayPath;
     }
 
     /**
