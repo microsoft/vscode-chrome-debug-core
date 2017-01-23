@@ -43,7 +43,8 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
 }
 
 export interface IToggleSkipFileStatusArgs {
-    path: string;
+    path?: string;
+    sourceReference?: number;
 }
 
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {

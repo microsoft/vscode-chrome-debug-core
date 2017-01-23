@@ -585,16 +585,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
-        let aPath = utils.fileUrlToPath(args.path);
-        if (!await this.isInCurrentStack(aPath)) {
+        if (args.path) {
+            args.path = utils.fileUrlToPath(args.path);
+        }
+
+        if (!await this.isInCurrentStack(args)) {
             // Only valid for files that are in the current stack
-            logger.log(`Can't toggle the skipFile status for ${aPath} - it's not in the current stack.`);
+            const logName = args.path || this.displayNameForSourceReference(args.sourceReference);
+            logger.log(`Can't toggle the skipFile status for ${logName} - it's not in the current stack.`);
             return;
         }
 
         // e.g. strip <node_internals>/
-        aPath = this.displayPathToRealPath(aPath);
+        if (args.path) {
+            args.path = this.displayPathToRealPath(args.path);
+        }
 
+        const aPath = args.path || this.fakeUrlForSourceReference(args.sourceReference);
         const generatedPath = await this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(aPath);
         if (!generatedPath) {
             logger.log(`Can't toggle the skipFile status for: ${aPath} - haven't seen it yet.`);
@@ -626,9 +633,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
-    private async isInCurrentStack(path: string): Promise<boolean> {
+    private async isInCurrentStack(args: IToggleSkipFileStatusArgs): Promise<boolean> {
         const currentStack = await this.stackTrace({ threadId: undefined });
-        return currentStack.stackFrames.some(frame => frame.source.path === path);
+
+        if (args.path) {
+            return currentStack.stackFrames.some(frame => frame.source.path === args.path);
+        } else {
+            return currentStack.stackFrames.some(frame => frame.source.sourceReference === args.sourceReference);
+        }
     }
 
     private makeRegexesNotSkip(noSkipPath: string): void {
@@ -1040,6 +1052,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // Allow consumer to adjust final path
             if (frame.source.path && frame.source.sourceReference) {
                 frame.source.path = this.realPathToDisplayPath(frame.source.path);
+            }
+
+            // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
+            if (frame.source.path && frame.source.path.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
+                frame.source.path = undefined;
+                frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
         }));
 
@@ -1723,5 +1741,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private shouldIgnoreScript(script: Crdp.Debugger.ScriptParsedEvent): boolean {
         return script.url.startsWith('extensions::') || script.url.startsWith('chrome-extension://');
+    }
+
+    private fakeUrlForSourceReference(sourceReference: number): string {
+        const handle = this._sourceHandles.get(sourceReference);
+        return ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + handle.scriptId;
+    }
+
+    private displayNameForSourceReference(sourceReference: number): string {
+        const handle = this._sourceHandles.get(sourceReference);
+        return this.displayNameForScriptId(handle.scriptId);
+    }
+
+    private displayNameForScriptId(scriptId: number|string): string {
+        return `VM${scriptId}`;
     }
 }
