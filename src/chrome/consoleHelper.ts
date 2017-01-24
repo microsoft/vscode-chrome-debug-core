@@ -5,20 +5,15 @@
 import * as url from 'url';
 
 import Crdp from '../../crdp/crdp';
-import * as variables from './variables';
-import * as utils from '../utils';
+import * as ChromeUtils from './chromeUtils';
 
 export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
     if (!e.exception) {
-        return 'Uncaught Error';
+        return `${e.text || 'Uncaught Error'}\n${stackTraceToString(e.stackTrace)}`;
     }
 
-    if (e.exception.className === 'Error') {
-        return e.exception.description;
-    } else {
-        const preview = variables.getRemoteObjectPreview(e.exception, 'repl');
-        return `Error: ${utils.prettifyNewlines(preview)}\n${stackTraceToString(e.stackTrace)}`;
-    }
+    return (e.exception.className && e.exception.className.endsWith('Error') && e.exception.description) ||
+        (`Error: ${remoteObjectToString(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
 }
 
 export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
@@ -137,6 +132,10 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
 }
 
 function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
+    if (!stackTrace) {
+        return '';
+    }
+
     return stackTrace.callFrames
         .map(frame => {
             const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');
@@ -144,4 +143,53 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
             return `    at ${fnName} (${fileName}:${frame.lineNumber})`;
         })
         .join('\n');
+}
+
+/**
+ * TODO - remove dupe code for https://github.com/Microsoft/vscode-chrome-debug-core/issues/163
+ */
+function remoteObjectToString(obj: Crdp.Runtime.RemoteObject): string {
+    const result = ChromeUtils.remoteObjectToValue(obj, /*stringify=*/false);
+    if (result.variableHandleRef) {
+        if (obj.subtype === 'array') {
+            return arrayRemoteObjToString(obj);
+        } else if (obj.preview && obj.preview.properties) {
+            let props: string = obj.preview.properties
+                .map(prop => {
+                    let propStr = prop.name + ': ';
+                    if (prop.type === 'string') {
+                        propStr += `"${prop.value}"`;
+                    } else {
+                        propStr += prop.value;
+                    }
+
+                    return propStr;
+                })
+                .join(', ');
+
+            if (obj.preview.overflow) {
+                props += '…';
+            }
+
+            return `${obj.className} {${props}}`;
+        }
+    }
+
+    return result.value;
+}
+
+function arrayRemoteObjToString(obj: Crdp.Runtime.RemoteObject): string {
+    if (obj.preview && obj.preview.properties) {
+        let props: string = obj.preview.properties
+            .map(prop => prop.value)
+            .join(', ');
+
+        if (obj.preview.overflow) {
+            props += '…';
+        }
+
+        return `[${props}]`;
+    } else {
+        return obj.description;
+    }
 }
