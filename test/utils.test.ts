@@ -297,7 +297,7 @@ suite('Utils', () => {
         });
 
         test('url', () => {
-            testPathGlobToBlackboxedRegex('http://localhost:8080/node_modules/**/*.js', 'http:[/\\\\][/\\\\]localhost:8080[/\\\\]node_modules[/\\\\].*\\.js');
+            testPathGlobToBlackboxedRegex('http://localhost:8080/node_modules/**/*.js', 'http:[/\\\\][/\\\\]localhost:8080[/\\\\]node_modules[/\\\\](.*[\/\\\\])?.*\\.js');
         });
 
         test('path segment', () => {
@@ -314,6 +314,15 @@ suite('Utils', () => {
 
         test('slash-agnostic', () => {
             testPathGlobToBlackboxedRegex('a/b\\c', 'a[/\\\\]b[/\\\\]c');
+        });
+
+        test('**/ is optional but not too optional', () => {
+            // matches ^foo.js
+            let r = new RegExp('^' + getUtils().pathGlobToBlackboxedRegex('**/foo.js'));
+            assert(!!r.test('foo.js'));
+
+            // but not something that ends in foo.js
+            assert(!r.test('barfoo.js'));
         });
     });
 

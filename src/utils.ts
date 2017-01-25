@@ -452,7 +452,7 @@ export function pathToRegex(aPath: string): string {
 
 export function pathGlobToBlackboxedRegex(glob: string): string {
     return escapeRegexSpecialCharsForBlackbox(glob)
-        .replace(/\*\*/g, '.*') // ** -> .*
+        .replace(/\*\*(\\\/|\\\\)?/g, '(.*\\\/)?') // **/ -> (.*\/)?
         .replace(/([^\.]|^)\*/g, '$1.*') // * -> .*
 
         // Just to simplify
