@@ -81,7 +81,7 @@ export function init(logCallback: ILogCallback, logFilePath?: string, logToConso
  * Manages logging, whether to console.log, file, or VS Code console.
  */
 class Logger {
-    /** The directory in which to log vscode-chrome-debug.txt */
+    /** The path of the log file */
     private _logFilePath: string;
 
     private _minLogLevel: LogLevel;
