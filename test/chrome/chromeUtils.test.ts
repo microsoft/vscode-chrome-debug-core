@@ -127,7 +127,6 @@ suite('ChromeUtils', () => {
                 path.join(TEST_WEB_ROOT, segmentWithSpaces, 'script.js'));
         });
 
-
         test('matches mappings with uri-encoded characters', () => {
             const segmentWithSpaces = 'path with spaces';
             const escapedSegment = encodeURIComponent(segmentWithSpaces);
