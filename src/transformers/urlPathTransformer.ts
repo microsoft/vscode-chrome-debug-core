@@ -64,36 +64,12 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public scriptParsed(scriptUrl: string): string {
-        let clientPath: string;
-        const parsedUrl = url.parse(scriptUrl);
-        const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
-
-        let p = parsedUrl.pathname;
-        while (p) {
-            let localPath = this._pathMapping[origin + p];
-            if (localPath) {
-                clientPath = path.join(localPath, parsedUrl.pathname.substring(p.length));
-                break;
-            }
-            localPath = this._pathMapping[p];
-            if (localPath) {
-                clientPath = path.join(localPath, parsedUrl.pathname.substring(p.length));
-                break;
-            }
-            if (p === "/") {
-                break;
-            }
-            p = path.dirname(p);
-            if (p !== "/") {
-                // We need to differianciate folder and files by having a leading '/' except for root.
-                p = p + "/";
-            }
-        }
+        let clientPath = ChromeUtils.targetUrlToClientPathByPathMappings(scriptUrl, this._pathMapping);
 
         if (!clientPath) {
-            // Deprecated webRoot
             clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
         }
+
         if (!clientPath) {
             // It's expected that eval scripts (eval://) won't be resolved
             if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {

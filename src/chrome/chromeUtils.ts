@@ -9,6 +9,39 @@ import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 import {ITarget} from './chromeConnection';
 
+export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
+    const parsedUrl = url.parse(scriptUrl);
+    const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file')) {
+        // Skip file: URLs and paths
+        return '';
+    }
+
+    let pSegments = parsedUrl.pathname.split('/');
+    while (pSegments.length) {
+        let p = pSegments.join('/');
+        if (!p.endsWith('/')) {
+            p = p + '/';
+        }
+
+        let localPath = pathMapping[origin + p];
+        if (localPath) {
+            const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
+            return path.join(localPath, r);
+        }
+
+        localPath = pathMapping[p];
+        if (localPath) {
+            const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
+            return path.join(localPath, r);
+        }
+
+        pSegments.pop();
+    }
+
+    return '';
+}
+
 /**
  * Maps a url from target to an absolute local path.
  * If not given an absolute path (with file: prefix), searches the current working directory for a matching file.
