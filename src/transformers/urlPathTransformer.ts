@@ -11,7 +11,6 @@ import * as ChromeUtils from '../chrome/chromeUtils';
 import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 
 import * as path from 'path';
-import * as url from 'url';
 
 /**
  * Converts a local path from Code to a path on the target.

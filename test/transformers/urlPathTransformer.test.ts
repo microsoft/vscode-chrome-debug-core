@@ -56,6 +56,10 @@ suite('UrlPathTransformer', () => {
 
         test('resolves correctly when it can map the client script to the target script', () => {
             chromeUtilsMock
+                .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
+                .returns(() => '').verifiable();
+
+            chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
 
@@ -80,6 +84,10 @@ suite('UrlPathTransformer', () => {
     suite('scriptParsed', () => {
         test('returns the client path when the file can be mapped', () => {
             chromeUtilsMock
+                .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
+                .returns(() => '').verifiable();
+
+            chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
 
@@ -87,6 +95,10 @@ suite('UrlPathTransformer', () => {
         });
 
         test(`returns the given path when the file can't be mapped`, () => {
+            chromeUtilsMock
+                .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
+                .returns(() => '').verifiable();
+
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => '').verifiable();
@@ -96,7 +108,7 @@ suite('UrlPathTransformer', () => {
 
         test('ok with uncanonicalized paths', () => {
             chromeUtilsMock
-                .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL + '?queryparam')))
+                .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL + '?queryparam'), It.isAny()))
                 .returns(() => CLIENT_PATH).verifiable();
 
             assert.equal(transformer.scriptParsed(TARGET_URL + '?queryparam'), CLIENT_PATH);
