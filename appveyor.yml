@@ -1,4 +1,5 @@
-nodejs_version: 7.4
+environment:
+    nodejs_version: 7.4
 
 install:
   - ps: Install-Product node $env:nodejs_version x86
