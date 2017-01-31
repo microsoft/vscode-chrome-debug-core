@@ -1141,6 +1141,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
         const currentFrame = this._frameHandles.get(args.frameId);
+        if (!currentFrame || !currentFrame.location) {
+            throw errors.stackFrameNotValid();
+        }
+
         const currentScript = this._scriptsById.get(currentFrame.location.scriptId);
         const currentScriptUrl = currentScript && currentScript.url;
         const currentScriptPath = (currentScriptUrl && this._pathTransformer.getClientPathFromTargetPath(currentScriptUrl)) || currentScriptUrl;
