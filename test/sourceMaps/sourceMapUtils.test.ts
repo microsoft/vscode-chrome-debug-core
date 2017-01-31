@@ -151,6 +151,16 @@ suite('SourceMapUtils', () => {
                     }),
                 testUtils.pathResolve('/project/src/app.js'));
         });
+
+        test('is slash agnostic', () => {
+            assert.deepEqual(
+                applySourceMapPathOverrides('/src/app.js', { '*\\app.js': testUtils.pathResolve('/*/app.js') }),
+                testUtils.pathResolve('/src/app.js'));
+
+            assert.deepEqual(
+                applySourceMapPathOverrides('C:\\foo\\src\\app.js', { 'C:\\foo\\*': 'C:\\bar\\*' }),
+                'C:\\bar\\src\\app.js');
+        });
     });
 
     suite('resolveMapPath', () => {
@@ -190,15 +200,6 @@ suite('SourceMapUtils', () => {
             const scriptUrl = 'http://localhost:8080/project/app.js';
             assert.equal(resolveMapPath(scriptUrl, winFileUrl), winFileUrl);
             assert.equal(resolveMapPath(scriptUrl, notWinFileUrl), notWinFileUrl);
-        });
-
-        // I'm not sure this is valid but we have the technology
-        test('works for a local absolute path', () => {
-            const scriptPath = testUtils.pathResolve('/projects/app.js');
-            const winAbsolutePath = 'C:\\projects\\app.js.map';
-            const notWinAbsolutePath = '/projects/app.js.map';
-            assert.equal(resolveMapPath(scriptPath, winAbsolutePath), winAbsolutePath);
-            assert.equal(resolveMapPath(scriptPath, notWinAbsolutePath), notWinAbsolutePath);
         });
 
         // https://github.com/Microsoft/vscode-chrome-debug/issues/268

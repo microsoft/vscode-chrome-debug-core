@@ -63,6 +63,8 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
  * Returns something validated to be an absolute path.
  */
 export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOverrides: ISourceMapPathOverrides): string {
+    const forwardSlashSourcePath = sourcePath.replace(/\\/g, '/');
+
     // Iterate the key/vals, only apply the first one that matches.
     // for...in iterates in order, (unless the key is a number)
     for (let pattern in sourceMapPathOverrides) {
@@ -88,8 +90,11 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         }
 
         // Does it match?
-        const patternRegex = new RegExp('^' + pattern.replace(/\*/g, '(.*)') + '$', 'i');
-        const overridePatternMatches = sourcePath.match(patternRegex);
+        const patternSegment = pattern
+            .replace(/\*/g, '(.*)')
+            .replace(/\\/g, '/');
+        const patternRegex = new RegExp(`^${patternSegment}$`, 'i');
+        const overridePatternMatches = forwardSlashSourcePath.match(patternRegex);
         if (!overridePatternMatches)
             continue;
 
