@@ -4,6 +4,7 @@
 
 import * as assert from 'assert';
 import * as mockery from 'mockery';
+import * as os from 'os';
 
 import * as testUtils from '../testUtils';
 
@@ -157,9 +158,11 @@ suite('SourceMapUtils', () => {
                 applySourceMapPathOverrides('/src/app.js', { '*\\app.js': testUtils.pathResolve('/*/app.js') }),
                 testUtils.pathResolve('/src/app.js'));
 
-            assert.deepEqual(
-                applySourceMapPathOverrides('C:\\foo\\src\\app.js', { 'C:\\foo\\*': 'C:\\bar\\*' }),
-                'C:\\bar\\src\\app.js');
+            if (os.platform() === 'win32') {
+                assert.deepEqual(
+                    applySourceMapPathOverrides('C:\\foo\\src\\app.js', { 'C:\\foo\\*': 'C:\\bar\\*' }),
+                    'C:\\bar\\src\\app.js');
+            }
         });
     });
 
