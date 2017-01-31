@@ -12,8 +12,8 @@ import {ITarget} from './chromeConnection';
 export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
     const parsedUrl = url.parse(scriptUrl);
     const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
-    if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file')) {
-        // Skip file: URLs and paths
+    if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
+        // Skip file: URLs and paths, and invalid things
         return '';
     }
 
