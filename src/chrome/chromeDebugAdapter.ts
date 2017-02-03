@@ -1760,7 +1760,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private displayNameForSourceReference(sourceReference: number): string {
         const handle = this._sourceHandles.get(sourceReference);
-        return this.displayNameForScriptId(handle.scriptId);
+        return (handle && this.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
     }
 
     private displayNameForScriptId(scriptId: number|string): string {
