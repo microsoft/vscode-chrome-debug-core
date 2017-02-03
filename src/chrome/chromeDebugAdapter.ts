@@ -1370,7 +1370,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this.handleScriptsCommand(args);
         }
 
-        const evalResponse = await this.doEvaluate(args.expression, args.frameId, { generatePreview: true });
+        const evalResponse = await this.waitThenDoEvaluate(args.expression, args.frameId, { generatePreview: true });
 
         // Convert to a Variable object then just copy the relevant fields off
         const variable = await this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
@@ -1450,10 +1450,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Allow consumers to override just because of https://github.com/nodejs/node/issues/8426
      */
     protected globalEvaluate(args: Crdp.Runtime.EvaluateRequest): Promise<Crdp.Runtime.EvaluateResponse> {
-        return this._waitAfterStep.then(() => this.chrome.Runtime.evaluate(args));
+        return this.chrome.Runtime.evaluate(args);
     }
 
-    private doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+    private async waitThenDoEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+        const waitThenEval = this._waitAfterStep.then(() => this.doEvaluate(expression, frameId, extraArgs));
+        this._waitAfterStep = waitThenEval.then(() => { }, () => { }); // to Promise<void> and handle failed evals
+        return waitThenEval;
+
+    }
+
+    private async doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
         if (typeof frameId === 'number') {
             const frame = this._frameHandles.get(frameId);
             if (!frame) {
@@ -1644,7 +1651,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (expression) {
             logger.verbose(`Completions: Returning for expression '${expression}'`);
             const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
-            const response = await this.doEvaluate(getCompletionsFn, args.frameId, { returnByValue: true });
+            const response = await this.waitThenDoEvaluate(getCompletionsFn, args.frameId, { returnByValue: true });
             if (response.exceptionDetails) {
                 return { targets: [] };
             } else {
