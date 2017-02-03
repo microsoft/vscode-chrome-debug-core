@@ -1361,7 +1361,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    public evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
+    public async evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
@@ -1370,35 +1370,25 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this.handleScriptsCommand(args);
         }
 
-        // These two responses are shaped exactly the same
-        let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
-        if (typeof args.frameId === 'number') {
-            const callFrameId = this._frameHandles.get(args.frameId).callFrameId;
-            evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: args.expression, silent: true, generatePreview: true });
-        } else {
-            evalPromise = this.globalEvaluate({ expression: args.expression, silent: true, generatePreview: true });
+        const evalResponse = await this.doEvaluate(args.expression, args.frameId, { generatePreview: true });
+
+        // Convert to a Variable object then just copy the relevant fields off
+        const variable = await this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
+        if (evalResponse.exceptionDetails) {
+            let resultValue = variable.value;
+            if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {
+                resultValue = errors.evalNotAvailableMsg;
+            }
+
+            return utils.errP(resultValue);
         }
 
-        return evalPromise.then(evalResponse => {
-            // Convert to a Variable object then just copy the relevant fields off
-            return this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context).then<IEvaluateResponseBody>(variable => {
-                if (evalResponse.exceptionDetails) {
-                    let resultValue = variable.value;
-                    if (resultValue && resultValue.startsWith('ReferenceError: ') && args.context !== 'repl') {
-                        resultValue = errors.evalNotAvailableMsg;
-                    }
-
-                    return utils.errP(resultValue);
-                }
-
-                return <IEvaluateResponseBody>{
-                    result: variable.value,
-                    variablesReference: variable.variablesReference,
-                    indexedVariables: variable.indexedVariables,
-                    namedVariables: variable.namedVariables
-                };
-            });
-        });
+        return <IEvaluateResponseBody>{
+            result: variable.value,
+            variablesReference: variable.variablesReference,
+            indexedVariables: variable.indexedVariables,
+            namedVariables: variable.namedVariables
+        };
     }
 
     /**
@@ -1461,6 +1451,30 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected globalEvaluate(args: Crdp.Runtime.EvaluateRequest): Promise<Crdp.Runtime.EvaluateResponse> {
         return this._waitAfterStep.then(() => this.chrome.Runtime.evaluate(args));
+    }
+
+    private doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+        if (typeof frameId === 'number') {
+            const frame = this._frameHandles.get(frameId);
+            if (!frame) {
+                return Promise.reject(errors.stackFrameNotValid());
+            }
+
+            const callFrameId = frame.callFrameId;
+            let args: Crdp.Debugger.EvaluateOnCallFrameRequest = { callFrameId, expression, silent: true };
+            if (extraArgs) {
+                args = Object.assign(args, extraArgs);
+            }
+
+            return this.chrome.Debugger.evaluateOnCallFrame(args);
+        } else {
+            let args: Crdp.Runtime.EvaluateRequest = { expression, silent: true };
+            if (extraArgs) {
+                args = Object.assign(args, extraArgs);
+            }
+
+            return this.globalEvaluate(args);
+        }
     }
 
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
@@ -1614,7 +1628,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Debugger.stepInto();
     }
 
-    public completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {
+    public async completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {
         const text = args.text;
         const column = args.column;
 
@@ -1630,27 +1644,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (expression) {
             logger.verbose(`Completions: Returning for expression '${expression}'`);
             const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
-
-            let evalPromise: Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse>;
-            if (typeof args.frameId === 'number') {
-                const frame = this._frameHandles.get(args.frameId);
-                if (!frame) {
-                    return Promise.reject(errors.stackFrameNotValid());
-                }
-
-                const callFrameId = frame.callFrameId;
-                evalPromise = this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: getCompletionsFn, silent: true, returnByValue: true });
+            const response = await this.doEvaluate(getCompletionsFn, args.frameId, { returnByValue: true });
+            if (response.exceptionDetails) {
+                return { targets: [] };
             } else {
-                evalPromise = this.globalEvaluate({ expression: getCompletionsFn, silent: true, returnByValue: true });
+                return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
             }
-
-            return evalPromise.then(response => {
-                if (response.exceptionDetails) {
-                    return { targets: [] };
-                } else {
-                    return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
-                }
-            });
         } else {
             logger.verbose(`Completions: Returning global completions`);
 

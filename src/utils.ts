@@ -505,3 +505,7 @@ export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
         return regex;
     }
 }
+
+export type Partial<T> = {
+    [P in keyof T]?: T[P];
+};
