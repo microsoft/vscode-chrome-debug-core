@@ -6,6 +6,9 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {localize} from './utils';
 
+export const evalNotAvailableMsg = localize('eval.not.available', "not available");
+export const runtimeNotConnectedMsg = localize('not.connected', "not connected to runtime");
+
 export function attributePathNotExist(attribute: string, path: string): DebugProtocol.Message {
     return {
         id: 2007,
