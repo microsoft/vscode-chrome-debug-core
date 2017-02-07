@@ -50,6 +50,15 @@ export class SourceMap {
                     startPosition: this.generatedPositionFor(inferredPath, 0, 0)
                 };
             }).sort((a, b) => {
+                // https://github.com/Microsoft/vscode-chrome-debug/issues/353
+                if (!a.startPosition) {
+                    logger.log(`Could not map start position for: ${a.inferredPath}`);
+                    return -1;
+                } else if (!b.startPosition) {
+                    logger.log(`Could not map start position for: ${b.inferredPath}`);
+                    return 1;
+                }
+
                 if (a.startPosition.line === b.startPosition.line) {
                     return a.startPosition.column - b.startPosition.column;
                 } else {
