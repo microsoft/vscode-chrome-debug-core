@@ -16,6 +16,7 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): void {
         args.breakpoints.forEach(bp => this.convertClientLocationToDebugger(bp));
+        args.breakpoints.forEach(bp => bp.column = undefined);
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
