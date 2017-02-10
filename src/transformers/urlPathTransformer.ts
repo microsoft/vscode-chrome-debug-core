@@ -29,6 +29,7 @@ export class UrlPathTransformer extends BasePathTransformer {
 
     public attach(args: IAttachRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
+        this._pathMapping = args.pathMapping || {};
         return super.attach(args);
     }
 
