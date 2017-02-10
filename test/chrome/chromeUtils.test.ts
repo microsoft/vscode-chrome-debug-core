@@ -89,6 +89,61 @@ suite('ChromeUtils', () => {
         });
     });
 
+    suite('targetUrlToClientPathByPathMappings()', () => {
+        const TEST_CLIENT_PATH = 'c:\\site\\scripts\\a.js';
+        const TEST_TARGET_HTTP_URL = 'http://site.com/page/scripts/a.js';
+        const TEST_WEB_ROOT = 'c:\\site';
+
+        const ROOT_MAPPING = { '/': TEST_WEB_ROOT };
+        const PAGE_MAPPING = { '/page/': TEST_WEB_ROOT };
+
+        test('an empty string is returned for a missing url', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('', { }), '');
+        });
+
+        test('an empty string is returned for file: URLs', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('file:///Users/foo/bar.js', { }), '');
+        });
+
+        test('an empty string is returned for non-URLs', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('foo.js', { }), '');
+        });
+
+        test('a url without a path returns an empty string', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('http://site.com', { }), '');
+        });
+
+        test(`returns an empty string when it can't resolve a url`, () => {
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, { '/foo': '/bar' }), '');
+        });
+
+        test('decodes uri-encoded characters', () => {
+            const segmentWithSpaces = 'path with spaces';
+            const escapedSegment = encodeURIComponent(segmentWithSpaces);
+            const url = 'http://localhost/' + escapedSegment + '/script.js';
+
+            assert.equal(
+                getChromeUtils().targetUrlToClientPathByPathMappings(url, ROOT_MAPPING),
+                path.join(TEST_WEB_ROOT, segmentWithSpaces, 'script.js'));
+        });
+
+        test('matches mappings with uri-encoded characters', () => {
+            const segmentWithSpaces = 'path with spaces';
+            const escapedSegment = encodeURIComponent(segmentWithSpaces);
+            const url = 'http://localhost/' + escapedSegment + '/script.js';
+
+            assert.equal(
+                getChromeUtils().targetUrlToClientPathByPathMappings(url, { '/path%20with%20spaces/': TEST_WEB_ROOT }),
+                path.join(TEST_WEB_ROOT, 'script.js'));
+        });
+
+        test('resolves webroot-style mapping', () => {
+            assert.equal(
+                getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, PAGE_MAPPING),
+                TEST_CLIENT_PATH);
+        });
+    });
+
     suite('remoteObjectToValue()', () => {
         const TEST_OBJ_ID = 'objectId';
 

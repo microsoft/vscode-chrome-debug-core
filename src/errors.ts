@@ -81,7 +81,7 @@ export function runtimeConnectionTimeout(timeoutMs: number, errMsg: string): Deb
     };
 }
 
-export function completionsStackFrameNotValid(): DebugProtocol.Message {
+export function stackFrameNotValid(): DebugProtocol.Message {
     return {
         id: 2020,
         format: 'stack frame not valid',

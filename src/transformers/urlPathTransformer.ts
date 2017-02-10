@@ -17,11 +17,13 @@ import * as path from 'path';
  */
 export class UrlPathTransformer extends BasePathTransformer {
     private _webRoot: string;
+    private _pathMapping: {[url: string]: string} = {};
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
+        this._pathMapping = args.pathMapping || {};
         return super.launch(args);
     }
 
@@ -61,11 +63,15 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public scriptParsed(scriptUrl: string): string {
-        const clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
+        let clientPath = ChromeUtils.targetUrlToClientPathByPathMappings(scriptUrl, this._pathMapping);
+
+        if (!clientPath) {
+            clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
+        }
 
         if (!clientPath) {
             // It's expected that eval scripts (eval://) won't be resolved
-            if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_URL_PROTOCOL)) {
+            if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
                 logger.log(`Paths.scriptParsed: could not resolve ${scriptUrl} to a file under webRoot: ${this._webRoot}. It may be external or served directly from the server's memory (and that's OK).`);
             }
         } else {
@@ -91,7 +97,8 @@ export class UrlPathTransformer extends BasePathTransformer {
                 // clear the sourceReference since it's not needed.
                 if (clientPath) {
                     frame.source.path = clientPath;
-                    frame.source.sourceReference = 0;
+                    frame.source.sourceReference = undefined;
+                    frame.source.origin = undefined;
                 }
             }
         });

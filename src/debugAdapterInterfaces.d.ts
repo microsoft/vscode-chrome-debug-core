@@ -15,6 +15,7 @@ export type ISourceMapPathOverrides = { [pattern: string]: string };
  */
 export interface ICommonRequestArgs {
     webRoot?: string;
+    pathMapping?: {[url: string]: string};
     outDir?: string;
     outFiles?: string[];
     sourceMaps?: boolean;
@@ -39,6 +40,11 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     address?: string;
     remoteRoot?: string;
     localRoot?: string;
+}
+
+export interface IToggleSkipFileStatusArgs {
+    path?: string;
+    sourceReference?: number;
 }
 
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {

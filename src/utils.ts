@@ -9,6 +9,7 @@ import * as path from 'path';
 import * as glob from 'glob';
 import {Handles} from 'vscode-debugadapter';
 import * as http from 'http';
+import * as https from 'https';
 
 import * as logger from './logger';
 
@@ -205,7 +206,11 @@ export function errP(msg: string|Error): Promise<never> {
  */
 export function getURL(aUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        http.get(aUrl, response => {
+        const parsedUrl = url.parse(aUrl);
+        const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
+        const options = Object.assign({ rejectUnauthorized: false }, parsedUrl) as https.RequestOptions;
+
+        get(options, response => {
             let responseData = '';
             response.on('data', chunk => responseData += chunk);
             response.on('end', () => {
@@ -447,22 +452,60 @@ export function pathToRegex(aPath: string): string {
 
 export function pathGlobToBlackboxedRegex(glob: string): string {
     return escapeRegexSpecialCharsForBlackbox(glob)
-        .replace(/\*\*/g, '.*') // ** -> .*
+        .replace(/\*\*(\\\/|\\\\)?/g, '(.*\\\/)?') // **/ -> (.*\/)?
         .replace(/([^\.]|^)\*/g, '$1.*') // * -> .*
 
         // Just to simplify
         .replace(/\.\*\\\/\.\*/g, '.*') // .*\/.* -> .*
-        .replace(/\.\*\.\*/g, '.*'); // .*.* -> .*
+        .replace(/\.\*\.\*/g, '.*') // .*.* -> .*
+
+        // Match either slash direction
+        .replace(/\\\/|\\\\/g, '[\/\\\\]'); // / -> [/|\], \ -> [/|\]
 }
 
 function escapeRegexSpecialChars(str: string): string {
     return str.replace(/([/\\.?*()^${}|[\]+])/g, '\\$1');
 }
 
+/**
+ * Does not escape *, as str is a simple glob pattern
+ */
 function escapeRegexSpecialCharsForBlackbox(str: string): string {
     return str.replace(/([/\\.?()^${}|[\]+])/g, '\\$1');
 }
 
-export function trimLastNewline(msg: string): string {
-    return msg.replace(/(\n|\r\n)$/, '');
+export function trimLastNewline(str: string): string {
+    return str.replace(/(\n|\r\n)$/, '');
 }
+
+export function prettifyNewlines(str: string): string {
+    return str.replace(/(\n|\r\n)/, '\\n');
+}
+
+function blackboxNegativeLookaheadPattern(aPath: string): string {
+    return `(?!${escapeRegexSpecialChars(aPath)})`;
+}
+
+export function makeRegexNotMatchPath(regex: RegExp, aPath: string): RegExp {
+    if (regex.test(aPath)) {
+        const regSourceWithoutCaret = regex.source.replace(/^\^/, '');
+        const source = `^${blackboxNegativeLookaheadPattern(aPath)}.*${regSourceWithoutCaret}`;
+        return new RegExp(source, 'i');
+    } else {
+        return regex;
+    }
+}
+
+export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
+    const negativePattern = blackboxNegativeLookaheadPattern(aPath);
+    if (regex.source.indexOf(negativePattern) >= 0) {
+        const newSource = regex.source.replace(negativePattern, '');
+        return new RegExp(newSource, 'i');
+    } else {
+        return regex;
+    }
+}
+
+export type Partial<T> = {
+    [P in keyof T]?: T[P];
+};

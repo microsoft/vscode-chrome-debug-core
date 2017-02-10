@@ -296,7 +296,7 @@ suite('BaseSourceMapTransformer', () => {
             mock.verifyAll();
         });
 
-        test(`clears the path and name when it can't be sourcemapped and doesn't exist on disk`, () => {
+        test(`clears the name and leaves the path when it can't be sourcemapped and doesn't exist on disk`, () => {
             const mock = Mock.ofType(SourceMaps, MockBehavior.Strict);
             mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function() { return mock.object; } });
 
@@ -313,7 +313,6 @@ suite('BaseSourceMapTransformer', () => {
             const expected = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
             expected.stackFrames.forEach(stackFrame => {
                 stackFrame.source.name =  RUNTIME_FILE;
-                stackFrame.source.path = undefined;
             });
 
             getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);

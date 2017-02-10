@@ -21,9 +21,9 @@ export interface IChromeDebugAdapterOpts {
 
     // Override services
     chromeConnection?: typeof ChromeConnection;
-    pathTransformer?: typeof BasePathTransformer;
-    sourceMapTransformer?: typeof BaseSourceMapTransformer;
-    lineColTransformer?: typeof LineColTransformer;
+    pathTransformer?: { new(): BasePathTransformer };
+    sourceMapTransformer?: { new(sourceHandles: any): BaseSourceMapTransformer };
+    lineColTransformer?: { new(session: any): LineColTransformer };
 }
 
 export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {

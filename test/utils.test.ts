@@ -287,29 +287,79 @@ suite('Utils', () => {
         });
     });
 
-    suite('pathGlobToRegex', () => {
-        function testPathGlobToBlackboxedScript(glob: string, expected: string): void {
+    suite('pathGlobToBlackboxedRegex', () => {
+        function testPathGlobToBlackboxedRegex(glob: string, expected: string): void {
             assert.equal(getUtils().pathGlobToBlackboxedRegex(glob), expected);
         }
 
         test('universal', () => {
-            testPathGlobToBlackboxedScript('*', '.*');
+            testPathGlobToBlackboxedRegex('*', '.*');
         });
 
         test('url', () => {
-            testPathGlobToBlackboxedScript('http://localhost:8080/node_modules/**/*.js', 'http:\\/\\/localhost:8080\\/node_modules\\/.*\\.js');
+            testPathGlobToBlackboxedRegex('http://localhost:8080/node_modules/**/*.js', 'http:[/\\\\][/\\\\]localhost:8080[/\\\\]node_modules[/\\\\](.*[\/\\\\])?.*\\.js');
         });
 
         test('path segment', () => {
-            testPathGlobToBlackboxedScript('node_modules', 'node_modules');
+            testPathGlobToBlackboxedRegex('node_modules', 'node_modules');
         });
 
         test('file extension', () => {
-            testPathGlobToBlackboxedScript('*.foo.bar', '.*\\.foo\\.bar');
+            testPathGlobToBlackboxedRegex('*.foo.bar', '.*\\.foo\\.bar');
         });
 
         test('escapes special chars except asterisk', () => {
-            testPathGlobToBlackboxedScript('*.+\\[(', '.*\\.\\+\\\\\\[\\(');
+            testPathGlobToBlackboxedRegex('*.+[(', '.*\\.\\+\\[\\(');
+        });
+
+        test('slash-agnostic', () => {
+            testPathGlobToBlackboxedRegex('a/b\\c', 'a[/\\\\]b[/\\\\]c');
+        });
+
+        test('**/ is optional but not too optional', () => {
+            // matches ^foo.js
+            let r = new RegExp('^' + getUtils().pathGlobToBlackboxedRegex('**/foo.js'));
+            assert(!!r.test('foo.js'));
+
+            // but not something that ends in foo.js
+            assert(!r.test('barfoo.js'));
+        });
+    });
+
+    suite('makeRegexNotMatchPath/makeRegexMatchPath', () => {
+        function testMakeRegexNotMatchPath(regex: RegExp, noMatchPath: string, matchPath?: string): void {
+            const noMatchResult = getUtils().makeRegexNotMatchPath(regex, noMatchPath);
+            assert(!noMatchResult.test(noMatchPath), `shouldn't match noMatchPath`);
+            if (matchPath) {
+                assert(noMatchResult.test(matchPath), `should still match matchPath`);
+            }
+
+            // Reverse it, and assert that it now matches again
+            const matchResult = getUtils().makeRegexMatchPath(noMatchResult, noMatchPath);
+            assert(matchResult.test(noMatchPath), 'should now match noMatchPath');
+            if (matchPath) {
+                assert(matchResult.test(matchPath), 'should now match matchPath');
+            }
+        }
+
+        test('simple path', () => {
+            testMakeRegexNotMatchPath(/\/foo/, '/foo');
+        });
+
+        test('still matches other path', () => {
+            testMakeRegexNotMatchPath(/\/[a-z]{3}/, '/foo', '/bar');
+        });
+
+        test('longer path', () => {
+            testMakeRegexNotMatchPath(/foo\/bar\/some\-thing\d\.js/, '/foo/bar/some-thing1.js', '/foo/bar/some-thing2.js');
+        });
+
+        test(`case insensitive`, () => {
+            testMakeRegexNotMatchPath(/\/FOO/i, '/foo');
+        });
+
+        test('path segment', () => {
+            testMakeRegexNotMatchPath(/bar\d/, '/foo/bar1', '/foo/bar2');
         });
     });
 });

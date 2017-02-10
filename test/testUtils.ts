@@ -53,7 +53,8 @@ export function getStackTraceResponseBody(aPath: string, locations: DebugProtoco
             source: {
                 path: aPath,
                 name: path.basename(aPath),
-                sourceReference: sourceReferences[i] || 0
+                sourceReference: sourceReferences[i] || undefined,
+                origin: undefined
             }
         }))
     };

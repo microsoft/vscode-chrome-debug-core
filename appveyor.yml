@@ -1,0 +1,12 @@
+environment:
+    nodejs_version: 7.4
+
+install:
+  - ps: Install-Product node $env:nodejs_version x86
+
+build_script:
+  - npm install
+  - npm run build
+
+test_script:
+  - npm test

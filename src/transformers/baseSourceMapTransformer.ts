@@ -164,7 +164,7 @@ export class BaseSourceMapTransformer {
                 if (mapped && utils.existsSync(mapped.source)) {
                     // Script was mapped to a valid path
                     stackFrame.source.path = mapped.source;
-                    stackFrame.source.sourceReference = 0;
+                    stackFrame.source.sourceReference = undefined;
                     stackFrame.source.name = path.basename(mapped.source);
                     stackFrame.line = mapped.line;
                     stackFrame.column = mapped.column;
@@ -173,17 +173,15 @@ export class BaseSourceMapTransformer {
                     if (mapped && inlinedSource) {
                         // Clear the path and set the sourceReference - the client will ask for
                         // the source later and it will be returned from the sourcemap
-                        stackFrame.source.path = undefined;
                         stackFrame.source.name = path.basename(mapped.source);
                         stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
+                        stackFrame.source.origin = utils.localize('origin.inlined.source.map', "read-only inlined content from source map");
                         stackFrame.line = mapped.line;
                         stackFrame.column = mapped.column;
                     } else if (utils.existsSync(stackFrame.source.path)) {
                         // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
-                        stackFrame.source.sourceReference = 0;
-                    } else {
-                        // Script could not be mapped and doesn't exist on disk. Clear the path, use sourceReference.
-                        stackFrame.source.path = undefined;
+                        stackFrame.source.sourceReference = undefined;
+                        stackFrame.source.origin = undefined;
                     }
                 }
             });
@@ -275,6 +273,14 @@ export class BaseSourceMapTransformer {
             // Find the generated path, or check whether this script is actually a runtime path - if so, return that
             return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
                 (this._allRuntimeScriptPaths.has(authoredPath) ? authoredPath : null);
+        });
+    }
+
+    public allSources(pathToGenerated: string): Promise<string[]> {
+        if (!this._sourceMaps) return Promise.resolve([]);
+
+        return this._preLoad.then(() => {
+            return this._sourceMaps.allMappedSources(pathToGenerated) || [];
         });
     }
 

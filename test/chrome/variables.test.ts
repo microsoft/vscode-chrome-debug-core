@@ -44,7 +44,7 @@ suite('Variables', () => {
         }
 
         function testArrayPreview(arr: any[], expected: string): void {
-            assert.equal(Variables.getArrayPreview(getRemoteArray(arr)), expected);
+            assert.equal(Variables.getRemoteObjectPreview(getRemoteArray(arr)), expected);
         }
 
         test('empty array', () => {
@@ -102,7 +102,7 @@ suite('Variables', () => {
         }
 
         function testObjectPreview(obj: any, expected: string): void {
-            assert.equal(Variables.getObjectPreview(getRemoteObject(obj)), expected);
+            assert.equal(Variables.getRemoteObjectPreview(getRemoteObject(obj)), expected);
         }
 
         test('empty object', () => {
