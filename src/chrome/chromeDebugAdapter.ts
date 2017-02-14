@@ -620,7 +620,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._skipFileStatuses.set(aPath, newStatus);
 
         const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
-        const script = this._scriptsByUrl.get(targetPath);
+        const script = this.getScriptByUrl(targetPath);
 
         await this.resolveSkipFiles(script, generatedPath, sources, /*toggling=*/true);
 
@@ -870,7 +870,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
             // after refreshing the page. This is the only way to allow hitting breakpoints in code that runs immediately when
             // the page loads.
-            const script = this._scriptsByUrl.get(url);
+            const script = this.getScriptByUrl(url);
             const urlRegex = utils.pathToRegex(url);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                 return this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: line, columnNumber: column, condition }).then(result => {
@@ -1400,7 +1400,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const scriptsRest = utils.lstrip(args.expression, ChromeDebugAdapter.SCRIPTS_COMMAND).trim();
         if (scriptsRest) {
             // `.scripts <url>` was used, look up the script by url
-            const requestedScript = this._scriptsByUrl.get(scriptsRest);
+            const requestedScript = this.getScriptByUrl(scriptsRest);
             if (requestedScript) {
                 outputStringP = this.chrome.Debugger.getScriptSource({ scriptId: requestedScript.scriptId })
                     .then(result => {
@@ -1765,5 +1765,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private displayNameForScriptId(scriptId: number|string): string {
         return `VM${scriptId}`;
+    }
+
+    private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
+        return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
     }
 }
