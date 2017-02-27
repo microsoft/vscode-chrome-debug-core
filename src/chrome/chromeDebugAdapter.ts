@@ -1243,8 +1243,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return Promise.all([
             // Need to make two requests to get all properties
-            this.chrome.Runtime.getProperties({ objectId, ownProperties: false, accessorPropertiesOnly: true, generatePreview: true }),
-            this.chrome.Runtime.getProperties({ objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: true })
+            this.getRuntimeProperties({ objectId, ownProperties: false, accessorPropertiesOnly: true, generatePreview: true }),
+            this.getRuntimeProperties({ objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: true })
         ]).then(getPropsResponses => {
             // Sometimes duplicates will be returned - merge all descriptors by name
             const propsByName = new Map<string, Crdp.Runtime.PropertyDescriptor>();
@@ -1281,6 +1281,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // Sort all variables properly
             return variables.sort((var1, var2) => ChromeUtils.compareVariableNames(var1.name, var2.name));
         });
+    }
+
+    private getRuntimeProperties(params: Crdp.Runtime.GetPropertiesRequest): Promise<Crdp.Runtime.GetPropertiesResponse> {
+        return this.chrome.Runtime.getProperties(params)
+            .catch(err => {
+                if (err.message.startsWith('Cannot find context with specified id')) {
+                    // Hack to ignore this error until we fix https://github.com/Microsoft/vscode/issues/18001 to not request variables at unexpected times.
+                    return null;
+                } else {
+                    throw err;
+                }
+            });
     }
 
     private internalPropertyDescriptorToVariable(propDesc: Crdp.Runtime.InternalPropertyDescriptor, parentEvaluateName: string): Promise<DebugProtocol.Variable> {
