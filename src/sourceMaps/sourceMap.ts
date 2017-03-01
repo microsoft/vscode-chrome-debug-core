@@ -7,7 +7,7 @@ import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import * as logger from '../logger';
+import {Logger as logger} from 'vscode-debugadapter';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
 export type MappedPosition = MappedPosition;

@@ -8,7 +8,7 @@ import {BaseSourceMapTransformer} from './baseSourceMapTransformer';
 
 import {ILaunchRequestArgs, IAttachRequestArgs} from '../debugAdapterInterfaces';
 import * as utils from '../utils';
-import * as logger from '../logger';
+import {Logger as logger} from 'vscode-debugadapter';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because

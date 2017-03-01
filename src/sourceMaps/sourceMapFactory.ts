@@ -6,7 +6,7 @@ import * as fs from 'fs';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import * as logger from '../logger';
+import {Logger as logger} from 'vscode-debugadapter';
 import {SourceMap} from './sourceMap';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 

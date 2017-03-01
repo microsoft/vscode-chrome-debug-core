@@ -4,7 +4,7 @@
 
 import * as os from 'os';
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {DebugSession, ErrorDestination, OutputEvent, Response} from 'vscode-debugadapter';
+import {LoggingDebugSession, ErrorDestination, Response, Logger as logger} from 'vscode-debugadapter';
 
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
 import {ITargetFilter, ChromeConnection, IChromeError} from './chromeConnection';
@@ -13,7 +13,6 @@ import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 
 import {IDebugAdapter} from '../debugAdapterInterfaces';
-import * as logger from '../logger';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -43,7 +42,7 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
     return !!(<IChromeError>e).data;
 }
 
-export class ChromeDebugSession extends DebugSession {
+export class ChromeDebugSession extends LoggingDebugSession {
     private _debugAdapter: IDebugAdapter;
     private _extensionName: string;
 
@@ -63,15 +62,12 @@ export class ChromeDebugSession extends DebugSession {
         };
     }
 
-    public constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean, opts?: IChromeDebugSessionOpts) {
-        super();
+    public constructor(obsolete_debuggerLinesAndColumnsStartAt1?: boolean, obsolete_isServer?: boolean, opts?: IChromeDebugSessionOpts) {
+        super(opts.logFilePath, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
 
+        logVersionInfo();
         this._extensionName = opts.extensionName;
         this._debugAdapter = new (<any>opts.adapter)(opts, this);
-
-        const logFilePath =  opts.logFilePath;
-        logger.init((msg, level) => this.onLog(msg, level), logFilePath, isServer);
-        logVersionInfo();
 
         const safeGetErrDetails = err => {
             let errMsg;
@@ -93,46 +89,6 @@ export class ChromeDebugSession extends DebugSession {
             // Node tests are watching for the ********, so fix the tests if it's changed
             logger.error(`******** Unhandled error in debug adapter - Unhandled promise rejection: ${safeGetErrDetails(err)}`);
         });
-    }
-
-    /**
-     * Overload sendEvent to log
-     */
-    public sendEvent(event: DebugProtocol.Event): void {
-        if (event.event !== 'output') {
-            // Don't create an infinite loop...
-            logger.verbose(`To client: ${JSON.stringify(event)}`);
-        }
-
-        super.sendEvent(event);
-    }
-
-    /**
-     * Overload sendRequest to log
-     */
-    public sendRequest(command: string, args: any, timeout: number, cb: (response: DebugProtocol.Response) => void): void {
-        logger.verbose(`To client: ${JSON.stringify(command)}(${JSON.stringify(args)}), timeout: ${timeout}`);
-
-        super.sendRequest(command, args, timeout, cb);
-    }
-
-    /**
-     * Overload sendResponse to log
-     */
-    public sendResponse(response: DebugProtocol.Response): void {
-        logger.verbose(`To client: ${JSON.stringify(response)}`);
-        super.sendResponse(response);
-    }
-
-    private onLog(msg: string, level: logger.LogLevel): void {
-        const outputCategory = level === logger.LogLevel.Error ? 'stderr' : 'console';
-
-        if (level === logger.LogLevel.Verbose) {
-            // Distinguish verbose messages with this prefix - makes the logs much more readable
-            msg = `  ›${msg}`;
-        }
-
-        this.sendEvent(new OutputEvent(msg, outputCategory));
     }
 
     /**

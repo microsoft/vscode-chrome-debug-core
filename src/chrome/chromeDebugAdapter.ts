@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent} from 'vscode-debugadapter';
+import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger as logger} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -19,7 +19,6 @@ import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import * as logger from '../logger';
 import * as telemetry from '../telemetry';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
