@@ -174,6 +174,7 @@ export class BaseSourceMapTransformer {
                         // Clear the path and set the sourceReference - the client will ask for
                         // the source later and it will be returned from the sourcemap
                         stackFrame.source.name = path.basename(mapped.source);
+                        stackFrame.source.path = mapped.source;
                         stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
                         stackFrame.source.origin = utils.localize('origin.inlined.source.map', "read-only inlined content from source map");
                         stackFrame.line = mapped.line;
