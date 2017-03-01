@@ -3,8 +3,9 @@
     "configurations": [
         {
             "name": "Test",
-            "type": "node2",
+            "type": "node",
             "request": "launch",
+            "protocol": "inspector",
             "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
             "args": [ "test" ],
             "cwd": "${workspaceRoot}",
@@ -15,8 +16,9 @@
         // Replace the paths below with the paths to your own project.
         {
             "name": "launch node-debug2",
-            "type": "node2",
+            "type": "node",
             "request": "launch",
+            "protocol": "inspector",
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
             "cwd": "${workspaceRoot}/../vscode-node-debug2",
@@ -29,8 +31,9 @@
         },
         {
             "name": "launch chrome-debug",
-            "type": "node2",
+            "type": "node",
             "request": "launch",
+            "protocol": "inspector",
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
             "cwd": "${workspaceRoot}/../vscode-chrome-debug",
@@ -42,8 +45,10 @@
         },
         {
             "name": "Debug gulpfile",
-            "type": "node2",
+            "type": "node",
             "request": "launch",
+            "protocol": "inspector",
+
             "cwd": "${workspaceRoot}",
             "program": "${workspaceRoot}/node_modules/.bin/gulp",
             "internalConsoleOptions": "openOnSessionStart"
