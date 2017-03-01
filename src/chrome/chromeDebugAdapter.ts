@@ -213,14 +213,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
-        const minLogLevel =
-            args.verboseDiagnosticLogging ?
-                logger.LogLevel.Verbose :
-            args.diagnosticLogging ?
-                logger.LogLevel.Log :
-                logger.LogLevel.Error;
-
-        logger.setMinLogLevel(minLogLevel);
+        if (args.trace === 'verbose') {
+            logger.setup(logger.LogLevel.Verbose, /*logToFile=*/true);
+        } else if (args.trace) {
+            logger.setup(logger.LogLevel.Warn, /*logToFile=*/true);
+        } else if (args.verboseDiagnosticLogging) { // deprecated
+            logger.setup(logger.LogLevel.Verbose, /*logToFile=*/true);
+        } else if (args.diagnosticLogging) { // deprecated
+            logger.setup(logger.LogLevel.Log, /*logToFile=*/true);
+        } else {
+            logger.setup(logger.LogLevel.Warn, /*logToFile=*/false);
+        }
 
         this._launchAttachArgs = args;
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
@@ -294,7 +297,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     if (this._launchAttachArgs.skipFiles) {
                         const skipFilesArgs = this._launchAttachArgs.skipFiles.filter(glob => {
                             if (glob.startsWith('!')) {
-                                logger.log(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`, /*forceLog=*/true);
+                                logger.warn(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`);
                                 return false;
                             }
 
