@@ -215,11 +215,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected commonArgs(args: ICommonRequestArgs): void {
         const minLogLevel =
-            args.verboseDiagnosticLogging ?
+            args.trace === 'verbose' ?
                 logger.LogLevel.Verbose :
-            args.diagnosticLogging ?
-                logger.LogLevel.Log :
-                logger.LogLevel.Error;
+                args.trace ?
+                    logger.LogLevel.Log :
+                    logger.LogLevel.Error;
 
         logger.setMinLogLevel(minLogLevel);
 

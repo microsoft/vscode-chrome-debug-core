@@ -20,7 +20,7 @@ export interface ICommonRequestArgs {
     outFiles?: string[];
     sourceMaps?: boolean;
     diagnosticLogging?: boolean;
-    verboseDiagnosticLogging?: boolean;
+    trace?: boolean|string;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
     skipFiles?: string[]; // an array of file names or glob patterns
