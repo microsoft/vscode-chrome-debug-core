@@ -95,7 +95,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _sourceMapTransformer: BaseSourceMapTransformer;
     protected _pathTransformer: BasePathTransformer;
 
-    private _hasTerminated: boolean;
+    protected _hasTerminated: boolean;
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
@@ -234,9 +234,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.shutdown();
     }
 
-    /**
-     * Chrome is closing, or error'd somehow, stop the debug session
-     */
     protected terminateSession(reason: string, restart?: boolean): void {
         logger.log('Terminated: ' + reason);
 
@@ -266,8 +263,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
-
-        this.chrome.Inspector.onDetached(() => this.terminateSession('Debug connection detached'));
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
