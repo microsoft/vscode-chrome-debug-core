@@ -13,6 +13,12 @@ import * as utils from '../utils';
 import {Logger as logger} from 'vscode-debugadapter';
 import {ISourceContainer} from '../chrome/chromeDebugAdapter';
 
+interface ISavedSetBreakpointsArgs {
+    generatedPath: string;
+    authoredPath: string;
+    originalBPs: DebugProtocol.Breakpoint[];
+}
+
 /**
  * If sourcemaps are enabled, converts from source files on the client side to runtime files on the target side
  */
@@ -20,7 +26,7 @@ export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps;
     protected _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
-    private _requestSeqToSetBreakpointsArgs: Map<number, ISetBreakpointsArgs>;
+    private _requestSeqToSetBreakpointsArgs: Map<number, ISavedSetBreakpointsArgs>;
     private _allRuntimeScriptPaths: Set<string>;
     private _authoredPathsToMappedBPs: Map<string, DebugProtocol.SourceBreakpoint[]>;
 
@@ -45,7 +51,7 @@ export class BaseSourceMapTransformer {
     protected init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
         if (args.sourceMaps) {
             this._sourceMaps = new SourceMaps(args.webRoot, args.sourceMapPathOverrides);
-            this._requestSeqToSetBreakpointsArgs = new Map<number, ISetBreakpointsArgs>();
+            this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
             this._authoredPathsToMappedBPs = new Map<string, DebugProtocol.SourceBreakpoint[]>();
         }
@@ -63,6 +69,8 @@ export class BaseSourceMapTransformer {
         if (!this._sourceMaps) {
             return;
         }
+
+        const originalBPs = JSON.parse(JSON.stringify(args.breakpoints));
 
         if (args.source.sourceReference) {
             // If the source contents were inlined, then args.source has no path, but we
@@ -121,7 +129,12 @@ export class BaseSourceMapTransformer {
             // No source.path
         }
 
-        this._requestSeqToSetBreakpointsArgs.set(requestSeq, JSON.parse(JSON.stringify(args)));
+        this._requestSeqToSetBreakpointsArgs.set(requestSeq, {
+            originalBPs,
+            authoredPath: args.authoredPath,
+            generatedPath: args.source.path
+        });
+
         return;
     }
 
@@ -137,14 +150,16 @@ export class BaseSourceMapTransformer {
                     // authoredPath is set, so the file was mapped to source.
                     // Remove breakpoints from files that map to the same file, and map back to source.
                     response.breakpoints = response.breakpoints.filter((_, i) => i < sourceBPs.length);
-                    response.breakpoints.forEach(bp => {
-                        const mapped = this._sourceMaps.mapToAuthored(args.source.path, bp.line, bp.column);
+                    response.breakpoints.forEach((bp, i) => {
+                        const mapped = this._sourceMaps.mapToAuthored(args.generatedPath, bp.line, bp.column);
                         if (mapped) {
-                            logger.log(`SourceMaps.setBP: Mapped ${args.source.path}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
+                            logger.log(`SourceMaps.setBP: Mapped ${args.generatedPath}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
                             bp.line = mapped.line;
                             bp.column = mapped.column;
                         } else {
-                            logger.log(`SourceMaps.setBP: Can't map ${args.source.path}:${bp.line + 1}:${bp.column + 1}, keeping the line number as-is.`);
+                            logger.log(`SourceMaps.setBP: Can't map ${args.generatedPath}:${bp.line + 1}:${bp.column + 1}, keeping original line numbers.`);
+                            bp.line = args.originalBPs[i].line;
+                            bp.column = args.originalBPs[i].column;
                         }
 
                         this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
