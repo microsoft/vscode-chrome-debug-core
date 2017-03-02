@@ -785,10 +785,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, 'Set breakpoints request timed out');
 
-                    // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Crdp.
+                    // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Crdp, which causes issues.
                     // Swallow errors in the promise queue chain so it doesn't get blocked, but return the failing promise for error handling.
-                    this._setBreakpointsRequestQ = setBreakpointsPTimeout.catch(() => undefined);
-                    return setBreakpointsPTimeout.then(body => {
+                    this._setBreakpointsRequestQ = setBreakpointsPTimeout.catch(e => {
+                        // Log the timeout, but any other error will be logged elsewhere
+                        if (e.message && e.message.indexOf('timed out') >= 0) {
+                            logger.error(e.stack);
+                        }
+                    });
+
+                    // Return the setBP request, no matter how long it takes. It may take awhile in Node 7.5 - 7.7, see https://github.com/nodejs/node/issues/11589
+                    return setBreakpointsPFailOnError.then(body => {
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
                         return body;
