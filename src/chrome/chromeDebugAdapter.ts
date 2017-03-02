@@ -377,6 +377,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
             smartStepP = this.shouldSmartStep(this._currentStack[0]);
+        } else if (notification.reason === 'promiseRejection') {
+            reason = 'promise rejection';
         } else {
             reason = 'debugger';
         }
