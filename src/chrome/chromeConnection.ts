@@ -98,8 +98,8 @@ export class ChromeConnection {
     /**
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
-    public attach(address = '127.0.0.1', port = 9222, targetUrl?: string): Promise<void> {
-        return this._attach(address, port, targetUrl)
+    public attach(address = '127.0.0.1', port = 9222, targetUrl?: string, timeout?: number): Promise<void> {
+        return this._attach(address, port, targetUrl, timeout)
             .then(() => { });
     }
 

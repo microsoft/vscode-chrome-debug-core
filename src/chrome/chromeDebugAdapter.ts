@@ -284,7 +284,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
-            return this._chromeConnection.attach(address, port, targetUrl)
+            return this._chromeConnection.attach(address, port, targetUrl, timeout)
                 .then(e => {
                     this.hookConnectionEvents();
                     let patterns: string[] = [];
