@@ -395,7 +395,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 const sendStoppedEvent = () => {
                     const exceptionText = this._exception && this._exception.description && utils.firstLine(this._exception.description);
                     return this._session.sendEvent(new StoppedEvent(this.stopReasonText(reason), /*threadId=*/ChromeDebugAdapter.THREAD_ID, exceptionText));
-                }
+                };
                 return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
                     .then(sendStoppedEvent, sendStoppedEvent);
             }
