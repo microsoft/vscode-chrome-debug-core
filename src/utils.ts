@@ -507,3 +507,11 @@ export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
 export type Partial<T> = {
     [P in keyof T]?: T[P];
 };
+
+export function getLine(msg: string, n = 0): string {
+    return msg.split('\n')[n];
+}
+
+export function firstLine(msg: string): string {
+    return getLine(msg);
+}
