@@ -71,7 +71,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected _session: ChromeDebugSession;
     private _clientAttached: boolean;
-    private _currentStack: Crdp.Debugger.CallFrame[];
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
     private _committedBreakpointsByUrl: Map<string, Crdp.Debugger.BreakpointId[]>;
     private _exception: Crdp.Runtime.RemoteObject;
@@ -345,7 +344,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._frameHandles.reset();
         this._exception = undefined;
         this._lastPauseState = { event: notification, expecting: expectingStopReason };
-        this._currentStack = notification.callFrames;
         this._currentPauseNotification = notification;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
@@ -377,7 +375,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
-            smartStepP = this.shouldSmartStep(this._currentStack[0]);
+            smartStepP = this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
         } else {
             reason = 'debugger';
         }
@@ -439,7 +437,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onResumed(): void {
-        this._currentStack = null;
+        this._currentPauseNotification = null;
 
         if (this._expectingResumedEvent) {
             this._expectingResumedEvent = false;
@@ -1046,9 +1044,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
         // Only process at the requested number of frames, if 'levels' is specified
-        let stack = this._currentStack;
+        let stack = this._currentPauseNotification.callFrames;
         if (args.levels) {
-            stack = this._currentStack.filter((_, i) => i < args.levels);
+            stack = stack.filter((_, i) => i < args.levels);
         }
 
         const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
