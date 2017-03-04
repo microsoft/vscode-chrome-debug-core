@@ -72,6 +72,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _session: ChromeDebugSession;
     private _clientAttached: boolean;
     private _currentStack: Crdp.Debugger.CallFrame[];
+    private _currentPauseNotification: Crdp.Debugger.PausedEvent;
     private _committedBreakpointsByUrl: Map<string, Crdp.Debugger.BreakpointId[]>;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
@@ -313,6 +314,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                     return Promise.all(this.runConnection());
                 })
+                .then(() => this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth: 4 }))
                 .then(() => this.sendInitializedEvent());
         } else {
             return Promise.resolve();
@@ -344,6 +346,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._exception = undefined;
         this._lastPauseState = { event: notification, expecting: expectingStopReason };
         this._currentStack = notification.callFrames;
+        this._currentPauseNotification = notification;
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
@@ -1048,19 +1051,27 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             stack = this._currentStack.filter((_, i) => i < args.levels);
         }
 
+        const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
+            .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace))
+
         const stackTraceResponse = {
-            stackFrames: stack.map(frame => this.callFrameToStackFrame(frame))
+            stackFrames
         };
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
+            if (!frame.source) {
+                return;
+            }
+
             // Apply hints to skipped frames
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'skipFiles')`;
                 frame.source.presentationHint = 'deemphasize';
-            } else if (await this.shouldSmartStep(stack[i])) {
+            } else if (stack[i] && await this.shouldSmartStep(stack[i])) {
+                // TODO This should be applied to async frames too
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'smartStep')`;
                 frame.source.presentationHint = 'deemphasize';
             }
@@ -1078,6 +1089,40 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }));
 
         return stackTraceResponse;
+    }
+
+    private asyncFrames(stackTrace: Crdp.Runtime.StackTrace): DebugProtocol.StackFrame[] {
+        if (stackTrace) {
+            const frames = stackTrace.callFrames
+                .map(frame => this.runtimeCFToDebuggerCF(frame))
+                .map(frame => this.callFrameToStackFrame(frame));
+
+            frames.unshift({
+                id: this._frameHandles.create(null),
+                name: `[ ${stackTrace.description} ]`,
+                source: undefined,
+                line: undefined,
+                column: undefined
+            });
+
+            return frames.concat(this.asyncFrames(stackTrace.parent))
+        } else {
+            return [];
+        }
+    }
+
+    private runtimeCFToDebuggerCF(frame: Crdp.Runtime.CallFrame): Crdp.Debugger.CallFrame {
+        return {
+            callFrameId: undefined,
+            scopeChain: undefined,
+            this: undefined,
+            location: {
+                lineNumber: frame.lineNumber,
+                columnNumber: frame.columnNumber,
+                scriptId: frame.scriptId
+            },
+            functionName: frame.functionName
+        }
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
@@ -1159,6 +1204,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const currentFrame = this._frameHandles.get(args.frameId);
         if (!currentFrame || !currentFrame.location) {
             throw errors.stackFrameNotValid();
+        }
+
+        if (!currentFrame.callFrameId) {
+            return { scopes: [] };
         }
 
         const currentScript = this._scriptsById.get(currentFrame.location.scriptId);

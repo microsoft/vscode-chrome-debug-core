@@ -61,7 +61,7 @@ export class RemotePathTransformer extends BasePathTransformer {
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => {
-            const remotePath = frame.source.path;
+            const remotePath = frame.source && frame.source.path;
             if (remotePath) {
                 const localPath = this.getClientPathFromTargetPath(remotePath);
                 if (utils.existsSync(localPath)) {

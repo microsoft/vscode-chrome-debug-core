@@ -175,6 +175,10 @@ export class BaseSourceMapTransformer {
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         if (this._sourceMaps) {
             response.stackFrames.forEach(stackFrame => {
+                if (!stackFrame.source) {
+                    return;
+                }
+
                 const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
                 if (mapped && utils.existsSync(mapped.source)) {
                     // Script was mapped to a valid path
