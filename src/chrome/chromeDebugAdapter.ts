@@ -1200,7 +1200,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
         const currentFrame = this._frameHandles.get(args.frameId);
-        if (!currentFrame || !currentFrame.location) {
+        if (!currentFrame || !currentFrame.location || !currentFrame.callFrameId) {
             throw errors.stackFrameNotValid();
         }
 
@@ -1538,8 +1538,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private async doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
         if (typeof frameId === 'number') {
             const frame = this._frameHandles.get(frameId);
-            if (!frame) {
-                return Promise.reject(errors.stackFrameNotValid());
+            if (!frame || !frame.callFrameId) {
+                return utils.errP(errors.evalNotAvailableMsg);
             }
 
             const callFrameId = frame.callFrameId;
@@ -1701,8 +1701,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public async restartFrame(args: DebugProtocol.RestartFrameArguments): Promise<void> {
         const callFrame = this._frameHandles.get(args.frameId);
-        if (!callFrame) {
-            return Promise.reject(errors.stackFrameNotValid());
+        if (!callFrame || !callFrame.callFrameId) {
+            return utils.errP(errors.noRestartFrame);
         }
 
         await this.chrome.Debugger.restartFrame({ callFrameId: callFrame.callFrameId });
@@ -1741,6 +1741,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             const callFrame = this._frameHandles.get(args.frameId);
+            if (!callFrame || !callFrame.callFrameId) {
+                // Async frame or label
+                return { targets: [] };
+            }
+
             const scopeExpandPs = callFrame.scopeChain
                 .map(scope => new ScopeContainer(callFrame.callFrameId, undefined, scope.object.objectId).expand(this));
             return Promise.all(scopeExpandPs)

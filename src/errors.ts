@@ -9,6 +9,8 @@ import {localize} from './utils';
 export const evalNotAvailableMsg = localize('eval.not.available', "not available");
 export const runtimeNotConnectedMsg = localize('not.connected', "not connected to runtime");
 
+export const noRestartFrame = localize('restartFrame.cannot', "Can't restart frame");
+
 export function attributePathNotExist(attribute: string, path: string): DebugProtocol.Message {
     return {
         id: 2007,
