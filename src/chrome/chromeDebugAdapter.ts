@@ -1057,7 +1057,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
-            .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace))
+            .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace));
 
         const stackTraceResponse = {
             stackFrames
@@ -1110,7 +1110,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 column: undefined
             });
 
-            return frames.concat(this.asyncFrames(stackTrace.parent))
+            return frames.concat(this.asyncFrames(stackTrace.parent));
         } else {
             return [];
         }
@@ -1127,7 +1127,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 scriptId: frame.scriptId
             },
             functionName: frame.functionName
-        }
+        };
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
