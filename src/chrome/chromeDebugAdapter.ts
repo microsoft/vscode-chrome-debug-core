@@ -68,6 +68,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private static THREAD_ID = 1;
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
     private static HITCONDITION_MATCHER = /^(>|>=|=|<|<=|%)?\s*([0-9]+)$/;
+    private static ASYNC_CALL_STACK_DEPTH = 4;
 
     protected _session: ChromeDebugSession;
     private _clientAttached: boolean;
@@ -226,7 +227,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this._launchAttachArgs = args;
+
+        // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
+        args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks;
     }
 
     public shutdown(): void {
@@ -313,7 +317,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                     return Promise.all(this.runConnection());
                 })
-                .then(() => this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth: 4 }))
+                .then(() => {
+                    const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
+                    return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
+                })
                 .then(() => this.sendInitializedEvent());
         } else {
             return Promise.resolve();
