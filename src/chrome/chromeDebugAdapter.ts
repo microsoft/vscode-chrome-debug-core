@@ -230,7 +230,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
-        args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks;
+        // args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks; // Enable when finished with Microsoft/vscode#5552
     }
 
     public shutdown(): void {
