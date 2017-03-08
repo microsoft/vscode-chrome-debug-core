@@ -4,7 +4,7 @@
 
 import {DebugProtocol} from 'vscode-debugprotocol';
 
-import {IStackTraceResponseBody} from '../src/debugAdapterInterfaces';
+import {IInternalStackTraceResponseBody, IInternalStackFrame} from '../src/debugAdapterInterfaces';
 import * as utils from '../src/utils';
 
 import {Mock, It, MockBehavior} from 'typemoq';
@@ -43,20 +43,27 @@ export class MockEvent implements DebugProtocol.Event {
     constructor(public event: string, public body?: any) { }
 }
 
-export function getStackTraceResponseBody(aPath: string, locations: DebugProtocol.SourceBreakpoint[], sourceReferences: number[] = []): IStackTraceResponseBody {
+export function getStackTraceResponseBody(aPath: string, locations: DebugProtocol.SourceBreakpoint[], sourceReferences: number[] = [], isSourceMapped?: boolean): IInternalStackTraceResponseBody {
     return {
-        stackFrames: locations.map((location, i) => ({
-            id: i,
-            name: 'line ' + i,
-            line: location.line,
-            column: location.column,
-            source: {
-                path: aPath,
-                name: path.basename(aPath),
-                sourceReference: sourceReferences[i] || undefined,
-                origin: undefined
+        stackFrames: locations.map((location, i) => {
+            const frame: IInternalStackFrame = {
+                id: i,
+                name: 'line ' + i,
+                line: location.line,
+                column: location.column,
+                source: {
+                    path: aPath,
+                    name: path.basename(aPath),
+                    sourceReference: sourceReferences[i] || undefined,
+                    origin: undefined
+                }
+            };
+            if (typeof isSourceMapped === 'boolean') {
+                frame.isSourceMapped = isSourceMapped;
             }
-        }))
+
+            return frame;
+        })
     };
 }
 

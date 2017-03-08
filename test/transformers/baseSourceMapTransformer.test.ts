@@ -260,7 +260,7 @@ suite('BaseSourceMapTransformer', () => {
                 .returns(() => true);
 
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
-            const expected = testUtils.getStackTraceResponseBody(AUTHORED_PATH, AUTHORED_BPS());
+            const expected = testUtils.getStackTraceResponseBody(AUTHORED_PATH, AUTHORED_BPS(), undefined, /*isSourceMapped=*/true);
 
             getTransformer().stackTraceResponse(response);
             assert.deepEqual(response, expected);
