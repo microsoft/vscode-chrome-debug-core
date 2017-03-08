@@ -76,6 +76,14 @@ export interface IStackTraceResponseBody {
     stackFrames: DebugProtocol.StackFrame[];
 }
 
+export interface IInternalStackFrame extends DebugProtocol.StackFrame {
+    isSourceMapped?: boolean;
+}
+
+export interface IInternalStackTraceResponseBody extends IStackTraceResponseBody {
+    stackFrames: IInternalStackFrame[];
+}
+
 export interface IScopesResponseBody {
     scopes: DebugProtocol.Scope[];
 }

@@ -6,7 +6,7 @@ import * as path from 'path';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
+    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
 import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
 import {SourceMaps} from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
@@ -172,7 +172,7 @@ export class BaseSourceMapTransformer {
     /**
      * Apply sourcemapping to the stacktrace response
      */
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
+    public stackTraceResponse(response: IInternalStackTraceResponseBody): void {
         if (this._sourceMaps) {
             response.stackFrames.forEach(stackFrame => {
                 if (!stackFrame.source) {
@@ -187,6 +187,7 @@ export class BaseSourceMapTransformer {
                     stackFrame.source.name = path.basename(mapped.source);
                     stackFrame.line = mapped.line;
                     stackFrame.column = mapped.column;
+                    stackFrame.isSourceMapped = true;
                 } else {
                     const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
                     if (mapped && inlinedSource) {
@@ -198,6 +199,7 @@ export class BaseSourceMapTransformer {
                         stackFrame.source.origin = utils.localize('origin.inlined.source.map', "read-only inlined content from source map");
                         stackFrame.line = mapped.line;
                         stackFrame.column = mapped.column;
+                        stackFrame.isSourceMapped = true;
                     } else if (utils.existsSync(stackFrame.source.path)) {
                         // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
                         stackFrame.source.sourceReference = undefined;

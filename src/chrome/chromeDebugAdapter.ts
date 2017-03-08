@@ -8,7 +8,7 @@ import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -412,13 +412,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        if (!this._launchAttachArgs.sourceMaps || !this._launchAttachArgs.smartStep) return Promise.resolve(false);
+        if (!this.smartStepEnabled()) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
         const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
 
         return !mapping;
+    }
+
+    private smartStepEnabled(): boolean {
+        return this._launchAttachArgs.sourceMaps && this._launchAttachArgs.smartStep;
     }
 
     private stopReasonText(reason: string): string {
@@ -1059,7 +1063,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
             .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace));
 
-        const stackTraceResponse = {
+        const stackTraceResponse: IInternalStackTraceResponseBody = {
             stackFrames
         };
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
@@ -1067,6 +1071,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
+            // Remove isSourceMapped to convert back to DebugProtocol.StackFrame
+            const isSourceMapped = frame.isSourceMapped;
+            delete frame.isSourceMapped;
+
             if (!frame.source) {
                 return;
             }
@@ -1075,8 +1083,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'skipFiles')`;
                 frame.source.presentationHint = 'deemphasize';
-            } else if (stack[i] && await this.shouldSmartStep(stack[i])) {
-                // TODO This should be applied to async frames too
+            } else if (this.smartStepEnabled() && !isSourceMapped) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'smartStep')`;
                 frame.source.presentationHint = 'deemphasize';
             }
