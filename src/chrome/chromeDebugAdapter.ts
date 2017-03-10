@@ -694,14 +694,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public async getLoadScripts(): Promise<IAllLoadedScriptsResponseBody> {
         const loadedScripts = Array.from(this._scriptsByUrl.keys())
             .map(scriptPath => {
-                const basename = path.basename(scriptPath);
                 const script = this._scriptsByUrl.get(scriptPath);
+
+                const displayPath = this.realPathToDisplayPath(scriptPath);
+                const basename = path.basename(displayPath);
                 return <ILoadedScript>{
                     label: basename,
-                    description: scriptPath === basename ? '' : scriptPath,
+                    description: displayPath === basename ? '' : displayPath,
                     source: {
                         name: basename,
-                        path: scriptPath,
+                        path: displayPath,
                         sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
                     }
                 };
@@ -1454,7 +1456,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             scriptId = handle.scriptId;
         } else if (args.source && args.source.path) {
-            const script = this._scriptsByUrl.get(args.source.path);
+            const script = this._scriptsByUrl.get(this.displayPathToRealPath(args.source.path));
             if (!script) {
                 return Promise.reject(errors.sourceRequestCouldNotRetrieveContent());
             }
