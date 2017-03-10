@@ -67,6 +67,13 @@ export function sourceRequestIllegalHandle(): DebugProtocol.Message {
     };
 }
 
+export function sourceRequestCouldNotRetrieveContent(): DebugProtocol.Message {
+    return {
+        id: 2026,
+        format: localize('source.not.found', "Could not retrieve content.")
+    };
+}
+
 export function pathFormat(): DebugProtocol.Message {
     return {
         id: 2018,

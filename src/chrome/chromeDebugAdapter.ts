@@ -8,7 +8,7 @@ import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -689,6 +689,26 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Debugger.setBlackboxPatterns({
             patterns: this._blackboxedRegexes.map(regex => regex.source)
         }).catch(() => this.warnNoSkipFiles());
+    }
+
+    public async getLoadScripts(): Promise<IAllLoadedScriptsResponseBody> {
+        const loadedScripts = Array.from(this._scriptsByUrl.keys())
+            .map(scriptPath => {
+                const basename = path.basename(scriptPath);
+                const script = this._scriptsByUrl.get(scriptPath);
+                return <ILoadedScript>{
+                    label: basename,
+                    description: scriptPath === basename ? '' : scriptPath,
+                    source: {
+                        name: basename,
+                        path: scriptPath,
+                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
+                    }
+                };
+            })
+            .sort((a, b) => a.label.localeCompare(b.label));
+
+        return { loadedScripts };
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
@@ -1418,20 +1438,36 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public source(args: DebugProtocol.SourceArguments): Promise<ISourceResponseBody> {
-        const handle = this._sourceHandles.get(args.sourceReference);
-        if (!handle) {
-            return Promise.reject(errors.sourceRequestIllegalHandle());
+        let scriptId: Crdp.Runtime.ScriptId;
+        if (args.sourceReference) {
+            const handle = this._sourceHandles.get(args.sourceReference);
+            if (!handle) {
+                return Promise.reject(errors.sourceRequestIllegalHandle());
+            }
+
+            // Have inlined content?
+            if (handle.contents) {
+                return Promise.resolve({
+                    content: handle.contents
+                });
+            }
+
+            scriptId = handle.scriptId;
+        } else if (args.source && args.source.path) {
+            const script = this._scriptsByUrl.get(args.source.path);
+            if (!script) {
+                return Promise.reject(errors.sourceRequestCouldNotRetrieveContent());
+            }
+
+            scriptId = script.scriptId;
         }
 
-        // Have inlined content?
-        if (handle.contents) {
-            return Promise.resolve({
-                content: handle.contents
-            });
+        if (!scriptId) {
+            return Promise.reject(errors.sourceRequestCouldNotRetrieveContent());
         }
 
         // If not, should have scriptId
-        return this.chrome.Debugger.getScriptSource({ scriptId: handle.scriptId }).then(response => {
+        return this.chrome.Debugger.getScriptSource({ scriptId }).then(response => {
             return {
                 content: response.scriptSource,
                 mimeType: 'text/javascript'
