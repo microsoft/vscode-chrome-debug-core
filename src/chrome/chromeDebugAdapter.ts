@@ -789,6 +789,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         this.reportBpTelemetry(args);
+        args.source.path = this.displayPathToRealPath(args.source.path);
         return this.validateBreakpointsPath(args)
             .then(() => {
                 this._lineColTransformer.setBreakpoints(args);
