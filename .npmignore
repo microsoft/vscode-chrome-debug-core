@@ -4,6 +4,7 @@ crdp/
 test/
 out/test
 typings/
+testSupport/
 
 .travis.yml
 gulpfile.js
