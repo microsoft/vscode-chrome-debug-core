@@ -89,6 +89,11 @@ export class UrlPathTransformer extends BasePathTransformer {
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => {
             if (frame.source.path) {
+                if (!frame.source) {
+                    // Skip label frames
+                    return;
+                }
+
                 // Try to resolve the url to a path in the workspace. If it's not in the workspace,
                 // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
                 const clientPath = this.getClientPathFromTargetPath(frame.source.path) ||
