@@ -27,7 +27,8 @@
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
-            "smartStep": true
+            "smartStep": true,
+            "showAsyncStacks": true
         },
         {
             "name": "launch chrome-debug",
@@ -41,7 +42,8 @@
             "args": [ "--server=4712" ],
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
-            "internalConsoleOptions": "openOnSessionStart"
+            "internalConsoleOptions": "openOnSessionStart",
+            "showAsyncStacks": true
         },
         {
             "name": "Debug gulpfile",

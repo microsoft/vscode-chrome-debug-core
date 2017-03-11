@@ -63,7 +63,7 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
-    public static PLACEHOLDER_EVAL_URL_PROTOCOL = 'eval://';
+    public static EVAL_NAME_PREFIX = 'VM';
     private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
     private static SET_BREAKPOINTS_TIMEOUT = 3000;
@@ -470,7 +470,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
         } else {
-            script.url = ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + script.scriptId;
+            script.url = ChromeDebugAdapter.EVAL_NAME_PREFIX + script.scriptId;
         }
 
         this._scriptsById.set(script.scriptId, script);
@@ -913,9 +913,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected addBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<Crdp.Debugger.SetBreakpointResponse[]> {
         let responsePs: Promise<Crdp.Debugger.SetBreakpointResponse>[];
-        if (url.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
+        if (url.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX)) {
             // eval script with no real url - use debugger_setBreakpoint
-            const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL);
+            const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.EVAL_NAME_PREFIX);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => this.chrome.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
         } else {
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
@@ -1117,7 +1117,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
-            if (frame.source.path && frame.source.path.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
+            if (frame.source.path && frame.source.path.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX)) {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
@@ -1181,7 +1181,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     } :
                     {
                         name: script && path.basename(script.url),
-                        path: ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + location.scriptId,
+                        path: ChromeDebugAdapter.EVAL_NAME_PREFIX + location.scriptId,
                         sourceReference,
                         origin
                     };
@@ -1199,10 +1199,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } catch (e) {
             // Some targets such as the iOS simulator behave badly and return nonsense callFrames.
             // In these cases, return a dummy stack frame
+            const evalUnknown = `${ChromeDebugAdapter.EVAL_NAME_PREFIX}_Unknown`;
             return {
                 id: this._frameHandles.create(<any>{ }),
-                name: 'Unknown',
-                source: {name: 'eval:Unknown', path: ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + 'Unknown'},
+                name: evalUnknown,
+                source: { name: evalUnknown, path: evalUnknown },
                 line,
                 column
             };
@@ -1888,7 +1889,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private fakeUrlForSourceReference(sourceReference: number): string {
         const handle = this._sourceHandles.get(sourceReference);
-        return ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL + handle.scriptId;
+        return ChromeDebugAdapter.EVAL_NAME_PREFIX + handle.scriptId;
     }
 
     private displayNameForSourceReference(sourceReference: number): string {

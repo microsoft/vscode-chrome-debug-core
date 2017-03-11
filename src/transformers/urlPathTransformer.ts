@@ -72,7 +72,7 @@ export class UrlPathTransformer extends BasePathTransformer {
 
         if (!clientPath) {
             // It's expected that eval scripts (eval://) won't be resolved
-            if (!scriptUrl.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
+            if (!scriptUrl.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX)) {
                 logger.log(`Paths.scriptParsed: could not resolve ${scriptUrl} to a file under webRoot: ${this._webRoot}. It may be external or served directly from the server's memory (and that's OK).`);
             }
         } else {
