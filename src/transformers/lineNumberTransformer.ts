@@ -21,6 +21,7 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
         response.breakpoints.forEach(bp => this.convertDebuggerLocationToClient(bp));
+        response.breakpoints.forEach(bp => bp.column = undefined);
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
