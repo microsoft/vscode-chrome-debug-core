@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {StoppedEvent, InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger as logger} from 'vscode-debugadapter';
+import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger as logger} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -16,6 +16,7 @@ import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
 import * as Variables from './variables';
 import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
+import {StoppedEvent2, ReasonType} from './stoppedEvent';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -77,7 +78,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
     private _expectingResumedEvent: boolean;
-    protected _expectingStopReason: string;
+    protected _expectingStopReason: ReasonType;
     private _waitAfterStep = Promise.resolve();
 
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
@@ -110,7 +111,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _initialSourceMapsP = Promise.resolve();
 
-    private _lastPauseState: { expecting: string; event: Crdp.Debugger.PausedEvent };
+    private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -355,13 +356,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
-        let reason: string;
+        let reason: ReasonType;
         let smartStepP = Promise.resolve(false);
         if (notification.reason === 'exception') {
             reason = 'exception';
             this._exception = notification.data;
         } else if (notification.reason === 'promiseRejection') {
-            reason = 'promise rejection';
+            reason = 'promise_rejection';
             this._exception = notification.data;
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
@@ -384,7 +385,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             reason = expectingStopReason;
             smartStepP = this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
         } else {
-            reason = 'debugger';
+            reason = 'debugger_statement';
         }
 
         this._expectingStopReason = undefined;
@@ -403,7 +404,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Also with a timeout just to ensure things keep moving
                 const sendStoppedEvent = () => {
                     const exceptionText = this._exception && this._exception.description && utils.firstLine(this._exception.description);
-                    return this._session.sendEvent(new StoppedEvent(this.stopReasonText(reason), /*threadId=*/ChromeDebugAdapter.THREAD_ID, exceptionText));
+                    return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, exceptionText));
                 };
                 return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
                     .then(sendStoppedEvent, sendStoppedEvent);
@@ -423,28 +424,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private smartStepEnabled(): boolean {
         return this._launchAttachArgs.sourceMaps && this._launchAttachArgs.smartStep;
-    }
-
-    private stopReasonText(reason: string): string {
-        const comment = ['https://github.com/Microsoft/vscode/issues/4568'];
-        switch (reason) {
-            case 'entry':
-                return utils.localize({ key: 'reason.entry', comment }, "entry");
-            case 'exception':
-                return utils.localize({ key: 'reason.exception', comment }, "exception");
-            case 'breakpoint':
-                return utils.localize({ key: 'reason.breakpoint', comment }, "breakpoint");
-            case 'debugger':
-                return utils.localize({ key: 'reason.debugger_statement', comment }, "debugger statement");
-            case 'frame_entry':
-                return utils.localize({ key: 'reason.restart', comment }, "frame entry");
-            case 'step':
-                return utils.localize({ key: 'reason.step', comment }, "step");
-            case 'user_request':
-                return utils.localize({ key: 'reason.user_request', comment }, "user request");
-            default:
-                return reason;
-        }
     }
 
     protected onResumed(): void {
@@ -1071,7 +1050,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public pause(): Promise<void> {
         telemetry.reportEvent('pauseRequest');
-        this._expectingStopReason = 'user_request';
+        this._expectingStopReason = 'pause';
         return this._currentStep = this.chrome.Debugger.pause()
             .then(() => { });
     }

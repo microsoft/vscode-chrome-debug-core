@@ -10,6 +10,7 @@ import {ChromeDebugAdapter} from './chrome/chromeDebugAdapter';
 import {ChromeDebugSession, IChromeDebugSessionOpts} from './chrome/chromeDebugSession';
 import * as chromeTargetDiscoveryStrategy from './chrome/chromeTargetDiscoveryStrategy';
 import * as chromeUtils from './chrome/chromeUtils';
+import * as stoppedEvent from './chrome/stoppedEvent';
 
 import {BasePathTransformer} from './transformers/basePathTransformer';
 import {UrlPathTransformer} from './transformers/urlPathTransformer';
@@ -29,6 +30,7 @@ export {
     chromeTargetDiscoveryStrategy,
     chromeUtils,
     logger,
+    stoppedEvent,
 
     UrlPathTransformer,
     BasePathTransformer,
