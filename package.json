@@ -49,6 +49,7 @@
   },
   "scripts": {
     "build": "gulp build",
+    "watch": "gulp watch",
     "test": "mocha --recursive -u tdd ./out/test/"
   }
 }

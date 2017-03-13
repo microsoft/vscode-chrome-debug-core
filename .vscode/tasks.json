@@ -1,11 +1,11 @@
 {
     "version": "0.1.0",
-    "command": "gulp",
+    "command": "npm",
     "isShellCommand": true,
+    "args": [ "run" ],
     "tasks": [
        {
             "taskName": "watch",
-            "args": [],
             "isBuildCommand": true,
             "isBackground": true,
             "problemMatcher": {
@@ -23,11 +23,6 @@
 					"endsPattern": "Finished 'build'"
 				}
 			}
-        },
-        {
-            "taskName": "watch-build-test",
-            "isBackground": true,
-            "isTestCommand": true
         }
     ]
 }
