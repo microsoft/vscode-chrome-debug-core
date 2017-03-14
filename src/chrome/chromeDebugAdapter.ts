@@ -1116,7 +1116,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 name: `[ ${stackTrace.description} ]`,
                 source: undefined,
                 line: undefined,
-                column: undefined
+                column: undefined,
+                presentationHint: 'label'
             });
 
             return frames.concat(this.asyncFrames(stackTrace.parent));
