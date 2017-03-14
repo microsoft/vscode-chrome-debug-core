@@ -38,6 +38,9 @@ export class StoppedEvent2 extends StoppedEvent {
             case 'promise_rejection':
                 (<DebugProtocol.StoppedEvent>this).body.description = utils.localize('reason.description.promiseRejection', "Paused on promise rejection");
                 break;
+            default:
+                (<DebugProtocol.StoppedEvent>this).body.description = 'Unknown pause reason';
+                break;
         }
     }
 }
