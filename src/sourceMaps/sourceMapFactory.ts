@@ -39,7 +39,7 @@ export function getMapForGeneratedPath(pathToGenerated: string, mapPath: string,
                 // Throws for invalid JSON
                 return new SourceMap(pathToGenerated, contents, webRoot, sourceMapPathOverrides);
             } catch (e) {
-                logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing sourcemap: ${e.stack}`);
+                logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                 return null;
             }
         } else {
