@@ -11,14 +11,14 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 
 export const THREAD_ID = 1;
 
-export function setBreakpointOnStart(dc: DebugClient, bps: DebugProtocol.SourceBreakpoint[], program: string, expLine?: number, expCol?: number, expVerified = true): Promise<void> {
+export function setBreakpointOnStart(dc: DebugClient, bps: DebugProtocol.SourceBreakpoint[], program: string, expLine?: number, expCol?: number, expVerified?: boolean): Promise<void> {
     return dc.waitForEvent('initialized')
         .then(event => setBreakpoint(dc, bps, program, expLine, expCol, expVerified))
         .then(() => dc.configurationDoneRequest())
         .then(() => { });
 }
 
-export function setBreakpoint(dc: DebugClient, bps: DebugProtocol.SourceBreakpoint[], program: string, expLine?: number, expCol?: number, expVerified = true): Promise<void> {
+export function setBreakpoint(dc: DebugClient, bps: DebugProtocol.SourceBreakpoint[], program: string, expLine?: number, expCol?: number, expVerified?: boolean): Promise<void> {
     return dc.setBreakpointsRequest({
         breakpoints: bps,
         source: { path: program }
