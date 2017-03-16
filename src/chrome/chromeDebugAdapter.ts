@@ -768,7 +768,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         this.reportBpTelemetry(args);
-        args.source.path = this.displayPathToRealPath(args.source.path);
+        if (args.source.path) {
+            args.source.path = this.displayPathToRealPath(args.source.path);
+        }
+
         return this.validateBreakpointsPath(args)
             .then(() => {
                 this._lineColTransformer.setBreakpoints(args);
@@ -1438,8 +1441,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             scriptId = handle.scriptId;
         } else if (args.source && args.source.path) {
-            const escapedPath = encodeURI(args.source.path); // Request path has chars unescaped, but they should be escaped in scriptsByUrl
-            const script = this._scriptsByUrl.get(this.displayPathToRealPath(escapedPath));
+            const escapedPath = encodeURI(this.displayPathToRealPath(args.source.path)); // Request path has chars unescaped, but they should be escaped in scriptsByUrl
+            const script = this._scriptsByUrl.get(escapedPath);
             if (!script) {
                 return Promise.reject(errors.sourceRequestCouldNotRetrieveContent());
             }
