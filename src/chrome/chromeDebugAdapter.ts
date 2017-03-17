@@ -334,10 +334,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected sendInitializedEvent(): void {
         // Wait to finish loading sourcemaps from the initial scriptParsed events
-        this._initialSourceMapsP.then(() => {
-            this._session.sendEvent(new InitializedEvent());
-            this._initialSourceMapsP = null;
-        });
+        if (this._initialSourceMapsP) {
+            this._initialSourceMapsP.then(() => {
+                this._session.sendEvent(new InitializedEvent());
+                this._initialSourceMapsP = null;
+            });
+        }
     }
 
     /**
