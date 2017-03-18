@@ -112,7 +112,8 @@ export function fileUrlToPath(urlOrPath: string): string {
     if (urlOrPath.startsWith('file:///')) {
         urlOrPath = urlOrPath.replace('file:///', '');
         urlOrPath = decodeURIComponent(urlOrPath);
-        if (urlOrPath[0] !== '/' && urlOrPath.indexOf(':') < 0) {
+        if (urlOrPath[0] !== '/' && !urlOrPath.match(/^[A-Za-z]:/)) {
+            // If it has a : before the first /, assume it's a windows path or url.
             // Ensure unix-style path starts with /, it can be removed when file:/// was stripped.
             // Don't add if the url still has a protocol
             urlOrPath = '/' + urlOrPath;

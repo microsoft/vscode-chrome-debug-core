@@ -186,6 +186,12 @@ suite('Utils', () => {
             const url = 'http://localhost/blah';
             testFileUrlToPath(url, url);
         });
+
+        test('works for file urls that contain : elsewhere', () => {
+            // Should remove query args?
+            const expectedPath = '/Users/me/file?config={"a":"b"}';
+            testFileUrlToPath('file://' + expectedPath, expectedPath);
+        })
     });
 
     suite('fixDriveLetterAndSlashes', () => {
