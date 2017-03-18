@@ -191,7 +191,7 @@ suite('Utils', () => {
             // Should remove query args?
             const expectedPath = '/Users/me/file?config={"a":"b"}';
             testFileUrlToPath('file://' + expectedPath, expectedPath);
-        })
+        });
     });
 
     suite('fixDriveLetterAndSlashes', () => {
