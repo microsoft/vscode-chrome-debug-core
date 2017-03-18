@@ -49,7 +49,8 @@ class LoggingSocket extends WebSocket {
 
             if (msgObj
                 && !(msgObj.method === 'Debugger.scriptParsed' && msgObj.params && msgObj.params.isContentScript)
-                && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)) {
+                && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)
+                && !(msgObj.method && msgObj.method.startsWith('Network.'))) {
                 // Not really the right place to examine the content of the message, but don't log annoying extension script notifications.
                 logger.verbose('From target: ' + msgStr);
             }
