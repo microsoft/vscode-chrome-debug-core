@@ -54,27 +54,27 @@ function _getTargets(address: string, port: number, targetFilter: ITargetFilter)
 }
 
 function _selectTarget(targets: ITarget[], targetUrl?: string): ITarget {
-    if (targetUrl) {
-        // If a url was specified, try to filter to that url
-        const filteredTargets = chromeUtils.getMatchingTargets(targets, targetUrl);
-        if (filteredTargets.length) {
-            // If all possible targets appear to be attached to have some other devtool attached, then fail
-            const targetsWithWSURLs = filteredTargets.filter(target => !!target.webSocketDebuggerUrl);
-            if (targetsWithWSURLs.length === 0) {
-                throw new Error(`Can't attach to this target that may have Chrome DevTools attached - ${filteredTargets[0].url}`);
-            }
+    // If a url was specified, try to filter to that url
+    let filteredTargets = targetUrl ?
+        chromeUtils.getMatchingTargets(targets, targetUrl) :
+        targets;
 
-            targets = targetsWithWSURLs;
-        } else {
-            throw new Error(`Can't find a target that matches: ${targetUrl}. Available pages: ${JSON.stringify(targets.map(target => target.url))}`);
-        }
+    if (!filteredTargets.length) {
+        throw new Error(`Can't find a target that matches: ${targetUrl}. Available pages: ${JSON.stringify(targets.map(target => target.url))}`);
     }
 
-    if (targets.length > 1) {
-        logger.log('Warning: Found more than one valid target page. Attaching to the first one. Available pages: ' + JSON.stringify(targets.map(target => target.url)));
+    // If all possible targets appear to be attached to have some other devtool attached, then fail
+    const targetsWithWSURLs = filteredTargets.filter(target => !!target.webSocketDebuggerUrl);
+    if (!targetsWithWSURLs.length) {
+        throw new Error(`Can't attach to this target that may have Chrome DevTools attached - ${filteredTargets[0].url}`);
     }
 
-    return targets[0];
+    filteredTargets = targetsWithWSURLs;
+    if (filteredTargets.length > 1) {
+        logger.log('Warning: Found more than one valid target page. Attaching to the first one. Available pages: ' + JSON.stringify(filteredTargets.map(target => target.url)));
+    }
+
+    return filteredTargets[0];
 }
 
 function _fixRemoteUrl(remoteAddress: string, target: ITarget): ITarget {
