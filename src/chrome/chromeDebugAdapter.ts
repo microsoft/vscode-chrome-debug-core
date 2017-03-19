@@ -1024,12 +1024,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     public continue(internal = false): Promise<void> {
         if (!internal) telemetry.reportEvent('continueRequest');
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.resume()
             .then(() => { });
     }
 
     public next(): Promise<void> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         telemetry.reportEvent('nextRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1038,6 +1046,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public stepIn(): Promise<void> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         telemetry.reportEvent('stepInRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1046,6 +1058,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public stepOut(): Promise<void> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         telemetry.reportEvent('stepOutRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1054,6 +1070,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public pause(): Promise<void> {
+        if (!this.chrome) {
+            return utils.errP(errors.runtimeNotConnectedMsg);
+        }
+
         telemetry.reportEvent('pauseRequest');
         this._expectingStopReason = 'pause';
         return this._currentStep = this.chrome.Debugger.pause()
@@ -1061,6 +1081,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
+        if (!this._currentPauseNotification) {
+            return Promise.reject(errors.noCallStackAvailable());
+        }
+
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentPauseNotification.callFrames;
         if (args.levels) {
@@ -1284,9 +1308,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return Promise.resolve<IVariablesResponseBody>(undefined);
         }
 
-        return handle.expand(this, args.filter, args.start, args.count).then(variables => {
-            return { variables };
-        });
+        return handle.expand(this, args.filter, args.start, args.count)
+            .catch(err => {
+                logger.log('Error handling variables request: ' + err.toString());
+                return [];
+            }).then(variables => {
+                return { variables };
+            });
     }
 
     public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
