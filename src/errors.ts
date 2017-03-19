@@ -102,5 +102,5 @@ export function noCallStackAvailable(): DebugProtocol.Message {
     return {
         id: 2023,
         format: localize('VSND2023', "No call stack available.")
-    }
+    };
 }
