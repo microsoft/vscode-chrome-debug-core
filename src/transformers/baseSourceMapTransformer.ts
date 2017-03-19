@@ -145,26 +145,23 @@ export class BaseSourceMapTransformer {
         if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
             const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
             if (args.authoredPath) {
-                const sourceBPs = this._authoredPathsToMappedBPs.get(args.authoredPath);
-                if (sourceBPs) {
-                    // authoredPath is set, so the file was mapped to source.
-                    // Remove breakpoints from files that map to the same file, and map back to source.
-                    response.breakpoints = response.breakpoints.filter((_, i) => i < sourceBPs.length);
-                    response.breakpoints.forEach((bp, i) => {
-                        const mapped = this._sourceMaps.mapToAuthored(args.generatedPath, bp.line, bp.column);
-                        if (mapped) {
-                            logger.log(`SourceMaps.setBP: Mapped ${args.generatedPath}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
-                            bp.line = mapped.line;
-                            bp.column = mapped.column;
-                        } else {
-                            logger.log(`SourceMaps.setBP: Can't map ${args.generatedPath}:${bp.line + 1}:${bp.column + 1}, keeping original line numbers.`);
-                            bp.line = args.originalBPs[i].line;
-                            bp.column = args.originalBPs[i].column;
-                        }
+                // authoredPath is set, so the file was mapped to source.
+                // Remove breakpoints from files that map to the same file, and map back to source.
+                response.breakpoints = response.breakpoints.filter((_, i) => i < args.originalBPs.length);
+                response.breakpoints.forEach((bp, i) => {
+                    const mapped = this._sourceMaps.mapToAuthored(args.generatedPath, bp.line, bp.column);
+                    if (mapped) {
+                        logger.log(`SourceMaps.setBP: Mapped ${args.generatedPath}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
+                        bp.line = mapped.line;
+                        bp.column = mapped.column;
+                    } else {
+                        logger.log(`SourceMaps.setBP: Can't map ${args.generatedPath}:${bp.line + 1}:${bp.column + 1}, keeping original line numbers.`);
+                        bp.line = args.originalBPs[i].line;
+                        bp.column = args.originalBPs[i].column;
+                    }
 
-                        this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
-                    });
-                }
+                    this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
+                });
             }
         }
     }
