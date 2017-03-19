@@ -196,7 +196,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        telemetry.reportEvent('debugStarted', { request: 'launch' });
+        telemetry.reportEvent('debugStarted', { request: 'launch', args: Object.keys(args) });
         return Promise.resolve();
     }
 
@@ -210,7 +210,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP('The "port" field is required in the attach config.');
         }
 
-        telemetry.reportEvent('debugStarted', { request: 'attach' });
+        telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
         return this.doAttach(args.port, args.url, args.address, args.timeout);
     }
 
