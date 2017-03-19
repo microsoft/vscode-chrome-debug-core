@@ -67,7 +67,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = 'VM';
     private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
-    private static SET_BREAKPOINTS_TIMEOUT = 3000;
+    private static SET_BREAKPOINTS_TIMEOUT = 5000;
     private static HITCONDITION_MATCHER = /^(>|>=|=|<|<=|%)?\s*([0-9]+)$/;
     private static ASYNC_CALL_STACK_DEPTH = 4;
 
