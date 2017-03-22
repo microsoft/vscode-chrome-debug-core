@@ -740,10 +740,37 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
         const formattedException = formatExceptionDetails(params.exceptionDetails);
-        this._session.sendEvent(new OutputEvent(
-            formattedException,
-            'stderr'
-        ));
+        this.mapFormattedException(formattedException).then(formattedException => {
+            this._session.sendEvent(new OutputEvent(
+                formattedException,
+                'stderr'
+            ));
+        });
+    }
+
+    // We parse stack trace from `formattedException`, source map it and return a new string
+    protected async mapFormattedException(formattedException: string): Promise<string> {
+        const exceptionLines = formattedException.split(/\r?\n/);
+
+        for (let i = 0, len = exceptionLines.length; i < len; ++i) {
+            const line = exceptionLines[i];
+            const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+\.js):(\d+):(\d+)\)?$/);
+
+            if (matches) {
+                const fnName = matches[1];
+                const path = matches[2];
+                const lineNum = parseInt(matches[3]);
+                const columnNum = parseInt(matches[4]);
+                const clientPath = this._pathTransformer.getClientPathFromTargetPath(path);
+                const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath, lineNum, columnNum);
+
+                if (mapped) {
+                    exceptionLines[i] = `    at ${fnName ? fnName + ' ': ''}(${mapped.source}:${mapped.line}:${mapped.column})`;
+                }
+            }
+        }
+
+        return exceptionLines.join('\n');
     }
 
     /**

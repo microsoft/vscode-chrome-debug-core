@@ -468,6 +468,34 @@ suite('ChromeDebugAdapter', () => {
         });
     });
 
+    suite('onExceptionThrown', () => {
+        test('exceptions are source mapped when shown in console', async () => {
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            mockEventEmitter.emit('Runtime.exceptionThrown', <Crdp.Runtime.ExceptionThrownEvent>{
+                "timestamp": 1490164925297.7559,
+                "exceptionDetails": {
+                    "exceptionId": 21,
+                    "text": "Uncaught",
+                    "lineNumber": 5,
+                    "columnNumber": 10,
+                    "url": "http://localhost:9999/error.js",
+                    "stackTrace": {},
+                    "exception": {
+                        "type": "object",
+                        "subtype": "error",
+                        "className": "Error",
+                        "description": "Error: kaboom!\n    at error (http://localhost:9999/error.js:6:11)\n    at some (http://localhost:9999/error.js:4:33)\n    at up (http://localhost:9999/error.js:3:31)\n    at blow (http://localhost:9999/error.js:2:33)\n    at boom (http://localhost:9999/error.js:1:33)\n    at http://localhost:9999/error.js:8:1",
+                        "objectId": "{\"injectedScriptId\":148,\"id\":1}"
+                    },
+                    "executionContextId": 148
+                }
+            });
+
+            //TODO - Test mapped exception
+
+        });
+    });
+
     suite('setExceptionBreakpoints()', () => { });
     suite('stepping', () => { });
     suite('stackTrace()', () => { });
