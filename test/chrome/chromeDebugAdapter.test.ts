@@ -471,6 +471,17 @@ suite('ChromeDebugAdapter', () => {
     suite('onExceptionThrown', () => {
         test('exceptions are source mapped when shown in console', async () => {
             await chromeDebugAdapter.attach(ATTACH_ARGS);
+            let outputEventFired = false;
+            sendEventHandler = (event: DebugProtocol.Event) => {
+                if (event.event === 'output') {
+                    outputEventFired = true;
+                    console.error(event);
+                    assert.equal(true, true);
+                } else {
+                    testUtils.assertFail('An unexpected event was fired');
+                }
+            };
+
             mockEventEmitter.emit('Runtime.exceptionThrown', <Crdp.Runtime.ExceptionThrownEvent>{
                 "timestamp": 1490164925297.7559,
                 "exceptionDetails": {
@@ -491,7 +502,7 @@ suite('ChromeDebugAdapter', () => {
                 }
             });
 
-            //TODO - Test mapped exception
+            // TODO - Test mapped exception
 
         });
     });
