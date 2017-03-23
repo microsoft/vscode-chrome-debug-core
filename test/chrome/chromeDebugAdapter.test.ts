@@ -528,7 +528,6 @@ suite('ChromeDebugAdapter', () => {
             // We need to reset mocks and re-initialize chromeDebugAdapter
             // because reset() creates a new instance of object
             mockSourceMapTransformer.reset();
-            mockPathTransformer.reset();
             initChromeDebugAdapter();
 
             await chromeDebugAdapter.attach(ATTACH_ARGS);
@@ -537,8 +536,6 @@ suite('ChromeDebugAdapter', () => {
                     asyncAssert(() => assert.equal(event.body.output, authoredExceptionStr), resolve, reject);
             });
 
-            mockPathTransformer.setup(m => m.getClientPathFromTargetPath(It.isValue(generatedPath)))
-                .returns(path => path);
             mockSourceMapTransformer.setup(m => m.mapToAuthored(It.isValue(generatedPath), It.isAnyNumber(), It.isAnyNumber()))
                 .returns(() => Promise.resolve({ source: authoredPath, line: 12, column: 1 }));
 

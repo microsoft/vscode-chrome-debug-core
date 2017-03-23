@@ -761,8 +761,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const lineNum = parseInt(matches[3], 10);
             const columnNum = parseInt(matches[4], 10);
             const clientPath = this._pathTransformer.getClientPathFromTargetPath(path);
-            if (!clientPath) continue;
-            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath, lineNum, columnNum);
+            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || path, lineNum, columnNum);
 
             if (mapped && mapped.source && mapped.line && mapped.column) {
                 exceptionLines[i] = exceptionLines[i].replace(
