@@ -99,7 +99,7 @@ suite('ConsoleHelper', () => {
 
     suite('console.assert()', () => {
         test(`Prints params and doesn't resolve format specifiers`, () => {
-            doAssertForString(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n    at myFn (/script/a.js:4)', true);
+            doAssertForString(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n    at myFn (/script/a.js:4:1)', true);
         });
     });
 });
@@ -162,7 +162,7 @@ namespace Runtime {
 
     export function makeAssert(...args: any[]): Crdp.Runtime.ConsoleAPICalledEvent {
         const fakeStackTrace: Crdp.Runtime.StackTrace = {
-            callFrames: [{ url: '/script/a.js', lineNumber: 4, columnNumber: 0, scriptId: '1', functionName: 'myFn' }]
+            callFrames: [{ url: '/script/a.js', lineNumber: 4, columnNumber: 1, scriptId: '1', functionName: 'myFn' }]
         };
         return makeMockMessage('assert', args, { level: 'error', stackTrace: fakeStackTrace });
     }
