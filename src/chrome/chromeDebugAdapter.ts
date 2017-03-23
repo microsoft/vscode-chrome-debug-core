@@ -757,15 +757,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+\.js):(\d+):(\d+)\)?$/);
 
             if (matches) {
-                const fnName = matches[1];
                 const path = matches[2];
                 const lineNum = parseInt(matches[3], 10);
                 const columnNum = parseInt(matches[4], 10);
                 const clientPath = this._pathTransformer.getClientPathFromTargetPath(path);
                 const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath, lineNum, columnNum);
 
-                if (mapped) {
-                    exceptionLines[i] = `    at ${fnName ? fnName + ' ' : ''}(${mapped.source}:${mapped.line}:${mapped.column})`;
+                if (mapped && mapped.source && mapped.line && mapped.column) {
+                    exceptionLines[i] = exceptionLines[i].replace(
+                        `${path}:${lineNum}:${columnNum}`,
+                        `${mapped.source}:${mapped.line}:${mapped.column}`
+                    );
                 }
             }
         }

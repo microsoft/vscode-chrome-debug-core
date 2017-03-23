@@ -75,26 +75,30 @@ suite('ChromeDebugAdapter', () => {
         mockSourceMapTransformer = getMockSourceMapTransformer();
         mockPathTransformer = getMockPathTransformer();
 
+        initChromeDebugAdapter();
+    });
+
+    function initChromeDebugAdapter(): void {
         // Instantiate the ChromeDebugAdapter, injecting the mock ChromeConnection
         /* tslint:disable */
         chromeDebugAdapter = new (require(MODULE_UNDER_TEST).ChromeDebugAdapter)({
-            chromeConnection: function() { return mockChromeConnection.object; },
-            lineColTransformer: function() { return mockLineNumberTransformer.object; },
-            sourceMapTransformer: function() { return mockSourceMapTransformer.object; },
-            pathTransformer: function() { return mockPathTransformer.object; }
+            chromeConnection: function () { return mockChromeConnection.object; },
+            lineColTransformer: function () { return mockLineNumberTransformer.object; },
+            sourceMapTransformer: function () { return mockSourceMapTransformer.object; },
+            pathTransformer: function () { return mockPathTransformer.object; }
         },
-        {
-            sendEvent: (e: DebugProtocol.Event) => {
-                if (sendEventHandler) {
-                    // Filter telemetry events
-                    if (!(e.event === 'output' && (<DebugProtocol.OutputEvent>e).body.category === 'telemetry')) {
-                        sendEventHandler(e);
+            {
+                sendEvent: (e: DebugProtocol.Event) => {
+                    if (sendEventHandler) {
+                        // Filter telemetry events
+                        if (!(e.event === 'output' && (<DebugProtocol.OutputEvent>e).body.category === 'telemetry')) {
+                            sendEventHandler(e);
+                        }
                     }
                 }
-            }
-        });
+            });
         /* tslint:enable */
-    });
+    }
 
     teardown(() => {
         sendEventHandler = undefined;
@@ -111,6 +115,16 @@ suite('ChromeDebugAdapter', () => {
             .returns(() => Promise.resolve([]));
 
         mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId, url });
+    }
+
+    // Helper to run async asserts inside promises so they can be correctly awaited
+    function asyncAssert(assertFn: Function, resolve: (value?: any) => void, reject: (reason?: any) => void): void {
+        try {
+            assertFn();
+            resolve();
+        } catch (e) {
+            reject(e);
+        }
     }
 
     suite('attach()', () => {
@@ -469,41 +483,67 @@ suite('ChromeDebugAdapter', () => {
     });
 
     suite('onExceptionThrown', () => {
-        test('exceptions are source mapped when shown in console', async () => {
-            await chromeDebugAdapter.attach(ATTACH_ARGS);
-            let outputEventFired = false;
-            sendEventHandler = (event: DebugProtocol.Event) => {
-                if (event.event === 'output') {
-                    outputEventFired = true;
-                    console.error(event);
-                    assert.equal(true, true);
-                } else {
-                    testUtils.assertFail('An unexpected event was fired');
-                }
-            };
+        const authoredPath = '/Users/me/error.ts';
+        const generatedPath = 'http://localhost:9999/error.js';
 
-            mockEventEmitter.emit('Runtime.exceptionThrown', <Crdp.Runtime.ExceptionThrownEvent>{
-                "timestamp": 1490164925297.7559,
-                "exceptionDetails": {
-                    "exceptionId": 21,
-                    "text": "Uncaught",
-                    "lineNumber": 5,
-                    "columnNumber": 10,
-                    "url": "http://localhost:9999/error.js",
-                    "stackTrace": {},
-                    "exception": {
-                        "type": "object",
-                        "subtype": "error",
-                        "className": "Error",
-                        "description": "Error: kaboom!\n    at error (http://localhost:9999/error.js:6:11)\n    at some (http://localhost:9999/error.js:4:33)\n    at up (http://localhost:9999/error.js:3:31)\n    at blow (http://localhost:9999/error.js:2:33)\n    at boom (http://localhost:9999/error.js:1:33)\n    at http://localhost:9999/error.js:8:1",
-                        "objectId": "{\"injectedScriptId\":148,\"id\":1}"
-                    },
-                    "executionContextId": 148
-                }
+        const getExceptionStr = (path, line) => 'Error: kaboom!\n' +
+            `    at error (${path}:${line}:1)\n` +
+            `    at ${path}:${line}:1`;
+
+        const generatedExceptionStr = getExceptionStr(generatedPath, 6);
+        const authoredExceptionStr = getExceptionStr(authoredPath, 12);
+
+        const exceptionEvent: Crdp.Runtime.ExceptionThrownEvent = {
+            "timestamp": 1490164925297,
+            "exceptionDetails": {
+                "exceptionId": 21,
+                "text": "Uncaught",
+                "lineNumber": 5,
+                "columnNumber": 10,
+                "url": "http://localhost:9999/error.js",
+                "stackTrace": null,
+                "exception": {
+                    "type": "object",
+                    "subtype": "error",
+                    "className": "Error",
+                    "description": generatedExceptionStr,
+                    "objectId": "{\"injectedScriptId\":148,\"id\":1}"
+                },
+                "executionContextId": 148
+            }
+        };
+
+        test('passes through exception when no source mapping present', async () => {
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            const sendEventP = new Promise((resolve, reject) => {
+                sendEventHandler = (event) =>
+                    asyncAssert(() => assert.equal(event.body.output, generatedExceptionStr), resolve, reject);
             });
 
-            // TODO - Test mapped exception
+            mockEventEmitter.emit('Runtime.exceptionThrown', exceptionEvent);
+            await sendEventP;
+        });
 
+        test('translates callstack to authored files via source mapping', async () => {
+            // We need to reset mocks and re-initialize chromeDebugAdapter
+            // because reset() creates a new instance of object
+            mockSourceMapTransformer.reset();
+            mockPathTransformer.reset();
+            initChromeDebugAdapter();
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            const sendEventP = new Promise((resolve, reject) => {
+                sendEventHandler = (event) =>
+                    asyncAssert(() => assert.equal(event.body.output, authoredExceptionStr), resolve, reject);
+            });
+
+            mockPathTransformer.setup(m => m.getClientPathFromTargetPath(It.isValue(generatedPath)))
+                .returns(path => path);
+            mockSourceMapTransformer.setup(m => m.mapToAuthored(It.isValue(generatedPath), It.isAnyNumber(), It.isAnyNumber()))
+                .returns(() => Promise.resolve({ source: authoredPath, line: 12, column: 1 }));
+
+            mockEventEmitter.emit('Runtime.exceptionThrown', exceptionEvent);
+            await sendEventP;
         });
     });
 
