@@ -1526,10 +1526,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             threads: [
                 {
                     id: ChromeDebugAdapter.THREAD_ID,
-                    name: 'Thread ' + ChromeDebugAdapter.THREAD_ID
+                    name: this.threadName()
                 }
             ]
         };
+    }
+
+    protected threadName(): string {
+        return 'Thread ' + ChromeDebugAdapter.THREAD_ID;
     }
 
     public async evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
