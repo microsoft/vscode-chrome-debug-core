@@ -36,6 +36,10 @@ export class LineColTransformer implements IDebugTransformer  {
         scopeResponse.scopes.forEach(scope => this.mapScopeLocations(scope));
     }
 
+    public mappedExceptionStack(location: { line: number; column: number }): void {
+        this.convertDebuggerLocationToClient(location);
+    }
+
     private mapScopeLocations(scope: DebugProtocol.Scope): void {
         this.convertDebuggerLocationToClient(scope);
 

@@ -104,3 +104,28 @@ export function noCallStackAvailable(): DebugProtocol.Message {
         format: localize('VSND2023', "No call stack available.")
     };
 }
+
+export function invalidThread(threadId: number): DebugProtocol.Message {
+    return {
+        id: 2030,
+        format: 'Invalid thread {_thread}',
+        variables: { _thread: threadId + '' },
+        sendTelemetry: true
+    };
+}
+
+export function exceptionInfoRequestError(): DebugProtocol.Message {
+    return {
+        id: 2031,
+        format: 'exceptionInfoRequest error',
+        sendTelemetry: true
+    };
+}
+
+export function noStoredException(): DebugProtocol.Message {
+    return {
+        id: 2032,
+        format: 'exceptionInfoRequest error: no stored exception',
+        sendTelemetry: true
+    };
+}

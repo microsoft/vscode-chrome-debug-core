@@ -119,6 +119,17 @@ export interface IAllLoadedScriptsResponseBody {
     loadedScripts: ILoadedScript[];
 }
 
+export interface IExceptionInfoResponseBody {
+    /** ID of the exception that was thrown. */
+    exceptionId: string;
+    /** Descriptive text for the exception provided by the debug adapter. */
+    description?: string;
+    /** Mode that caused the exception notification to be raised. */
+    breakMode: DebugProtocol.ExceptionBreakMode;
+    /** Detailed information about the exception. */
+    details?: DebugProtocol.ExceptionDetails;
+}
+
 declare type PromiseOrNot<T> = T | Promise<T>;
 
 /**

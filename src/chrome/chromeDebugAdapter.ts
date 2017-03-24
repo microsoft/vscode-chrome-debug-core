@@ -8,7 +8,7 @@ import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEv
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody, IExceptionInfoResponseBody} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -183,7 +183,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsConditionalBreakpoints: true,
             supportsCompletionsRequest: true,
             supportsHitConditionalBreakpoints: true,
-            supportsRestartFrame: true
+            supportsRestartFrame: true,
+            supportsExceptionInfoRequest: true
         };
     }
 
@@ -412,6 +413,27 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     .then(sendStoppedEvent, sendStoppedEvent);
             }
         }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
+    }
+
+    public exceptionInfo(args: DebugProtocol.ExceptionInfoArguments): IExceptionInfoResponseBody {
+        if (args.threadId !== ChromeDebugAdapter.THREAD_ID) {
+            throw errors.invalidThread(args.threadId);
+        }
+
+        if (this._exception) {
+            const response: IExceptionInfoResponseBody = {
+                exceptionId: this._exception.className,
+                description: utils.firstLine(this._exception.description),
+                breakMode: 'unhandled',
+                details: {
+                    stackTrace: this._exception.description
+                }
+            };
+
+            return response;
+        } else {
+            throw errors.noStoredException();
+        }
     }
 
     private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
@@ -761,9 +783,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const lineNum = parseInt(matches[3], 10);
             const columnNum = parseInt(matches[4], 10);
             const clientPath = this._pathTransformer.getClientPathFromTargetPath(path);
-            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || path, lineNum, columnNum);
+            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || path, lineNum - 1, columnNum);
 
-            if (mapped && mapped.source && mapped.line && mapped.column) {
+            if (mapped && mapped.source && utils.isNumber(mapped.line) && utils.isNumber(mapped.column)) {
+                this._lineColTransformer.mappedExceptionStack(mapped);
                 exceptionLines[i] = exceptionLines[i].replace(
                     `${path}:${lineNum}:${columnNum}`,
                     `${mapped.source}:${mapped.line}:${mapped.column}`
