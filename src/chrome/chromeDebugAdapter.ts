@@ -415,7 +415,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
     }
 
-    public exceptionInfo(args: DebugProtocol.ExceptionInfoArguments): IExceptionInfoResponseBody {
+    public async exceptionInfo(args: DebugProtocol.ExceptionInfoArguments): Promise<IExceptionInfoResponseBody> {
         if (args.threadId !== ChromeDebugAdapter.THREAD_ID) {
             throw errors.invalidThread(args.threadId);
         }
@@ -426,7 +426,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 description: utils.firstLine(this._exception.description),
                 breakMode: 'unhandled',
                 details: {
-                    stackTrace: this._exception.description
+                    stackTrace: await this.sourceMapFormattedException(this._exception.description)
                 }
             };
 
