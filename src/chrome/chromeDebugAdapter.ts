@@ -776,7 +776,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         for (let i = 0, len = exceptionLines.length; i < len; ++i) {
             const line = exceptionLines[i];
-            const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+\.js):(\d+):(\d+)\)?$/);
+            const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+\.js(?:\?.*)?):(\d+):(\d+)\)?$/);
 
             if (!matches) continue;
             const path = matches[2];
