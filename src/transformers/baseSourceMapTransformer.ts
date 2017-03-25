@@ -279,10 +279,12 @@ export class BaseSourceMapTransformer {
     }
 
     public mapToGenerated(authoredPath: string, line: number, column: number): Promise<MappedPosition> {
+        if (!this._sourceMaps) return Promise.resolve(null);
         return this._preLoad.then(() => this._sourceMaps.mapToGenerated(authoredPath, line, column));
     }
 
     public mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition> {
+        if (!this._sourceMaps) return Promise.resolve(null);
         return this._preLoad.then(() => this._sourceMaps.mapToAuthored(pathToGenerated, line, column));
     }
 
