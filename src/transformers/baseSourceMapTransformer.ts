@@ -207,7 +207,7 @@ export class BaseSourceMapTransformer {
         } else {
             response.stackFrames.forEach(stackFrame => {
                 // PathTransformer needs to leave the frame in an unfinished state because it doesn't know whether sourcemaps are enabled
-                if (stackFrame.source.path && stackFrame.source.sourceReference) {
+                if (stackFrame.source && stackFrame.source.path && stackFrame.source.sourceReference) {
                     stackFrame.source.path = undefined;
                 }
             });
