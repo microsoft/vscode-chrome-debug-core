@@ -83,8 +83,8 @@ export class ExtendedDebugClient extends DebugClient {
         return results[0];
     }
 
-    async getLoadScripts(): Promise<IAllLoadedScriptsResponseBody> {
-        const response = await this.send('getLoadScripts')
+    async getLoadedScripts(): Promise<IAllLoadedScriptsResponseBody> {
+        const response = await this.send('getLoadedScripts')
         return response.body;
     }
 
