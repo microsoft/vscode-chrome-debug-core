@@ -52,7 +52,7 @@ class LoggingSocket extends WebSocket {
                 && !(msgObj.params && msgObj.params.url && msgObj.params.url.indexOf('extensions::') === 0)
                 && !(msgObj.method && msgObj.method.startsWith('Network.'))) {
                 // Not really the right place to examine the content of the message, but don't log annoying extension script notifications.
-                logger.verbose('From target: ' + msgStr);
+                logger.verbose('← From target: ' + msgStr);
             }
         });
     }
@@ -61,7 +61,7 @@ class LoggingSocket extends WebSocket {
         super.send.apply(this, arguments);
 
         const msgStr = JSON.stringify(data);
-        logger.verbose('To target: ' + msgStr);
+        logger.verbose('→ To target: ' + msgStr);
     }
 }
 
