@@ -266,13 +266,11 @@ suite('BaseSourceMapTransformer', () => {
             assert.deepEqual(response, expected);
         });
 
-        test('clears the path when there are no sourcemaps', () => {
+        test('doesn\'t clear the path when there are no sourcemaps', () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
-            const expected = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
-            expected.stackFrames.forEach(stackFrame => stackFrame.source.path = undefined); // leave name intact
 
             getTransformer(/*sourceMaps=*/false).stackTraceResponse(response);
-            assert.deepEqual(response, expected);
+            response.stackFrames.forEach(frame => assert(!!frame.source));
         });
 
         test(`keeps the path when the file can't be sourcemapped if it's on disk`, () => {
