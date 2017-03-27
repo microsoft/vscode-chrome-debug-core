@@ -694,7 +694,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(() => this.warnNoSkipFiles());
     }
 
-    public async getLoadScripts(): Promise<IAllLoadedScriptsResponseBody> {
+    public async getLoadedScripts(): Promise<IAllLoadedScriptsResponseBody> {
         const loadedScripts = Array.from(this._scriptsByUrl.keys())
             .map(scriptPath => {
                 const script = this._scriptsByUrl.get(scriptPath);
