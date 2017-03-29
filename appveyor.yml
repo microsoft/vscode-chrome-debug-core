@@ -5,7 +5,7 @@ install:
   - ps: Install-Product node $env:nodejs_version x86
 
 build_script:
-  - npm install
+  - npm install --force
   - npm run build
 
 test_script:
