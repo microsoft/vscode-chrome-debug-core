@@ -423,10 +423,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (this._exception) {
             const response: IExceptionInfoResponseBody = {
                 exceptionId: this._exception.className,
-                description: utils.firstLine(this._exception.description),
                 breakMode: 'unhandled',
                 details: {
-                    stackTrace: await this.sourceMapFormattedException(this._exception.description)
+                    stackTrace: this._exception.description && await this.sourceMapFormattedException(this._exception.description)
                 }
             };
 
