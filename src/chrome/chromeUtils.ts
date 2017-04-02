@@ -24,13 +24,8 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
             p = p + '/';
         }
 
-        let localPath = pathMapping[origin + p];
-        if (localPath) {
-            const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
-            return path.join(localPath, r);
-        }
+        let localPath = pathMapping[origin + p] || pathMapping[p];
 
-        localPath = pathMapping[p];
         if (localPath) {
             const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
             return path.join(localPath, r);
