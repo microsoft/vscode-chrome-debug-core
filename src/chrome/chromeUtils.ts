@@ -20,17 +20,15 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
     let pSegments = parsedUrl.pathname.split('/');
     while (pSegments.length) {
         let p = pSegments.join('/');
-        if (!p.endsWith('/')) {
-            p = p + '/';
+
+        if (pSegments.length === 1 && p === '') {
+            // Root path segment.
+            p = '/';
         }
 
-        let localPath = pathMapping[origin + p];
-        if (localPath) {
-            const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
-            return path.join(localPath, r);
-        }
+        let localPath = pathMapping[origin + p] || pathMapping[origin + p + '/'] ||
+            pathMapping[p + '/'] || pathMapping[p];
 
-        localPath = pathMapping[p];
         if (localPath) {
             const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
             return path.join(localPath, r);

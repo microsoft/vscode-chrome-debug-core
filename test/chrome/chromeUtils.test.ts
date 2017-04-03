@@ -96,6 +96,8 @@ suite('ChromeUtils', () => {
 
         const ROOT_MAPPING = { '/': TEST_WEB_ROOT };
         const PAGE_MAPPING = { '/page/': TEST_WEB_ROOT };
+        const PARTIAL_PAGE_MAPPING = { '/page': TEST_WEB_ROOT };
+        const FILE_MAPPING = { '/page.js': TEST_CLIENT_PATH };
 
         test('an empty string is returned for a missing url', () => {
             assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('', { }), '');
@@ -141,6 +143,30 @@ suite('ChromeUtils', () => {
             assert.equal(
                 getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, PAGE_MAPPING),
                 TEST_CLIENT_PATH);
+        });
+
+        test('resolves webroot-style mapping without tailing slash', () => {
+            assert.equal(
+                getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, PARTIAL_PAGE_MAPPING),
+                TEST_CLIENT_PATH);
+        });
+
+        test('resolves pathMapping for a particular file', () => {
+            assert.equal(
+                getChromeUtils().targetUrlToClientPathByPathMappings('http://site.com/page.js', FILE_MAPPING),
+                TEST_CLIENT_PATH);
+        });
+
+        test('return an empty string for url that has partially matching directory', () => {
+            const url = 'http://site.com/page-alike/scripts/a.js';
+
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, PARTIAL_PAGE_MAPPING), '');
+        });
+
+        test('return an empty string for file matching pathMapped directory', () => {
+            const url = 'http://site.com/page.js';
+
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, PARTIAL_PAGE_MAPPING), '');
         });
     });
 
