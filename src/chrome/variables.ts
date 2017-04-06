@@ -194,7 +194,10 @@ function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): 
 }
 
 function propertyPreviewToString(prop: Crdp.Runtime.PropertyPreview): string {
-    const value = trimProperty(prop.value);
+    const value = typeof prop.value === 'undefined' ?
+        `<${prop.type}>` :
+        trimProperty(prop.value);
+
     return prop.type === 'string' ?
         `"${value}"` :
         value;
