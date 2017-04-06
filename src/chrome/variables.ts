@@ -180,7 +180,10 @@ function getObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): 
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
         const props = object.preview.properties.slice(0, numProps);
         let propsPreview = props
-            .map(prop => `${prop.name}: ${propertyPreviewToString(prop)}`)
+            .map(prop => {
+                const name = prop.name || `""`;
+                return `${name}: ${propertyPreviewToString(prop)}`;
+            })
             .join(', ');
 
         if (object.preview.overflow || object.preview.properties.length > numProps) {

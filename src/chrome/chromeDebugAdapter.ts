@@ -1766,7 +1766,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return Promise.resolve(<DebugProtocol.Variable>{
-            name,
+            name: name || `""`,
             value,
             variablesReference: 0,
             evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
