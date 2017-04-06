@@ -763,7 +763,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const formattedException = formatExceptionDetails(params.exceptionDetails);
         this.sourceMapFormattedException(formattedException).then(exceptionStr => {
             this._session.sendEvent(new OutputEvent(
-                exceptionStr,
+                exceptionStr + '\n',
                 'stderr'
             ));
         });
@@ -1606,7 +1606,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             result.scriptSource;
                     });
             } else {
-                outputStringP = Promise.resolve(`No runtime script with url: ${scriptsRest}`);
+                outputStringP = Promise.resolve(`No runtime script with url: ${scriptsRest}\n`);
             }
         } else {
             outputStringP = this.getAllScriptsString();
