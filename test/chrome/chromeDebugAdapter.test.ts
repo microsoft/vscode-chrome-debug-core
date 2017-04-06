@@ -517,7 +517,7 @@ suite('ChromeDebugAdapter', () => {
             await chromeDebugAdapter.attach(ATTACH_ARGS);
             const sendEventP = new Promise((resolve, reject) => {
                 sendEventHandler = (event) =>
-                    asyncAssert(() => assert.equal(event.body.output, generatedExceptionStr), resolve, reject);
+                    asyncAssert(() => assert.equal(event.body.output.trim(), generatedExceptionStr), resolve, reject);
             });
 
             mockEventEmitter.emit('Runtime.exceptionThrown', exceptionEvent);
@@ -533,7 +533,7 @@ suite('ChromeDebugAdapter', () => {
             await chromeDebugAdapter.attach(ATTACH_ARGS);
             const sendEventP = new Promise((resolve, reject) => {
                 sendEventHandler = (event) =>
-                    asyncAssert(() => assert.equal(event.body.output, authoredExceptionStr), resolve, reject);
+                    asyncAssert(() => assert.equal(event.body.output.trim(), authoredExceptionStr), resolve, reject);
             });
 
             mockSourceMapTransformer.setup(m => m.mapToAuthored(It.isValue(generatedPath), It.isAnyNumber(), It.isAnyNumber()))
