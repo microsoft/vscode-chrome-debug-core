@@ -139,7 +139,7 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
     return stackTrace.callFrames
         .map(frame => {
             const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');
-            const fileName = frame.url ? url.parse(frame.url).pathname : 'eval';
+            const fileName = frame.url ? frame.url : 'eval';
             return `    at ${fnName} (${fileName}:${frame.lineNumber}:${frame.columnNumber})`;
         })
         .join('\n');
