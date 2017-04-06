@@ -425,7 +425,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 exceptionId: this._exception.className,
                 breakMode: 'unhandled',
                 details: {
-                    stackTrace: this._exception.description && await this.sourceMapFormattedException(this._exception.description)
+                    stackTrace: this._exception.description && await this.mapFormattedException(this._exception.description)
                 }
             };
 
@@ -761,7 +761,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
         const formattedException = formatExceptionDetails(params.exceptionDetails);
-        this.sourceMapFormattedException(formattedException).then(exceptionStr => {
+        this.mapFormattedException(formattedException).then(exceptionStr => {
             this._session.sendEvent(new OutputEvent(
                 exceptionStr + '\n',
                 'stderr'
@@ -770,25 +770,32 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     // We parse stack trace from `formattedException`, source map it and return a new string
-    protected async sourceMapFormattedException(formattedException: string): Promise<string> {
+    protected async mapFormattedException(formattedException: string): Promise<string> {
         const exceptionLines = formattedException.split(/\r?\n/);
 
         for (let i = 0, len = exceptionLines.length; i < len; ++i) {
             const line = exceptionLines[i];
-            const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+\.js(?:\?.*)?):(\d+):(\d+)\)?$/);
+            const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+):(\d+):(\d+)\)?$/);
 
             if (!matches) continue;
-            const path = matches[2];
+            const linePath = matches[2];
             const lineNum = parseInt(matches[3], 10);
+            const adjustedLineNum = lineNum - 1;
             const columnNum = parseInt(matches[4], 10);
-            const clientPath = this._pathTransformer.getClientPathFromTargetPath(path);
-            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || path, lineNum - 1, columnNum);
+            const clientPath = this._pathTransformer.getClientPathFromTargetPath(linePath);
+            const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || linePath, adjustedLineNum, columnNum);
 
             if (mapped && mapped.source && utils.isNumber(mapped.line) && utils.isNumber(mapped.column)) {
                 this._lineColTransformer.mappedExceptionStack(mapped);
                 exceptionLines[i] = exceptionLines[i].replace(
-                    `${path}:${lineNum}:${columnNum}`,
+                    `${linePath}:${lineNum}:${columnNum}`,
                     `${mapped.source}:${mapped.line}:${mapped.column}`);
+            } else if (clientPath !== linePath) {
+                const location = { line: adjustedLineNum, column: columnNum };
+                this._lineColTransformer.mappedExceptionStack(location);
+                exceptionLines[i] = exceptionLines[i].replace(
+                    `${linePath}:${lineNum}:${columnNum}`,
+                    `${clientPath}:${location.line}:${location.column}`);
             }
         }
 

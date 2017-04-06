@@ -99,7 +99,7 @@ suite('ConsoleHelper', () => {
 
     suite('console.assert()', () => {
         test(`Prints params and doesn't resolve format specifiers`, () => {
-            doAssertForString(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n    at myFn (/script/a.js:4:1)', true);
+            doAssertForString(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n    at myFn (/script/a.js:5:1)', true);
         });
     });
 });
