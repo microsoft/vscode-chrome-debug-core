@@ -790,7 +790,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 exceptionLines[i] = exceptionLines[i].replace(
                     `${linePath}:${lineNum}:${columnNum}`,
                     `${mapped.source}:${mapped.line}:${mapped.column}`);
-            } else if (clientPath !== linePath) {
+            } else if (clientPath && clientPath !== linePath) {
                 const location = { line: adjustedLineNum, column: columnNum };
                 this._lineColTransformer.mappedExceptionStack(location);
                 exceptionLines[i] = exceptionLines[i].replace(
