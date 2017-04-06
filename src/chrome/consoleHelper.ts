@@ -2,8 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as url from 'url';
-
 import Crdp from '../../crdp/crdp';
 import * as ChromeUtils from './chromeUtils';
 
