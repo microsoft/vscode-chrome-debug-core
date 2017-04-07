@@ -212,26 +212,78 @@ function trimProperty(value: string): string {
         value;
 }
 
-export function getRemoteObjectPreview(object: Crdp.Runtime.RemoteObject, context?: string): string {
-    let value = object.description;
-    if (object.subtype === 'array' || object.subtype === 'typedarray') {
-        value = getArrayPreview(object, context);
+export function getRemoteObjectPreview(object: Crdp.Runtime.RemoteObject, stringify = true, context?: string): string {
+    if (object) {
+        if (object.type === 'object') {
+            return getRemoteObjectPreview_object(object, context);
+        } else if (object.type === 'function') {
+            return getRemoteObjectPreview_function(object, context);
+        } else {
+            return getRemoteObjectPreview_primitive(object, stringify);
+        }
+    }
+
+    return '';
+}
+
+export function getRemoteObjectPreview_object(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    if ((<string>object.subtype) === 'internal#location') {
+        // Could format this nicely later, see #110
+        return 'internal#location';
+    } else if (object.subtype === 'null') {
+        return 'null';
+    } else if (object.subtype === 'array' || object.subtype === 'typedarray') {
+        return getArrayPreview(object, context);
     } else if (object.subtype === 'error') {
         // The Error's description contains the whole stack which is not a nice description.
         // Up to the first newline is just the error name/message.
         const firstNewlineIdx = object.description.indexOf('\n');
-        if (firstNewlineIdx >= 0) value = object.description.substr(0, firstNewlineIdx);
+        return firstNewlineIdx >= 0 ?
+            object.description.substr(0, firstNewlineIdx) :
+            object.description;
     } else if (object.subtype === 'promise' && object.preview) {
         const promiseStatus = object.preview.properties.filter(prop => prop.name === '[[PromiseStatus]]')[0];
-        if (promiseStatus) value = object.description + ' { ' + promiseStatus.value + ' }';
+        return promiseStatus ?
+            object.description + ' { ' + promiseStatus.value + ' }' :
+            object.description;
     } else if (object.subtype === 'generator' && object.preview) {
         const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
-        if (generatorStatus) value = object.description + ' { ' + generatorStatus.value + ' }';
+        return generatorStatus ?
+            object.description + ' { ' + generatorStatus.value + ' }' :
+            object.description;
     } else if (object.type === 'object' && object.preview) {
-        value = getObjectPreview(object, context);
+        return getObjectPreview(object, context);
+    } else {
+        return object.description;
     }
+}
 
-    return value;
+export function getRemoteObjectPreview_primitive(object: Crdp.Runtime.RemoteObject, stringify?: boolean): string {
+    // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
+    if (typeof object.value === 'undefined') {
+        return object.description;
+    } else if (object.type === 'number') {
+        // .value is truncated, so use .description, the full string representation
+        // Should be like '3' or 'Infinity'.
+        return object.description;
+    } else if (object.type === 'boolean') {
+        // Never stringified
+        return '' + object.value;
+    } else {
+        return stringify ? `"${object.value}"` : object.value;
+    }
+}
+
+export function getRemoteObjectPreview_function(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    const firstBraceIdx = object.description.indexOf('{');
+    if (firstBraceIdx >= 0) {
+        return object.description.substring(0, firstBraceIdx) + '{ … }';
+    } else {
+        const firstArrowIdx = object.description.indexOf('=>');
+        return firstArrowIdx >= 0 ?
+            object.description.substring(0, firstArrowIdx + 2) + ' …' :
+            object.description;
+    }
 }
 
 export class VariableHandles {

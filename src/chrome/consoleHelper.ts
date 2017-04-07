@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import Crdp from '../../crdp/crdp';
-import * as ChromeUtils from './chromeUtils';
+import * as variables from './variables';
 
 export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
     if (!e.exception) {
@@ -11,7 +11,7 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
     }
 
     return (e.exception.className && e.exception.className.endsWith('Error') && e.exception.description) ||
-        (`Error: ${remoteObjectToString(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
+        (`Error: ${variables.getRemoteObjectPreview(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
 }
 
 export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
@@ -141,53 +141,4 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');
-}
-
-/**
- * TODO - remove dupe code for https://github.com/Microsoft/vscode-chrome-debug-core/issues/163
- */
-function remoteObjectToString(obj: Crdp.Runtime.RemoteObject): string {
-    const result = ChromeUtils.remoteObjectToValue(obj, /*stringify=*/false);
-    if (result.variableHandleRef) {
-        if (obj.subtype === 'array') {
-            return arrayRemoteObjToString(obj);
-        } else if (obj.preview && obj.preview.properties) {
-            let props: string = obj.preview.properties
-                .map(prop => {
-                    let propStr = prop.name + ': ';
-                    if (prop.type === 'string') {
-                        propStr += `"${prop.value}"`;
-                    } else {
-                        propStr += prop.value;
-                    }
-
-                    return propStr;
-                })
-                .join(', ');
-
-            if (obj.preview.overflow) {
-                props += '…';
-            }
-
-            return `${obj.className} {${props}}`;
-        }
-    }
-
-    return result.value;
-}
-
-function arrayRemoteObjToString(obj: Crdp.Runtime.RemoteObject): string {
-    if (obj.preview && obj.preview.properties) {
-        let props: string = obj.preview.properties
-            .map(prop => prop.value)
-            .join(', ');
-
-        if (obj.preview.overflow) {
-            props += '…';
-        }
-
-        return `[${props}]`;
-    } else {
-        return obj.description;
-    }
 }

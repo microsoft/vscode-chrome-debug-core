@@ -14,7 +14,7 @@ import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
 import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
-import * as Variables from './variables';
+import * as variables from './variables';
 import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 import {StoppedEvent2, ReasonType} from './stoppedEvent';
 
@@ -82,7 +82,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _waitAfterStep = Promise.resolve();
 
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
-    private _variableHandles: Variables.VariableHandles;
+    private _variableHandles: variables.VariableHandles;
     private _breakpointIdHandles: utils.ReverseHandles<string>;
     private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
@@ -119,7 +119,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
-        this._variableHandles = new Variables.VariableHandles();
+        this._variableHandles = new variables.VariableHandles();
         this._breakpointIdHandles = new utils.ReverseHandles<string>();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
@@ -755,7 +755,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
         const e: DebugProtocol.OutputEvent = new OutputEvent('output', category);
-        e.body.variablesReference = this._variableHandles.create(new Variables.LoggedObjects(objs), 'repl');
+        e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
         this._session.sendEvent(e);
     }
 
@@ -1732,45 +1732,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
-        let value = '';
-
         if (object) {
             if (object.type === 'object') {
-                if ((<string>object.subtype) === 'internal#location') {
-                    // Could format this nicely later, see #110
-                    value = 'internal#location';
-                } else if (object.subtype === 'null') {
-                    value = 'null';
-                } else {
-                    return this.createObjectVariable(name, object, parentEvaluateName, context);
-                }
-            } else if (object.type === 'undefined') {
-                value = 'undefined';
+                return this.createObjectVariable(name, object, parentEvaluateName, context);
             } else if (object.type === 'function') {
                 return Promise.resolve(this.createFunctionVariable(name, object, context, parentEvaluateName));
             } else {
-                // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
-                if (typeof object.value === 'undefined') {
-                    value = object.description;
-                } else if (object.type === 'number') {
-                    // .value is truncated, so use .description, the full string representation
-                    // Should be like '3' or 'Infinity'.
-                    value = object.description;
-                } else if (object.type === 'boolean') {
-                    // Never stringified
-                    value = '' + object.value;
-                } else {
-                    value = stringify ? `"${object.value}"` : object.value;
-                }
+                return Promise.resolve(this.createPrimitiveVariable(name, object, parentEvaluateName, stringify));
             }
+        } else {
+            return Promise.resolve(this.createPrimitiveVariableWithValue(name, '', parentEvaluateName));
         }
-
-        return Promise.resolve(<DebugProtocol.Variable>{
-            name: name || `""`,
-            value,
-            variablesReference: 0,
-            evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
-        });
     }
 
     public createFunctionVariable(name: string, object: Crdp.Runtime.RemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
@@ -1796,7 +1768,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName: string, context: VariableContext): Promise<DebugProtocol.Variable> {
-        const value = Variables.getRemoteObjectPreview(object, context);
+        if ((<string>object.subtype) === 'internal#location') {
+            // Could format this nicely later, see #110
+            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'internal#location', parentEvaluateName));
+        } else if (object.subtype === 'null') {
+            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'null', parentEvaluateName));
+        }
+
+        const value = variables.getRemoteObjectPreview_object(object, context);
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
             if (object.preview && !object.preview.overflow) {
@@ -1817,7 +1796,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
         const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context);
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
-            name,
+            name: name || `""`,
             value,
             type: value,
             variablesReference,
@@ -1825,6 +1804,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             namedVariables,
             evaluateName
         }));
+    }
+
+    public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
+        const value = variables.getRemoteObjectPreview_primitive(object, stringify);
+        return this.createPrimitiveVariableWithValue(name, value, parentEvaluateName);
+    }
+
+    public createPrimitiveVariableWithValue(name: string, value: string, parentEvaluateName?: string): DebugProtocol.Variable {
+        return {
+            name,
+            value,
+            variablesReference: 0,
+            evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
+        };
     }
 
     public async restartFrame(args: DebugProtocol.RestartFrameArguments): Promise<void> {
