@@ -261,7 +261,7 @@ export function getRemoteObjectPreview_object(object: Crdp.Runtime.RemoteObject,
 export function getRemoteObjectPreview_primitive(object: Crdp.Runtime.RemoteObject, stringify?: boolean): string {
     // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
     if (typeof object.value === 'undefined') {
-        return object.description;
+        return object.description + '';
     } else if (object.type === 'number') {
         // .value is truncated, so use .description, the full string representation
         // Should be like '3' or 'Infinity'.
