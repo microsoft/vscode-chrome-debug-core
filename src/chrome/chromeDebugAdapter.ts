@@ -464,11 +464,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        // Totally ignore extension scripts, internal Chrome scripts, and so on
-        if (this.shouldIgnoreScript(script)) {
-            return;
-        }
-
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
         } else {
@@ -1236,20 +1231,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
             const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
             const origin = this.getReadonlyOrigin(script.url);
-            const source: DebugProtocol.Source =
-                script && !this.shouldIgnoreScript(script) ?
-                    {
-                        name: path.basename(script.url),
-                        path: script.url,
-                        sourceReference,
-                        origin
-                    } :
-                    {
-                        name: script && path.basename(script.url),
-                        path: ChromeDebugAdapter.EVAL_NAME_PREFIX + location.scriptId,
-                        sourceReference,
-                        origin
-                    };
+            const source: DebugProtocol.Source = {
+                name: path.basename(script.url),
+                path: script.url,
+                sourceReference,
+                origin
+            };
 
             // If the frame doesn't have a function name, it's either an anonymous function
             // or eval script. If its source has a name, it's probably an anonymous function.
@@ -1948,10 +1935,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         },
         error => Promise.reject<IPropCount>(errors.errorFromEvaluate(error.message)));
-    }
-
-    private shouldIgnoreScript(script: Crdp.Debugger.ScriptParsedEvent): boolean {
-        return script.url.startsWith('extensions::') || script.url.startsWith('chrome-extension://');
     }
 
     private fakeUrlForSourceReference(sourceReference: number): string {
