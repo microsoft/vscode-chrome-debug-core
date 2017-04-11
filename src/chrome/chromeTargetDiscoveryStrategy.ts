@@ -79,7 +79,12 @@ function _selectTarget(targets: ITarget[], targetUrl?: string): ITarget {
 
 function _fixRemoteUrl(remoteAddress: string, target: ITarget): ITarget {
     if (target.webSocketDebuggerUrl) {
+        const wsAddress = target.webSocketDebuggerUrl.split(':')[1];
         const replaceAddress = '//' + remoteAddress;
+        if (wsAddress !== replaceAddress) {
+            target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(wsAddress, replaceAddress);
+        }
+
         target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace('//127.0.0.1', replaceAddress);
         target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace('//localhost', replaceAddress);
     }
