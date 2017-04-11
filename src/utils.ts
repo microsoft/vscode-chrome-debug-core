@@ -218,7 +218,7 @@ export function getURL(aUrl: string): Promise<string> {
                     resolve(responseData);
                 } else {
                     logger.log('HTTP GET failed with: ' + response.statusCode.toString() + ' ' + response.statusMessage.toString());
-                    reject(responseData);
+                    reject(new Error(responseData.trim()));
                 }
             });
         }).on('error', e => {
