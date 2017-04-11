@@ -61,11 +61,11 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             const targets = [
                 {
                     url: 'http://localhost/foo',
-                    webSocketDebuggerUrl: 'ws://1'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:1`
                 },
                 {
                     url: 'http://localhost/bar',
-                    webSocketDebuggerUrl: 'ws://2'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:2`
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
@@ -78,11 +78,11 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             const targets = [
                 {
                     url: 'http://localhost/foo',
-                    webSocketDebuggerUrl: 'ws://1'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:1`
                 },
                 {
                     url: 'http://localhost/bar',
-                    webSocketDebuggerUrl: 'ws://2'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:2`
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
@@ -112,7 +112,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
                 },
                 {
                     url: 'http://localhost/bar',
-                    webSocketDebuggerUrl: 'ws://2'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:2`
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
@@ -125,16 +125,34 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             const targets = [
                 {
                     url: 'http://localhost/foo',
-                    webSocketDebuggerUrl: 'ws://1'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:1`
                 },
                 {
                     url: 'http://localhost/bar',
-                    webSocketDebuggerUrl: 'ws://2'
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:2`
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
             return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
                 assert.deepEqual(wsUrl, targets[0].webSocketDebuggerUrl);
+            });
+        });
+
+        test('modifies webSocketDebuggerUrl when target and web socket address differ', () => {
+            const targets = [
+                {
+                    url: 'http://localhost/foo',
+                    webSocketDebuggerUrl: 'ws://mismatched:1'
+                },
+                {
+                    url: 'http://localhost/bar',
+                    webSocketDebuggerUrl: 'ws://mismatched:2'
+                }];
+            registerTargetListContents(JSON.stringify(targets));
+
+            const expectedWebSockerDebuggerUrl = `ws://${TARGET_ADDRESS}:1`;
+            return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
+                assert.deepEqual(wsUrl, expectedWebSockerDebuggerUrl);
             });
         });
     });
