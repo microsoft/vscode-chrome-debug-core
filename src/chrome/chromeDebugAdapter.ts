@@ -1719,6 +1719,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
+        name = name || '""';
+
         if (object) {
             if (object.type === 'object') {
                 return this.createObjectVariable(name, object, parentEvaluateName, context);
@@ -1783,7 +1785,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
         const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context);
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
-            name: name || `""`,
+            name,
             value,
             type: value,
             variablesReference,
