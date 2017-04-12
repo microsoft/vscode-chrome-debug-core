@@ -31,42 +31,6 @@ export function setBreakpoint(dc: DebugClient, bps: DebugProtocol.SourceBreakpoi
     });
 }
 
-/**
- * This is a copy of DebugClient's hitBreakpoint, except that it doesn't assert 'verified' by default. In the Chrome debugger, a bp may be verified or unverified at launch,
- * depending on whether it's randomly received before or after the 'scriptParsed' event for its script. So we can't always check this prop.
- */
-export function hitBreakpoint(dc: DebugClient, launchArgs: any, location: { path: string, line: number, column?: number, verified?: boolean }, expected?: { path?: string, line?: number, column?: number, verified?: boolean }): Promise<any> {
-    return Promise.all([
-        dc.waitForEvent('initialized').then(event => {
-            return dc.setBreakpointsRequest({
-                lines: [location.line],
-                breakpoints: [{ line: location.line, column: location.column }],
-                source: { path: location.path }
-            });
-        }).then(response => {
-            const bp = response.body.breakpoints[0];
-
-            if (typeof location.verified === 'boolean') {
-                assert.equal(bp.verified, location.verified, 'breakpoint verification mismatch: verified');
-            }
-            if (bp.source && bp.source.path) {
-                dc.assertPath(bp.source.path, location.path, 'breakpoint verification mismatch: path');
-            }
-            if (typeof bp.line === 'number') {
-                assert.equal(bp.line, location.line, 'breakpoint verification mismatch: line');
-            }
-            if (typeof location.column === 'number' && typeof bp.column === 'number') {
-                assert.equal(bp.column, location.column, 'breakpoint verification mismatch: column');
-            }
-            return dc.configurationDoneRequest();
-        }),
-
-        dc.launch(launchArgs),
-
-        dc.assertStoppedLocation('breakpoint', expected || location)
-    ]);
-}
-
 export interface IExpectedStopLocation {
     path?: string;
     line?: number;
@@ -174,5 +138,41 @@ export class ExtendedDebugClient extends DebugClient {
 
     waitForEvent(eventType: string): Promise<DebugProtocol.Event> {
         return super.waitForEvent(eventType);
+    }
+
+    /**
+     * This is a copy of DebugClient's hitBreakpoint, except that it doesn't assert 'verified' by default. In the Chrome debugger, a bp may be verified or unverified at launch,
+     * depending on whether it's randomly received before or after the 'scriptParsed' event for its script. So we can't always check this prop.
+     */
+    hitBreakpointUnverified(launchArgs: any, location: { path: string, line: number, column?: number, verified?: boolean }, expected?: { path?: string, line?: number, column?: number, verified?: boolean }): Promise<any> {
+        return Promise.all([
+            this.waitForEvent('initialized').then(event => {
+                return this.setBreakpointsRequest({
+                    lines: [location.line],
+                    breakpoints: [{ line: location.line, column: location.column }],
+                    source: { path: location.path }
+                });
+            }).then(response => {
+                const bp = response.body.breakpoints[0];
+
+                if (typeof location.verified === 'boolean') {
+                    assert.equal(bp.verified, location.verified, 'breakpoint verification mismatch: verified');
+                }
+                if (bp.source && bp.source.path) {
+                    this.assertPath(bp.source.path, location.path, 'breakpoint verification mismatch: path');
+                }
+                if (typeof bp.line === 'number') {
+                    assert.equal(bp.line, location.line, 'breakpoint verification mismatch: line');
+                }
+                if (typeof location.column === 'number' && typeof bp.column === 'number') {
+                    assert.equal(bp.column, location.column, 'breakpoint verification mismatch: column');
+                }
+                return this.configurationDoneRequest();
+            }),
+
+            this.launch(launchArgs),
+
+            this.assertStoppedLocation('breakpoint', expected || location)
+        ]);
     }
 }
