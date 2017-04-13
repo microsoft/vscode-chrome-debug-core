@@ -744,8 +744,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const result = formatConsoleArguments(params);
-        const category = result.isError ? 'stderr' : 'stdout';
-        this.logObjects(result.args, category);
+        if (result) {
+            const category = result.isError ? 'stderr' : 'stdout';
+            this.logObjects(result.args, category);
+        }
     }
 
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {

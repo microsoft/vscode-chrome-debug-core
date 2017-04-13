@@ -95,6 +95,12 @@ suite('ConsoleHelper', () => {
             assert.equal(result.args.length, 1);
             assert.equal(result.args[0].value, 'foo Object');
         });
+
+        test('unimplemented console method', () => {
+            const tableMessage = Runtime.makeLog('foo');
+            tableMessage.type = 'table';
+            assert.equal(ConsoleHelper.formatConsoleArguments(tableMessage), null);
+        });
     });
 
     suite('console.assert()', () => {

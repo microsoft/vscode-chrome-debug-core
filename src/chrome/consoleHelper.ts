@@ -57,8 +57,7 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
             break;
         default:
             // Some types we have to ignore
-            args = [{ type: 'string', value: 'Unimplemented console API: ' + m.type }];
-            break;
+            return null;
     }
 
     const isError = m.type === 'assert' || m.type === 'error';
