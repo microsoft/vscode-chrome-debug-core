@@ -288,7 +288,7 @@ suite('ChromeUtils', () => {
             const targets = makeTargets('http://localhost/site/app', 'http://localhost/site/', 'http://localhost/');
             assert.deepEqual(
                 chromeUtils.getMatchingTargets(targets, 'localhost/site/*'),
-                [targets[0], targets[1]]);
+                [targets[0]]);
         });
 
         test('respects wildcards with query params', () => {
@@ -298,8 +298,14 @@ suite('ChromeUtils', () => {
                 [targets[0], targets[1]]);
         });
 
-        // Because the match is regex-based
-        test('works with other special chars', () => {
+        test('works with special chars', () => {
+            const targets = makeTargets('http://localhost(foo)/[bar]/?baz', 'http://localhost(foo)/bar/?words', 'http://localhost/[bar]/?(somethingelse)');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, 'http://localhost(foo)/[bar]/?baz'),
+                [targets[0]]);
+        });
+
+        test('works with special chars + wildcard', () => {
             const targets = makeTargets('http://localhost/[bar]/?(words)', 'http://localhost/bar/?words', 'http://localhost/[bar]/?(somethingelse)');
             assert.deepEqual(
                 chromeUtils.getMatchingTargets(targets, 'http://localhost/[bar]/?(*)'),

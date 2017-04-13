@@ -520,3 +520,7 @@ export function firstLine(msg: string): string {
 export function isNumber(num: number): boolean {
     return typeof num === 'number';
 }
+
+export function escapeRegExpCharacters(value: string): string {
+    return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\[\]\(\)\#]/g, '\\$&');
+}

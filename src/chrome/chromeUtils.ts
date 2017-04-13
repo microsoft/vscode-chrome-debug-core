@@ -136,23 +136,21 @@ export function remoteObjectToValue(object: Crdp.Runtime.RemoteObject, stringify
  * Ignores the protocol and is case-insensitive.
  */
 export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string): ITarget[] {
-    const standardizeMatch = aUrl => {
+    const standardizeMatch = (aUrl: string) => {
         // Strip file:///, if present
         aUrl = utils.fileUrlToPath(aUrl).toLowerCase();
 
         // Strip the protocol, if present
         if (aUrl.indexOf('://') >= 0) aUrl = aUrl.split('://')[1];
 
-        // Need to do a regex match, but URLs can have special regex chars. Escape those.
-        return encodeURIComponent(aUrl);
+        // Remove optional trailing /
+        if (aUrl.endsWith('/')) aUrl = aUrl.substr(0, aUrl.length - 1);
+
+        return aUrl;
     };
 
-    targetUrlPattern = standardizeMatch(targetUrlPattern).replace(/\*/g, '.*');
-    const encodedSlash = encodeURIComponent('/');
-    if (!targetUrlPattern.endsWith(encodedSlash)) {
-        // Add optional ending slash - so "localhost:3000" will match "localhost:3000/"
-        targetUrlPattern += `(${encodedSlash})?`;
-    }
+    targetUrlPattern = standardizeMatch(targetUrlPattern);
+    targetUrlPattern = utils.escapeRegExpCharacters(targetUrlPattern).replace(/\\\*/g, '.*');
 
     const targetUrlRegex = new RegExp('^' + targetUrlPattern + '$', 'g');
     return targets.filter(target => !!standardizeMatch(target.url).match(targetUrlRegex));
