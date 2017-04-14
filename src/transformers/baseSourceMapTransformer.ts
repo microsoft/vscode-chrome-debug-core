@@ -13,6 +13,9 @@ import * as utils from '../utils';
 import {Logger as logger} from 'vscode-debugadapter';
 import {ISourceContainer} from '../chrome/chromeDebugAdapter';
 
+import * as nls from 'vscode-nls';
+const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+
 interface ISavedSetBreakpointsArgs {
     generatedPath: string;
     authoredPath: string;
@@ -193,7 +196,7 @@ export class BaseSourceMapTransformer {
                         stackFrame.source.name = path.basename(mapped.source);
                         stackFrame.source.path = mapped.source;
                         stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
-                        stackFrame.source.origin = utils.localize('origin.inlined.source.map', "read-only inlined content from source map");
+                        stackFrame.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
                         stackFrame.line = mapped.line;
                         stackFrame.column = mapped.column;
                         stackFrame.isSourceMapped = true;

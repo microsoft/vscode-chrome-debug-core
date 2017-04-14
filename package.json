@@ -19,6 +19,7 @@
     "source-map": "^0.5.6",
     "vscode-debugadapter": "1.18.0-pre.5",
     "vscode-debugprotocol": "^1.18.0-pre.2",
+    "vscode-nls": "^2.0.2",
     "ws": "^1.1.1"
   },
   "devDependencies": {
@@ -30,6 +31,7 @@
     "@types/ws": "0.0.32",
     "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git",
     "del": "^2.2.2",
+    "event-stream": "^3.3.4",
     "gulp": "^3.9.1",
     "gulp-debug": "^2.1.2",
     "gulp-mocha": "^3.0.1",
@@ -41,15 +43,18 @@
     "merge2": "^1.0.2",
     "mocha": "^3.0.2",
     "mockery": "^1.7.0",
+    "run-sequence": "^1.2.2",
     "tslint": "^3.15.1",
     "tslint-eslint-rules": "^1.5.0",
     "tslint-microsoft-contrib": "^2.0.10",
     "typemoq": "^0.3.3",
-    "typescript": "^2.0.3"
+    "typescript": "^2.0.3",
+    "vscode-nls-dev": "^2.1.1"
   },
   "scripts": {
     "build": "gulp build",
     "watch": "gulp watch",
-    "test": "mocha --recursive -u tdd ./out/test/"
+    "test": "mocha --recursive -u tdd ./out/test/",
+    "prepublish": "gulp build"
   }
 }

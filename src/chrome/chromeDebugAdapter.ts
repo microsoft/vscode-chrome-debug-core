@@ -30,6 +30,9 @@ import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransform
 
 import * as path from 'path';
 
+import * as nls from 'vscode-nls';
+const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+
 interface IPropCount {
     indexedVariables: number;
     namedVariables: number;
@@ -876,7 +879,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                         return body;
                     });
                 } else {
-                    return Promise.resolve(this.unverifiedBpResponse(args, requestSeq, utils.localize('bp.fail.noscript', `Can't find script for breakpoint request`)));
+                    return Promise.resolve(this.unverifiedBpResponse(args, requestSeq, localize('bp.fail.noscript', "Can't find script for breakpoint request")));
                 }
             },
             e => this.unverifiedBpResponse(args, requestSeq, e.message));
@@ -896,7 +899,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then<void>(mappedPath => {
             if (!mappedPath) {
-                return utils.errP(utils.localize('sourcemapping.fail.message', "Breakpoint ignored because generated code not found (source map problem?)."));
+                return utils.errP(localize('sourcemapping.fail.message', "Breakpoint ignored because generated code not found (source map problem?)."));
             }
 
             const targetPath = this._pathTransformer.getTargetPathFromClientPath(mappedPath);
@@ -1329,7 +1332,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._exception) {
             scopes.unshift(<DebugProtocol.Scope>{
-                name: utils.localize('scope.exception', "Exception"),
+                name: localize('scope.exception', "Exception"),
                 variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
             });
         }

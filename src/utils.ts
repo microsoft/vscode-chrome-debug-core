@@ -256,17 +256,6 @@ export function pathToFileURL(absPath: string): string {
     return encodeURI(absPath);
 }
 
-/**
- * Placeholder localize function
- */
-export function localize(idOrInfo: any, msg: string, ...args: any[]): string {
-    args.forEach((arg, i) => {
-        msg = msg.replace(new RegExp(`\\{${i}\\}`, 'g'), arg);
-    });
-
-    return msg;
-}
-
 export function fsReadDirP(path: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
         fs.readdir(path, (err, files) => {

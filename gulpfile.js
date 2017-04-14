@@ -15,6 +15,9 @@ const debug = require('gulp-debug');
 const del = require('del');
 const plumber = require('gulp-plumber');
 const crdp = require('chrome-remote-debug-protocol');
+const nls = require('vscode-nls-dev');
+const es = require('event-stream');
+const runSequence = require('run-sequence');
 
 const tsconfig = require('./tsconfig.json');
 const sources = tsconfig.include;
@@ -36,17 +39,20 @@ const exclusion = '!' + testDataDir + '**';
 tsBuildSources.push(exclusion);
 lintSources.push(exclusion);
 
-const tsProject = ts.createProject('tsconfig.json', { typescript });
-gulp.task('build', () => {
+function doBuild(buildNls) {
+    const tsProject = ts.createProject('tsconfig.json', { typescript });
     const tsResult = gulp.src(tsBuildSources, { base: '.' })
         .pipe(plumber())
         .pipe(sourcemaps.init())
         .pipe(ts(tsProject));
 
-	return merge([
-		tsResult.dts
+    return merge([
+        tsResult.dts
             .pipe(gulp.dest('lib')),
-		tsResult.js
+        tsResult.js
+            .pipe(buildNls ? nls.rewriteLocalizeCalls() : es.through())
+            .pipe(buildNls ? nls.createAdditionalLanguageFiles(nls.coreLanguages, 'i18n', 'out') : es.through())
+
             // .. to compensate for TS returning paths from 'out'
             .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: '..' }))
             .pipe(gulp.dest('out')),
@@ -54,16 +60,24 @@ gulp.task('build', () => {
             .pipe(gulp.dest('lib')),
         gulp.src(testDataDir + 'app*', { base: '.' })
             .pipe(gulp.dest('out'))
-	]);
+    ]);
+}
+
+gulp.task('build', () => {
+    return doBuild(true);
+});
+
+gulp.task('dev-build', () => {
+    return doBuild(false);
 });
 
 gulp.task('clean', () => {
     return del(['out', 'lib']);
 });
 
-gulp.task('watch', ['build'], () => {
+gulp.task('watch', ['dev-build'], () => {
     log('Watching build sources...');
-    return gulp.watch(sources, ['build']);
+    return gulp.watch(sources, ['dev-build']);
 });
 
 gulp.task('default', ['build']);
@@ -83,11 +97,11 @@ function test() {
         });
 }
 
-gulp.task('build-test', ['build'], test);
+gulp.task('dev-build-test', ['dev-build'], test);
 gulp.task('test', test);
 
-gulp.task('watch-build-test', ['build', 'build-test'], () => {
-    return gulp.watch(sources, ['build', 'build-test']);
+gulp.task('watch-build-test', ['dev-build', 'dev-build-test'], () => {
+    return gulp.watch(sources, ['dev-build', 'dev-build-test']);
 });
 
 gulp.task('regenerate-crdp', cb => {

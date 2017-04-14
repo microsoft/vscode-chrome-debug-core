@@ -4,7 +4,8 @@
 
 import {DebugProtocol} from 'vscode-debugprotocol';
 
-import {localize} from './utils';
+import * as nls from 'vscode-nls';
+const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
 export const evalNotAvailableMsg = localize('eval.not.available', "not available");
 export const runtimeNotConnectedMsg = localize('not.connected', "not connected to runtime");
