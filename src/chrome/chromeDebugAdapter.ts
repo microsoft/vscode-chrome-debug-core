@@ -171,12 +171,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return {
             exceptionBreakpointFilters: [
                 {
-                    label: 'All Exceptions',
+                    label: localize('exceptions.all', "All Exceptions"),
                     filter: 'all',
                     default: false
                 },
                 {
-                    label: 'Uncaught Exceptions',
+                    label: localize('exceptions.uncaught', "Uncaught Exceptions"),
                     filter: 'uncaught',
                     default: true
                 }
@@ -210,8 +210,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.attach(args);
         this._pathTransformer.attach(args);
 
-        if (args.port == null) {
-            return utils.errP('The "port" field is required in the attach config.');
+        if (!args.port) {
+            args.port = 9229;
         }
 
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
@@ -235,7 +235,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
-        // args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks; // Enable when finished with Microsoft/vscode#5552
     }
 
     public shutdown(): void {
@@ -861,7 +860,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                         .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
                         .then(responses => ({ breakpoints: this.chromeBreakpointResponsesToODPBreakpoints(targetScriptUrl, responses, args.breakpoints, ids) }));
 
-                    const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, 'Set breakpoints request timed out');
+                    const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', "Set breakpoints request timed out"));
 
                     // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Crdp, which causes issues.
                     // Swallow errors in the promise queue chain so it doesn't get blocked, but return the failing promise for error handling.
@@ -899,12 +898,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then<void>(mappedPath => {
             if (!mappedPath) {
-                return utils.errP(localize('sourcemapping.fail.message', "Breakpoint ignored because generated code not found (source map problem?)."));
+                return utils.errP(localize('validateBP.sourcemapFail', "Breakpoint ignored because generated code not found (source map problem?)."));
             }
 
             const targetPath = this._pathTransformer.getTargetPathFromClientPath(mappedPath);
             if (!targetPath) {
-                return utils.errP('Breakpoint ignored because target path not found');
+                return utils.errP(localize('validateBP.notFound', "Breakpoint ignored because target path not found"));
             }
 
             return undefined;
@@ -1025,7 +1024,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     if (!this.addHitConditionBreakpoint(thisBpRequest, response)) {
                         return <DebugProtocol.Breakpoint>{
                             id: bpId,
-                            message: 'Invalid hit condition: ' + thisBpRequest.hitCondition,
+                            message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
                             verified: false
                         };
                     }
@@ -1167,11 +1166,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             // Apply hints to skipped frames
+            const getSkipReason = reason => localize('skipReason', "(skipped by '{0}')", reason);
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
-                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'skipFiles')`;
+                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('skipFiles');
                 frame.source.presentationHint = 'deemphasize';
             } else if (this.smartStepEnabled() && !isSourceMapped) {
-                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + `(skipped by 'smartStep')`;
+                frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('smartStep');
                 frame.source.presentationHint = 'deemphasize';
             }
 

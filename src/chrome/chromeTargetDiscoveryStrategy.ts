@@ -10,6 +10,9 @@ import * as chromeUtils from './chromeUtils';
 
 import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnection';
 
+import * as nls from 'vscode-nls';
+const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+
 export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<string> => {
     // Take the custom targetFilter, default to taking all targets
     targetFilter = targetFilter || (target => true);
@@ -17,7 +20,7 @@ export const getChromeTargetWebSocketURL: ITargetDiscoveryStrategy = (address: s
     return _getTargets(address, port, targetFilter).then<string>(targets => {
         telemetry.reportEvent('targetCount', { numTargets: targets.length });
         if (!targets.length) {
-            return utils.errP('Got a response from the target app, but no target pages found');
+            return utils.errP(localize('attach.responseButNoTargets', "Got a response from the target app, but no target pages found"));
         }
 
         const target = _selectTarget(targets, targetUrl);
@@ -46,10 +49,10 @@ function _getTargets(address: string, port: number, targetFilter: ITargetFilter)
             // JSON.parse can throw
         }
 
-        return utils.errP(`Response from the target seems invalid: ${jsonResponse}`);
+        return utils.errP(localize('attach.invalidResponse', "Response from the target seems invalid: {0}", jsonResponse));
     },
     e => {
-        return utils.errP('Cannot connect to the target: ' + e.message);
+        return utils.errP(localize('attach.cannotConnect', "Cannot connect to the target: {0}", e.message));
     });
 }
 
@@ -60,13 +63,13 @@ function _selectTarget(targets: ITarget[], targetUrl?: string): ITarget {
         targets;
 
     if (!filteredTargets.length) {
-        throw new Error(`Can't find a target that matches: ${targetUrl}. Available pages: ${JSON.stringify(targets.map(target => target.url))}`);
+        throw new Error(localize('attach.noMatchingTarget', "Can't find a target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
     }
 
     // If all possible targets appear to be attached to have some other devtool attached, then fail
     const targetsWithWSURLs = filteredTargets.filter(target => !!target.webSocketDebuggerUrl);
     if (!targetsWithWSURLs.length) {
-        throw new Error(`Can't attach to this target that may have Chrome DevTools attached - ${filteredTargets[0].url}`);
+        throw new Error(localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
     }
 
     filteredTargets = targetsWithWSURLs;
