@@ -30,6 +30,7 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public breakpointResolved(bp: DebugProtocol.Breakpoint): void {
         this.convertDebuggerLocationToClient(bp);
+        bp.column = undefined;
     }
 
     public scopeResponse(scopeResponse: IScopesResponseBody): void {
