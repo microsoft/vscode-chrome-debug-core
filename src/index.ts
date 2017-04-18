@@ -22,6 +22,8 @@ export * from './debugAdapterInterfaces';
 import * as utils from './utils';
 import * as telemetry from './telemetry';
 
+import Crdp from '../crdp/crdp';
+
 export {
     ChromeConnection,
     ChromeDebugAdapter,
@@ -38,5 +40,7 @@ export {
     BaseSourceMapTransformer,
 
     utils,
-    telemetry
+    telemetry,
+
+    Crdp
 }
