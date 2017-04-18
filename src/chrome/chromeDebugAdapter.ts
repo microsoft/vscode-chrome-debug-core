@@ -39,6 +39,15 @@ interface IPropCount {
 }
 
 /**
+ * Internal clone of the crdp version with optional breakpointId. If a created BP is in the same location as an existing BP,
+ * actualLocation is set so BP can be displayed correctly, but breakpointId is not set.
+ */
+export interface ISetBreakpointResult {
+    breakpointId?: Crdp.Debugger.BreakpointId;
+    actualLocation: Crdp.Debugger.Location;
+}
+
+/**
  * Represents a reference to a source/script. `contents` is set if there are inlined sources.
  * Otherwise, scriptId can be used to retrieve the contents from the runtime.
  */
@@ -86,7 +95,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
     private _variableHandles: variables.VariableHandles;
-    private _breakpointIdHandles: utils.ReverseHandles<string>;
+    private _breakpointIdHandles: utils.ReverseHandles<Crdp.Debugger.BreakpointId>;
     private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
     private _scriptsById: Map<Crdp.Runtime.ScriptId, CrdpScript>;
@@ -123,7 +132,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();
-        this._breakpointIdHandles = new utils.ReverseHandles<string>();
+        this._breakpointIdHandles = new utils.ReverseHandles<Crdp.Debugger.BreakpointId>();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
@@ -963,8 +972,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const script = this.getScriptByUrl(url);
             const urlRegex = utils.pathToRegex(url);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
-                return this.addOneBreakpointByUrl(script.scriptId, urlRegex, line, column, condition)
-                    .catch(() => null);
+                return this.addOneBreakpointByUrl(script.scriptId, urlRegex, line, column, condition);
             });
         }
 
@@ -972,7 +980,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return Promise.all(responsePs);
     }
 
-    private async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<Crdp.Debugger.SetBreakpointResponse> {
+    private async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<ISetBreakpointResult> {
         let bpLocation = { lineNumber, columnNumber };
         try {
             const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
@@ -987,7 +995,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // getPossibleBPs not supported
         }
 
-        const result = await this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, condition });
+        let result;
+        try {
+            result = await this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, condition });
+        } catch (e) {
+            if (e.message === "Breakpoint at specified location already exists.") {
+                return {
+                    actualLocation: { lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, scriptId }
+                };
+            } else {
+                return null;
+            }
+        }
 
         // Now convert the response to a SetBreakpointResponse so both response types can be handled the same
         const locations = result.locations;
@@ -1004,7 +1023,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private targetBreakpointResponsesToClientBreakpoints(url: string, responses: Crdp.Debugger.SetBreakpointResponse[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
         // Don't cache errored responses
         const committedBpIds = responses
-            .filter(response => response)
+            .filter(response => response && response.breakpointId)
             .map(response => response.breakpointId);
 
         // Cache successfully set breakpoint ids from chrome in committedBreakpoints set
@@ -1021,13 +1040,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     };
                 }
 
+                // response.breakpointId is undefined when no target BP is backing this BP, e.g. it's at the same location
+                // as another BP
+                const responseBpId = response.breakpointId || (this._nextUnboundBreakpointId++ + '');
+
                 let bpId: number;
                 if (ids && ids[i]) {
+                    // IDs passed in for previously unverified BPs
                     bpId = ids[i];
-                    this._breakpointIdHandles.set(bpId, response.breakpointId);
+                    this._breakpointIdHandles.set(bpId, responseBpId);
                 } else {
-                    bpId = this._breakpointIdHandles.lookup(response.breakpointId) ||
-                        this._breakpointIdHandles.create(response.breakpointId);
+                    bpId = this._breakpointIdHandles.lookup(responseBpId) ||
+                        this._breakpointIdHandles.create(responseBpId);
                 }
 
                 const thisBpRequest = requestBps[i];
