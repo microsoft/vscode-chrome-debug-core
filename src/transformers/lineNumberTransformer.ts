@@ -11,15 +11,23 @@ import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody,
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
  */
 export class LineColTransformer implements IDebugTransformer  {
+    columnBreakpointsEnabled: boolean;
+
     constructor(private _session: ChromeDebugSession) {
     }
 
     public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): void {
         args.breakpoints.forEach(bp => this.convertClientLocationToDebugger(bp));
+        if (!this.columnBreakpointsEnabled) {
+            args.breakpoints.forEach(bp => bp.column = undefined);
+        }
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
         response.breakpoints.forEach(bp => this.convertDebuggerLocationToClient(bp));
+        if (!this.columnBreakpointsEnabled) {
+            response.breakpoints.forEach(bp => bp.column = 1);
+        }
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
@@ -28,6 +36,9 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public breakpointResolved(bp: DebugProtocol.Breakpoint): void {
         this.convertDebuggerLocationToClient(bp);
+        if (!this.columnBreakpointsEnabled) {
+            bp.column = undefined;
+        }
     }
 
     public scopeResponse(scopeResponse: IScopesResponseBody): void {

@@ -119,6 +119,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
 
+    private _columnBreakpointsEnabled: boolean;
+
     private _smartStepCount = 0;
 
     private _initialSourceMapsP = Promise.resolve();
@@ -333,8 +335,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 .then(() => {
                     const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
                     return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
-                })
-                .then(() => this.sendInitializedEvent());
+                });
         } else {
             return Promise.resolve();
         }
@@ -474,7 +475,28 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
+    private async detectColumnBreakpointSupport(scriptId: Crdp.Runtime.ScriptId): Promise<void> {
+        this._columnBreakpointsEnabled = false; // So it isn't requested multiple times
+        try {
+            await this.chrome.Debugger.getPossibleBreakpoints({
+                start: { scriptId, lineNumber: 0, columnNumber: 0 },
+                end: { scriptId, lineNumber: 1, columnNumber: 0 },
+                restrictToFunction: false
+            });
+            this._columnBreakpointsEnabled = true;
+        } catch (e) {
+            this._columnBreakpointsEnabled = false;
+        }
+
+        this._lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
+    }
+
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        if (typeof this._columnBreakpointsEnabled === 'undefined') {
+            await this.detectColumnBreakpointSupport(script.scriptId);
+            this.sendInitializedEvent();
+        }
+
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
         } else {
@@ -982,17 +1004,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<ISetBreakpointResult> {
         let bpLocation = { lineNumber, columnNumber };
-        try {
-            const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
-                start: { scriptId: scriptId, lineNumber: lineNumber, columnNumber: 0 },
-                end: { scriptId: scriptId, lineNumber: lineNumber + 1, columnNumber: 0 },
-                restrictToFunction: false });
-            if (possibleBpResponse.locations.length) {
-                const selectedLocation = ChromeUtils.selectBreakpointLocation(lineNumber, columnNumber, possibleBpResponse.locations);
-                bpLocation = { lineNumber: selectedLocation.lineNumber, columnNumber: selectedLocation.columnNumber || 0 };
+        if (this._columnBreakpointsEnabled) {
+            try {
+                const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
+                    start: { scriptId, lineNumber, columnNumber: 0 },
+                    end: { scriptId, lineNumber: lineNumber + 1, columnNumber: 0 },
+                    restrictToFunction: false });
+                if (possibleBpResponse.locations.length) {
+                    const selectedLocation = ChromeUtils.selectBreakpointLocation(lineNumber, columnNumber, possibleBpResponse.locations);
+                    bpLocation = { lineNumber: selectedLocation.lineNumber, columnNumber: selectedLocation.columnNumber || 0 };
+                }
+            } catch (e) {
+                // getPossibleBPs not supported
             }
-        } catch (e) {
-            // getPossibleBPs not supported
         }
 
         let result;
