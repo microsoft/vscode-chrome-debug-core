@@ -128,19 +128,17 @@ suite('ChromeDebugAdapter', () => {
     }
 
     suite('attach()', () => {
-        test('if successful, an initialized event is fired', () => {
-            let initializedFired = false;
-
+        test('Initialized event is fired after first scriptParsed event', done => {
             sendEventHandler = (event: DebugProtocol.Event) => {
                 if (event.event === 'initialized') {
-                    initializedFired = true;
+                    done();
                 } else {
-                    testUtils.assertFail('An unexpected event was fired');
+                    done(new Error('An unexpected event was fired'));
                 }
             };
 
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
-                assert(initializedFired, 'Attach completed without firing the initialized event');
+            chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+                emitScriptParsed('http://localhost', 4);
             });
         });
 
@@ -383,20 +381,20 @@ suite('ChromeDebugAdapter', () => {
             mockEventEmitter.emit('Debugger.scriptParsed', otherArgs);
         }
 
-        test('adds default url when missing', () => {
-            let scriptParsedFired = false;
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+        test('adds default url when missing', done => {
+            chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
                 mockPathTransformer.setup(m => m.scriptParsed(It.isAnyString()))
                     .returns(url => {
-                        scriptParsedFired = true;
-                        assert(!!url); // Should be called with some default url
+                        assert(!!url, 'Default url missing'); // Should be called with some default url
                         return url;
                     });
                 mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), It.isValue(undefined)))
-                    .returns(() => Promise.resolve([]));
+                    .returns(() => {
+                        done();
+                        return Promise.resolve([]);
+                    });
 
                 emitScriptParsed(/*url=*/'');
-                assert(scriptParsedFired);
             });
         });
 
@@ -463,7 +461,7 @@ suite('ChromeDebugAdapter', () => {
             const location: Crdp.Debugger.Location = { lineNumber: 0, columnNumber: 0, scriptId };
             const callFrame = { callFrameId: 'id1', location };
             emitScriptParsed('', scriptId);
-            mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{callFrames: [callFrame, callFrame]});
+            mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{ callFrames: [callFrame, callFrame] });
 
             const { stackFrames } = await chromeDebugAdapter.stackTrace({ threadId: THREAD_ID });
 

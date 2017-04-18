@@ -493,8 +493,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
         if (typeof this._columnBreakpointsEnabled === 'undefined') {
-            await this.detectColumnBreakpointSupport(script.scriptId);
-            this.sendInitializedEvent();
+            this.detectColumnBreakpointSupport(script.scriptId).then(() => {
+                this.sendInitializedEvent();
+            });
         }
 
         if (script.url) {
