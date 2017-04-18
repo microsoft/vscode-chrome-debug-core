@@ -16,12 +16,10 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): void {
         args.breakpoints.forEach(bp => this.convertClientLocationToDebugger(bp));
-        args.breakpoints.forEach(bp => bp.column = undefined);
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
         response.breakpoints.forEach(bp => this.convertDebuggerLocationToClient(bp));
-        response.breakpoints.forEach(bp => bp.column = undefined);
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
@@ -30,7 +28,6 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public breakpointResolved(bp: DebugProtocol.Breakpoint): void {
         this.convertDebuggerLocationToClient(bp);
-        bp.column = undefined;
     }
 
     public scopeResponse(scopeResponse: IScopesResponseBody): void {

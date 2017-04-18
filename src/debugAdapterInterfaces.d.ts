@@ -50,8 +50,6 @@ export interface IToggleSkipFileStatusArgs {
 }
 
 export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArguments {
-    /** DebugProtocol does not send cols, maybe it will someday, but this is used internally when a location is sourcemapped */
-    cols?: number[];
     authoredPath?: string;
 }
 
