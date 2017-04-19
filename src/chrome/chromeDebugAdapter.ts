@@ -787,6 +787,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
+        // Shortcut the common log case to reduce unnecessary back and forth
+        if (objs.length === 1 && objs[0].type === 'string') {
+            const e = new OutputEvent(objs[0].value + '\n', category);
+            this._session.sendEvent(e);
+            return;
+        }
+
         const e: DebugProtocol.OutputEvent = new OutputEvent('output', category);
         e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
         this._session.sendEvent(e);
