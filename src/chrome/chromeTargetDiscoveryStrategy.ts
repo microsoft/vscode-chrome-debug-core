@@ -107,4 +107,3 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         return target;
     }
 }
-

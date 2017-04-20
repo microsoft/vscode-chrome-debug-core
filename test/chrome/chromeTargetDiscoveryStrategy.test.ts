@@ -9,11 +9,13 @@ import * as testUtils from '../testUtils';
 import {ITargetDiscoveryStrategy} from '../../src/chrome/chromeConnection';
 
 import {NullLogger} from '../../src/nullLogger';
+import {NullTelemetryReporter} from '../../src/telemetry';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {
     function getChromeTargetDiscoveryStrategy(): ITargetDiscoveryStrategy {
-        return new (require(MODULE_UNDER_TEST).ChromeTargetDiscovery(NullLogger));
+        const ChromeTargetDiscovery = require(MODULE_UNDER_TEST).ChromeTargetDiscovery;
+        return new ChromeTargetDiscovery(new NullLogger(), new NullTelemetryReporter());
     }
 
     setup(() => {

@@ -308,7 +308,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (websocketUrl) {
                 await this._chromeConnection.attachToWebsocketUrl(websocketUrl);
             } else {
-                await this._chromeConnection.attach(address, port, targetUrl, timeout)
+                await this._chromeConnection.attach(address, port, targetUrl, timeout);
             }
 
             this.hookConnectionEvents();
