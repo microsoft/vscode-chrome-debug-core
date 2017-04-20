@@ -20,7 +20,7 @@ import {StoppedEvent2, ReasonType} from './stoppedEvent';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import * as telemetry from '../telemetry';
+import {telemetry} from '../telemetry';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';

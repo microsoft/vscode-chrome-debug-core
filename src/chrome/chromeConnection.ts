@@ -4,10 +4,11 @@
 
 import * as WebSocket from 'ws';
 
+import {telemetry} from '../telemetry';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
-import {getChromeTargetWebSocketURL} from './chromeTargetDiscoveryStrategy';
+import {ChromeTargetDiscovery} from './chromeTargetDiscoveryStrategy';
 
 import {Client} from 'noice-json-rpc';
 import Crdp from '../../crdp/crdp';
@@ -21,6 +22,12 @@ export interface ITarget {
     type: string;
     url?: string;
     webSocketDebuggerUrl: string;
+}
+
+export type ITargetFilter = (target: ITarget) => boolean;
+export interface ITargetDiscoveryStrategy {
+    getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<string>;
+    getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]>;
 }
 
 /**
@@ -62,9 +69,6 @@ class LoggingSocket extends WebSocket {
     }
 }
 
-export type ITargetFilter = (target: ITarget) => boolean;
-export type ITargetDiscoveryStrategy = (address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string) => Promise<string>;
-
 export interface IChromeError {
     code: number;
     message: string;
@@ -84,7 +88,7 @@ export class ChromeConnection {
 
     constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
-        this._targetDiscoveryStrategy = targetDiscovery || getChromeTargetWebSocketURL;
+        this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
     }
 
     public get isAttached(): boolean { return !!this._client; }
@@ -102,7 +106,7 @@ export class ChromeConnection {
     }
 
     private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT): Promise<void> {
-        return utils.retryAsync(() => this._targetDiscoveryStrategy(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
+        return utils.retryAsync(() => this._targetDiscoveryStrategy.getTarget(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
             .catch(err => Promise.reject(errors.runtimeConnectionTimeout(timeout, err.message)))
             .then(wsUrl => {
                 this._socket = new LoggingSocket(wsUrl);

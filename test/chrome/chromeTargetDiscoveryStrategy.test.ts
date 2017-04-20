@@ -8,10 +8,12 @@ import * as assert from 'assert';
 import * as testUtils from '../testUtils';
 import {ITargetDiscoveryStrategy} from '../../src/chrome/chromeConnection';
 
+import {NullLogger} from '../../src/nullLogger';
+
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {
     function getChromeTargetDiscoveryStrategy(): ITargetDiscoveryStrategy {
-        return require(MODULE_UNDER_TEST).getChromeTargetWebSocketURL;
+        return new (require(MODULE_UNDER_TEST).ChromeTargetDiscovery(NullLogger));
     }
 
     setup(() => {
@@ -40,21 +42,21 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             testUtils.registerMockGetURLFail(UTILS_PATH, TARGET_LIST_URL);
 
             return testUtils.assertPromiseRejected(
-                getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT));
+                getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT));
         });
 
         test('rejects promise if server responds with not JSON', () => {
             registerTargetListContents('this is not target list JSON');
 
             return testUtils.assertPromiseRejected(
-                getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT));
+                getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT));
         });
 
         test('rejects promise if server responds with JSON that is not an array', () => {
             registerTargetListContents('{ "prop1": "not an array" }');
 
             return testUtils.assertPromiseRejected(
-                getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT));
+                getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT));
         });
 
         test('respects the target filter', () => {
@@ -69,7 +71,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
-            return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT, target => target.url === targets[1].url).then(wsUrl => {
+            return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT, target => target.url === targets[1].url).then(wsUrl => {
                 assert.deepEqual(wsUrl, targets[1].webSocketDebuggerUrl);
             });
         });
@@ -87,7 +89,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             registerTargetListContents(JSON.stringify(targets));
 
             return testUtils.assertPromiseRejected(
-                getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT, undefined, 'blah.com'));
+                getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT, undefined, 'blah.com'));
         });
 
         test('when no targets have webSocketDebuggerUrl, fails', () => {
@@ -101,7 +103,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             registerTargetListContents(JSON.stringify(targets));
 
             return testUtils.assertPromiseRejected(
-                getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT, undefined, 'localhost/*'));
+                getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT, undefined, 'localhost/*'));
         });
 
         test('ignores targets with no webSocketDebuggerUrl (as when chrome devtools is attached)', () => {
@@ -116,7 +118,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
-            return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT, target => target.url === targets[1].url).then(wsUrl => {
+            return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT, target => target.url === targets[1].url).then(wsUrl => {
                 assert.deepEqual(wsUrl, targets[1].webSocketDebuggerUrl);
             });
         });
@@ -133,7 +135,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
                 }];
             registerTargetListContents(JSON.stringify(targets));
 
-            return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
+            return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
                 assert.deepEqual(wsUrl, targets[0].webSocketDebuggerUrl);
             });
         });
@@ -151,7 +153,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             registerTargetListContents(JSON.stringify(targets));
 
             const expectedWebSockerDebuggerUrl = `ws://${TARGET_ADDRESS}:1`;
-            return getChromeTargetDiscoveryStrategy()(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
+            return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT).then(wsUrl => {
                 assert.deepEqual(wsUrl, expectedWebSockerDebuggerUrl);
             });
         });

@@ -5,7 +5,7 @@
 /** Normally, a consumer could require and use this and get the same instance. But if -core is npm linked, there may be two instances of file in play. */
 import {logger} from 'vscode-debugadapter';
 
-import {ChromeConnection} from './chrome/chromeConnection';
+import * as chromeConnection from './chrome/chromeConnection';
 import {ChromeDebugAdapter} from './chrome/chromeDebugAdapter';
 import {ChromeDebugSession, IChromeDebugSessionOpts} from './chrome/chromeDebugSession';
 import * as chromeTargetDiscoveryStrategy from './chrome/chromeTargetDiscoveryStrategy';
@@ -21,11 +21,12 @@ export * from './debugAdapterInterfaces';
 
 import * as utils from './utils';
 import * as telemetry from './telemetry';
+import {NullLogger} from './nullLogger';
 
 import Crdp from '../crdp/crdp';
 
 export {
-    ChromeConnection,
+    chromeConnection,
     ChromeDebugAdapter,
     ChromeDebugSession,
     IChromeDebugSessionOpts,
@@ -41,6 +42,7 @@ export {
 
     utils,
     telemetry,
+    NullLogger,
 
     Crdp
 }
