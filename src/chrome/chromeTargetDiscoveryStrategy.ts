@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
 

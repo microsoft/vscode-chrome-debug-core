@@ -6,7 +6,7 @@ import {BasePathTransformer} from './basePathTransformer';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
 import * as utils from '../utils';
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import * as ChromeUtils from '../chrome/chromeUtils';
 import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 

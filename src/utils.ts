@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as url from 'url';
 import * as path from 'path';
 import * as glob from 'glob';
-import {Handles, Logger as logger} from 'vscode-debugadapter';
+import {Handles, logger} from 'vscode-debugadapter';
 import * as http from 'http';
 import * as https from 'https';
 

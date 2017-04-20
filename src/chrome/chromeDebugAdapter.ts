@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger as logger} from 'vscode-debugadapter';
+import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -233,15 +233,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected commonArgs(args: ICommonRequestArgs): void {
         if (args.trace === 'verbose') {
-            logger.setup(logger.LogLevel.Verbose, /*logToFile=*/true);
+            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
         } else if (args.trace) {
-            logger.setup(logger.LogLevel.Warn, /*logToFile=*/true);
+            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/true);
         } else if (args.verboseDiagnosticLogging) { // deprecated
-            logger.setup(logger.LogLevel.Verbose, /*logToFile=*/true);
+            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
         } else if (args.diagnosticLogging) { // deprecated
-            logger.setup(logger.LogLevel.Log, /*logToFile=*/true);
+            logger.setup(Logger.LogLevel.Log, /*logToFile=*/true);
         } else {
-            logger.setup(logger.LogLevel.Warn, /*logToFile=*/false);
+            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/false);
         }
 
         this._launchAttachArgs = args;

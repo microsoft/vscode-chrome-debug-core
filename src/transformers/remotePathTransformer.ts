@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 import {BasePathTransformer} from './basePathTransformer';
 
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as errors from '../errors';
 import {ISetBreakpointsArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';

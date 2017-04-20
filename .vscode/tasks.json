@@ -19,8 +19,8 @@
 					"message": 3
 				},
 				"watching": {
-					"beginsPattern": "Starting 'build'...",
-					"endsPattern": "Finished 'build'"
+					"beginsPattern": "Starting 'dev-build'...",
+					"endsPattern": "Finished 'dev-build'"
 				}
 			}
         }

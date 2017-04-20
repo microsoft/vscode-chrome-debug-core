@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as url from 'url';
 
 import * as utils from '../utils';
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
 /**

@@ -10,7 +10,7 @@ import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
 import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
 import {SourceMaps} from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import {ISourceContainer} from '../chrome/chromeDebugAdapter';
 
 import * as nls from 'vscode-nls';

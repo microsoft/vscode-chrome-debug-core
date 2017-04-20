@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 /** Normally, a consumer could require and use this and get the same instance. But if -core is npm linked, there may be two instances of file in play. */
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 
 import {ChromeConnection} from './chrome/chromeConnection';
 import {ChromeDebugAdapter} from './chrome/chromeDebugAdapter';

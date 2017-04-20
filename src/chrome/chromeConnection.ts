@@ -6,7 +6,7 @@ import * as WebSocket from 'ws';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import {Logger as logger} from 'vscode-debugadapter';
+import {logger} from 'vscode-debugadapter';
 import {getChromeTargetWebSocketURL} from './chromeTargetDiscoveryStrategy';
 
 import {Client} from 'noice-json-rpc';
