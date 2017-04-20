@@ -228,7 +228,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
-        return this.doAttach(args.port, args.url, args.address, args.timeout);
+        return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl);
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
@@ -301,43 +301,45 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         ];
     }
 
-    protected doAttach(port: number, targetUrl?: string, address?: string, timeout?: number): Promise<void> {
+    protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string): Promise<void> {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
-            return this._chromeConnection.attach(address, port, targetUrl, timeout)
-                .then(e => {
-                    this.hookConnectionEvents();
-                    let patterns: string[] = [];
+            if (websocketUrl) {
+                await this._chromeConnection.attachToWebsocketUrl(websocketUrl);
+            } else {
+                await this._chromeConnection.attach(address, port, targetUrl, timeout)
+            }
 
-                    if (this._launchAttachArgs.skipFiles) {
-                        const skipFilesArgs = this._launchAttachArgs.skipFiles.filter(glob => {
-                            if (glob.startsWith('!')) {
-                                logger.warn(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`);
-                                return false;
-                            }
+            this.hookConnectionEvents();
+            let patterns: string[] = [];
 
-                            return true;
-                        });
-
-                        patterns = skipFilesArgs.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+            if (this._launchAttachArgs.skipFiles) {
+                const skipFilesArgs = this._launchAttachArgs.skipFiles.filter(glob => {
+                    if (glob.startsWith('!')) {
+                        logger.warn(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`);
+                        return false;
                     }
 
-                    if (this._launchAttachArgs.skipFileRegExps) {
-                        patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
-                    }
-
-                    if (patterns.length) {
-                        this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
-                        this.refreshBlackboxPatterns();
-                    }
-
-                    return Promise.all(this.runConnection());
-                })
-                .then(() => {
-                    const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
-                    return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
+                    return true;
                 });
+
+                patterns = skipFilesArgs.map(glob => utils.pathGlobToBlackboxedRegex(glob));
+            }
+
+            if (this._launchAttachArgs.skipFileRegExps) {
+                patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
+            }
+
+            if (patterns.length) {
+                this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
+                this.refreshBlackboxPatterns();
+            }
+
+            await Promise.all(this.runConnection());
+
+            const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
+            return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
         } else {
             return Promise.resolve();
         }

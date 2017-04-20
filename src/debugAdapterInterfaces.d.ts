@@ -42,6 +42,9 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     address?: string;
     remoteRoot?: string;
     localRoot?: string;
+
+    /** Private undocumented property to attach directly to a known websocket url */
+    websocketUrl?: string;
 }
 
 export interface IToggleSkipFileStatusArgs {

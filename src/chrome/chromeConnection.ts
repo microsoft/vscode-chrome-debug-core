@@ -105,13 +105,18 @@ export class ChromeConnection {
             .then(() => { });
     }
 
+    public attachToWebsocketUrl(wsUrl: string): void {
+        this._socket = new LoggingSocket(wsUrl);
+        this._client = new Client(this._socket);
+
+        this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
+    }
+
     private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT): Promise<void> {
         return utils.retryAsync(() => this._targetDiscoveryStrategy.getTarget(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
             .catch(err => Promise.reject(errors.runtimeConnectionTimeout(timeout, err.message)))
             .then(wsUrl => {
-                this._socket = new LoggingSocket(wsUrl);
-                this._client = new Client(this._socket);
-                this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
+                return this.attachToWebsocketUrl(wsUrl);
             });
     }
 
