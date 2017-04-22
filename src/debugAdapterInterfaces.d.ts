@@ -7,6 +7,7 @@
  */
 
 import {DebugProtocol} from 'vscode-debugprotocol';
+import Crdp from '../crdp/crdp';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };
 
@@ -62,6 +63,17 @@ export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArgumen
  */
 export interface ISetBreakpointsResponseBody {
     breakpoints: DebugProtocol.Breakpoint[];
+}
+
+/**
+ * Internal clone of the crdp version optional fields. If a created BP is in the same location as an existing BP,
+ * actualLocation is set so BP can be displayed correctly, but breakpointId is not set.
+ *
+ * If a breakpoint is set but Chrome returns no locations, actualLocation is not set.
+ */
+export interface ISetBreakpointResult {
+    breakpointId?: Crdp.Debugger.BreakpointId;
+    actualLocation?: Crdp.Debugger.Location;
 }
 
 export interface ISourceResponseBody {

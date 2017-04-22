@@ -8,7 +8,7 @@ import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEv
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody, IExceptionInfoResponseBody} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody, IExceptionInfoResponseBody, ISetBreakpointResult} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -36,17 +36,6 @@ const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 interface IPropCount {
     indexedVariables: number;
     namedVariables: number;
-}
-
-/**
- * Internal clone of the crdp version optional fields. If a created BP is in the same location as an existing BP,
- * actualLocation is set so BP can be displayed correctly, but breakpointId is not set.
- *
- * If a breakpoint is set but Chrome returns no locations, actualLocation is not set.
- */
-export interface ISetBreakpointResult {
-    breakpointId?: Crdp.Debugger.BreakpointId;
-    actualLocation?: Crdp.Debugger.Location;
 }
 
 /**
