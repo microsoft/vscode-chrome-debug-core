@@ -9,7 +9,7 @@
             "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
             "args": [ "test" ],
             "cwd": "${workspaceRoot}",
-            "sourceMaps": true,
+            "smartStep": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"]
         },
         // Since debugging is difficult when using npm link from the project that consumes this extension, here's a workaround.
@@ -24,11 +24,9 @@
             "cwd": "${workspaceRoot}/../vscode-node-debug2",
             "program": "${workspaceRoot}/../vscode-node-debug2/out/src/nodeDebug.js",
             "args": [ "--server=4712" ],
-            "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
-            "smartStep": true,
-            "showAsyncStacks": true
+            "smartStep": true
         },
         {
             "name": "launch chrome-debug",
@@ -40,10 +38,8 @@
             "cwd": "${workspaceRoot}/../vscode-chrome-debug",
             "program": "${workspaceRoot}/../vscode-chrome-debug/out/bundle.js",
             "args": [ "--server=4712" ],
-            "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
-            "internalConsoleOptions": "openOnSessionStart",
-            "showAsyncStacks": true
+            "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "name": "Debug gulpfile",
