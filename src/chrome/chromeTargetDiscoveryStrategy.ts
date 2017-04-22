@@ -94,7 +94,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
 
     private _fixRemoteUrl(remoteAddress: string, remotePort: number, target: ITarget): ITarget {
         if (target.webSocketDebuggerUrl) {
-            const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/(.*)\//);
+            const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/(.*:\d+)\//);
             if (addressMatch) {
                 const replaceAddress = `${remoteAddress}:${remotePort}`;
                 target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(addressMatch[1], replaceAddress);
