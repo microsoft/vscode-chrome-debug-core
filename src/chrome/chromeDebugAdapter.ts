@@ -1862,7 +1862,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 propCountP = this.getCollectionNumPropsByEval(object.objectId);
             }
         } else {
-            propCountP = Promise.resolve({ });
+            propCountP = Promise.resolve({
+                indexedVariables: undefined,
+                namedVariables: undefined
+             });
         }
 
         const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
