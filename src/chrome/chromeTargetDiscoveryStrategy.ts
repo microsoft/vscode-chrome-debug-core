@@ -55,7 +55,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {
                     return (responseArray as ITarget[])
-                        .map(target => this._fixRemoteUrl(address, target));
+                        .map(target => this._fixRemoteUrl(address, port, target));
                 }
             } catch (e) {
                 // JSON.parse can throw
@@ -92,16 +92,13 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         return targetsWithWSURLs;
     }
 
-    private _fixRemoteUrl(remoteAddress: string, target: ITarget): ITarget {
+    private _fixRemoteUrl(remoteAddress: string, remotePort: number, target: ITarget): ITarget {
         if (target.webSocketDebuggerUrl) {
-            const wsAddress = target.webSocketDebuggerUrl.split(':')[1];
-            const replaceAddress = '//' + remoteAddress;
-            if (wsAddress !== replaceAddress) {
-                target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(wsAddress, replaceAddress);
+            const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/(.*)\//);
+            if (addressMatch) {
+                const replaceAddress = `${remoteAddress}:${remotePort}`;
+                target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(addressMatch[1], replaceAddress);
             }
-
-            target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace('//127.0.0.1', replaceAddress);
-            target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace('//localhost', replaceAddress);
         }
 
         return target;

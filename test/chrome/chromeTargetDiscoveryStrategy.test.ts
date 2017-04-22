@@ -159,5 +159,23 @@ suite('ChromeTargetDiscoveryStrategy', () => {
                 assert.deepEqual(wsUrl, expectedWebSockerDebuggerUrl);
             });
         });
+
+        test('modifies webSocketDebuggerUrl when target and web socket port differ', () => {
+            const targets = [
+                {
+                    url: 'http://localhost/foo',
+                    webSocketDebuggerUrl: 'ws://localhost:4'
+                },
+                {
+                    url: 'http://localhost/bar',
+                    webSocketDebuggerUrl: 'ws://localhost:17'
+                }];
+            registerTargetListContents(JSON.stringify(targets));
+
+            const expectedWebSockerDebuggerUrl = `ws://${TARGET_ADDRESS}:1`;
+            return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, 1).then(wsUrl => {
+                assert.deepEqual(wsUrl, expectedWebSockerDebuggerUrl);
+            });
+        });
     });
 });
