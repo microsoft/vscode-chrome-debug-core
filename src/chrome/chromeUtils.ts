@@ -242,7 +242,7 @@ export function getEvaluateName(parentEvaluateName: string, name: string): strin
 
 export function selectBreakpointLocation(lineNumber: number, columnNumber: number, locations: Crdp.Debugger.BreakLocation[]): Crdp.Debugger.BreakLocation {
     for (let i = locations.length - 1; i >= 0; i--) {
-        if (locations[i].columnNumber < columnNumber) {
+        if (locations[i].columnNumber <= columnNumber) {
             return locations[i];
         }
     }
