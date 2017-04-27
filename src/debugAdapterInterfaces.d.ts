@@ -145,6 +145,15 @@ export interface IExceptionInfoResponseBody {
 
 declare type PromiseOrNot<T> = T | Promise<T>;
 
+export interface TimeTravelClient {
+    stepBack(): Promise<any>;
+    reverse(): Promise<any>;
+}
+
+export interface TimeTravelRuntime extends Crdp.CrdpClient {
+    TimeTravel: TimeTravelClient;
+}
+
 /**
  * All methods returning PromiseOrNot can either return a Promise or a value, and if they reject the Promise, it can be with an Error or a
  * DebugProtocol.Message object, which will be sent to sendErrorResponse.

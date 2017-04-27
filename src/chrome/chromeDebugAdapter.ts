@@ -8,7 +8,8 @@ import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEv
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody, IExceptionInfoResponseBody, ISetBreakpointResult} from '../debugAdapterInterfaces';
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody,
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -1189,6 +1190,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOut()
             .then(() => { });
+    }
+
+    public stepBack(): Promise<void> {
+        return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack();
+    }
+
+    protected reverseContinue(): Promise<void> {
+        return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse();
     }
 
     public pause(): Promise<void> {
