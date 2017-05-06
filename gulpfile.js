@@ -23,7 +23,7 @@ const transifexApiHostname = 'www.transifex.com'
 const transifexApiName = 'api';
 const transifexApiToken = process.env.TRANSIFEX_API_TOKEN;
 const transifexProjectName = 'vscode-extensions';
-const transifexExtensionName = 'vscode-node-debug';
+const transifexExtensionName = 'vscode-chrome-debug-core';
 const vscodeLanguages = [
     'zh-hans',
     'zh-hant',
