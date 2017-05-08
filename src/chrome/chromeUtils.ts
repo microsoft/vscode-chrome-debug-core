@@ -151,11 +151,8 @@ export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string)
 
     targetUrlPattern = standardizeMatch(targetUrlPattern);
 
-    // Remove parent folders when followed by double dots
-    // Example: localhost/site/../app => localhost/app
-    const doubleDotPattern = /[^\/]+\/\.\.\//g;
-    while (targetUrlPattern.match(doubleDotPattern))
-        targetUrlPattern = targetUrlPattern.replace(doubleDotPattern, '');
+    // Normalize to take care of single and double dots
+    targetUrlPattern = path.normalize(targetUrlPattern);
 
     targetUrlPattern = utils.escapeRegExpCharacters(targetUrlPattern).replace(/\\\*/g, '.*');
 

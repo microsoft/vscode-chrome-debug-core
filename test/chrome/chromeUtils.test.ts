@@ -332,6 +332,13 @@ suite('ChromeUtils', () => {
                 chromeUtils.getMatchingTargets(targets, 'http://localhost/site/folder/../../app'),
                 [targets[0]]);
         });
+
+        test('handles single dot', () => {
+            const targets = makeTargets('http://localhost/site/app', 'http://localhost/site/./app');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, 'http://localhost/site/./app'),
+                [targets[0]]);
+        });
     });
 
     suite('compareVariableNames', () => {
