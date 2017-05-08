@@ -318,6 +318,20 @@ suite('ChromeUtils', () => {
                 chromeUtils.getMatchingTargets(targets, 'http://localhost'),
                 targets);
         });
+
+        test('handles double dots', () => {
+            const targets = makeTargets('http://localhost/app', 'http://localhost/site/../folder/../app');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, 'http://localhost/site/../folder/../app'),
+                [targets[0]]);
+        });
+
+        test('handles a series of double dots', () => {
+            const targets = makeTargets('http://localhost/app', 'http://localhost/site/folder/../../app');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, 'http://localhost/site/folder/../../app'),
+                [targets[0]]);
+        });
     });
 
     suite('compareVariableNames', () => {
