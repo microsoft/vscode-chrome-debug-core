@@ -435,13 +435,7 @@ export function pathToRegex(aPath: string): string {
     }
 
     aPath = escapeRegexSpecialChars(aPath);
-
-    if (aPath.match(/^[a-zA-Z]:/)) {
-        const driveLetter = aPath.charAt(0);
-        const u = driveLetter.toUpperCase();
-        const l = driveLetter.toLowerCase();
-        aPath = `[${u}${l}]${aPath.substr(1)}`;
-    }
+    aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
 
     if (isFileUrl) {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
