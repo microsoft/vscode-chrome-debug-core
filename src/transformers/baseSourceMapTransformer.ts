@@ -109,7 +109,7 @@ export class BaseSourceMapTransformer {
                         args.breakpoints = args.breakpoints.concat(sourceBPs);
                     }
                 });
-            } else if (this._allRuntimeScriptPaths.has(argsPath)) {
+            } else if (this.isRuntimeScript(argsPath)) {
                 // It's a generated file which is loaded
                 logger.log(`SourceMaps.setBP: SourceMaps are enabled but ${argsPath} is a runtime script`);
             } else {
@@ -206,7 +206,7 @@ export class BaseSourceMapTransformer {
 
     public scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
         if (this._sourceMaps) {
-            this._allRuntimeScriptPaths.add(pathToGenerated);
+            this._allRuntimeScriptPaths.add(pathToGenerated.toLowerCase());
 
             if (!sourceMapURL) return Promise.resolve(null);
 
@@ -273,7 +273,7 @@ export class BaseSourceMapTransformer {
         return this._preLoad.then(() => {
             // Find the generated path, or check whether this script is actually a runtime path - if so, return that
             return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
-                (this._allRuntimeScriptPaths.has(authoredPath) ? authoredPath : null);
+                (this.isRuntimeScript(authoredPath) ? authoredPath : null);
         });
     }
 
@@ -291,5 +291,9 @@ export class BaseSourceMapTransformer {
         return this._preLoad.then(() => {
             return this._sourceMaps.allSourcePathDetails(pathToGenerated) || [];
         });
+    }
+
+    private isRuntimeScript(scriptPath: string): boolean {
+        return this._allRuntimeScriptPaths.has(scriptPath.toLowerCase());
     }
 }

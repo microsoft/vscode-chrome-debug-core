@@ -460,9 +460,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this._scriptsById.set(script.scriptId, script);
-        this._scriptsByUrl.set(script.url, script);
+        this._scriptsByUrl.set(script.url.toLowerCase(), script);
 
-        const resolvePendingBPs = source => {
+        const resolvePendingBPs = (source: string) => {
+            source = source.toLowerCase();
             if (this._pendingBreakpointsByUrl.has(source)) {
                 this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
@@ -840,7 +841,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
-            this._pendingBreakpointsByUrl.set(args.source.path, { args, ids, requestSeq });
+            this._pendingBreakpointsByUrl.set(args.source.path.toLowerCase(), { args, ids, requestSeq });
         }
 
         return { breakpoints };
@@ -1775,6 +1776,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
+        url = url.toLowerCase();
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
     }
 }
