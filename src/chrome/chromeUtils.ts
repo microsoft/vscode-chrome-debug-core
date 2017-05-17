@@ -11,32 +11,19 @@ import {ITarget} from './chromeConnection';
 
 export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
     const parsedUrl = url.parse(scriptUrl);
-    const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
     if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
         // Skip file: URLs and paths, and invalid things
         return '';
     }
 
-    let pSegments = parsedUrl.pathname.split('/');
-    while (pSegments.length) {
-        let p = pSegments.join('/');
-
-        if (pSegments.length === 1 && p === '') {
-            // Root path segment.
-            p = '/';
+    const urlWithoutQuery = parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname;
+    for (const pattern of Object.keys(pathMapping)) {
+        const indexOf = urlWithoutQuery.indexOf(pattern);
+        if (indexOf !== -1 && indexOf + pattern.length < urlWithoutQuery.length ) {
+            const localPath = pathMapping[pattern];
+            return path.join(localPath, urlWithoutQuery.substring(indexOf + pattern.length));
         }
-
-        let localPath = pathMapping[origin + p] || pathMapping[origin + p + '/'] ||
-            pathMapping[p + '/'] || pathMapping[p];
-
-        if (localPath) {
-            const r = decodeURIComponent(parsedUrl.pathname.substring(p.length));
-            return path.join(localPath, r);
-        }
-
-        pSegments.pop();
     }
-
     return '';
 }
 
