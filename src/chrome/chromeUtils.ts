@@ -9,8 +9,6 @@ import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 import {ITarget} from './chromeConnection';
 
-
-
 export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
     const parsedUrl = url.parse(scriptUrl);
     if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
