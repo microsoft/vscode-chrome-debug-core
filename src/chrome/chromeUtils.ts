@@ -9,6 +9,8 @@ import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 import {ITarget} from './chromeConnection';
 
+
+
 export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
     const parsedUrl = url.parse(scriptUrl);
     if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
@@ -17,11 +19,55 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
     }
 
     const urlWithoutQuery = parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname;
-    for (const pattern of Object.keys(pathMapping)) {
-        const indexOf = urlWithoutQuery.indexOf(pattern);
-        if (indexOf !== -1 && indexOf + pattern.length < urlWithoutQuery.length ) {
+    for (let pattern of Object.keys(pathMapping)) {
+        // empty pattern match nothing use / to match root
+        if (pattern) {
             const localPath = pathMapping[pattern];
-            return path.join(localPath, urlWithoutQuery.substring(indexOf + pattern.length));
+            const parsedPattern = url.parse(pattern);
+
+            if (parsedPattern.protocol) {
+                // pattern is an url with protocol
+                if (urlWithoutQuery.startsWith(pattern)) {
+                    const r = decodeURIComponent(urlWithoutQuery.substring(pattern.length));
+                    const clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
+                    if (clientPath) {
+                        return clientPath;
+                    }
+                }
+            } else if (pattern[0] === "/") {
+                // pattern is absolute
+                if (parsedUrl.pathname.startsWith(pattern)) {
+                    const clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
+                    if (clientPath) {
+                        return clientPath;
+                    }
+                }
+            } else {
+                // pattern is relative
+                // avoid matching whole segment
+                pattern = "/" + pattern;
+                const indexOf = parsedUrl.pathname.indexOf(pattern);
+                if (indexOf !== -1) {
+                    const clientPath = toClientPath(localPath, parsedUrl.pathname.substring(indexOf), pattern);
+                    if (clientPath) {
+                        return clientPath;
+                    }
+                }
+            }
+        }
+    }
+    return '';
+}
+
+function toClientPath(localPath: string, source: string, pattern: string): string {
+    if (source.length === pattern.length) {
+        return localPath;
+    } else {
+        // Verify that matching whole segment of the pattern
+        if (source[pattern.length - 1] === "/"
+            || source[pattern.length] === "/") {
+            const r = decodeURIComponent(source.substring(pattern.length));
+            return path.join(localPath, r);
         }
     }
     return '';
