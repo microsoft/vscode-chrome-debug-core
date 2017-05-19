@@ -28,7 +28,6 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
             if (parsedPattern.protocol) {
                 // pattern is an url with protocol
                 if (urlWithoutQuery.startsWith(pattern)) {
-                    const r = decodeURIComponent(urlWithoutQuery.substring(pattern.length));
                     const clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
                     if (clientPath) {
                         return clientPath;
