@@ -500,6 +500,10 @@ export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
     }
 }
 
+export function uppercaseFirstLetter(str: string) {
+    return str.substr(0, 1).toUpperCase() + str.substr(1);
+}
+
 export type Partial<T> = {
     [P in keyof T]?: T[P];
 };

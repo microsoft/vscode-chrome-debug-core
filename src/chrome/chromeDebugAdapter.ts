@@ -63,6 +63,8 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
+const VS_CLIENT_ID = 'visualstudio';
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static PLACEHOLDER_EVAL_URL_PROTOCOL = 'eval://';
     private static SCRIPTS_COMMAND = '.scripts';
@@ -1079,7 +1081,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs: DebugProtocol.StackFrameFormat): string {
-        if (this._clientID && this._clientID.toLowerCase() === 'visualstudio') {
+        if (this._clientID && this._clientID.toLowerCase() === VS_CLIENT_ID) {
             let formattedName = frame.name;
             if (formatArgs.module) {
                 formattedName += ` [${frame.source.name}]`;
@@ -1618,7 +1620,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return <DebugProtocol.Variable>{
             name,
             value,
-            type: value,
+            type: utils.uppercaseFirstLetter(object.type),
             variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context),
             evaluateName
         };
@@ -1648,7 +1650,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
             name,
             value,
-            type: value,
+            type: utils.uppercaseFirstLetter(object.type),
             variablesReference,
             indexedVariables,
             namedVariables,
