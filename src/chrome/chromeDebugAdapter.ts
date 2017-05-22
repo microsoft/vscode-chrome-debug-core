@@ -99,6 +99,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _hasTerminated: boolean;
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
+    private _clientID: string;
     protected _launchAttachArgs: ICommonRequestArgs;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
@@ -162,6 +163,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (typeof args.columnsStartAt1 === 'boolean') {
             (<any>this)._clientColumnsStartAt1 = args.columnsStartAt1;
         }
+
+        this._clientID = args.clientID;
 
         // This debug adapter supports two exception breakpoint filters
         return {
@@ -1062,14 +1065,34 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 frame.source.path = this.realPathToDisplayPath(frame.source.path);
             }
 
-            // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
+            // Remove the fake eval path and fix the name, if it was never resolved to a real path
             if (frame.source.path && frame.source.path.startsWith(ChromeDebugAdapter.PLACEHOLDER_EVAL_URL_PROTOCOL)) {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
+
+            // Format stackframe name
+            frame.name = this.formatStackFrameName(frame, args.format);
         }));
 
         return stackTraceResponse;
+    }
+
+    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs: DebugProtocol.StackFrameFormat): string {
+        if (this._clientID && this._clientID.toLowerCase() === 'visualstudio') {
+            let formattedName = frame.name;
+            if (formatArgs.module) {
+                formattedName += ` [${frame.source.name}]`;
+            }
+
+            if (formatArgs.line) {
+                formattedName += ` Line ${frame.line}`;
+            }
+
+            return formattedName;
+        } else {
+            return frame.name;
+        }
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
@@ -1105,7 +1128,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 id: this._frameHandles.create(frame),
                 name: frameName,
                 source,
-                line: line,
+                line,
                 column
             };
         } catch (e) {
