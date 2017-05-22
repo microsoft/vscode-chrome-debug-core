@@ -1596,6 +1596,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return Promise.resolve(<DebugProtocol.Variable>{
             name,
             value,
+            type: object.type,
             variablesReference: 0,
             evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
         });
@@ -1617,8 +1618,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return <DebugProtocol.Variable>{
             name,
             value,
-            variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context),
             type: value,
+            variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context),
             evaluateName
         };
     }
