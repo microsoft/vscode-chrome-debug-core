@@ -468,7 +468,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsByUrl.set(script.url.toLowerCase(), script);
 
         const resolvePendingBPs = (source: string) => {
-            source = source.toLowerCase();
+            source = source && source.toLowerCase();
             if (this._pendingBreakpointsByUrl.has(source)) {
                 this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
