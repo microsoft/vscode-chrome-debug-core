@@ -500,7 +500,7 @@ export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
     }
 }
 
-export function uppercaseFirstLetter(str: string) {
+export function uppercaseFirstLetter(str: string): string {
     return str.substr(0, 1).toUpperCase() + str.substr(1);
 }
 
