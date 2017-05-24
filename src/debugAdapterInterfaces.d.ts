@@ -87,6 +87,7 @@ export interface IThreadsResponseBody {
 
 export interface IStackTraceResponseBody {
     stackFrames: DebugProtocol.StackFrame[];
+    totalFrames?: number;
 }
 
 export interface IInternalStackFrame extends DebugProtocol.StackFrame {

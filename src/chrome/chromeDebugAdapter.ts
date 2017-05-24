@@ -1218,7 +1218,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Only process at the requested number of frames, if 'levels' is specified
         let stack = this._currentPauseNotification.callFrames;
-        if (args.levels) {
+        const totalFrames = stack.length;
+        if (typeof args.startFrame === 'number') {
+            stack = stack.slice(args.startFrame);
+        }
+
+        if (typeof args.levels === 'number') {
             stack = stack.filter((_, i) => i < args.levels);
         }
 
@@ -1226,7 +1231,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace));
 
         const stackTraceResponse: IInternalStackTraceResponseBody = {
-            stackFrames
+            stackFrames,
+            totalFrames
         };
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
