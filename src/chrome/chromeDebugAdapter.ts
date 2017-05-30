@@ -63,8 +63,6 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
-const VS_CLIENT_ID = 'visualstudio';
-
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static PLACEHOLDER_EVAL_URL_PROTOCOL = 'eval://';
     private static SCRIPTS_COMMAND = '.scripts';
@@ -101,7 +99,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _hasTerminated: boolean;
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
-    private _clientID: string;
     protected _launchAttachArgs: ICommonRequestArgs;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
@@ -165,8 +162,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (typeof args.columnsStartAt1 === 'boolean') {
             (<any>this)._clientColumnsStartAt1 = args.columnsStartAt1;
         }
-
-        this._clientID = args.clientID;
 
         // This debug adapter supports two exception breakpoint filters
         return {
@@ -1080,9 +1075,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return stackTraceResponse;
     }
 
-    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs: DebugProtocol.StackFrameFormat = {}): string {
-        if (this._clientID && this._clientID.toLowerCase() === VS_CLIENT_ID) {
-            let formattedName = frame.name;
+    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {
+        let formattedName = frame.name;
+        if (formatArgs) {
             if (formatArgs.module) {
                 formattedName += ` [${frame.source.name}]`;
             }
@@ -1090,11 +1085,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (formatArgs.line) {
                 formattedName += ` Line ${frame.line}`;
             }
-
-            return formattedName;
-        } else {
-            return frame.name;
         }
+
+        return formattedName;
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
