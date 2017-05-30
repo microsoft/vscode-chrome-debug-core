@@ -1080,7 +1080,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return stackTraceResponse;
     }
 
-    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs: DebugProtocol.StackFrameFormat): string {
+    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs: DebugProtocol.StackFrameFormat = {}): string {
         if (this._clientID && this._clientID.toLowerCase() === VS_CLIENT_ID) {
             let formattedName = frame.name;
             if (formatArgs.module) {
