@@ -1224,7 +1224,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         if (typeof args.levels === 'number') {
-            stack = stack.filter((_, i) => i < args.levels);
+            stack = stack.slice(0, args.levels);
         }
 
         const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
