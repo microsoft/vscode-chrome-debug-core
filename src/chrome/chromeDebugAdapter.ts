@@ -1216,19 +1216,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return Promise.reject(errors.noCallStackAvailable());
         }
 
-        // Only process at the requested number of frames, if 'levels' is specified
-        let stack = this._currentPauseNotification.callFrames;
-        const totalFrames = stack.length;
+        let stackFrames = this._currentPauseNotification.callFrames.map(frame => this.callFrameToStackFrame(frame))
+            .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace));
+
+        const totalFrames = stackFrames.length;
         if (typeof args.startFrame === 'number') {
-            stack = stack.slice(args.startFrame);
+            stackFrames = stackFrames.slice(args.startFrame);
         }
 
         if (typeof args.levels === 'number') {
-            stack = stack.slice(0, args.levels);
+            stackFrames = stackFrames.slice(0, args.levels);
         }
-
-        const stackFrames = stack.map(frame => this.callFrameToStackFrame(frame))
-            .concat(this.asyncFrames(this._currentPauseNotification.asyncStackTrace));
 
         const stackTraceResponse: IInternalStackTraceResponseBody = {
             stackFrames,
