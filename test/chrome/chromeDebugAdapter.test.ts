@@ -128,15 +128,15 @@ suite('ChromeDebugAdapter', () => {
     }
 
     suite('attach()', () => {
-        let firstEventReceived = false;
         test('Initialized event is fired after first scriptParsed event', done => {
+            let firstEventReceived = false;
             sendEventHandler = (event: DebugProtocol.Event) => {
                 if (!firstEventReceived && event.event === 'initialized') {
                     firstEventReceived = true;
                 } else if (firstEventReceived && event.event === 'script') {
                     done();
                 } else {
-                    done(new Error('An unexpected event was fired' + event));
+                    done(new Error('An unexpected event was fired'));
                 }
             };
 
