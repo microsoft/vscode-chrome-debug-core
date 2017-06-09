@@ -73,8 +73,7 @@ export class Script {
     private source: Source;
     private children?: Script[];
 
-    constructor(source: Source, children?: Script[])
-    {
+    constructor(source: Source, children?: Script[]) {
         this.id = Script.count++;
         this.source = source;
         this.children = children;
@@ -86,7 +85,7 @@ export class ScriptEvent extends Event {
     body: {
         reason: 'new' | 'removed';
         script: Script;
-    }
+    };
 
     constructor(reason: 'new' | 'removed', script: Script) {
         super("script", {reason, script});
@@ -562,8 +561,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const scriptEvent: ScriptEvent = this.scriptToScriptEvent(script);
         if (this._scriptEventsBeforeInitializedEventFired !== null) {
             this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
-        }
-        else {
+        } else {
             this._session.sendEvent(scriptEvent);
         }
     }
