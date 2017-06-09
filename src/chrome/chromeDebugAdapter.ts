@@ -140,7 +140,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _columnBreakpointsEnabled: boolean;
 
     private _smartStepCount = 0;
-    private _initializedEventFired: boolean = false;
     private _scriptEventsBeforeInitializedEventFired: ScriptEvent[] = [];
 
     private _initialSourceMapsP = Promise.resolve();
@@ -379,8 +378,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._initialSourceMapsP.then(() => {
                 this._session.sendEvent(new InitializedEvent());
                 this._initialSourceMapsP = null;
-                this._initializedEventFired = true;
                 this.sendScriptEventsBeforeInitializedEventFired();
+                this._scriptEventsBeforeInitializedEventFired = null;
             });
         }
     }
@@ -561,7 +560,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const scriptEvent: ScriptEvent = this.scriptToScriptEvent(script);
-        if (!this._initializedEventFired) {
+        if (this._scriptEventsBeforeInitializedEventFired !== null) {
             this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
         }
         else {
@@ -1359,9 +1358,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             origin
         };
 
-        const pinezorroScript: Script = new Script(source);
+        const clientScript: Script = new Script(source);
 
-        return new ScriptEvent('new', pinezorroScript);
+        return new ScriptEvent('new', clientScript);
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
