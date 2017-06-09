@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger} from 'vscode-debugadapter';
+import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, Event, Source} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -67,6 +67,31 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
+export class Script {
+    private static count: number = 0;
+    private id: number;
+    private source: Source;
+    private children?: Script[];
+
+    constructor(source: Source, children?: Script[]) {
+        this.id = Script.count++;
+        this.source = source;
+        this.children = children;
+    }
+}
+
+export class ScriptEvent extends Event {
+
+    body: {
+        reason: 'new' | 'removed';
+        script: Script;
+    };
+
+    constructor(reason: 'new' | 'removed', script: Script) {
+        super("script", {reason, script});
+    }
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = 'VM';
     private static SCRIPTS_COMMAND = '.scripts';
@@ -114,6 +139,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _columnBreakpointsEnabled: boolean;
 
     private _smartStepCount = 0;
+    private _scriptEventsBeforeInitializedEventFired: ScriptEvent[] = [];
 
     private _initialSourceMapsP = Promise.resolve();
 
@@ -335,6 +361,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
+    private sendScriptEventsBeforeInitializedEventFired(): void {
+        this._scriptEventsBeforeInitializedEventFired.forEach(element => {
+            this._session.sendEvent(element);
+        });
+    }
+
     /**
      * This event tells the client to begin sending setBP requests, etc. Some consumers need to override this
      * to send it at a later time of their choosing.
@@ -345,6 +377,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._initialSourceMapsP.then(() => {
                 this._session.sendEvent(new InitializedEvent());
                 this._initialSourceMapsP = null;
+                this.sendScriptEventsBeforeInitializedEventFired();
+                this._scriptEventsBeforeInitializedEventFired = null;
             });
         }
     }
@@ -522,6 +556,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._initialSourceMapsP) {
             this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
+        }
+
+        const scriptEvent: ScriptEvent = this.scriptToScriptEvent(script);
+        if (this._scriptEventsBeforeInitializedEventFired !== null) {
+            this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
+        } else {
+            this._session.sendEvent(scriptEvent);
         }
     }
 
@@ -1303,6 +1344,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             },
             functionName: frame.functionName
         };
+    }
+
+    private scriptToScriptEvent(script: Crdp.Debugger.ScriptParsedEvent): ScriptEvent {
+        const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
+        const origin = this.getReadonlyOrigin(script.url);
+        const source = {
+            name: path.basename(script.url),
+            path: script.url,
+            sourceReference,
+            origin
+        };
+
+        const clientScript: Script = new Script(source);
+
+        return new ScriptEvent('new', clientScript);
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
