@@ -39,7 +39,8 @@
             "program": "${workspaceRoot}/../vscode-chrome-debug/out/bundle.js",
             "args": [ "--server=4712" ],
             "outFiles": ["${workspaceRoot}/out/**/*.js"],
-            "internalConsoleOptions": "openOnSessionStart"
+            "internalConsoleOptions": "openOnSessionStart",
+            "smartStep": true
         },
         {
             "name": "Debug gulpfile",
