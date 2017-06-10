@@ -167,13 +167,13 @@ export class SourceMap {
         const lookupArgs = {
             line,
             column,
-            bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
+            bias: (<any>SourceMapConsumer).GREATEST_LOWER_BOUND
         };
 
         let position = this._smc.originalPositionFor(lookupArgs);
         if (!position.source) {
             // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
-            lookupArgs.bias = (<any>SourceMapConsumer).GREATEST_LOWER_BOUND;
+            lookupArgs.bias = (<any>SourceMapConsumer).LEAST_UPPER_BOUND;
             position = this._smc.originalPositionFor(lookupArgs);
         }
 

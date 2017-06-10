@@ -141,7 +141,7 @@ suite('SourceMap', () => {
                 getExpectedResult(/*line=*/11, /*column=*/8));
 
             assert.deepEqual(
-                sm.authoredPositionFor(/*line=*/9, /*column=*/9),
+                sm.authoredPositionFor(/*line=*/9, /*column=*/12),
                 getExpectedResult(/*line=*/11, /*column=*/12));
         });
 
@@ -157,7 +157,7 @@ suite('SourceMap', () => {
 
             assert.deepEqual(
                 sm.authoredPositionFor(/*line=*/5, /*column=*/17),
-                getExpectedResult(/*line=*/4, /*column=*/25));
+                getExpectedResult(/*line=*/4, /*column=*/14));
         });
 
         test('first line of file', () => {
