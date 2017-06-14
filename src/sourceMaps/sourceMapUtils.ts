@@ -71,12 +71,6 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         let replacePattern = sourceMapPathOverrides[pattern];
         const entryStr = `"${pattern}": "${replacePattern}"`;
 
-        // Validate the entry
-        if (!path.isAbsolute(replacePattern)) {
-            logger.log(`Warning: sourceMapPathOverrides entry does not map to an absolute path - ${entryStr}`);
-            continue;
-        }
-
         const asterisks = pattern.match(/\*/g) || [];
         if (asterisks.length > 1) {
             logger.log(`Warning: only one asterisk allowed in a sourceMapPathOverrides entry - ${entryStr}`);
