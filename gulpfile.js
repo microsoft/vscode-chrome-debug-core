@@ -33,7 +33,10 @@ const vscodeLanguages = [
     'fr',
     'es',
     'ru',
-    'it'
+    'it',
+    'pt-br',
+    'hu',
+    'tr'
 ];
 
 const tsconfig = require('./tsconfig.json');
