@@ -185,7 +185,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
         if (args.pathFormat !== 'path') {
-            return Promise.reject(errors.pathFormat());
+            throw errors.pathFormat();
         }
 
         // because session bypasses dispatchRequest
@@ -216,7 +216,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsCompletionsRequest: true,
             supportsHitConditionalBreakpoints: true,
             supportsRestartFrame: true,
-            supportsExceptionInfoRequest: true
+            supportsExceptionInfoRequest: true,
+            supportsDelayedStackTraceLoading: true
         };
     }
 
