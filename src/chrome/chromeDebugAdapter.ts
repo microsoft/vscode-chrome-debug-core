@@ -821,15 +821,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const result = formatConsoleArguments(params);
         if (result) {
-            const category = result.isError ? 'stderr' : 'stdout';
-            this.logObjects(result.args, category);
+            this.logObjects(result.args, result.isError);
         }
     }
 
-    private logObjects(objs: Crdp.Runtime.RemoteObject[], category: string): void {
+    private async logObjects(objs: Crdp.Runtime.RemoteObject[], isError = false): Promise<void> {
+        const category = isError ? 'stderr' : 'stdout';
+
         // Shortcut the common log case to reduce unnecessary back and forth
         if (objs.length === 1 && objs[0].type === 'string') {
-            const e = new OutputEvent(objs[0].value + '\n', category);
+            let msg = objs[0].value;
+            if (isError) {
+                msg = await this.mapFormattedException(msg);
+            }
+
+            const e = new OutputEvent(msg + '\n', category);
             this._session.sendEvent(e);
             return;
         }
@@ -865,7 +871,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const clientPath = this._pathTransformer.getClientPathFromTargetPath(linePath);
             const mapped = await this._sourceMapTransformer.mapToAuthored(clientPath || linePath, adjustedLineNum, columnNum);
 
-            if (mapped && mapped.source && utils.isNumber(mapped.line) && utils.isNumber(mapped.column)) {
+            if (mapped && mapped.source && utils.isNumber(mapped.line) && utils.isNumber(mapped.column) && utils.existsSync(mapped.source)) {
                 this._lineColTransformer.mappedExceptionStack(mapped);
                 exceptionLines[i] = exceptionLines[i].replace(
                     `${linePath}:${lineNum}:${columnNum}`,
