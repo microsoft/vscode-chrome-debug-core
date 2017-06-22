@@ -9,7 +9,7 @@ import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpo
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime} from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -130,6 +130,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
     protected _launchAttachArgs: ICommonRequestArgs;
+    protected _port: number;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
 
@@ -230,7 +231,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        telemetry.reportEvent('debugStarted', { request: 'launch', args: Object.keys(args) });
+        if (!args.__restart) {
+            telemetry.reportEvent('debugStarted', { request: 'launch', args: Object.keys(args) });
+        }
+
         return Promise.resolve();
     }
 
@@ -272,7 +276,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.shutdown();
     }
 
-    protected terminateSession(reason: string, restart?: boolean): void {
+    protected terminateSession(reason: string, restart?: IRestartRequestArgs): void {
         logger.log('Terminated: ' + reason);
 
         if (!this._hasTerminated) {
@@ -327,6 +331,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout);
             }
+
+            this._port = port;
 
             this.hookConnectionEvents();
             let patterns: string[] = [];

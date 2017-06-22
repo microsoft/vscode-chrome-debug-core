@@ -31,10 +31,15 @@ export interface ICommonRequestArgs {
     showAsyncStacks?: boolean;
 }
 
+export interface IRestartRequestArgs {
+    port: number;
+}
+
 /**
  * Properties needed by -core, just a subset of the properties needed for launch in general
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
+    __restart?: IRestartRequestArgs;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {
