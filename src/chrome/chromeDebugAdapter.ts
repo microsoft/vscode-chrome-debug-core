@@ -1708,6 +1708,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return this.handleScriptsCommand(args);
         }
 
+        if (args.expression.startsWith('{') && args.expression.endsWith('}')) {
+            args.expression = `(${args.expression})`;
+        }
+
         const evalResponse = await this.waitThenDoEvaluate(args.expression, args.frameId, { generatePreview: true });
 
         // Convert to a Variable object then just copy the relevant fields off
