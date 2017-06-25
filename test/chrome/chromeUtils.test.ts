@@ -176,6 +176,14 @@ suite('ChromeUtils', () => {
             assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, RELATIVE_FILE_MAPPING), TEST_CLIENT_PATH);
         });
 
+        test('matches longer patterns first', () => {
+            const url = 'http://localhost/foo/bar';
+
+            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, {
+                '/': 'C:\\a',
+                'foo': 'C:\\b'
+            }), 'C:\\b\\bar');
+        });
     });
 
     suite('remoteObjectToValue()', () => {

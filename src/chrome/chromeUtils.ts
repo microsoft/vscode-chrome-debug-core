@@ -17,7 +17,9 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
     }
 
     const urlWithoutQuery = parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname;
-    for (let pattern of Object.keys(pathMapping)) {
+    const mappingKeys = Object.keys(pathMapping)
+        .sort((a, b) => b.length - a.length);
+    for (let pattern of mappingKeys) {
         // empty pattern match nothing use / to match root
         if (pattern) {
             const localPath = pathMapping[pattern];
