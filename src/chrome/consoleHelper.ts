@@ -15,8 +15,6 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
 }
 
 export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
-    // types: log, debug, info, error, warning, dir, dirxml, table, trace, clear,
-    // startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd
     let args: Crdp.Runtime.RemoteObject[];
     switch (m.type) {
         case 'log':
@@ -24,6 +22,9 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
         case 'info':
         case 'error':
         case 'warning':
+        case 'dir':
+        case 'timeEnd':
+        case 'count':
             args = resolveParams(m);
             break;
         case 'assert':
