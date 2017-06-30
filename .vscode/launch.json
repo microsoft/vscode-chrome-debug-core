@@ -10,6 +10,9 @@
             "args": [ "test" ],
             "cwd": "${workspaceRoot}",
             "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ],
             "outFiles": ["${workspaceRoot}/out/**/*.js"]
         },
         // Since debugging is difficult when using npm link from the project that consumes this extension, here's a workaround.
