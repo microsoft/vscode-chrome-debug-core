@@ -107,7 +107,7 @@ export class ChromeConnection {
 
     public attachToWebsocketUrl(wsUrl: string): void {
         this._socket = new LoggingSocket(wsUrl);
-        this._client = new Client(this._socket);
+        this._client = new Client(<WebSocket>this._socket as any);
 
         this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
     }

@@ -107,7 +107,7 @@ function loadSourceMapContents(mapPathOrURL: string): Promise<string> {
                     logger.log(`SourceMaps.loadSourceMapContents: Could not read sourcemap file - ` + err.message);
                     resolve(null);
                 } else {
-                    resolve(data);
+                    resolve(data && data.toString());
                 }
             });
         });
