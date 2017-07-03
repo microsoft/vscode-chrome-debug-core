@@ -51,7 +51,7 @@ suite('ChromeDebugAdapter', () => {
         // Create a ChromeConnection mock with .on and .attach. Tests can fire events via mockEventEmitter
         mockChromeConnection = Mock.ofType(ChromeConnection, MockBehavior.Strict);
         mockChromeConnection
-            .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_SUCCESS_PORT), It.isValue(undefined), It.isValue(undefined)))
+            .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_SUCCESS_PORT), It.isValue(undefined), It.isValue(undefined), It.isValue(undefined)))
             .returns(() => Promise.resolve());
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined), It.isValue(undefined)))
