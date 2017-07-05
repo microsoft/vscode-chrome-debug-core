@@ -11,5 +11,6 @@
 	"validateBP.sourcemapFail": "因為找不到產生的程式碼 (來源對應問題?)，所以忽略中斷點。",
 	"validateBP.notFound": "因為找不到目標路徑，所以忽略中斷點。",
 	"invalidHitCondition": "點擊條件無效: {0}",
+	"skipReason": "(被 '{0}' 省略)",
 	"scope.exception": "例外狀況"
 }

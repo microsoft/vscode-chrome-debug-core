@@ -10,5 +10,6 @@
 	"reason.description.user_request": "因用户请求暂停",
 	"reason.description.entry": "因条目暂停",
 	"reason.description.debugger_statement": "因调试程序语句暂停",
-	"reason.description.restart": "因框架条目暂停"
+	"reason.description.restart": "因框架条目暂停",
+	"reason.description.promiseRejection": "因 promise 拒绝而暂停"
 }
