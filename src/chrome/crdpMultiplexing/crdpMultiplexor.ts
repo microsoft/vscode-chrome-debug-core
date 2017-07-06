@@ -35,7 +35,7 @@ function decodifyId(encodifiedId: number): number {
 }
 
 function throwCriticalError(message: string): void {
-    logger.log("CRDP Multiplexor - CRITICAL-ERROR: " + message);
+    logger.error("CRDP Multiplexor - CRITICAL-ERROR: " + message);
     throw new Error(message);
 }
 
@@ -144,7 +144,7 @@ export class CRDPChannel implements LikeSocket {
     public send(messageData: string): void {
         const message = JSON.parse(messageData);
         const method = message.method;
-        const isEnableMethod = method && method.indexOf(".enable") >= 0;
+        const isEnableMethod = method && method.endsWith(".enable");
         let domain;
 
         if (isEnableMethod) {
