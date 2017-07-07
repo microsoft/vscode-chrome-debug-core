@@ -13,6 +13,9 @@ import {ChromeTargetDiscovery} from './chromeTargetDiscoveryStrategy';
 import {Client} from 'noice-json-rpc';
 import Crdp from '../../crdp/crdp';
 
+import {CRDPMultiplexor} from './crdpMultiplexing/crdpMultiplexor';
+import {WebSocketToLikeSocketProxy} from './crdpMultiplexing/webSocketToLikeSocketProxy';
+
 export interface ITarget {
     description: string;
     devtoolsFrontendUrl: string;
@@ -82,6 +85,7 @@ export class ChromeConnection {
     private static ATTACH_TIMEOUT = 10000; // ms
 
     private _socket: WebSocket;
+    private _crdpSocketMultiplexor: CRDPMultiplexor;
     private _client: Client;
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
@@ -100,23 +104,29 @@ export class ChromeConnection {
     /**
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
-    public attach(address = '127.0.0.1', port = 9222, targetUrl?: string, timeout?: number): Promise<void> {
-        return this._attach(address, port, targetUrl, timeout)
+    public attach(address = '127.0.0.1', port = 9222, targetUrl?: string, timeout?: number, extraCRDPChannelPort?: number): Promise<void> {
+        return this._attach(address, port, targetUrl, timeout, extraCRDPChannelPort)
             .then(() => { });
     }
 
-    public attachToWebsocketUrl(wsUrl: string): void {
+    public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
         this._socket = new LoggingSocket(wsUrl);
-        this._client = new Client(<WebSocket>this._socket as any);
+        if (extraCRDPChannelPort) {
+            this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket);
+            new WebSocketToLikeSocketProxy(extraCRDPChannelPort, this._crdpSocketMultiplexor.addChannel('extraCRDPEndpoint')).start();
+            this._client = new Client(this._crdpSocketMultiplexor.addChannel('debugger'));
+        } else {
+            this._client = new Client(<WebSocket>this._socket as any);
+        }
 
         this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
     }
 
-    private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT): Promise<void> {
+    private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT, extraCRDPChannelPort?: number): Promise<void> {
         return utils.retryAsync(() => this._targetDiscoveryStrategy.getTarget(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
             .catch(err => Promise.reject(errors.runtimeConnectionTimeout(timeout, err.message)))
             .then(wsUrl => {
-                return this.attachToWebsocketUrl(wsUrl);
+                return this.attachToWebsocketUrl(wsUrl, extraCRDPChannelPort);
             });
     }
 

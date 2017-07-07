@@ -249,7 +249,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
-        return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl);
+        return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
@@ -322,14 +322,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         ];
     }
 
-    protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string): Promise<void> {
+    protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
             if (websocketUrl) {
-                await this._chromeConnection.attachToWebsocketUrl(websocketUrl);
+                await this._chromeConnection.attachToWebsocketUrl(websocketUrl, extraCRDPChannelPort);
             } else {
-                await this._chromeConnection.attach(address, port, targetUrl, timeout);
+                await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
 
             this._port = port;
