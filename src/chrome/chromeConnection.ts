@@ -10,7 +10,8 @@ import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
 import {ChromeTargetDiscovery} from './chromeTargetDiscoveryStrategy';
 
-import {Client} from 'noice-json-rpc';
+import {Client, LikeSocket} from 'noice-json-rpc';
+
 import Crdp from '../../crdp/crdp';
 
 import {CRDPMultiplexor} from './crdpMultiplexing/crdpMultiplexor';
@@ -112,7 +113,7 @@ export class ChromeConnection {
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
-            this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket);
+            this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);
             new WebSocketToLikeSocketProxy(extraCRDPChannelPort, this._crdpSocketMultiplexor.addChannel('extraCRDPEndpoint')).start();
             this._client = new Client(this._crdpSocketMultiplexor.addChannel('debugger'));
         } else {
