@@ -29,6 +29,9 @@ export interface ICommonRequestArgs {
     skipFileRegExps?: string[]; // a supplemental array of library code regex patterns
     timeout?: number;
     showAsyncStacks?: boolean;
+
+    /** Private undocumented property to multiplex the CRDP connection into an additional channel */
+    extraCRDPChannelPort?: number;
 }
 
 export interface IRestartRequestArgs {
@@ -51,9 +54,6 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
 
     /** Private undocumented property to attach directly to a known websocket url */
     websocketUrl?: string;
-
-    /** Private undocumented property to multiplex the CRDP connection into an additional channel */
-    extraCRDPChannelPort?: number;
 }
 
 export interface IToggleSkipFileStatusArgs {
