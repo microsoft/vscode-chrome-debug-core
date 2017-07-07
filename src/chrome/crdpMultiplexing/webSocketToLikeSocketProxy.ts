@@ -31,6 +31,7 @@ export class WebSocketToLikeSocketProxy {
 
         this._server.on('connection', openedWebSocket => {
             if (this._currentlyOpenedWebSocket !== null) {
+                openedWebSocket.terminate();
                 throw Error(`CRDP Proxy: Only one websocket is supported by the server on port ${this._port}`);
             } else {
                 this._currentlyOpenedWebSocket = openedWebSocket;

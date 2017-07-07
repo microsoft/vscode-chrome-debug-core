@@ -5,6 +5,21 @@
 import { LikeSocket } from 'noice-json-rpc';
 import { logger } from 'vscode-debugadapter';
 
+/* Rational: The debug adapter only exposes the debugging capabilities of the Chrome Debugging Protocol.
+   We want to be able to connect other components to expose other of the capabilities to the users.
+   We are trying to do this by creating a multiplexor that will take one connection to a Chrome Debugging Protocol websocket,
+   and simulate from that that we have actually many independent connections to several Chrome Debugging Protocol websockets.
+   Given that implementing truly independent connections is not trivial, we are choosing to implement only the features that we
+   seem to need so far to support a component for an external Console, and an external DOM Explorer.
+
+   The way we are going to make that work is that we'll pass the actual websocket to chrome/node to the Multiplexor, and then we are going
+   to requests two channels from it. One will be the debugger channel, that will be used by the traditional debug adapter for everything it does.
+   Another channel will be the extraCRDPEndpoint channel that will be offered thorugh the client using a websocket port (so it'll simulate that
+   this is an actual connection to chrome or node), so we can connect any utilities that we want there.
+
+   In the future, if we need to, it's easy to modify this multiplexor to support more than 2 channels.
+*/
+
 /* Assumptions made to implement this multiplexor:
     1. The message IDs of CRDP don't need to be sent in order
     2. The Domain.enable messages don't have any side-effects (We might send them multiple times)
