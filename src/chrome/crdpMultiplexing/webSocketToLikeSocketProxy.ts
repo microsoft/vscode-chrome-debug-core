@@ -21,7 +21,7 @@ export class WebSocketToLikeSocketProxy {
             logger.log("CRDP Proxy shutting down");
             this._server.close(() => {
                 if (this._currentlyOpenedWebSocket !== null) {
-                    this._currentlyOpenedWebSocket.terminate();
+                    this._currentlyOpenedWebSocket.close();
                     logger.log("CRDP Proxy succesfully shut down");
                 }
 
@@ -31,7 +31,7 @@ export class WebSocketToLikeSocketProxy {
 
         this._server.on('connection', openedWebSocket => {
             if (this._currentlyOpenedWebSocket !== null) {
-                openedWebSocket.terminate();
+                openedWebSocket.close();
                 throw Error(`CRDP Proxy: Only one websocket is supported by the server on port ${this._port}`);
             } else {
                 this._currentlyOpenedWebSocket = openedWebSocket;
