@@ -182,6 +182,10 @@ export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string)
     };
 
     targetUrlPattern = standardizeMatch(targetUrlPattern);
+
+    // Normalize to take care of single and double dots
+    targetUrlPattern = path.normalize(targetUrlPattern);
+
     targetUrlPattern = utils.escapeRegExpCharacters(targetUrlPattern).replace(/\\\*/g, '.*');
 
     const targetUrlRegex = new RegExp('^' + targetUrlPattern + '$', 'g');
