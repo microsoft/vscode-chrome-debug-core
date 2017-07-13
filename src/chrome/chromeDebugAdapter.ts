@@ -1365,21 +1365,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
-        return new Promise((resolve, reject) => {
-            utils.existsAsync(script.url)
-                .then((exists) => {
-                    const source = {
-                        name: path.basename(script.url),
-                        path: script.url,
-                        // if the path exists, do not send the sourceReference
-                        sourceReference: exists ? undefined : sourceReference,
-                        origin
-                    };
+        return utils.existsAsync(script.url)
+            .then((exists) => {
+                const source = {
+                    name: path.basename(script.url),
+                    path: script.url,
+                    // if the path exists, do not send the sourceReference
+                    sourceReference: exists ? undefined : sourceReference,
+                    origin
+                };
 
-                    const clientScript: Script = new Script(source);
-                    resolve(new ScriptEvent('new', clientScript));
-                });
-        });
+                const clientScript: Script = new Script(source);
+                return new ScriptEvent('new', clientScript);
+            });
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
