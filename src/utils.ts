@@ -36,6 +36,21 @@ export function existsSync(path: string): boolean {
 }
 
 /**
+ * Checks asynchronously if a path exists on the disk.
+ */
+export function existsAsync(path: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        try {
+            fs.access(path, (err) => {
+                resolve(err ? false : true);
+            });
+        } catch (e) {
+            resolve(false);
+        }
+    });
+}
+
+/**
  * Returns a reversed version of arr. Doesn't modify the input.
  */
 export function reversedArr(arr: any[]): any[] {

@@ -565,12 +565,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
         }
 
-        const scriptEvent: ScriptEvent = this.scriptToScriptEvent(script);
-        if (this._scriptEventsBeforeInitializedEventFired !== null) {
-            this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
-        } else {
-            this._session.sendEvent(scriptEvent);
-        }
+        this.scriptToScriptEvent(script)
+            .then((scriptEvent: ScriptEvent) => {
+                if (this._scriptEventsBeforeInitializedEventFired !== null) {
+                    this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
+                } else {
+                    this._session.sendEvent(scriptEvent);
+                }
+            });
     }
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
@@ -1359,19 +1361,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private scriptToScriptEvent(script: Crdp.Debugger.ScriptParsedEvent): ScriptEvent {
+    private scriptToScriptEvent(script: Crdp.Debugger.ScriptParsedEvent): Promise<ScriptEvent> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
-        const source = {
-            name: path.basename(script.url),
-            path: script.url,
-            sourceReference,
-            origin
-        };
 
-        const clientScript: Script = new Script(source);
+        return utils.existsAsync(script.url)
+            .then((exists) => {
+                const source = {
+                    name: path.basename(script.url),
+                    path: script.url,
+                    // if the path exists, do not send the sourceReference
+                    sourceReference: exists ? undefined : sourceReference,
+                    origin
+                };
 
-        return new ScriptEvent('new', clientScript);
+                const clientScript: Script = new Script(source);
+                return new ScriptEvent('new', clientScript);
+            });
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
