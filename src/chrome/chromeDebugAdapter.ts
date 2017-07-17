@@ -540,9 +540,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this._scriptsById.set(script.scriptId, script);
-        this._scriptsByUrl.set(script.url, script);
+        this._scriptsByUrl.set(script.url.toLowerCase(), script);
 
-        const resolvePendingBPs = source => {
+        const resolvePendingBPs = (source: string) => {
+            source = source && source.toLowerCase();
             if (this._pendingBreakpointsByUrl.has(source)) {
                 this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
@@ -1012,7 +1013,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
-            this._pendingBreakpointsByUrl.set(args.source.path, { args, ids, requestSeq });
+            this._pendingBreakpointsByUrl.set(args.source.path.toLowerCase(), { args, ids, requestSeq });
         }
 
         return { breakpoints };
@@ -1321,6 +1322,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
+
+            // Format stackframe name
+            frame.name = this.formatStackFrameName(frame, args.format);
         }));
 
         return stackTraceResponse;
@@ -1378,6 +1382,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 const clientScript: Script = new Script(source);
                 return new ScriptEvent('new', clientScript);
             });
+        }
+
+    private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {
+        let formattedName = frame.name;
+        if (formatArgs) {
+            if (formatArgs.module) {
+                formattedName += ` [${frame.source.name}]`;
+            }
+
+            if (formatArgs.line) {
+                formattedName += ` Line ${frame.line}`;
+            }
+        }
+
+        return formattedName;
     }
 
     private callFrameToStackFrame(frame: Crdp.Debugger.CallFrame): DebugProtocol.StackFrame {
@@ -1405,7 +1424,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 id: this._frameHandles.create(frame),
                 name: frameName,
                 source,
-                line: line,
+                line,
                 column
             };
         } catch (e) {
@@ -1914,8 +1933,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return <DebugProtocol.Variable>{
             name,
             value,
+            type: utils.uppercaseFirstLetter(object.type),
             variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context),
-            type: value,
             evaluateName
         };
     }
@@ -1954,7 +1973,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
             name,
             value,
-            type: value,
+            type: utils.uppercaseFirstLetter(object.type),
             variablesReference,
             indexedVariables,
             namedVariables,
@@ -2121,6 +2140,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
+        url = url.toLowerCase();
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
     }
 }

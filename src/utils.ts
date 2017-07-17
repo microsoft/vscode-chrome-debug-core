@@ -438,13 +438,7 @@ export function pathToRegex(aPath: string): string {
     }
 
     aPath = escapeRegexSpecialChars(aPath);
-
-    if (aPath.match(/^[a-zA-Z]:/)) {
-        const driveLetter = aPath.charAt(0);
-        const u = driveLetter.toUpperCase();
-        const l = driveLetter.toLowerCase();
-        aPath = `[${u}${l}]${aPath.substr(1)}`;
-    }
+    aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
 
     if (isFileUrl) {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
@@ -507,6 +501,10 @@ export function makeRegexMatchPath(regex: RegExp, aPath: string): RegExp {
     } else {
         return regex;
     }
+}
+
+export function uppercaseFirstLetter(str: string): string {
+    return str.substr(0, 1).toUpperCase() + str.substr(1);
 }
 
 export type Partial<T> = {

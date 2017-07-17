@@ -273,23 +273,23 @@ suite('Utils', () => {
         }
 
         test('works for a simple posix path', () => {
-            testPathToRegex('/a/b.js', '\\/a\\/b\\.js');
+            testPathToRegex('/a/b.js', '\\/[aA]\\/[bB]\\.[jJ][sS]');
         });
 
         test('works for a simple windows path', () => {
-            testPathToRegex('c:\\a\\b.js', '[Cc]:\\\\a\\\\b\\.js');
+            testPathToRegex('c:\\a\\b.js', '[cC]:\\\\[aA]\\\\[bB]\\.[jJ][sS]');
         });
 
         test('works for a url', () => {
-            testPathToRegex('http://localhost:8080/a/b.js', 'http:\\/\\/localhost:8080\\/a\\/b\\.js');
+            testPathToRegex('http://localhost:8080/a/b.js', '[hH][tT][tT][pP]:\\/\\/[lL][oO][cC][aA][lL][hH][oO][sS][tT]:8080\\/[aA]\\/[bB]\\.[jJ][sS]');
         });
 
         test('works for a posix file url', () => {
-            testPathToRegex('file:///a/b.js', 'file:\\/\\/\\/a\\/b\\.js');
+            testPathToRegex('file:///a/b.js', 'file:\\/\\/\\/[aA]\\/[bB]\\.[jJ][sS]');
         });
 
         test('escapes the drive letter for a windows file url', () => {
-            testPathToRegex('file:///c:\\a\\b.js', 'file:\\/\\/\\/[Cc]:\\\\a\\\\b\\.js');
+            testPathToRegex('file:///c:\\a\\b.js', 'file:\\/\\/\\/[cC]:\\\\[aA]\\\\[bB]\\.[jJ][sS]');
         });
     });
 
