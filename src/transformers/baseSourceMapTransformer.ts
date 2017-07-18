@@ -35,6 +35,8 @@ export class BaseSourceMapTransformer {
 
     protected _preLoad = Promise.resolve();
 
+    public caseSensitivePaths: boolean;
+
     constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>) {
         this._sourceHandles = sourceHandles;
     }
@@ -220,7 +222,7 @@ export class BaseSourceMapTransformer {
 
     public scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
         if (this._sourceMaps) {
-            this._allRuntimeScriptPaths.add(pathToGenerated.toLowerCase());
+            this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
 
             if (!sourceMapURL) return Promise.resolve(null);
 
@@ -310,6 +312,10 @@ export class BaseSourceMapTransformer {
     }
 
     private isRuntimeScript(scriptPath: string): boolean {
-        return this._allRuntimeScriptPaths.has(scriptPath.toLowerCase());
+        return this._allRuntimeScriptPaths.has(this.fixPathCasing(scriptPath));
+    }
+
+    private fixPathCasing(str: string): string {
+        return str && (this.caseSensitivePaths ? str : str.toLowerCase());
     }
 }

@@ -428,7 +428,7 @@ export class ReverseHandles<T> extends Handles<T> {
 /**
  * Return a regex for the given path to set a breakpoint on
  */
-export function pathToRegex(aPath: string): string {
+export function pathToRegex(aPath: string, caseSensitive: boolean): string {
     const fileUrlPrefix = 'file:///';
     let isFileUrl = aPath.startsWith(fileUrlPrefix);
     if (isFileUrl) {
@@ -438,7 +438,19 @@ export function pathToRegex(aPath: string): string {
     }
 
     aPath = escapeRegexSpecialChars(aPath);
-    aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
+
+    // If we should resolve paths in a case-sensitive way, we still need to set the BP for either an
+    // upper or lowercased drive letter
+    if (caseSensitive) {
+        if (aPath.match(/^[a-zA-Z]:/)) {
+            const driveLetter = aPath.charAt(0);
+            const u = driveLetter.toUpperCase();
+            const l = driveLetter.toLowerCase();
+            aPath = `[${u}${l}]${aPath.substr(1)}`;
+        }
+    } else {
+        aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
+    }
 
     if (isFileUrl) {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;

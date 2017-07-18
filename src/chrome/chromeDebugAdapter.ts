@@ -133,6 +133,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _port: number;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
+    private _caseSensitivePaths = true;
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
@@ -185,6 +186,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
+        this._caseSensitivePaths = args.clientID !== 'visualstudio';
+
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
         }
@@ -540,10 +543,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this._scriptsById.set(script.scriptId, script);
-        this._scriptsByUrl.set(script.url.toLowerCase(), script);
+        this._scriptsByUrl.set(this.fixPathCasing(script.url), script);
 
         const resolvePendingBPs = (source: string) => {
-            source = source && source.toLowerCase();
+            source = source && this.fixPathCasing(source);
             if (this._pendingBreakpointsByUrl.has(source)) {
                 this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
@@ -755,7 +758,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
 
         if (!somethingChanged) {
-            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath), 'i'));
+            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath, this._caseSensitivePaths), 'i'));
         }
 
         this.refreshBlackboxPatterns();
@@ -1013,7 +1016,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
-            this._pendingBreakpointsByUrl.set(args.source.path.toLowerCase(), { args, ids, requestSeq });
+            this._pendingBreakpointsByUrl.set(this.fixPathCasing(args.source.path), { args, ids, requestSeq });
         }
 
         return { breakpoints };
@@ -1051,7 +1054,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // after refreshing the page. This is the only way to allow hitting breakpoints in code that runs immediately when
             // the page loads.
             const script = this.getScriptByUrl(url);
-            const urlRegex = utils.pathToRegex(url);
+            const urlRegex = utils.pathToRegex(url, this._caseSensitivePaths);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                 return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
             });
@@ -2140,7 +2143,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
-        url = url.toLowerCase();
+        url = this.fixPathCasing(url);
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
+    }
+
+    private fixPathCasing(str: string): string {
+        return str && (this._caseSensitivePaths ? str : str.toLowerCase());
     }
 }

@@ -165,7 +165,7 @@ suite('ChromeDebugAdapter', () => {
                 const { line: lineNumber, column: columnNumber, condition } = bp;
 
                 if (url) {
-                    const urlRegex = utils.pathToRegex(url);
+                    const urlRegex = utils.pathToRegex(url, true);
                     mockChrome.Debugger
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(location => Promise.resolve(
@@ -316,7 +316,7 @@ suite('ChromeDebugAdapter', () => {
             const expectedResponse: ISetBreakpointsResponseBody = {
                 breakpoints: [{ line: location.lineNumber, column: location.columnNumber, verified: true, id: 1000 }]};
 
-            const expectedRegex = utils.pathToRegex(FILE_NAME);
+            const expectedRegex = utils.pathToRegex(FILE_NAME, true);
             mockChrome.Debugger
                 .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex: expectedRegex, lineNumber: breakpoints[0].line, columnNumber: breakpoints[0].column, condition: undefined })))
                 .returns(() => Promise.resolve(
