@@ -1423,6 +1423,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // If the frame doesn't have a function name, it's either an anonymous function
             // or eval script. If its source has a name, it's probably an anonymous function.
             const frameName = functionName || (script.url ? '(anonymous function)' : '(eval code)');
+            if (script.hasSourceURL) {
+                if (!global["evalSources"]) global["evalSources"] = [];
+                global["evalSources"].push(script.url);
+            }
             return {
                 id: this._frameHandles.create(frame),
                 name: frameName,
