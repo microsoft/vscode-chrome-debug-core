@@ -25,7 +25,7 @@ import {NullLogger} from './nullLogger';
 
 import Crdp from '../crdp/crdp';
 
-export const evalSources : string[] = [];
+export const evalSources: string[] = [];
 
 export {
     chromeConnection,
