@@ -10,7 +10,7 @@ import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
-import {evalSources} from '../index'
+import {evalSources} from '../index';
 
 export type MappedPosition = MappedPosition;
 
