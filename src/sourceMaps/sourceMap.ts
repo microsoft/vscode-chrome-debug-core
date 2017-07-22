@@ -163,7 +163,7 @@ export class SourceMap {
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
     public authoredPositionFor(line: number, column: number): MappedPosition {
-        if (evalSources.find(s => this._generatedPath == s) && line > 0) line--; // check if eval code
+        if (evalSources.find(s => this._generatedPath === s) && line > 0) line--; // check if eval code
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -226,7 +226,7 @@ export class SourceMap {
             return null;
         } else {
             return {
-                line: evalSources.find(s => s == this._generatedPath) ? position.line : position.line - 1, // check if eval code else Back to 0-indexed
+                line: evalSources.find(s => s === this._generatedPath) ? position.line : position.line - 1, // check if eval code else Back to 0-indexed
                 column: position.column,
                 source: this._generatedPath
             };
