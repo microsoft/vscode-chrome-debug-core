@@ -93,13 +93,14 @@ function getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<
 
 function loadSourceMapContents(mapPathOrURL: string): Promise<string> {
     let contentsP: Promise<string>;
-    if (utils.isURL(mapPathOrURL)) {
+    if (utils.isURL(mapPathOrURL) && !mapPathOrURL.startsWith('file://')) {
         logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
         contentsP = downloadSourceMapContents(mapPathOrURL).catch(e => {
             logger.error(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
             return null;
         });
     } else {
+        if (utils.isURL(mapPathOrURL)) mapPathOrURL = utils.canonicalizeUrl(mapPathOrURL);
         contentsP = new Promise((resolve, reject) => {
             logger.log(`SourceMaps.loadSourceMapContents: Reading local sourcemap file from ${mapPathOrURL}`);
             fs.readFile(mapPathOrURL, (err, data) => {
