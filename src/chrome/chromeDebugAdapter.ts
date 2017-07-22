@@ -34,7 +34,7 @@ import * as path from 'path';
 import * as nls from 'vscode-nls';
 const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
-import {evalSources} from '../index'
+import {evalSources} from '../index';
 
 interface IPropCount {
     indexedVariables: number;
