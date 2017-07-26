@@ -141,7 +141,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _columnBreakpointsEnabled: boolean;
 
     private _smartStepCount = 0;
-    private _scriptEventsBeforeInitializedEventFired: ScriptEvent[] = [];
+    private _earlyScripts: Crdp.Debugger.ScriptParsedEvent[] = [];
 
     private _initialSourceMapsP = Promise.resolve();
 
@@ -371,12 +371,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private sendScriptEventsBeforeInitializedEventFired(): void {
-        this._scriptEventsBeforeInitializedEventFired.forEach(element => {
-            this._session.sendEvent(element);
-        });
-    }
-
     /**
      * This event tells the client to begin sending setBP requests, etc. Some consumers need to override this
      * to send it at a later time of their choosing.
@@ -387,8 +381,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._initialSourceMapsP.then(() => {
                 this._session.sendEvent(new InitializedEvent());
                 this._initialSourceMapsP = null;
-                this.sendScriptEventsBeforeInitializedEventFired();
-                this._scriptEventsBeforeInitializedEventFired = null;
+
+                this._earlyScripts.forEach(script => this.sendScriptEvents(script));
+                this._earlyScripts = null;
             });
         }
     }
@@ -569,14 +564,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
         }
 
-        this.scriptToScriptEvent(script)
-            .then((scriptEvent: ScriptEvent) => {
-                if (this._scriptEventsBeforeInitializedEventFired !== null) {
-                    this._scriptEventsBeforeInitializedEventFired.push(scriptEvent);
-                } else {
-                    this._session.sendEvent(scriptEvent);
-                }
-            });
+        if (this._earlyScripts) {
+            this._earlyScripts.push(script);
+        } else {
+            this.sendScriptEvents(script);
+        }
+    }
+
+    /**
+     * Send a 'script' and 'scriptLoaded' event... these will probably be consolidated in the future.
+     */
+    private async sendScriptEvents(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        const scriptEvent = await this.scriptToScriptEvent(script);
+        this._session.sendEvent(scriptEvent);
+
+        const properlyCasedScriptUrl = this.fixPathCasing(script.url);
+        const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
+        this._session.sendEvent(new Event('scriptLoaded', { path: displayPath }));
     }
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
