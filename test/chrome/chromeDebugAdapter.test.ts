@@ -133,9 +133,8 @@ suite('ChromeDebugAdapter', () => {
             sendEventHandler = (event: DebugProtocol.Event) => {
                 if (!firstEventReceived && event.event === 'initialized') {
                     firstEventReceived = true;
-                } else if (firstEventReceived && event.event === 'script') {
                     done();
-                } else {
+                } else if (event.event !== 'script' && event.event !== 'scriptLoaded') {
                     done(new Error('An unexpected event was fired'));
                 }
             };
