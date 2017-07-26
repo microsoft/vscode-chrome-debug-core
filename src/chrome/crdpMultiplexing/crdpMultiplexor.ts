@@ -175,13 +175,15 @@ export class CRDPChannel implements LikeSocket {
     }
 
     private sendUnsentPendingMessages(domain: string): void {
-        const pendingMessagesData = this._pendingMessagesForDomain[domain];
-        if (pendingMessagesData !== undefined && this._messageCallbacks.length) {
-            logger.log(`CRDP Multiplexor - Sending pending messages of domain ${domain}(Count = ${pendingMessagesData.length})`);
-            delete this._pendingMessagesForDomain[domain];
-            pendingMessagesData.forEach(pendingMessageData => {
-                this.callDomainMessageCallbacks(domain, pendingMessageData);
-            });
+        if (this._pendingMessagesForDomain !== null) {
+            const pendingMessagesData = this._pendingMessagesForDomain[domain];
+            if (pendingMessagesData !== undefined && this._messageCallbacks.length) {
+                logger.log(`CRDP Multiplexor - Sending pending messages of domain ${domain}(Count = ${pendingMessagesData.length})`);
+                delete this._pendingMessagesForDomain[domain];
+                pendingMessagesData.forEach(pendingMessageData => {
+                    this.callDomainMessageCallbacks(domain, pendingMessageData);
+                });
+            }
         }
     }
 
