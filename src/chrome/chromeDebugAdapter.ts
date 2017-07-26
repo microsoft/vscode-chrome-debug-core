@@ -8,7 +8,7 @@ import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEv
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, ILoadedScript, IAllLoadedScriptsResponseBody,
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IAllLoadedScriptsResponseBody,
     IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
@@ -775,25 +775,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public async getLoadedScripts(): Promise<IAllLoadedScriptsResponseBody> {
-        const loadedScripts = Array.from(this._scriptsByUrl.keys())
-            .map(scriptPath => {
-                const script = this._scriptsByUrl.get(scriptPath);
+        const paths = Array.from(this._scriptsByUrl.keys())
+            .map(scriptPath => this.realPathToDisplayPath(this.fixPathCasing(scriptPath)))
+            .sort((a, b) => a.localeCompare(b));
 
-                const displayPath = this.realPathToDisplayPath(scriptPath);
-                const basename = path.basename(displayPath);
-                return <ILoadedScript>{
-                    label: basename,
-                    description: displayPath === basename ? '' : displayPath,
-                    source: {
-                        name: basename,
-                        path: displayPath,
-                        sourceReference: this.getSourceReferenceForScriptId(script.scriptId)
-                    }
-                };
-            })
-            .sort((a, b) => a.label.localeCompare(b.label));
-
-        return { loadedScripts };
+        return { paths };
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {

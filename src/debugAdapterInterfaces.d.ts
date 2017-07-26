@@ -131,14 +131,8 @@ export interface ICompletionsResponseBody {
     targets: DebugProtocol.CompletionItem[];
 }
 
-export interface ILoadedScript {
-    label: string;
-    description: string;
-    source: DebugProtocol.Source;
-}
-
 export interface IAllLoadedScriptsResponseBody {
-    loadedScripts: ILoadedScript[];
+    paths: string[];
 }
 
 export interface IExceptionInfoResponseBody {
