@@ -16,6 +16,8 @@ export type ISourceMapPathOverrides = { [pattern: string]: string };
  */
 export interface ICommonRequestArgs {
     webRoot?: string;
+    remoteRoot?: string;
+    localRoot?: string;
     pathMapping?: {[url: string]: string};
     outDir?: string;
     outFiles?: string[];
@@ -49,8 +51,6 @@ export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments
     port: number;
     url?: string;
     address?: string;
-    remoteRoot?: string;
-    localRoot?: string;
 
     /** Private undocumented property to attach directly to a known websocket url */
     websocketUrl?: string;

@@ -10,7 +10,7 @@ import {BasePathTransformer} from './basePathTransformer';
 import {logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as errors from '../errors';
-import {ISetBreakpointsArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
+import {ISetBreakpointsArgs, ICommonRequestArgs, IAttachRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
 
 /**
  * Converts a local path from Code to a path on the target.
@@ -19,7 +19,15 @@ export class RemotePathTransformer extends BasePathTransformer {
     private _localRoot: string;
     private _remoteRoot: string;
 
+    public launch(args: ILaunchRequestArgs): Promise<void> {
+        return this.init(args);
+    }
+
     public attach(args: IAttachRequestArgs): Promise<void> {
+        return this.init(args);
+    }
+
+    private init(args: ICommonRequestArgs): Promise<void> {
         // Maybe validate that it's absolute, for either windows or unix
         this._remoteRoot = args.remoteRoot;
 
