@@ -1450,7 +1450,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return `${ChromeDebugAdapter.EVAL_ROOT}/${realPath}`;
         }
 
-
         return realPath;
     }
 
