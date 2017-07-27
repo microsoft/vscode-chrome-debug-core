@@ -281,7 +281,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.shutdown();
     }
 
-    protected terminateSession(reason: string, restart?: IRestartRequestArgs): void {
+    protected terminateSession(reason: string, disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): void {
         logger.log('Terminated: ' + reason);
 
         if (!this._hasTerminated) {
@@ -903,9 +903,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    public disconnect(): void {
+    public disconnect(args: DebugProtocol.DisconnectArguments): void {
         this.shutdown();
-        return this.terminateSession('Got disconnect request');
+        return this.terminateSession('Got disconnect request', args);
     }
 
     public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
