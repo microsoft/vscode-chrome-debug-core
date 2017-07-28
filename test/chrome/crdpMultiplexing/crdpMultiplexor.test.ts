@@ -75,12 +75,24 @@ suite('CRDPMultiplexor', () => {
     test('Multiplexor message handles multiple channels', () => {
         let callbackPromises: Promise<void>[] = [];
 
-        for (let i = 1; i < 5; i++) {
+        /**
+         * Used for generating message ids such that we test messages on different channels
+         * using the same id.
+         */
+        let getMessageIdForIndex = (i: number) => {
+            if (i <= 5) {
+                return i;
+            } else {
+                return i % 2;
+            }
+        }
+
+        for (let i = 1; i < 10; i++) {
             let channel = multiplexor.addChannel("Channel" + i);
 
             let callbackPromise = new Promise<void>(function (resolve, reject) {
                 let callback = (data: string) => {
-                    Assert.equal(JSON.parse(data).id, i);
+                    Assert.equal(JSON.parse(data).id, getMessageIdForIndex(i));
                     resolve();
                 }
 
@@ -88,7 +100,7 @@ suite('CRDPMultiplexor', () => {
             });
 
             callbackPromises.push(callbackPromise);
-            multiplexor.send(channel, '{"method":"Console.enable","id":' + i + '}');
+            multiplexor.send(channel, '{"method":"Console.enable","id":' + getMessageIdForIndex(i) + '}');
         }
 
         // wait for all promises
@@ -139,24 +151,16 @@ suite('CRDPMultiplexor', () => {
         let domain2Notification = "Domain2.notification";
 
         let domain2Enabled = false;
+        let receivedMessages = [];
+        let expectedMessages = [
+            '{"id":1,"result":{}}',
+            '{"method":"Domain1.notification"}',
+            '{"id":2,"result":{}}',
+            '{"method":"Domain2.notification"}'];
 
         let channel = multiplexor.addChannel("channel");
         channel.on("message", (data: string) => {
-            let notification = JSON.parse(data);
-            if (!domain2Enabled) {
-                if (notification.id !== undefined) {
-                    Assert.equal(notification.id, 1);
-                } else {
-                    Assert.equal(notification.method, domain1Notification)
-                }
-            } else {
-                if (notification.id != undefined) {
-                    Assert.equal(notification.id, 2);
-                } else {
-                    Assert.equal(notification.method, domain2Notification)
-                    done();
-                }
-            }
+            receivedMessages.push(data);
         });
 
         // Enable the first domain so we will receive notifications
@@ -171,5 +175,8 @@ suite('CRDPMultiplexor', () => {
 
         // Enable the second domain - we should get the pending notification
         channel.send('{"method":"' + domain2Enable + '","id":2}');
+        Assert.deepEqual(receivedMessages, expectedMessages);
+        done();
+
     });
 });
