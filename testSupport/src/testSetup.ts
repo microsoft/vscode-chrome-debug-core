@@ -4,14 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { DebugClient } from 'vscode-debugadapter-testsupport';
 
 import {ExtendedDebugClient} from './debugClient';
 
 // ES6 default export...
 const LoggingReporter = require('./loggingReporter');
 
-let dc: DebugClient;
+let dc: ExtendedDebugClient;
 
 let unhandledAdapterErrors: string[];
 const origTest = test;
@@ -25,7 +24,7 @@ const checkLogTest = (title: string, testCallback?: any, testFn: Function = orig
     function runTest(): Promise<any> {
         return new Promise((resolve, reject) => {
             const optionalCallback = e => {
-                if (e) reject(e)
+                if (e) reject(e);
                 else resolve();
             };
 
@@ -52,7 +51,7 @@ const checkLogTest = (title: string, testCallback?: any, testFn: Function = orig
 (<Mocha.ITestDefinition>checkLogTest).skip = test.skip;
 test = (<any>checkLogTest);
 
-function log(e: DebugProtocol.OutputEvent) {
+function log(e: DebugProtocol.OutputEvent): void {
     // Skip telemetry events
     if (e.body.category === 'telemetry') return;
 
@@ -62,10 +61,11 @@ function log(e: DebugProtocol.OutputEvent) {
     LoggingReporter.logEE.emit('log', msg);
 
     if (msg.indexOf('********') >= 0) unhandledAdapterErrors.push(msg);
-};
+}
 
+let patchLaunchArgsCb: Function;
 function patchLaunchArgFns(): void {
-    function patchLaunchArgs(launchArgs) {
+    function patchLaunchArgs(launchArgs): void {
         launchArgs.trace = 'verbose';
         patchLaunchArgsCb(launchArgs);
     }
@@ -77,7 +77,6 @@ function patchLaunchArgFns(): void {
     };
 }
 
-let patchLaunchArgsCb: Function;
 export function setup(entryPoint: string, type: string, patchLaunchArgs?: Function, port?: number): Promise<ExtendedDebugClient> {
     unhandledAdapterErrors = [];
     patchLaunchArgsCb = patchLaunchArgs;
@@ -89,7 +88,7 @@ export function setup(entryPoint: string, type: string, patchLaunchArgs?: Functi
         .then(() => dc);
 }
 
-export function teardown() {
+export function teardown(): Promise<void> {
     dc.removeListener('output', log);
     return dc.stop();
 }
