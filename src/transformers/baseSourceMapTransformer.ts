@@ -262,12 +262,24 @@ export class BaseSourceMapTransformer {
             return;
         }
 
-        const mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line, scope.column);
+        let mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line, scope.column);
+        let shiftedScopeStartForward = false;
+
+        // If the scope is an async function, then the function declaration line may be missing a source mapping.
+        // So if we failed, try to get the next line.
+        if (!mappedStart) {
+            mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line + 1, scope.column);
+            shiftedScopeStartForward = true;
+        }
+
         if (mappedStart) {
             // Only apply changes if both mappings are found
             const mappedEnd = this._sourceMaps.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
             if (mappedEnd) {
                 scope.line = mappedStart.line;
+                if (shiftedScopeStartForward) {
+                    scope.line--;
+                }
                 scope.column = mappedStart.column;
 
                 scope.endLine = mappedEnd.line;
