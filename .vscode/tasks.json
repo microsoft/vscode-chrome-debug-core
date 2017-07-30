@@ -1,28 +1,15 @@
 {
-    "version": "0.1.0",
-    "command": "npm",
-    "isShellCommand": true,
-    "args": [ "run" ],
+    "version": "2.0.0",
     "tasks": [
-       {
-            "taskName": "watch",
-            "isBuildCommand": true,
+        {
+            "type": "npm",
+            "script": "watch",
             "isBackground": true,
-            "problemMatcher": {
-				"owner": "typescript",
-				"applyTo": "closedDocuments",
-				"fileLocation": ["relative", "${workspaceRoot}"],
-				"pattern": {
-					"regexp": "(.*)\\(\\d+,\\d+\\): error TS\\d+: (.*)$",
-					"file": 1,
-					"location": 2,
-					"message": 3
-				},
-				"watching": {
-					"beginsPattern": "Starting 'dev-build'...",
-					"endsPattern": "Finished 'dev-build'"
-				}
-			}
+            "problemMatcher": "$gulp-tsc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
