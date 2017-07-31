@@ -207,7 +207,7 @@ function propertyPreviewToString(prop: Crdp.Runtime.PropertyPreview): string {
 }
 
 function trimProperty(value: string): string {
-    return (value.length > PREVIEW_PROP_LENGTH) ?
+    return (value !== undefined && value.length > PREVIEW_PROP_LENGTH) ?
         value.substr(0, PREVIEW_PROP_LENGTH) + ELLIPSIS :
         value;
 }
