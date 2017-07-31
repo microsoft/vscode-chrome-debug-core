@@ -22,7 +22,6 @@ suite('CRDPMultiplexor', () => {
     let webSocketMock: Mock<StubSocket>;
     let socketMessageCallbacks: Function[];
 
-
     setup(() => {
         let socket = new StubSocket();
         socketMessageCallbacks = [];
@@ -85,16 +84,16 @@ suite('CRDPMultiplexor', () => {
             } else {
                 return i % 2;
             }
-        }
+        };
 
         for (let i = 1; i < 10; i++) {
             let channel = multiplexor.addChannel("Channel" + i);
 
-            let callbackPromise = new Promise<void>(function (resolve, reject) {
+            let callbackPromise = new Promise<void>((resolve, reject) => {
                 let callback = (data: string) => {
                     Assert.equal(JSON.parse(data).id, getMessageIdForIndex(i));
                     resolve();
-                }
+                };
 
                 channel.on("message", callback);
             });
@@ -109,13 +108,13 @@ suite('CRDPMultiplexor', () => {
 
     test('Multiplexor notification delivered to all channels', () => {
         let callbackPromises: Promise<void>[] = [];
-        let testNotification: string = "Test.notification";
-        let testEnable: string = "Test.enable";
+        let testNotification = "Test.notification";
+        let testEnable = "Test.enable";
 
         for (let i = 1; i < 5; i++) {
             let channel = multiplexor.addChannel("Channel" + i);
 
-            let callbackPromise = new Promise<void>(function (resolve, reject) {
+            let callbackPromise = new Promise<void>((resolve, reject) => {
                 let callback = (data: string) => {
                     let notification = JSON.parse(data);
                     if (notification.id !== undefined) {
@@ -126,7 +125,7 @@ suite('CRDPMultiplexor', () => {
                         Assert.equal(notification.method, testNotification);
                         resolve();
                     }
-                }
+                };
 
                 channel.on("message", callback);
             });
