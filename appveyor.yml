@@ -10,4 +10,4 @@ build_script:
 
 test_script:
   - npm test
-  - gulp tslint
+  - npm run tslint
