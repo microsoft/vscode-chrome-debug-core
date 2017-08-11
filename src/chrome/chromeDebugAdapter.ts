@@ -223,7 +223,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsHitConditionalBreakpoints: true,
             supportsRestartFrame: true,
             supportsExceptionInfoRequest: true,
-            supportsDelayedStackTraceLoading: true
+            supportsDelayedStackTraceLoading: true,
+            supportsValueFormattingOptions: true
         };
     }
 
