@@ -1206,7 +1206,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.resume()
-            .then(() => { });
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     public next(): Promise<void> {
@@ -1218,7 +1219,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOver()
-            .then(() => { });
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     public stepIn(): Promise<void> {
@@ -1230,7 +1232,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepInto()
-            .then(() => { });
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     public stepOut(): Promise<void> {
@@ -1242,15 +1245,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOut()
-            .then(() => { });
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     public stepBack(): Promise<void> {
-        return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack();
+        return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack()
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     protected reverseContinue(): Promise<void> {
-        return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse();
+        return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse()
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     public pause(): Promise<void> {
