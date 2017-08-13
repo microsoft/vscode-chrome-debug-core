@@ -77,7 +77,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
     // Find all %s, %i, etc in the first argument, which is always the main text. Strip %
     let formatSpecifiers: string[];
     const firstTextArg = m.args.shift();
-    let firstTextArgValue = firstTextArg.value + '';
+    let firstTextArgValue = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (firstTextArgValue.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
