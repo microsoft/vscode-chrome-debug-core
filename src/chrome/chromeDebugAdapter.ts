@@ -368,7 +368,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             await Promise.all(this.runConnection());
 
             const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
-            return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
+            try {
+                return this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
+            } catch (e) {
+                // Not supported by older runtimes, ignore it.
+                return;
+            }
         } else {
             return Promise.resolve();
         }
