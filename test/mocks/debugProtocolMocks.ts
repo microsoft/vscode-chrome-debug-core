@@ -33,7 +33,6 @@ function getDebuggerStubs(mockEventEmitter) {
         removeBreakpoint() { },
         enable() { },
         evaluateOnCallFrame() { },
-        setAsyncCallStackDepth() { },
 
         onPaused(handler) { mockEventEmitter.on('Debugger.paused', handler); },
         onResumed(handler) { mockEventEmitter.on('Debugger.resumed', handler); },
