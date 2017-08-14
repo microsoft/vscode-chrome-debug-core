@@ -120,11 +120,15 @@ export function canonicalizeUrl(urlOrPath: string): string {
     return urlOrPath;
 }
 
+export function isFileUrl(candidate: string): boolean {
+    return candidate.startsWith('file:///');
+}
+
 /**
  * If urlOrPath is a file URL, removes the 'file:///', adjusting for platform differences
  */
 export function fileUrlToPath(urlOrPath: string): string {
-    if (urlOrPath.startsWith('file:///')) {
+    if (isFileUrl(urlOrPath)) {
         urlOrPath = urlOrPath.replace('file:///', '');
         urlOrPath = decodeURIComponent(urlOrPath);
         if (urlOrPath[0] !== '/' && !urlOrPath.match(/^[A-Za-z]:/)) {
