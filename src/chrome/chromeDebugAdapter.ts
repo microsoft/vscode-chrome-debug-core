@@ -1846,7 +1846,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const waitThenEval = this._waitAfterStep.then(() => this.doEvaluate(expression, frameId, extraArgs));
         this._waitAfterStep = waitThenEval.then(() => { }, () => { }); // to Promise<void> and handle failed evals
         return waitThenEval;
-
     }
 
     private async doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
@@ -1857,14 +1856,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             const callFrameId = frame.callFrameId;
-            let args: Crdp.Debugger.EvaluateOnCallFrameRequest = { callFrameId, expression, silent: true };
+            let args: Crdp.Debugger.EvaluateOnCallFrameRequest = {
+                callFrameId,
+                expression,
+                silent: true,
+                includeCommandLineAPI: true
+            };
             if (extraArgs) {
                 args = Object.assign(args, extraArgs);
             }
 
             return this.chrome.Debugger.evaluateOnCallFrame(args);
         } else {
-            let args: Crdp.Runtime.EvaluateRequest = { expression, silent: true };
+            let args: Crdp.Runtime.EvaluateRequest = {
+                expression,
+                silent: true,
+                includeCommandLineAPI: true
+            };
             if (extraArgs) {
                 args = Object.assign(args, extraArgs);
             }
