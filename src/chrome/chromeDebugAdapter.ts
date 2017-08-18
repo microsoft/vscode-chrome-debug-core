@@ -140,7 +140,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
     private _pauseOnPromiseRejections = true;
-    private _enablePromiseRejectExceptionFilter = false;
+    protected _promiseRejectExceptionFilterEnabled = false;
 
     private _columnBreakpointsEnabled: boolean;
 
@@ -216,7 +216,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 default: true
             }
         ];
-        if (this._enablePromiseRejectExceptionFilter) {
+        if (this._promiseRejectExceptionFilterEnabled) {
             exceptionBreakpointFilters.push({
                 label: "Promise Rejects",
                 filter: 'promise_reject',
