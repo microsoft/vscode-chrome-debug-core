@@ -139,6 +139,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
+    private _pauseOnPromiseRejections = true;
 
     private _columnBreakpointsEnabled: boolean;
 
@@ -187,7 +188,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.clearTargetContext();
     }
 
-    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
+    public initialize(args: DebugProtocol.InitializeRequestArguments, enablePromiseRejectExceptionFilter = false): DebugProtocol.Capabilities {
         this._caseSensitivePaths = args.clientID !== 'visualstudio';
 
         if (args.pathFormat !== 'path') {
@@ -202,20 +203,29 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             (<any>this)._clientColumnsStartAt1 = args.columnsStartAt1;
         }
 
+        const exceptionBreakpointFilters = [
+            {
+                label: localize('exceptions.all', "All Exceptions"),
+                filter: 'all',
+                default: false
+            },
+            {
+                label: localize('exceptions.uncaught', "Uncaught Exceptions"),
+                filter: 'uncaught',
+                default: true
+            }
+        ];
+        if (enablePromiseRejectExceptionFilter) {
+            exceptionBreakpointFilters.push({
+                label: "Promise Rejects",
+                filter: 'promise_reject',
+                default: false
+            });
+        }
+
         // This debug adapter supports two exception breakpoint filters
         return {
-            exceptionBreakpointFilters: [
-                {
-                    label: localize('exceptions.all', "All Exceptions"),
-                    filter: 'all',
-                    default: false
-                },
-                {
-                    label: localize('exceptions.uncaught', "Uncaught Exceptions"),
-                    filter: 'uncaught',
-                    default: true
-                }
-            ],
+            exceptionBreakpointFilters,
             supportsConfigurationDoneRequest: true,
             supportsSetVariable: true,
             supportsConditionalBreakpoints: true,
@@ -419,6 +429,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._exception = notification.data;
         } else if (notification.reason === 'promiseRejection') {
             reason = 'promise_rejection';
+
+            // After processing smartStep and so on, check whether we are paused on a promise rejection, and should continue past it
+            if (!this._pauseOnPromiseRejections) {
+                this.chrome.Debugger.resume()
+                    .catch(e => { /* ignore failures */ });
+                return;
+            }
+
             this._exception = notification.data;
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
@@ -431,7 +449,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     hitConditionBp.numHits++;
                     // Only resume if we didn't break for some user action (step, pause button)
                     if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
-                        this.chrome.Debugger.resume();
+                        this.chrome.Debugger.resume()
+                            .catch(e => { /* ignore failures */ });
                         return;
                     }
                 }
@@ -1194,6 +1213,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             state = 'uncaught';
         } else {
             state = 'none';
+        }
+
+        if (args.filters.indexOf('promise_reject') >= 0) {
+            this._pauseOnPromiseRejections = true;
+        } else {
+            this._pauseOnPromiseRejections = false;
         }
 
         return this.chrome.Debugger.setPauseOnExceptions({ state })
