@@ -140,6 +140,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _currentStep = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
     private _pauseOnPromiseRejections = true;
+    private _enablePromiseRejectExceptionFilter = false;
 
     private _columnBreakpointsEnabled: boolean;
 
@@ -188,7 +189,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.clearTargetContext();
     }
 
-    public initialize(args: DebugProtocol.InitializeRequestArguments, enablePromiseRejectExceptionFilter = false): DebugProtocol.Capabilities {
+    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
         this._caseSensitivePaths = args.clientID !== 'visualstudio';
 
         if (args.pathFormat !== 'path') {
@@ -215,7 +216,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 default: true
             }
         ];
-        if (enablePromiseRejectExceptionFilter) {
+        if (this._enablePromiseRejectExceptionFilter) {
             exceptionBreakpointFilters.push({
                 label: "Promise Rejects",
                 filter: 'promise_reject',
