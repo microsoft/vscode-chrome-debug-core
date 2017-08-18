@@ -73,12 +73,11 @@ export class SourceMaps {
     /**
      * Given a new path to a new script file, finds and loads the sourcemap for that file
      */
-    public processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
-        return getMapForGeneratedPath(pathToGenerated, sourceMapURL, this._webRoot, this._sourceMapPathOverrides).then(sourceMap => {
-            if (sourceMap) {
-                this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
-                sourceMap.authoredSources.forEach(authoredSource => this._authoredPathToSourceMap.set(authoredSource.toLowerCase(), sourceMap));
-            }
-        });
+    public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
+        const sourceMap = await getMapForGeneratedPath(pathToGenerated, sourceMapURL, this._webRoot, this._sourceMapPathOverrides);
+        if (sourceMap) {
+            this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
+            sourceMap.authoredSources.forEach(authoredSource => this._authoredPathToSourceMap.set(authoredSource.toLowerCase(), sourceMap));
+        }
     }
 }

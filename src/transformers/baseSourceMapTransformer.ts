@@ -34,6 +34,7 @@ export class BaseSourceMapTransformer {
     private _authoredPathsToMappedBPs: Map<string, DebugProtocol.SourceBreakpoint[]>;
 
     protected _preLoad = Promise.resolve();
+    private _processingNewSourceMap: Promise<any> = Promise.resolve();
 
     public caseSensitivePaths: boolean;
 
@@ -174,8 +175,10 @@ export class BaseSourceMapTransformer {
     /**
      * Apply sourcemapping to the stacktrace response
      */
-    public stackTraceResponse(response: IInternalStackTraceResponseBody): void {
+    public async stackTraceResponse(response: IInternalStackTraceResponseBody): Promise<void> {
         if (this._sourceMaps) {
+            await this._processingNewSourceMap;
+
             response.stackFrames.forEach(stackFrame => {
                 if (!stackFrame.source) {
                     return;
@@ -220,23 +223,25 @@ export class BaseSourceMapTransformer {
             this._sourceHandles.create({ contents, mappedPath });
     }
 
-    public scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
+    public async scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
         if (this._sourceMaps) {
             this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
 
-            if (!sourceMapURL) return Promise.resolve(null);
+            if (!sourceMapURL) return null;
 
             // Load the sourcemap for this new script and log its sources
-            return this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL).then(() => {
-                const sources = this._sourceMaps.allMappedSources(pathToGenerated);
-                if (sources) {
-                    logger.log(`SourceMaps.scriptParsed: ${pathToGenerated} was just loaded and has mapped sources: ${JSON.stringify(sources) }`);
-                }
+            const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL);
+            this._processingNewSourceMap = Promise.all([this._processingNewSourceMap, processNewSourceMapP]);
+            await processNewSourceMapP;
 
-                return sources;
-            });
+            const sources = this._sourceMaps.allMappedSources(pathToGenerated);
+            if (sources) {
+                logger.log(`SourceMaps.scriptParsed: ${pathToGenerated} was just loaded and has mapped sources: ${JSON.stringify(sources) }`);
+            }
+
+            return sources;
         } else {
-            return Promise.resolve(null);
+            return null;
         }
     }
 
@@ -288,39 +293,46 @@ export class BaseSourceMapTransformer {
         }
     }
 
-    public mapToGenerated(authoredPath: string, line: number, column: number): Promise<MappedPosition> {
-        if (!this._sourceMaps) return Promise.resolve(null);
-        return this._preLoad.then(() => this._sourceMaps.mapToGenerated(authoredPath, line, column));
+    public async mapToGenerated(authoredPath: string, line: number, column: number): Promise<MappedPosition> {
+        if (!this._sourceMaps) return null;
+
+        await this.wait();
+        return this._sourceMaps.mapToGenerated(authoredPath, line, column);
     }
 
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition> {
-        if (!this._sourceMaps) return Promise.resolve(null);
-        return this._preLoad.then(() => this._sourceMaps.mapToAuthored(pathToGenerated, line, column));
+    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition> {
+        if (!this._sourceMaps) return null;
+
+        await this.wait();
+        return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
     }
 
-    public getGeneratedPathFromAuthoredPath(authoredPath: string): Promise<string> {
-        if (!this._sourceMaps) return Promise.resolve(authoredPath);
-        return this._preLoad.then(() => {
-            // Find the generated path, or check whether this script is actually a runtime path - if so, return that
-            return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
-                (this.isRuntimeScript(authoredPath) ? authoredPath : null);
-        });
+    public async getGeneratedPathFromAuthoredPath(authoredPath: string): Promise<string> {
+        if (!this._sourceMaps) return authoredPath;
+
+        await this.wait();
+
+        // Find the generated path, or check whether this script is actually a runtime path - if so, return that
+        return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
+            (this.isRuntimeScript(authoredPath) ? authoredPath : null);
     }
 
-    public allSources(pathToGenerated: string): Promise<string[]> {
-        if (!this._sourceMaps) return Promise.resolve([]);
+    public async allSources(pathToGenerated: string): Promise<string[]> {
+        if (!this._sourceMaps) return [];
 
-        return this._preLoad.then(() => {
-            return this._sourceMaps.allMappedSources(pathToGenerated) || [];
-        });
+        await this.wait();
+        return this._sourceMaps.allMappedSources(pathToGenerated) || [];
     }
 
-    public allSourcePathDetails(pathToGenerated: string): Promise<ISourcePathDetails[]> {
-        if (!this._sourceMaps) return Promise.resolve([]);
+    public async allSourcePathDetails(pathToGenerated: string): Promise<ISourcePathDetails[]> {
+        if (!this._sourceMaps) return [];
 
-        return this._preLoad.then(() => {
-            return this._sourceMaps.allSourcePathDetails(pathToGenerated) || [];
-        });
+        await this.wait();
+        return this._sourceMaps.allSourcePathDetails(pathToGenerated) || [];
+    }
+
+    private wait(): Promise<any> {
+        return Promise.all([this._preLoad, this._processingNewSourceMap]);
     }
 
     private isRuntimeScript(scriptPath: string): boolean {
