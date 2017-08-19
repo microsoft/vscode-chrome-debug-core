@@ -254,7 +254,7 @@ suite('BaseSourceMapTransformer', () => {
     });
 
     suite('stackTraceResponse()', () => {
-        test('modifies the response stackFrames', () => {
+        test('modifies the response stackFrames', async () => {
             utilsMock
                 .setup(x => x.existsSync(It.isValue(AUTHORED_PATH)))
                 .returns(() => true);
@@ -262,18 +262,18 @@ suite('BaseSourceMapTransformer', () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
             const expected = testUtils.getStackTraceResponseBody(AUTHORED_PATH, AUTHORED_BPS(), undefined, /*isSourceMapped=*/true);
 
-            getTransformer().stackTraceResponse(response);
+            await getTransformer().stackTraceResponse(response);
             assert.deepEqual(response, expected);
         });
 
-        test('doesn\'t clear the path when there are no sourcemaps', () => {
+        test('doesn\'t clear the path when there are no sourcemaps', async () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
 
-            getTransformer(/*sourceMaps=*/false).stackTraceResponse(response);
+            await getTransformer(/*sourceMaps=*/false).stackTraceResponse(response);
             response.stackFrames.forEach(frame => assert(!!frame.source));
         });
 
-        test(`keeps the path when the file can't be sourcemapped if it's on disk`, () => {
+        test(`keeps the path when the file can't be sourcemapped if it's on disk`, async () => {
             const mock = Mock.ofType(SourceMaps, MockBehavior.Strict);
             mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function() { return mock.object; } });
 
@@ -289,12 +289,12 @@ suite('BaseSourceMapTransformer', () => {
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
             const expected = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS());
 
-            getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);
+            await getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);
             assert.deepEqual(response, expected);
             mock.verifyAll();
         });
 
-        test(`clears the name and leaves the path when it can't be sourcemapped and doesn't exist on disk`, () => {
+        test(`clears the name and leaves the path when it can't be sourcemapped and doesn't exist on disk`, async () => {
             const mock = Mock.ofType(SourceMaps, MockBehavior.Strict);
             mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function() { return mock.object; } });
 
@@ -313,7 +313,7 @@ suite('BaseSourceMapTransformer', () => {
                 stackFrame.source.name =  RUNTIME_FILE;
             });
 
-            getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);
+            await getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true).stackTraceResponse(response);
             assert.deepEqual(response, expected);
             mock.verifyAll();
         });
