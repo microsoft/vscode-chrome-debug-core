@@ -10,14 +10,14 @@ import {Mock} from 'typemoq';
 import * as utils from '../../src/utils';
 import * as testUtils from '../testUtils';
 
-import {getMapForGeneratedPath as _getMapForGeneratedPath} from '../../src/sourceMaps/sourceMapFactory';
+import {SourceMapFactory as _SourceMapFactory} from '../../src/sourceMaps/sourceMapFactory';
 const MODULE_UNDER_TEST = '../../src/sourceMaps/sourceMapFactory';
 
 /**
  * Unit tests for SourceMap + source-map (the mozilla lib). source-map is included in the test and not mocked
  */
 suite('SourceMapFactory', () => {
-    let getMapForGeneratedPath: typeof _getMapForGeneratedPath;
+    let sourceMapFactory: _SourceMapFactory;
 
     setup(() => {
         testUtils.setupUnhandledRejectionListener();
@@ -47,7 +47,7 @@ suite('SourceMapFactory', () => {
         }
 
         mockery.registerMock('./sourceMap', { SourceMap: mockSourceMapConstructor });
-        getMapForGeneratedPath = require(MODULE_UNDER_TEST).getMapForGeneratedPath;
+        sourceMapFactory = new (require(MODULE_UNDER_TEST).SourceMapFactory)(webRoot, sourceMapPathOverrides);
     }
 
     // How these tests basically work - The factory function should call the mocked SourceMap constructor
@@ -65,14 +65,14 @@ suite('SourceMapFactory', () => {
             const encodedData = 'data:application/json;base64,' + new Buffer(sourceMapData).toString('base64');
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, WEBROOT);
 
-            return getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData, WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
                 assert(sourceMap);
             });
         });
 
         test('returns null on malformed inline sourcemap', () => {
             const encodedData = 'data:application/json;base64,this is not base64-encoded data';
-            return getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData, WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
                 assert(!sourceMap);
             });
         });
@@ -82,7 +82,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockReadFile({ absPath: absMapPath, data: FILEDATA});
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, WEBROOT);
 
-            return getMapForGeneratedPath(GENERATED_SCRIPT_PATH, absMapPath, WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, absMapPath).then(sourceMap => {
                 assert(sourceMap);
             });
         });
@@ -91,7 +91,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockReadFile({ absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, WEBROOT);
 
-            return getMapForGeneratedPath(GENERATED_SCRIPT_PATH, 'script.js.map', WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, 'script.js.map').then(sourceMap => {
                 assert(sourceMap);
             });
         });
@@ -104,7 +104,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockGetURL('../utils', GENERATED_SCRIPT_URL + '.map', FILEDATA, utilsMock);
             setExpectedConstructorArgs(GENERATED_SCRIPT_URL, FILEDATA, WEBROOT);
 
-            return getMapForGeneratedPath(GENERATED_SCRIPT_URL, 'script.js.map', WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_URL, 'script.js.map').then(sourceMap => {
                 assert(sourceMap);
                 utilsMock.verifyAll();
             });
@@ -117,7 +117,7 @@ suite('SourceMapFactory', () => {
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, WEBROOT);
 
-            return getMapForGeneratedPath(GENERATED_SCRIPT_PATH, badMapPath, WEBROOT).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, badMapPath).then(sourceMap => {
                 assert(sourceMap);
             });
         });

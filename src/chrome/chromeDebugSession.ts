@@ -17,11 +17,12 @@ import {IDebugAdapter} from '../debugAdapterInterfaces';
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
     logFilePath?: string;
+    enableSourceMapCaching?: boolean;
 
     // Override services
     chromeConnection?: typeof ChromeConnection;
     pathTransformer?: { new(): BasePathTransformer };
-    sourceMapTransformer?: { new(sourceHandles: any): BaseSourceMapTransformer };
+    sourceMapTransformer?: { new(sourceHandles: any, enableSourcemapCaching?: boolean): BaseSourceMapTransformer };
     lineColTransformer?: { new(session: any): LineColTransformer };
 }
 

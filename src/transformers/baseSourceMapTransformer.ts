@@ -28,6 +28,7 @@ interface ISavedSetBreakpointsArgs {
 export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps;
     protected _sourceHandles: utils.ReverseHandles<ISourceContainer>;
+    private _enableSourceMapCaching: boolean;
 
     private _requestSeqToSetBreakpointsArgs: Map<number, ISavedSetBreakpointsArgs>;
     private _allRuntimeScriptPaths: Set<string>;
@@ -38,8 +39,9 @@ export class BaseSourceMapTransformer {
 
     public caseSensitivePaths: boolean;
 
-    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>) {
+    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>, enableSourceMapCaching?: boolean) {
         this._sourceHandles = sourceHandles;
+        this._enableSourceMapCaching = enableSourceMapCaching;
     }
 
     public get sourceMaps(): SourceMaps {
@@ -56,7 +58,7 @@ export class BaseSourceMapTransformer {
 
     protected init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
         if (args.sourceMaps) {
-            this._sourceMaps = new SourceMaps(args.webRoot, args.sourceMapPathOverrides);
+            this._sourceMaps = new SourceMaps(args.webRoot, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
             this._authoredPathsToMappedBPs = new Map<string, DebugProtocol.SourceBreakpoint[]>();

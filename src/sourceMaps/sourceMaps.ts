@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {SourceMap, MappedPosition, ISourcePathDetails} from './sourceMap';
-import {getMapForGeneratedPath} from './sourceMapFactory';
+import {SourceMapFactory} from './sourceMapFactory';
 import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
 
 export class SourceMaps {
@@ -11,14 +11,10 @@ export class SourceMaps {
     private _generatedPathToSourceMap = new Map<string, SourceMap>();
     private _authoredPathToSourceMap = new Map<string, SourceMap>();
 
-    // Path to resolve / paths against
-    private _webRoot: string;
+    private _sourceMapFactory: SourceMapFactory;
 
-    private _sourceMapPathOverrides: ISourceMapPathOverrides;
-
-    public constructor(webRoot?: string, sourceMapPathOverrides?: ISourceMapPathOverrides) {
-        this._webRoot = webRoot;
-        this._sourceMapPathOverrides = sourceMapPathOverrides;
+    public constructor(webRoot?: string, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
+        this._sourceMapFactory = new SourceMapFactory(webRoot, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
     /**
@@ -74,7 +70,7 @@ export class SourceMaps {
      * Given a new path to a new script file, finds and loads the sourcemap for that file
      */
     public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string): Promise<void> {
-        const sourceMap = await getMapForGeneratedPath(pathToGenerated, sourceMapURL, this._webRoot, this._sourceMapPathOverrides);
+        const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL);
         if (sourceMap) {
             this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
             sourceMap.authoredSources.forEach(authoredSource => this._authoredPathToSourceMap.set(authoredSource.toLowerCase(), sourceMap));
