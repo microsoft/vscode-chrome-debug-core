@@ -1,6 +1,6 @@
 {
   "name": "vscode-chrome-debug-core-testsupport",
-  "version": "3.14.6",
+  "version": "3.16.0",
   "description": "Tools for tests that use vscode-debugadapter-testsupport and vscode-chrome-debug-core",
   "main": "out/index.js",
   "typings": "out/index.d.ts",
@@ -10,12 +10,12 @@
   "author": "Microsoft Corporation",
   "license": "MIT",
   "dependencies": {
-    "vscode-debugadapter-testsupport": "^1.18.1"
+    "vscode-debugadapter-testsupport": "^1.22.0"
   },
   "devDependencies": {
     "@types/node": "^7.0.8",
-    "typescript": "^2.2.1",
-    "vscode-chrome-debug-core": "^3.14.2",
-    "vscode-debugprotocol": "^1.18.0-pre.1"
+    "typescript": "^2.4.2",
+    "vscode-chrome-debug-core": "^3.16.7",
+    "vscode-debugprotocol": "^1.22.0"
   }
 }
