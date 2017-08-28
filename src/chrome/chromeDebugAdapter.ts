@@ -1885,8 +1885,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             let args: Crdp.Debugger.EvaluateOnCallFrameRequest = {
                 callFrameId,
                 expression,
+                // silent because of an issue where node will sometimes hang when breaking on exceptions in console messages. Fixed somewhere between 8 and 8.4
                 silent: true,
-                includeCommandLineAPI: true
+                includeCommandLineAPI: true,
+                objectGroup: 'console'
             };
             if (extraArgs) {
                 args = Object.assign(args, extraArgs);
@@ -1896,8 +1898,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else {
             let args: Crdp.Runtime.EvaluateRequest = {
                 expression,
+                // silent because of an issue where node will sometimes hang when breaking on exceptions in console messages. Fixed somewhere between 8 and 8.4
                 silent: true,
-                includeCommandLineAPI: true
+                includeCommandLineAPI: true,
+                objectGroup: 'console',
+                userGesture: true
             };
             if (extraArgs) {
                 args = Object.assign(args, extraArgs);
