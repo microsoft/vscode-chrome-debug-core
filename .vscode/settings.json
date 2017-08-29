@@ -9,7 +9,7 @@
     },
     "search.exclude": {
         ".git": true,
-        "node_modules": true,
+        "**/node_modules": true,
         "bin": true,
         "out": true,
         "lib": true
