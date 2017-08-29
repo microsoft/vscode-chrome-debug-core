@@ -14,7 +14,7 @@
   "dependencies": {
     "@types/source-map": "^0.1.27",
     "glob": "^7.0.6",
-    "noice-json-rpc": "^1.0.0",
+    "noice-json-rpc": "1.0.1",
     "request-light": "^0.1.0",
     "source-map": "^0.5.6",
     "vscode-debugadapter": "^1.22.0",
