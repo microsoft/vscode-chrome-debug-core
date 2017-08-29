@@ -92,6 +92,8 @@ export class ScriptEvent extends Event {
     }
 }
 
+export type CrdpDomain = keyof Crdp.CrdpClient;
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = 'VM';
     public static EVAL_ROOT = '<eval>';
@@ -103,6 +105,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private static ASYNC_CALL_STACK_DEPTH = 4;
 
     protected _session: ChromeDebugSession;
+    protected _domains = new Map<CrdpDomain, Crdp.Schema.Domain>();
     private _clientAttached: boolean;
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
     private _committedBreakpointsByUrl: Map<string, Crdp.Debugger.BreakpointId[]>;
@@ -351,6 +354,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             this._port = port;
 
+            await this.initSupportedDomains();
             this.hookConnectionEvents();
             let patterns: string[] = [];
 
@@ -387,6 +391,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         } else {
             return Promise.resolve();
+        }
+    }
+
+    private async initSupportedDomains(): Promise<void> {
+        try {
+            const domainResponse = await this.chrome.Schema.getDomains();
+            domainResponse.domains.forEach(domain => this._domains.set(<any>domain.name, domain));
+        } catch (e) {
+            // If getDomains isn't supported for some reason, skip this
         }
     }
 
