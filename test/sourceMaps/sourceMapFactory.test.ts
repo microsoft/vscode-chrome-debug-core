@@ -53,11 +53,11 @@ suite('SourceMapFactory', () => {
     // How these tests basically work - The factory function should call the mocked SourceMap constructor
     // which asserts that it's called with the correct args. Also assert that it returned some object (ie nothing threw or failed);
     suite('getMapForGeneratedPath', () => {
-        const GENERATED_SCRIPT_DIRNAME = path.resolve('/project/app/out/');
+        const GENERATED_SCRIPT_DIRNAME = testUtils.pathResolve('/project/app/out/');
         const GENERATED_SCRIPT_PATH = path.join(GENERATED_SCRIPT_DIRNAME, 'script.js');
         const GENERATED_SCRIPT_URL = 'http://localhost:8080/app/script.js';
 
-        const WEBROOT = path.resolve('/project/app');
+        const WEBROOT = testUtils.pathResolve('/project/app');
         const FILEDATA = 'data';
 
         test('resolves inlined sourcemap', () => {
@@ -78,7 +78,7 @@ suite('SourceMapFactory', () => {
         });
 
         test('handles an absolute path to the sourcemap', () => {
-            const absMapPath = path.resolve('/files/app.js.map');
+            const absMapPath = testUtils.pathResolve('/files/app.js.map');
             testUtils.registerMockReadFile({ absPath: absMapPath, data: FILEDATA});
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, WEBROOT);
 
@@ -111,7 +111,7 @@ suite('SourceMapFactory', () => {
         });
 
         test('looks for a map file next to the script', () => {
-            const badMapPath = path.resolve('/files/app.js.map');
+            const badMapPath = testUtils.pathResolve('/files/app.js.map');
             testUtils.registerMockReadFile(
                 { absPath: badMapPath, data: null},
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
