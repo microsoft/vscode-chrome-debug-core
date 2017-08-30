@@ -354,7 +354,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             this._port = port;
 
-            await this.initSupportedDomains();
             this.hookConnectionEvents();
             let patterns: string[] = [];
 
@@ -381,6 +380,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             await Promise.all(this.runConnection());
+            await this.initSupportedDomains();
 
             const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
             try {
