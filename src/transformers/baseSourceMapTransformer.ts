@@ -129,9 +129,8 @@ export class BaseSourceMapTransformer {
                 // It's a generated file which is loaded
                 logger.log(`SourceMaps.setBP: SourceMaps are enabled but ${argsPath} is a runtime script`);
             } else {
-                // Source (or generated) file which is not loaded, need to wait
+                // Source (or generated) file which is not loaded.
                 logger.log(`SourceMaps.setBP: ${argsPath} can't be resolved to a loaded script. It may just not be loaded yet.`);
-                return;
             }
         } else {
             // No source.path
