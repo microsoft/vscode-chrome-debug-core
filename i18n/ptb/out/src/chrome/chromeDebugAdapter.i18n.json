@@ -7,6 +7,7 @@
 	"exceptions.all": "Todas Exceções",
 	"exceptions.uncaught": "Exceções não capturadas",
 	"setBPTimedOut": "Tempo definido em pontos de interrupção expirado",
+	"bp.fail.unbound": "Pontos de interrupção definido, mas ainda não vinculados",
 	"bp.fail.noscript": "Não foi possivel encontrar o script para a requisição de ponto de interrupção",
 	"validateBP.sourcemapFail": "Ponto de interrupção ignorado porque o código gerado não foi encontrado (problema de mapa de fontes?).",
 	"validateBP.notFound": "Ponto de interrupção ignorado porque o caminho de destino não foi encontrado",

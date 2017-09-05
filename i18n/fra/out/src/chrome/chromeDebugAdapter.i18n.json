@@ -7,6 +7,7 @@
 	"exceptions.all": "Toutes les exceptions",
 	"exceptions.uncaught": "Exceptions interceptées",
 	"setBPTimedOut": "La demande de définition des points d'arrêt a expiré",
+	"bp.fail.unbound": "Points d’arrêt définis, mais pas encore liés",
 	"bp.fail.noscript": "Script introuvable pour la demande de points d'arrêt",
 	"validateBP.sourcemapFail": "Point d'arrêt ignoré, car le code généré est introuvable. Problème de mappage de source ?",
 	"validateBP.notFound": "Point d'arrêt ignoré, car le chemin cible est introuvable",

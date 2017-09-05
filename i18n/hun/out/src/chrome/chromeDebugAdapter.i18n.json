@@ -7,6 +7,7 @@
 	"exceptions.all": "Összes kivétel",
 	"exceptions.uncaught": "Elkapott kivételek",
 	"setBPTimedOut": "Időtúllépés a kért töréspont beállítása során",
+	"bp.fail.unbound": "A töréspont be van állítva, de még nincs bekötve",
 	"bp.fail.noscript": "Nem található a kért törésponthoz tartozó parancsfájl.",
 	"validateBP.sourcemapFail": "Töréspont figyelmen kívül hagyva, mert a generált kód nem található (forráskódtérképes probléma?).",
 	"validateBP.notFound": "Töréspont figyelmen kívül hagyva, mert a cél elérési útja nem található",

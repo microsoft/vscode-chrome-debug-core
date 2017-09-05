@@ -7,6 +7,7 @@
 	"exceptions.all": "Tüm İstisnalar",
 	"exceptions.uncaught": "Yakalanmamış İstisnalar",
 	"setBPTimedOut": "Kesme noktaları ayarlama isteği zaman aşımına uğradı",
+	"bp.fail.unbound": "Kesme noktaları ayarlandı, ancak henüz bağlanmadı",
 	"bp.fail.noscript": "Kesme noktası isteği için betik bulunamıyor",
 	"validateBP.sourcemapFail": "Kesme noktası görmezden gelindi çünkü oluşturulan kod bulunamadı (kaynak haritası problemi olabilir).",
 	"validateBP.notFound": "Hedef yol bulunamadığı için kesme noktası yok sayıldı",

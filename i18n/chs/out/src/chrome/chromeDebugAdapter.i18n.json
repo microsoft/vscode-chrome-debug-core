@@ -7,6 +7,7 @@
 	"exceptions.all": "所有异常",
 	"exceptions.uncaught": "未捕获的异常",
 	"setBPTimedOut": "设置断点命令超时。",
+	"bp.fail.unbound": "已设置断点但还未绑定",
 	"bp.fail.noscript": "无法找到断点命令的脚本。",
 	"validateBP.sourcemapFail": "由于未找到生成的代码，已忽略断点(是否是源映射问题?)。",
 	"validateBP.notFound": "断点已忽略，因为未找到目标路径",

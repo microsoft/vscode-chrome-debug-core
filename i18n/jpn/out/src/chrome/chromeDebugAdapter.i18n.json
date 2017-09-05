@@ -7,6 +7,7 @@
 	"exceptions.all": "すべての例外",
 	"exceptions.uncaught": "キャッチされない例外",
 	"setBPTimedOut": "ブレークポイントのリクエスト タイム アウトを設定する",
+	"bp.fail.unbound": "ブレークポイントを設定しましたが、まだバインドされていません",
 	"bp.fail.noscript": "ブレークポイントを要求するスクリプトが見つかりません",
 	"validateBP.sourcemapFail": "生成されたコードが見つからないので、ブレークポイントが無視されました (ソース マップの問題?)。",
 	"validateBP.notFound": "ターゲットのパスが見つからないため、ブレークポイントが無視されました",

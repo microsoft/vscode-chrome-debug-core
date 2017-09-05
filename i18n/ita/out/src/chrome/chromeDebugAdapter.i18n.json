@@ -7,6 +7,7 @@
 	"exceptions.all": "Tutte le eccezioni",
 	"exceptions.uncaught": "Eccezioni non rilevate",
 	"setBPTimedOut": "La richiesta di impostazione punti di interruzione è scaduta",
+	"bp.fail.unbound": "Punti di interruzione impostati ma non ancora associati",
 	"bp.fail.noscript": "Impossibile trovare script per la richiesta di un punto di interruzione",
 	"validateBP.sourcemapFail": "Il punto di interruzione è stato ignorato perché il codice generato non è stato trovato. È possibile che si sia verificato un problema di mapping di origine.",
 	"validateBP.notFound": "Punto di interruzione ignorato perché non è stato trovato il percorso di destinazione",
