@@ -2046,6 +2046,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
             if (object.preview && !object.preview.overflow) {
                 propCountP = Promise.resolve(this.getArrayNumPropsByPreview(object));
+            } else if (object.className === 'Buffer') {
+                propCountP = this.getBufferNumPropsByEval(object.objectId);
             } else {
                 propCountP = this.getArrayNumPropsByEval(object.objectId);
             }
@@ -2169,6 +2171,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private getArrayNumPropsByEval(objectId: string): Promise<IPropCount> {
         // +2 for __proto__ and length
         const getNumPropsFn = `function() { return [this.length, Object.keys(this).length - this.length + 2]; }`;
+        return this.getNumPropsByEval(objectId, getNumPropsFn);
+    }
+
+    private getBufferNumPropsByEval(objectId: string): Promise<IPropCount> {
+        // +2 for __proto__ and length
+        // Object.keys doesn't return other props from a Buffer
+        const getNumPropsFn = `function() { return [this.length, 0]; }`;
         return this.getNumPropsByEval(objectId, getNumPropsFn);
     }
 
