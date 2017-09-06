@@ -65,7 +65,7 @@ class LoggingSocket extends WebSocket {
         });
     }
 
-    public send(data: any, cb?: (err: Error) => void): void {
+    public send(data: any, opts?: any, cb?: (err: Error) => void): void {
         super.send.apply(this, arguments);
 
         const msgStr = JSON.stringify(data);
