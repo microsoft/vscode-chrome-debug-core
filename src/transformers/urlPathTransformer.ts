@@ -100,6 +100,7 @@ export class UrlPathTransformer extends BasePathTransformer {
                     frame.source.path = clientPath;
                     frame.source.sourceReference = undefined;
                     frame.source.origin = undefined;
+                    frame.source.name = path.basename(clientPath);
                 }
             }
         });
