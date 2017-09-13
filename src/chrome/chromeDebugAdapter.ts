@@ -493,8 +493,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
                 // Also with a timeout just to ensure things keep moving
                 const sendStoppedEvent = () => {
-                    const exceptionText = this._exception && this._exception.description && utils.firstLine(this._exception.description);
-                    return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, exceptionText));
+                    return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, this._exception));
                 };
                 return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
                     .then(sendStoppedEvent, sendStoppedEvent);
