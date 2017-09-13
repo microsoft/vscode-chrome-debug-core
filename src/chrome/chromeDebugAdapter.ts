@@ -490,7 +490,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     this._smartStepCount = 0;
                 }
 
-                // Enforce that the stopped event is not fired until we've send the response to the step that induced it.
+                // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
                 // Also with a timeout just to ensure things keep moving
                 const sendStoppedEvent = () => {
                     const exceptionText = this._exception && this._exception.description && utils.firstLine(this._exception.description);
@@ -508,11 +508,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         if (this._exception) {
+            const isError = this._exception.subtype === 'error';
+            const message = isError ? utils.firstLine(this._exception.description) : this._exception.description;
             const response: IExceptionInfoResponseBody = {
-                exceptionId: this._exception.className,
+                exceptionId: this._exception.className || this._exception.type || 'Error',
                 breakMode: 'unhandled',
                 details: {
-                    stackTrace: this._exception.description && await this.mapFormattedException(this._exception.description)
+                    stackTrace: this._exception.description && await this.mapFormattedException(this._exception.description),
+                    message,
+                    formattedDescription: message, // VS workaround - see https://github.com/Microsoft/vscode/issues/34259
+                    typeName: this._exception.subtype || this._exception.type
                 }
             };
 

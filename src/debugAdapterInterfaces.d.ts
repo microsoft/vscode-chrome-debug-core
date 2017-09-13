@@ -135,6 +135,11 @@ export interface IAllLoadedScriptsResponseBody {
     paths: string[];
 }
 
+export interface IExceptionDetailsVS extends DebugProtocol.ExceptionDetails {
+    /** A VS-specific property */
+    formattedDescription?: string;
+}
+
 export interface IExceptionInfoResponseBody {
     /** ID of the exception that was thrown. */
     exceptionId: string;
@@ -143,7 +148,7 @@ export interface IExceptionInfoResponseBody {
     /** Mode that caused the exception notification to be raised. */
     breakMode: DebugProtocol.ExceptionBreakMode;
     /** Detailed information about the exception. */
-    details?: DebugProtocol.ExceptionDetails;
+    details?: IExceptionDetailsVS;
 }
 
 declare type PromiseOrNot<T> = T | Promise<T>;
