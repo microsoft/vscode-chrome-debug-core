@@ -509,13 +509,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (this._exception) {
             const isError = this._exception.subtype === 'error';
             const message = isError ? utils.firstLine(this._exception.description) : this._exception.description;
+            const formattedMessage = message.replace(/\*/g, '\\*');
             const response: IExceptionInfoResponseBody = {
                 exceptionId: this._exception.className || this._exception.type || 'Error',
                 breakMode: 'unhandled',
                 details: {
                     stackTrace: this._exception.description && await this.mapFormattedException(this._exception.description),
                     message,
-                    formattedDescription: message, // VS workaround - see https://github.com/Microsoft/vscode/issues/34259
+                    formattedDescription: formattedMessage, // VS workaround - see https://github.com/Microsoft/vscode/issues/34259
                     typeName: this._exception.subtype || this._exception.type
                 }
             };
