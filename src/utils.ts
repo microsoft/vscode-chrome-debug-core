@@ -532,7 +532,7 @@ export function getLine(msg: string, n = 0): string {
 }
 
 export function firstLine(msg: string): string {
-    return getLine(msg);
+    return getLine(msg || '');
 }
 
 export function isNumber(num: number): boolean {

@@ -508,8 +508,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._exception) {
             const isError = this._exception.subtype === 'error';
-            const message = isError ? utils.firstLine(this._exception.description) : this._exception.description;
-            const formattedMessage = message.replace(/\*/g, '\\*');
+            const message = isError ? utils.firstLine(this._exception.description) : (this._exception.description || this._exception.value);
+            const formattedMessage = message && message.replace(/\*/g, '\\*');
             const response: IExceptionInfoResponseBody = {
                 exceptionId: this._exception.className || this._exception.type || 'Error',
                 breakMode: 'unhandled',

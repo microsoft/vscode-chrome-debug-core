@@ -394,4 +394,18 @@ suite('Utils', () => {
             testMakeRegexNotMatchPath(/bar\d/, '/foo/bar1', '/foo/bar2');
         });
     });
+
+    suite('firstLine', () => {
+        test('gets first line', () => {
+            [
+                ['foo\nbar', 'foo'],
+                ['\nbar', ''],
+                ['foo', 'foo'],
+                ['', ''],
+                [undefined, '']
+            ].forEach(([text, firstLine]) => {
+                assert.equal(getUtils().firstLine(text), firstLine);
+            });
+        })
+    });
 });
