@@ -406,6 +406,6 @@ suite('Utils', () => {
             ].forEach(([text, firstLine]) => {
                 assert.equal(getUtils().firstLine(text), firstLine);
             });
-        })
+        });
     });
 });
