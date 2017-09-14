@@ -508,11 +508,11 @@ export namespace Crdp {
         }
 
         export interface CallFunctionOnRequest {
-            /** Identifier of the object to call function on. */
-            objectId: RemoteObjectId;
-
             /** Declaration of the function to call. */
             functionDeclaration: string;
+
+            /** Identifier of the object to call function on. Either objectId or executionContextId should be specified. */
+            objectId?: RemoteObjectId;
 
             /** Call arguments. All call arguments must belong to the same JavaScript world as the target object. */
             arguments?: CallArgument[];
@@ -531,6 +531,12 @@ export namespace Crdp {
 
             /** Whether execution should 'await' for resulting value and return once awaited promise is resolved. */
             awaitPromise?: boolean;
+
+            /** Specifies execution context which global object will be used to call function on. Either executionContextId or objectId should be specified. */
+            executionContextId?: ExecutionContextId;
+
+            /** Symbolic group name that can be used to release multiple objects. If objectGroup is not specified and objectId is, objectGroup will be inherited from object. */
+            objectGroup?: string;
 
         }
 
@@ -853,6 +859,9 @@ export namespace Crdp {
 
             /** Location in the source code. */
             location: Location;
+
+            /** JavaScript script name or url. */
+            url: string;
 
             /** Scope chain for this call frame. */
             scopeChain: Scope[];
@@ -1534,6 +1543,36 @@ export namespace Crdp {
 
         }
 
+        /** Describes a type collected during runtime. */
+        export interface TypeObject {
+            /** Name of a type collected with type profiling. */
+            name: string;
+
+        }
+
+        /** Source offset and types for a parameter or return value. */
+        export interface TypeProfileEntry {
+            /** Source offset of the parameter or end of function for return values. */
+            offset: integer;
+
+            /** The types for this parameter or return value. */
+            types: TypeObject[];
+
+        }
+
+        /** Type profile data collected during runtime for a JavaScript script. */
+        export interface ScriptTypeProfile {
+            /** JavaScript script id. */
+            scriptId: Runtime.ScriptId;
+
+            /** JavaScript script name or url. */
+            url: string;
+
+            /** Type profile entries for parameters and return values of the functions in the script. */
+            entries: TypeProfileEntry[];
+
+        }
+
         export interface SetSamplingIntervalRequest {
             /** New sampling interval in microseconds. */
             interval: integer;
@@ -1564,6 +1603,12 @@ export namespace Crdp {
         export interface GetBestEffortCoverageResponse {
             /** Coverage data for the current isolate. */
             result: ScriptCoverage[];
+
+        }
+
+        export interface TakeTypeProfileResponse {
+            /** Type profile for all scripts since startTypeProfile() was turned on. */
+            result: ScriptTypeProfile[];
 
         }
 
@@ -1615,6 +1660,15 @@ export namespace Crdp {
 
         /** Collect coverage data for the current isolate. The coverage data may be incomplete due to garbage collection. */
         getBestEffortCoverage?: () => Promise<Profiler.GetBestEffortCoverageResponse>;
+
+        /** Enable type profile. */
+        startTypeProfile?: () => Promise<void>;
+
+        /** Disable type profile. Disabling releases type profile data collected so far. */
+        stopTypeProfile?: () => Promise<void>;
+
+        /** Collect type profile. */
+        takeTypeProfile?: () => Promise<Profiler.TakeTypeProfileResponse>;
 
     }
 
@@ -1874,6 +1928,8 @@ export namespace Crdp {
 
     export interface MemoryCommands {
         getDOMCounters?: () => Promise<Memory.GetDOMCountersResponse>;
+
+        prepareForLeakDetection?: () => Promise<void>;
 
         /** Enable/disable suppressing memory pressure notifications in all processes. */
         setPressureNotificationsSuppressed?: (params: Memory.SetPressureNotificationsSuppressedRequest) => Promise<void>;
@@ -2323,19 +2379,19 @@ export namespace Crdp {
             /** Whether to emulate mobile device. This includes viewport meta tag, overlay scrollbars, text autosizing and more. */
             mobile: boolean;
 
-            /** Scale to apply to resulting view image. Ignored in |fitWindow| mode. */
+            /** Scale to apply to resulting view image. */
             scale?: number;
 
-            /** Overriding screen width value in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding screen width value in pixels (minimum 0, maximum 10000000). */
             screenWidth?: integer;
 
-            /** Overriding screen height value in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding screen height value in pixels (minimum 0, maximum 10000000). */
             screenHeight?: integer;
 
-            /** Overriding view X position on screen in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding view X position on screen in pixels (minimum 0, maximum 10000000). */
             positionX?: integer;
 
-            /** Overriding view Y position on screen in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding view Y position on screen in pixels (minimum 0, maximum 10000000). */
             positionY?: integer;
 
             /** Do not set visible view size, rely upon explicit setVisibleSize call. */
@@ -3156,19 +3212,19 @@ export namespace Crdp {
             /** Whether to emulate mobile device. This includes viewport meta tag, overlay scrollbars, text autosizing and more. */
             mobile: boolean;
 
-            /** Scale to apply to resulting view image. Ignored in |fitWindow| mode. */
+            /** Scale to apply to resulting view image. */
             scale?: number;
 
-            /** Overriding screen width value in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding screen width value in pixels (minimum 0, maximum 10000000). */
             screenWidth?: integer;
 
-            /** Overriding screen height value in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding screen height value in pixels (minimum 0, maximum 10000000). */
             screenHeight?: integer;
 
-            /** Overriding view X position on screen in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding view X position on screen in pixels (minimum 0, maximum 10000000). */
             positionX?: integer;
 
-            /** Overriding view Y position on screen in pixels (minimum 0, maximum 10000000). Only used for |mobile==true|. */
+            /** Overriding view Y position on screen in pixels (minimum 0, maximum 10000000). */
             positionY?: integer;
 
             /** Do not set visible view size, rely upon explicit setVisibleSize call. */
@@ -3256,9 +3312,21 @@ export namespace Crdp {
 
         }
 
+        export interface SetNavigatorOverridesRequest {
+            /** The platform navigator.platform should return. */
+            platform: string;
+
+        }
+
         export interface SetDefaultBackgroundColorOverrideRequest {
             /** RGBA of the default background color. If not specified, any existing override will be cleared. */
             color?: DOM.RGBA;
+
+        }
+
+        export interface VirtualTimePausedEvent {
+            /** The amount of virtual time that has elapsed in milliseconds since virtual time was first enabled. */
+            virtualTimeElapsed: integer;
 
         }
     }
@@ -3305,20 +3373,29 @@ export namespace Crdp {
         /** Turns on virtual time for all frames (replacing real-time with a synthetic time source) and sets the current virtual time policy.  Note this supersedes any previous time budget. */
         setVirtualTimePolicy?: (params: Emulation.SetVirtualTimePolicyRequest) => Promise<void>;
 
+        /** Overrides value returned by the javascript navigator object. */
+        setNavigatorOverrides?: (params: Emulation.SetNavigatorOverridesRequest) => Promise<void>;
+
         /** Sets or clears an override of the default background color of the frame. This override is used if the content does not specify one. */
         setDefaultBackgroundColorOverride?: (params: Emulation.SetDefaultBackgroundColorOverrideRequest) => Promise<void>;
 
     }
 
     export interface EmulationClient extends EmulationCommands {
-        /** Notification sent after the virual time budget for the current VirtualTimePolicy has run out. */
+        /** Notification sent after the virtual time budget for the current VirtualTimePolicy has run out. */
         onVirtualTimeBudgetExpired(handler: () => void): void;
+
+        /** Notification sent after the virtual time has paused. */
+        onVirtualTimePaused(handler: (params: Emulation.VirtualTimePausedEvent) => void): void;
 
     }
 
     export interface EmulationServer {
-        /** Notification sent after the virual time budget for the current VirtualTimePolicy has run out. */
+        /** Notification sent after the virtual time budget for the current VirtualTimePolicy has run out. */
         emitVirtualTimeBudgetExpired(): void;
+
+        /** Notification sent after the virtual time has paused. */
+        emitVirtualTimePaused(params: Emulation.VirtualTimePausedEvent): void;
 
         expose(domain: EmulationCommands): void;
 
@@ -3535,7 +3612,7 @@ export namespace Crdp {
             [key: string]: string;
         }
 
-        /** Loading priority of a resource request. */
+        /** The underlying connection technology that the browser is supposedly using. */
         export type ConnectionType = ('none' | 'cellular2g' | 'cellular3g' | 'cellular4g' | 'bluetooth' | 'ethernet' | 'wifi' | 'wimax' | 'other');
 
         /** Represents the cookie's 'SameSite' status: https://tools.ietf.org/html/draft-west-first-party-cookies */
@@ -4069,13 +4146,13 @@ export namespace Crdp {
             /** True to emulate internet disconnection. */
             offline: boolean;
 
-            /** Additional latency (ms). */
+            /** Minimum latency from request sent to response headers received (ms). */
             latency: number;
 
-            /** Maximal aggregated download throughput. */
+            /** Maximal aggregated download throughput (bytes/sec). -1 disables download throttling. */
             downloadThroughput: number;
 
-            /** Maximal aggregated upload throughput. */
+            /** Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling. */
             uploadThroughput: number;
 
             /** Connection type if known. */
@@ -4901,14 +4978,26 @@ export namespace Crdp {
 
         /** Data entry. */
         export interface DataEntry {
-            /** Request url spec. */
-            request: string;
+            /** Request URL. */
+            requestURL: string;
 
-            /** Response status text. */
-            response: string;
+            /** Request method. */
+            requestMethod: string;
+
+            /** Request headers */
+            requestHeaders: Header[];
 
             /** Number of seconds since epoch. */
             responseTime: number;
+
+            /** HTTP response status code. */
+            responseStatus: integer;
+
+            /** HTTP response status text. */
+            responseStatusText: string;
+
+            /** Response headers */
+            responseHeaders: Header[];
 
         }
 
@@ -4925,11 +5014,15 @@ export namespace Crdp {
 
         }
 
+        export interface Header {
+            name: string;
+
+            value: string;
+
+        }
+
         /** Cached response */
         export interface CachedResponse {
-            /** Response headers */
-            headers: any;
-
             /** Entry content, base64-encoded. */
             body: string;
 
@@ -7755,16 +7848,16 @@ export namespace Crdp {
 
         export interface TouchPoint {
             /** X coordinate of the event relative to the main frame's viewport in CSS pixels. */
-            x: integer;
+            x: number;
 
             /** Y coordinate of the event relative to the main frame's viewport in CSS pixels. 0 refers to the top of the viewport and Y increases as it proceeds towards the bottom of the viewport. */
-            y: integer;
+            y: number;
 
-            /** X radius of the touch area (default: 1). */
-            radiusX?: integer;
+            /** X radius of the touch area (default: 1.0). */
+            radiusX?: number;
 
-            /** Y radius of the touch area (default: 1). */
-            radiusY?: integer;
+            /** Y radius of the touch area (default: 1.0). */
+            radiusY?: number;
 
             /** Rotation angle (default: 0.0). */
             rotationAngle?: number;

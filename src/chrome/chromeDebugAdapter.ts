@@ -1440,6 +1440,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 columnNumber: frame.columnNumber,
                 scriptId: frame.scriptId
             },
+            url: frame.url,
             functionName: frame.functionName
         };
     }
