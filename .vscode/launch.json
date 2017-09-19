@@ -6,14 +6,14 @@
             "type": "node",
             "request": "launch",
             "protocol": "inspector",
-            "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
+            "program": "${workspaceDir}/node_modules/gulp/bin/gulp.js",
             "args": [ "test" ],
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceDir}",
             "smartStep": true,
             "skipFiles": [
                 "<node_internals>/**/*.js"
             ],
-            "outFiles": ["${workspaceRoot}/out/**/*.js"]
+            "outFiles": ["${workspaceDir}/out/**/*.js"]
         },
         // Since debugging is difficult when using npm link from the project that consumes this extension, here's a workaround.
         // Replace the paths below with the paths to your own project.
@@ -24,10 +24,10 @@
             "protocol": "inspector",
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
-            "cwd": "${workspaceRoot}/../vscode-node-debug2",
-            "program": "${workspaceRoot}/../vscode-node-debug2/out/src/nodeDebug.js",
+            "cwd": "${workspaceDir}/../vscode-node-debug2",
+            "program": "${workspaceDir}/../vscode-node-debug2/out/src/nodeDebug.js",
             "args": [ "--server=4712" ],
-            "outFiles": ["${workspaceRoot}/out/**/*.js"],
+            "outFiles": ["${workspaceDir}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true
         },
@@ -38,10 +38,10 @@
             "protocol": "inspector",
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
-            "cwd": "${workspaceRoot}/../vscode-chrome-debug",
-            "program": "${workspaceRoot}/../vscode-chrome-debug/out/bundle.js",
+            "cwd": "${workspaceDir}/../vscode-chrome-debug",
+            "program": "${workspaceDir}/../vscode-chrome-debug/out/bundle.js",
             "args": [ "--server=4712" ],
-            "outFiles": ["${workspaceRoot}/out/**/*.js"],
+            "outFiles": ["${workspaceDir}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true
         },
@@ -51,8 +51,8 @@
             "request": "launch",
             "protocol": "inspector",
 
-            "cwd": "${workspaceRoot}",
-            "program": "${workspaceRoot}/node_modules/.bin/gulp",
+            "cwd": "${workspaceDir}",
+            "program": "${workspaceDir}/node_modules/.bin/gulp",
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]
