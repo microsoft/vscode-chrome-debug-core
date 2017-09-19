@@ -222,7 +222,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         ];
         if (this._promiseRejectExceptionFilterEnabled) {
             exceptionBreakpointFilters.push({
-                label: "Promise Rejects",
+                label: localize('exceptions.promise_rejects', "Promise Rejects"),
                 filter: 'promise_reject',
                 default: false
             });
