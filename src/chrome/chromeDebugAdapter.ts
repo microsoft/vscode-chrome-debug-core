@@ -81,15 +81,16 @@ export class Script {
     }
 }
 
-export class ScriptEvent extends Event {
+export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
 
-    body: {
-        reason: 'new' | 'removed';
-        script: Script;
+export class LoadedSourceEvent extends Event implements DebugProtocol.LoadedSourceEvent {
+    public body: {
+        reason: LoadedSourceEventReason;
+        source: Source;
     };
 
-    constructor(reason: 'new' | 'removed', script: Script) {
-        super("script", {reason, script});
+    public constructor(reason: LoadedSourceEventReason, source: DebugProtocol.Source) {
+        super("loadedSource", {reason, source});
     }
 }
 
@@ -425,7 +426,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * e.g. the target navigated
      */
     private onExecutionContextsCleared(): void {
-        this.clearTargetContext();
+        const asyncOperations = [];
+        this._scriptsById.forEach(scriptedParseEvent => {
+            asyncOperations.push(this.scriptToScriptEvent('removed', scriptedParseEvent).then(scriptEvent =>
+                this._session.sendEvent(scriptEvent)));
+        });
+
+        Promise.all(asyncOperations).then(() =>
+            this.clearTargetContext());
     }
 
     protected onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): void {
@@ -629,7 +637,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Send a 'script' and 'scriptLoaded' event... these will probably be consolidated in the future.
      */
     private async sendScriptEvents(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        const scriptEvent = await this.scriptToScriptEvent(script);
+        const scriptEvent = await this.scriptToScriptEvent('new', script);
         this._session.sendEvent(scriptEvent);
 
         const properlyCasedScriptUrl = this.fixPathCasing(script.url);
@@ -1445,13 +1453,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private scriptToScriptEvent(script: Crdp.Debugger.ScriptParsedEvent): Promise<ScriptEvent> {
+    private scriptToScriptEvent(reason: LoadedSourceEventReason, script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
         return utils.existsAsync(script.url)
             .then((exists) => {
-                const source = {
+                const source: DebugProtocol.Source = {
                     name: path.basename(script.url),
                     path: script.url,
                     // if the path exists, do not send the sourceReference
@@ -1459,8 +1467,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     origin
                 };
 
-                const clientScript: Script = new Script(source);
-                return new ScriptEvent('new', clientScript);
+                return new LoadedSourceEvent(reason, source);
             });
         }
 
