@@ -90,7 +90,7 @@ export class LoadedSourceEvent extends Event implements DebugProtocol.LoadedSour
     };
 
     public constructor(reason: LoadedSourceEventReason, source: DebugProtocol.Source) {
-        super("loadedSource", {reason, source});
+        super('loadedSource', { reason, source });
     }
 }
 
