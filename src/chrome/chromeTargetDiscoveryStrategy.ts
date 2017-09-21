@@ -38,6 +38,11 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
 
     async getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]> {
         const targets = await this._getTargets(address, port);
+        /* __GDPR__
+           "targetCount" : {
+              "numTargets" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
         this.telemetry.reportEvent('targetCount', { numTargets: targets.length });
 
         if (!targets.length) {

@@ -254,6 +254,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.launch(args);
 
         if (!args.__restart) {
+            /* __GDPR__
+               "debugStarted" : {
+                  "request" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                  "args" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+               }
+            */
             telemetry.reportEvent('debugStarted', { request: 'launch', args: Object.keys(args) });
         }
 
@@ -270,6 +276,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             args.port = 9229;
         }
 
+        /* __GDPR__
+            "debugStarted" : {
+                "request" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                "args" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+            }
+        */
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
         return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
     }
@@ -302,6 +314,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         logger.log('Terminated: ' + reason);
 
         if (!this._hasTerminated) {
+            /* __GDPR__
+               "debugStopped" : {
+                  "reason" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+               }
+             */
             telemetry.reportEvent('debugStopped', { reason });
             this._hasTerminated = true;
             if (this._clientAttached) {
@@ -1043,6 +1060,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             fileExt = path.extname(args.source.path);
         }
 
+        /* __GDPR__
+           "setBreakpointsRequest" : {
+              "fileExt" : { "classification": "CustomerContent", "purpose": "FeatureInsight" }
+           }
+         */
         telemetry.reportEvent('setBreakpointsRequest', { fileExt });
     }
 
@@ -1282,6 +1304,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * internal -> suppress telemetry
      */
     public continue(internal = false): Promise<void> {
+        /* __GDPR__ "continueRequest" : { } */
         if (!internal) telemetry.reportEvent('continueRequest');
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -1298,6 +1321,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
 
+        /* __GDPR__ "nextRequest" : { } */
         telemetry.reportEvent('nextRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1311,6 +1335,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
 
+        /* __GDPR__ "stepInRequest" : { } */
         telemetry.reportEvent('stepInRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1324,6 +1349,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
 
+        /* __GDPR__ "stepOutRequest" : { } */
         telemetry.reportEvent('stepOutRequest');
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
@@ -1349,6 +1375,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
 
+        /* __GDPR__ "pauseRequest" : { } */
         telemetry.reportEvent('pauseRequest');
         this._expectingStopReason = 'pause';
         return this._currentStep = this.chrome.Debugger.pause()
