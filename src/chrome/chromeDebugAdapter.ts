@@ -3,12 +3,12 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, Event, Source} from 'vscode-debugadapter';
+import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, Event, LoadedSourceEvent} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
-    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IAllLoadedScriptsResponseBody,
+    ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
     IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
@@ -71,26 +71,13 @@ type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 export class Script {
     private static count: number = 0;
     private id: number;
-    private source: Source;
+    private source: DebugProtocol.Source;
     private children?: Script[];
 
-    constructor(source: Source, children?: Script[]) {
+    constructor(source: DebugProtocol.Source, children?: Script[]) {
         this.id = Script.count++;
         this.source = source;
         this.children = children;
-    }
-}
-
-export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
-
-export class LoadedSourceEvent extends Event implements DebugProtocol.LoadedSourceEvent {
-    public body: {
-        reason: LoadedSourceEventReason;
-        source: Source;
-    };
-
-    public constructor(reason: LoadedSourceEventReason, source: DebugProtocol.Source) {
-        super('loadedSource', { reason, source });
     }
 }
 
@@ -853,12 +840,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(() => this.warnNoSkipFiles());
     }
 
-    public async getLoadedScripts(): Promise<IAllLoadedScriptsResponseBody> {
-        const paths = Array.from(this._scriptsByUrl.keys())
-            .map(scriptPath => this.realPathToDisplayPath(this.fixPathCasing(scriptPath)))
-            .sort((a, b) => a.localeCompare(b));
+    public async loadedSources(args: DebugProtocol.LoadedSourcesArguments): Promise<IGetLoadedSourcesResponseBody> {
+        const sources = await Promise.all(Array.from(this._scriptsByUrl.values())
+            .map(script => this.scriptToSource(script)));
 
-        return { paths };
+        return { sources: sources.sort((a, b) => a.path.localeCompare(b.path)) };
     }
 
     private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
@@ -1480,23 +1466,24 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private scriptToScriptEvent(reason: LoadedSourceEventReason, script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
+    private async scriptToScriptEvent(reason: 'new' | 'changed' | 'removed', script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
+        const source = await this.scriptToSource(script);
+        return new LoadedSourceEvent(reason, source as any);
+    }
+
+    private async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
-        return utils.existsAsync(script.url)
-            .then((exists) => {
-                const source: DebugProtocol.Source = {
-                    name: path.basename(script.url),
-                    path: script.url,
-                    // if the path exists, do not send the sourceReference
-                    sourceReference: exists ? undefined : sourceReference,
-                    origin
-                };
-
-                return new LoadedSourceEvent(reason, source);
-            });
-        }
+        const exists = await utils.existsAsync(script.url);
+        return <DebugProtocol.Source>{
+            name: path.basename(script.url),
+            path: script.url,
+            // if the path exists, do not send the sourceReference
+            sourceReference: exists ? undefined : sourceReference,
+            origin
+        };
+    }
 
     private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {
         let formattedName = frame.name;

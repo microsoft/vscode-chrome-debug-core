@@ -131,8 +131,8 @@ export interface ICompletionsResponseBody {
     targets: DebugProtocol.CompletionItem[];
 }
 
-export interface IAllLoadedScriptsResponseBody {
-    paths: string[];
+export interface IGetLoadedSourcesResponseBody {
+    sources: DebugProtocol.Source[];
 }
 
 export interface IExceptionDetailsVS extends DebugProtocol.ExceptionDetails {
