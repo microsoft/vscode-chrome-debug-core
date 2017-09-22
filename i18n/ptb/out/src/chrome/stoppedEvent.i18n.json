@@ -7,6 +7,8 @@
 	"reason.description.step": "Pausado no passo",
 	"reason.description.breakpoint": "Pausado no breakpoint",
 	"reason.description.exception": "Pausado na exceção",
+	"reason.description.uncaughtException": "Pausado em exceção não capturada",
+	"reason.description.caughtException": "Pausado em exceção capturada",
 	"reason.description.user_request": "Pausado na requisição do usuário",
 	"reason.description.entry": "Pausado na entrada",
 	"reason.description.debugger_statement": "Pausado no comando do debugger",

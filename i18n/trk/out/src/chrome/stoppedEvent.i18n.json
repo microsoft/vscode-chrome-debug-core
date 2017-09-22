@@ -7,6 +7,8 @@
 	"reason.description.step": "Adımda duraklatıldı",
 	"reason.description.breakpoint": "Kesme noktasında duraklatıldı",
 	"reason.description.exception": "İstisnada duraklatıldı",
+	"reason.description.uncaughtException": "Yakalanmamış istisnada duraklatıldı",
+	"reason.description.caughtException": "Yakalanmış istisnada duraklatıldı",
 	"reason.description.user_request": "Kullanıcı isteği üzerine duraklatıldı",
 	"reason.description.entry": "Girdide duraklatıldı",
 	"reason.description.debugger_statement": "Hata ayıklayıcı ifadesinde duraklatıldı",

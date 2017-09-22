@@ -7,6 +7,8 @@
 	"reason.description.step": "已在步驟時暫停",
 	"reason.description.breakpoint": "已在中斷點暫停",
 	"reason.description.exception": "已在發生例外狀況時暫停",
+	"reason.description.uncaughtException": "已在發生未攔截的例外狀況時暫停",
+	"reason.description.caughtException": "已在發生攔截的例外狀況時暫停",
 	"reason.description.user_request": "已在使用者要求時暫停",
 	"reason.description.entry": "已在輸入時暫停",
 	"reason.description.debugger_statement": "已在偵錯工具陳述式暫停",

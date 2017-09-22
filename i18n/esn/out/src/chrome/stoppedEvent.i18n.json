@@ -7,6 +7,8 @@
 	"reason.description.step": "En pausa por un paso",
 	"reason.description.breakpoint": "En pausa por un punto de interrupción",
 	"reason.description.exception": "En pausa por una excepción",
+	"reason.description.uncaughtException": "Pausado en excepción no detectada",
+	"reason.description.caughtException": "Pausado en excepción detectada",
 	"reason.description.user_request": "En pausa por una solicitud de usuario",
 	"reason.description.entry": "En pausa por una entrada",
 	"reason.description.debugger_statement": "En pausa por una instrucción del depurador",

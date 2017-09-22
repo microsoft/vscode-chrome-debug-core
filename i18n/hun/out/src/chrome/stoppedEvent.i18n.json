@@ -7,6 +7,8 @@
 	"reason.description.step": "Szüneteltetve léptetés miatt",
 	"reason.description.breakpoint": "Szüneteltetve töréspont miatt",
 	"reason.description.exception": "Szüneteltetve kivétel miatt",
+	"reason.description.uncaughtException": "Szüneteltetve el nem kapott kivétel miatt",
+	"reason.description.caughtException": "Szüneteltetve elkapott kivétel miatt",
 	"reason.description.user_request": "Szüneteltetve felhasználói kérés miatt",
 	"reason.description.entry": "Szüneteltetve belépés miatt",
 	"reason.description.debugger_statement": "Szüneteltetve debugger utasítás miatt",
