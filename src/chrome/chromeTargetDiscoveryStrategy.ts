@@ -40,7 +40,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         const targets = await this._getTargets(address, port);
         /* __GDPR__
            "targetCount" : {
-              "numTargets" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+              "numTargets" : { "classification": "SystemMetaData", "purpose": "FeatureInsight", "isMeasurement": true }
            }
          */
         this.telemetry.reportEvent('targetCount', { numTargets: targets.length });
