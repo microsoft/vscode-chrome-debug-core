@@ -5,7 +5,7 @@
 
 import * as assert from 'assert';
 
-import { IAllLoadedScriptsResponseBody } from 'vscode-chrome-debug-core';
+import { IGetLoadedSourcesResponseBody } from 'vscode-chrome-debug-core';
 import { DebugClient } from 'vscode-debugadapter-testsupport';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
@@ -47,8 +47,8 @@ export class ExtendedDebugClient extends DebugClient {
         return results[0];
     }
 
-    async getLoadedScripts(): Promise<IAllLoadedScriptsResponseBody> {
-        const response = await this.send('getLoadedScripts')
+    async loadedSources(args: DebugProtocol.LoadedSourcesArguments): Promise<IGetLoadedSourcesResponseBody> {
+        const response = await this.send('getLoadedSources')
         return response.body;
     }
 
