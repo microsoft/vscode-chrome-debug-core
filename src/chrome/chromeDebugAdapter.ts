@@ -32,7 +32,7 @@ import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransform
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
-const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+let localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
 interface IPropCount {
     indexedVariables: number;
@@ -186,6 +186,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
+        }
+
+        if (args.locale) {
+            localize = nls.config({ locale: args.locale })();
         }
 
         // because session bypasses dispatchRequest
