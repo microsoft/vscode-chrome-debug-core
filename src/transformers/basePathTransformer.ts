@@ -35,6 +35,9 @@ export class BasePathTransformer {
     public stackTraceResponse(response: IStackTraceResponseBody): void {
     }
 
+    public fixStackFrame(stackFrame: DebugProtocol.StackFrame): void {
+    }
+
     public getTargetPathFromClientPath(clientPath: string): string {
         return clientPath;
     }

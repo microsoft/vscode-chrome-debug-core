@@ -6,7 +6,7 @@ import * as path from 'path';
 import {DebugProtocol} from 'vscode-debugprotocol';
 
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
+    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody, IInternalStackFrame} from '../debugAdapterInterfaces';
 import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
 import {SourceMaps} from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
@@ -179,40 +179,46 @@ export class BaseSourceMapTransformer {
     public async stackTraceResponse(response: IInternalStackTraceResponseBody): Promise<void> {
         if (this._sourceMaps) {
             await this._processingNewSourceMap;
+            response.stackFrames.forEach(stackFrame => this.fixStackFrame(stackFrame));
+        }
+    }
 
-            response.stackFrames.forEach(stackFrame => {
-                if (!stackFrame.source) {
-                    return;
-                }
+    public async fixStackFrame(stackFrame: IInternalStackFrame): Promise<void> {
+        if (!this._sourceMaps) {
+        }
 
-                const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
-                if (mapped && utils.existsSync(mapped.source)) {
-                    // Script was mapped to a valid path
-                    stackFrame.source.path = mapped.source;
-                    stackFrame.source.sourceReference = undefined;
-                    stackFrame.source.name = path.basename(mapped.source);
-                    stackFrame.line = mapped.line;
-                    stackFrame.column = mapped.column;
-                    stackFrame.isSourceMapped = true;
-                } else {
-                    const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
-                    if (mapped && inlinedSource) {
-                        // Clear the path and set the sourceReference - the client will ask for
-                        // the source later and it will be returned from the sourcemap
-                        stackFrame.source.name = path.basename(mapped.source);
-                        stackFrame.source.path = mapped.source;
-                        stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
-                        stackFrame.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
-                        stackFrame.line = mapped.line;
-                        stackFrame.column = mapped.column;
-                        stackFrame.isSourceMapped = true;
-                    } else if (utils.existsSync(stackFrame.source.path)) {
-                        // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
-                        stackFrame.source.sourceReference = undefined;
-                        stackFrame.source.origin = undefined;
-                    }
-                }
-            });
+        if (!stackFrame.source) {
+            return;
+        }
+
+        await this._processingNewSourceMap;
+
+        const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
+        if (mapped && utils.existsSync(mapped.source)) {
+            // Script was mapped to a valid path
+            stackFrame.source.path = mapped.source;
+            stackFrame.source.sourceReference = undefined;
+            stackFrame.source.name = path.basename(mapped.source);
+            stackFrame.line = mapped.line;
+            stackFrame.column = mapped.column;
+            stackFrame.isSourceMapped = true;
+        } else {
+            const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
+            if (mapped && inlinedSource) {
+                // Clear the path and set the sourceReference - the client will ask for
+                // the source later and it will be returned from the sourcemap
+                stackFrame.source.name = path.basename(mapped.source);
+                stackFrame.source.path = mapped.source;
+                stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
+                stackFrame.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
+                stackFrame.line = mapped.line;
+                stackFrame.column = mapped.column;
+                stackFrame.isSourceMapped = true;
+            } else if (utils.existsSync(stackFrame.source.path)) {
+                // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
+                stackFrame.source.sourceReference = undefined;
+                stackFrame.source.origin = undefined;
+            }
         }
     }
 

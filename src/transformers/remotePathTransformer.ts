@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import {BasePathTransformer} from './basePathTransformer';
 
 import {logger} from 'vscode-debugadapter';
+import {DebugProtocol} from 'vscode-debugprotocol';
 import * as utils from '../utils';
 import * as errors from '../errors';
 import {ISetBreakpointsArgs, ICommonRequestArgs, IAttachRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
@@ -68,17 +69,19 @@ export class RemotePathTransformer extends BasePathTransformer {
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(frame => {
-            const remotePath = frame.source && frame.source.path;
-            if (remotePath) {
-                const localPath = this.getClientPathFromTargetPath(remotePath);
-                if (utils.existsSync(localPath)) {
-                    frame.source.path = localPath;
-                    frame.source.sourceReference = undefined;
-                    frame.source.origin = undefined;
-                }
+        response.stackFrames.forEach(stackFrame => this.fixStackFrame(stackFrame));
+    }
+
+    public fixStackFrame(stackFrame: DebugProtocol.StackFrame): void {
+        const remotePath = stackFrame.source && stackFrame.source.path;
+        if (remotePath) {
+            const localPath = this.getClientPathFromTargetPath(remotePath);
+            if (utils.existsSync(localPath)) {
+                stackFrame.source.path = localPath;
+                stackFrame.source.sourceReference = undefined;
+                stackFrame.source.origin = undefined;
             }
-        });
+        }
     }
 
     private shouldMapPaths(remotePath: string): boolean {

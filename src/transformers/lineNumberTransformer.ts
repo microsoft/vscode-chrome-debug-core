@@ -60,7 +60,7 @@ export class LineColTransformer implements IDebugTransformer  {
         }
     }
 
-    private convertClientLocationToDebugger(location: { line?: number; column?: number }): void {
+    public convertClientLocationToDebugger(location: { line?: number; column?: number }): void {
         if (typeof location.line === 'number') {
             location.line = this.convertClientLineToDebugger(location.line);
         }
@@ -70,7 +70,7 @@ export class LineColTransformer implements IDebugTransformer  {
         }
     }
 
-    private convertDebuggerLocationToClient(location: { line?: number; column?: number }): void {
+    public convertDebuggerLocationToClient(location: { line?: number; column?: number }): void {
         if (typeof location.line === 'number') {
             location.line = this.convertDebuggerLineToClient(location.line);
         }
@@ -80,20 +80,19 @@ export class LineColTransformer implements IDebugTransformer  {
         }
     }
 
-    // Should be stable but ...
-    private convertClientLineToDebugger(line: number): number {
+    public convertClientLineToDebugger(line: number): number {
         return (<any>this._session).convertClientLineToDebugger(line);
     }
 
-    private convertDebuggerLineToClient(line: number): number {
+    public convertDebuggerLineToClient(line: number): number {
         return (<any>this._session).convertDebuggerLineToClient(line);
     }
 
-    private convertClientColumnToDebugger(column: number): number {
+    public convertClientColumnToDebugger(column: number): number {
         return (<any>this._session).convertClientColumnToDebugger(column);
     }
 
-    private convertDebuggerColumnToClient(column: number): number {
+    public convertDebuggerColumnToClient(column: number): number {
         return (<any>this._session).convertDebuggerColumnToClient(column);
     }
 }

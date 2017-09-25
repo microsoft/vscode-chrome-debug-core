@@ -7,6 +7,7 @@ import {BasePathTransformer} from './basePathTransformer';
 import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
 import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
+import {DebugProtocol} from 'vscode-debugprotocol';
 import * as ChromeUtils from '../chrome/chromeUtils';
 import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 
@@ -87,23 +88,25 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(frame => {
-            if (frame.source && frame.source.path) {
-                // Try to resolve the url to a path in the workspace. If it's not in the workspace,
-                // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
-                const clientPath = this.getClientPathFromTargetPath(frame.source.path) ||
-                    ChromeUtils.targetUrlToClientPath(this._webRoot, frame.source.path);
+        response.stackFrames.forEach(frame => this.fixStackFrame(frame));
+    }
 
-                // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
-                // clear the sourceReference since it's not needed.
-                if (clientPath) {
-                    frame.source.path = clientPath;
-                    frame.source.sourceReference = undefined;
-                    frame.source.origin = undefined;
-                    frame.source.name = path.basename(clientPath);
-                }
+    public fixStackFrame(stackFrame: DebugProtocol.StackFrame): void {
+        if (stackFrame.source && stackFrame.source.path) {
+            // Try to resolve the url to a path in the workspace. If it's not in the workspace,
+            // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
+            const clientPath = this.getClientPathFromTargetPath(stackFrame.source.path) ||
+                ChromeUtils.targetUrlToClientPath(this._webRoot, stackFrame.source.path);
+
+            // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
+            // clear the sourceReference since it's not needed.
+            if (clientPath) {
+                stackFrame.source.path = clientPath;
+                stackFrame.source.sourceReference = undefined;
+                stackFrame.source.origin = undefined;
+                stackFrame.source.name = path.basename(clientPath);
             }
-        });
+        }
     }
 
     public getTargetPathFromClientPath(clientPath: string): string {

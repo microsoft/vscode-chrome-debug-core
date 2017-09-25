@@ -886,27 +886,40 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
         const result = formatConsoleArguments(params);
         if (result) {
-            this.logObjects(result.args, result.isError);
+            this.logObjects(result.args, result.isError, params.stackTrace);
         }
     }
 
-    private async logObjects(objs: Crdp.Runtime.RemoteObject[], isError = false): Promise<void> {
+    private async logObjects(objs: Crdp.Runtime.RemoteObject[], isError = false, stackTrace?: Crdp.Runtime.StackTrace): Promise<void> {
         const category = isError ? 'stderr' : 'stdout';
 
         // Shortcut the common log case to reduce unnecessary back and forth
+        let e: DebugProtocol.OutputEvent;
         if (objs.length === 1 && objs[0].type === 'string') {
             let msg = objs[0].value;
             if (isError) {
                 msg = await this.mapFormattedException(msg);
             }
 
-            const e = new OutputEvent(msg + '\n', category);
-            this._session.sendEvent(e);
-            return;
+            e = new OutputEvent(msg + '\n', category);
+        } else {
+            e = new OutputEvent('output', category);
+            e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
         }
 
-        const e: DebugProtocol.OutputEvent = new OutputEvent('output', category);
-        e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
+        if (stackTrace && stackTrace.callFrames.length) {
+            const frame = stackTrace.callFrames[0];
+            const debuggerCF = this.runtimeCFToDebuggerCF(frame);
+            const stackFrame = this.callFrameToStackFrame(debuggerCF);
+            this._pathTransformer.fixStackFrame(stackFrame);
+            await this._sourceMapTransformer.fixStackFrame(stackFrame);
+            this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
+
+            e.body.source = stackFrame.source;
+            e.body.line = stackFrame.line;
+            e.body.column = stackFrame.column;
+        }
+
         this._session.sendEvent(e);
     }
 
