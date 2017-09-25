@@ -613,6 +613,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const mappedUrl = this._pathTransformer.scriptParsed(script.url);
         const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
+            if (this._hasTerminated) {
+                return undefined;
+            }
+
             if (sources) {
                 sources
                     .filter(source => source !== mappedUrl) // Tools like babel-register will produce sources with the same path as the generated script

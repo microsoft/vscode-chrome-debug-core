@@ -66,9 +66,13 @@ class LoggingSocket extends WebSocket {
     }
 
     public send(data: any, opts?: any, cb?: (err: Error) => void): void {
-        super.send.apply(this, arguments);
-
         const msgStr = JSON.stringify(data);
+        if (this.readyState !== WebSocket.OPEN) {
+            logger.log(`→ Warning: Target not open! Message: ${msgStr}`);
+            return;
+        }
+
+        super.send.apply(this, arguments);
         logger.verbose('→ To target: ' + msgStr);
     }
 }
