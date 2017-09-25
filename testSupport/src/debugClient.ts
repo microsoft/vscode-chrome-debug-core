@@ -48,7 +48,7 @@ export class ExtendedDebugClient extends DebugClient {
     }
 
     async loadedSources(args: DebugProtocol.LoadedSourcesArguments): Promise<IGetLoadedSourcesResponseBody> {
-        const response = await this.send('getLoadedSources')
+        const response = await this.send('loadedSources');
         return response.body;
     }
 
