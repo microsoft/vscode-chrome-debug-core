@@ -49,6 +49,9 @@ export interface IRestartRequestArgs {
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
     __restart?: IRestartRequestArgs;
+
+    /** Private undocumented property to use the regex approach for enabling break on load */
+    useBreakOnLoadRegex: boolean;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {
