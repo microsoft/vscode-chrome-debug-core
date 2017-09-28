@@ -909,13 +909,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         if (stackTrace && stackTrace.callFrames.length) {
-            const frame = stackTrace.callFrames[0];
-            const debuggerCF = this.runtimeCFToDebuggerCF(frame);
-            const stackFrame = this.callFrameToStackFrame(debuggerCF);
-            this._pathTransformer.fixSource(stackFrame.source);
-            await this._sourceMapTransformer.fixSourceLocation(stackFrame);
-            this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
-
+            const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
             e.body.source = stackFrame.source;
             e.body.line = stackFrame.line;
             e.body.column = stackFrame.column;
@@ -924,14 +918,29 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.sendEvent(e);
     }
 
-    protected onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): void {
+    protected async onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): Promise<void> {
         const formattedException = formatExceptionDetails(params.exceptionDetails);
-        this.mapFormattedException(formattedException).then(exceptionStr => {
-            this._session.sendEvent(new OutputEvent(
-                exceptionStr + '\n',
-                'stderr'
-            ));
-        });
+        const exceptionStr = await this.mapFormattedException(formattedException);
+
+        const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + '\n', 'stderr');
+        const stackTrace = params.exceptionDetails.stackTrace;
+        if (stackTrace && stackTrace.callFrames.length) {
+            const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
+            e.body.source = stackFrame.source;
+            e.body.line = stackFrame.line;
+            e.body.column = stackFrame.column;
+        }
+
+        this._session.sendEvent(e);
+    }
+
+    private async mapCallFrame(frame: Crdp.Runtime.CallFrame): Promise<DebugProtocol.StackFrame> {
+        const debuggerCF = this.runtimeCFToDebuggerCF(frame);
+        const stackFrame = this.callFrameToStackFrame(debuggerCF);
+        this._pathTransformer.fixSource(stackFrame.source);
+        await this._sourceMapTransformer.fixSourceLocation(stackFrame);
+        this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
+        return stackFrame;
     }
 
     // We parse stack trace from `formattedException`, source map it and return a new string
