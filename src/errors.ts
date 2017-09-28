@@ -26,7 +26,7 @@ export function attributePathNotExist(attribute: string, path: string): DebugPro
 export function attributePathRelative(attribute: string, path: string): DebugProtocol.Message {
     return withInfoLink(
         2008,
-        localize('attribute.path.not.absolute', "Attribute '{0}' is not absolute ('{1}'); consider adding '{2}' as a prefix to make it absolute.", attribute, '{path}', '${workspaceFolder}/'),
+        localize('attribute.path.not.absolute', "Attribute '{0}' is not absolute ('{1}'); consider adding '{2}' as a prefix to make it absolute.", attribute, '{path}', '${workspaceRoot}/'),
         { path },
         20003
     );
