@@ -69,17 +69,17 @@ export class RemotePathTransformer extends BasePathTransformer {
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(stackFrame => this.fixStackFrame(stackFrame));
+        response.stackFrames.forEach(stackFrame => this.fixSource(stackFrame.source));
     }
 
-    public fixStackFrame(stackFrame: DebugProtocol.StackFrame): void {
-        const remotePath = stackFrame.source && stackFrame.source.path;
+    public fixSource(source: DebugProtocol.Source): void {
+        const remotePath = source && source.path;
         if (remotePath) {
             const localPath = this.getClientPathFromTargetPath(remotePath);
             if (utils.existsSync(localPath)) {
-                stackFrame.source.path = localPath;
-                stackFrame.source.sourceReference = undefined;
-                stackFrame.source.origin = undefined;
+                source.path = localPath;
+                source.sourceReference = undefined;
+                source.origin = undefined;
             }
         }
     }

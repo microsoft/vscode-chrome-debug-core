@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import {DebugProtocol} from 'vscode-debugprotocol';
-import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, Event, LoadedSourceEvent} from 'vscode-debugadapter';
+import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, LoadedSourceEvent} from 'vscode-debugadapter';
 
 import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -424,7 +424,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this._session.sendEvent(new InitializedEvent());
                 this._initialSourceMapsP = null;
 
-                this._earlyScripts.forEach(script => this.sendScriptEvents(script));
+                this._earlyScripts.forEach(script => this.sendLoadedSourceEvent(script));
                 this._earlyScripts = null;
             });
         }
@@ -436,7 +436,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private onExecutionContextsCleared(): void {
         const asyncOperations = [];
         this._scriptsById.forEach(scriptedParseEvent => {
-            asyncOperations.push(this.scriptToScriptEvent('removed', scriptedParseEvent).then(scriptEvent =>
+            asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent =>
                 this._session.sendEvent(scriptEvent)));
         });
 
@@ -641,20 +641,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (this._earlyScripts) {
             this._earlyScripts.push(script);
         } else {
-            this.sendScriptEvents(script);
+            this.sendLoadedSourceEvent(script);
         }
     }
 
-    /**
-     * Send a 'script' and 'scriptLoaded' event... these will probably be consolidated in the future.
-     */
-    private async sendScriptEvents(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        const scriptEvent = await this.scriptToScriptEvent('new', script);
+    private async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        const scriptEvent = await this.scriptToLoadedSourceEvent('new', script);
         this._session.sendEvent(scriptEvent);
-
-        const properlyCasedScriptUrl = this.fixPathCasing(script.url);
-        const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
-        this._session.sendEvent(new Event('scriptLoaded', { path: displayPath }));
     }
 
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
@@ -919,8 +912,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const frame = stackTrace.callFrames[0];
             const debuggerCF = this.runtimeCFToDebuggerCF(frame);
             const stackFrame = this.callFrameToStackFrame(debuggerCF);
-            this._pathTransformer.fixStackFrame(stackFrame);
-            await this._sourceMapTransformer.fixStackFrame(stackFrame);
+            this._pathTransformer.fixSource(stackFrame.source);
+            await this._sourceMapTransformer.fixSourceLocation(stackFrame);
             this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
 
             e.body.source = stackFrame.source;
@@ -1487,7 +1480,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private async scriptToScriptEvent(reason: 'new' | 'changed' | 'removed', script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
+    private async scriptToLoadedSourceEvent(reason: 'new' | 'changed' | 'removed', script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
         const source = await this.scriptToSource(script);
         return new LoadedSourceEvent(reason, source as any);
     }
@@ -1496,10 +1489,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
+        const properlyCasedScriptUrl = this.fixPathCasing(script.url);
+        const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
+
         const exists = await utils.existsAsync(script.url);
         return <DebugProtocol.Source>{
-            name: path.basename(script.url),
-            path: script.url,
+            name: path.basename(displayPath),
+            path: displayPath,
             // if the path exists, do not send the sourceReference
             sourceReference: exists ? undefined : sourceReference,
             origin

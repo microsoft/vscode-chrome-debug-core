@@ -88,23 +88,23 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(frame => this.fixStackFrame(frame));
+        response.stackFrames.forEach(frame => this.fixSource(frame.source));
     }
 
-    public fixStackFrame(stackFrame: DebugProtocol.StackFrame): void {
-        if (stackFrame.source && stackFrame.source.path) {
+    public fixSource(source: DebugProtocol.Source): void {
+        if (source && source.path) {
             // Try to resolve the url to a path in the workspace. If it's not in the workspace,
             // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
-            const clientPath = this.getClientPathFromTargetPath(stackFrame.source.path) ||
-                ChromeUtils.targetUrlToClientPath(this._webRoot, stackFrame.source.path);
+            const clientPath = this.getClientPathFromTargetPath(source.path) ||
+                ChromeUtils.targetUrlToClientPath(this._webRoot, source.path);
 
             // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
             // clear the sourceReference since it's not needed.
             if (clientPath) {
-                stackFrame.source.path = clientPath;
-                stackFrame.source.sourceReference = undefined;
-                stackFrame.source.origin = undefined;
-                stackFrame.source.name = path.basename(clientPath);
+                source.path = clientPath;
+                source.sourceReference = undefined;
+                source.origin = undefined;
+                source.name = path.basename(clientPath);
             }
         }
     }

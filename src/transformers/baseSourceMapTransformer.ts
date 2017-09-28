@@ -22,6 +22,13 @@ interface ISavedSetBreakpointsArgs {
     originalBPs: DebugProtocol.Breakpoint[];
 }
 
+export interface ISourceLocation {
+    source: DebugProtocol.Source;
+    line: number;
+    column: number;
+    isSourceMapped?: boolean; // compat with stack frame
+}
+
 /**
  * If sourcemaps are enabled, converts from source files on the client side to runtime files on the target side
  */
@@ -179,45 +186,46 @@ export class BaseSourceMapTransformer {
     public async stackTraceResponse(response: IInternalStackTraceResponseBody): Promise<void> {
         if (this._sourceMaps) {
             await this._processingNewSourceMap;
-            response.stackFrames.forEach(stackFrame => this.fixStackFrame(stackFrame));
+            response.stackFrames.forEach(stackFrame => this.fixSourceLocation(stackFrame));
         }
     }
 
-    public async fixStackFrame(stackFrame: IInternalStackFrame): Promise<void> {
+    public async fixSourceLocation(sourceLocation: ISourceLocation|IInternalStackFrame): Promise<void> {
         if (!this._sourceMaps) {
+            return;
         }
 
-        if (!stackFrame.source) {
+        if (!sourceLocation.source) {
             return;
         }
 
         await this._processingNewSourceMap;
 
-        const mapped = this._sourceMaps.mapToAuthored(stackFrame.source.path, stackFrame.line, stackFrame.column);
+        const mapped = this._sourceMaps.mapToAuthored(sourceLocation.source.path, sourceLocation.line, sourceLocation.column);
         if (mapped && utils.existsSync(mapped.source)) {
             // Script was mapped to a valid path
-            stackFrame.source.path = mapped.source;
-            stackFrame.source.sourceReference = undefined;
-            stackFrame.source.name = path.basename(mapped.source);
-            stackFrame.line = mapped.line;
-            stackFrame.column = mapped.column;
-            stackFrame.isSourceMapped = true;
+            sourceLocation.source.path = mapped.source;
+            sourceLocation.source.sourceReference = undefined;
+            sourceLocation.source.name = path.basename(mapped.source);
+            sourceLocation.line = mapped.line;
+            sourceLocation.column = mapped.column;
+            sourceLocation.isSourceMapped = true;
         } else {
             const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
             if (mapped && inlinedSource) {
                 // Clear the path and set the sourceReference - the client will ask for
                 // the source later and it will be returned from the sourcemap
-                stackFrame.source.name = path.basename(mapped.source);
-                stackFrame.source.path = mapped.source;
-                stackFrame.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
-                stackFrame.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
-                stackFrame.line = mapped.line;
-                stackFrame.column = mapped.column;
-                stackFrame.isSourceMapped = true;
-            } else if (utils.existsSync(stackFrame.source.path)) {
+                sourceLocation.source.name = path.basename(mapped.source);
+                sourceLocation.source.path = mapped.source;
+                sourceLocation.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
+                sourceLocation.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
+                sourceLocation.line = mapped.line;
+                sourceLocation.column = mapped.column;
+                sourceLocation.isSourceMapped = true;
+            } else if (utils.existsSync(sourceLocation.source.path)) {
                 // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
-                stackFrame.source.sourceReference = undefined;
-                stackFrame.source.origin = undefined;
+                sourceLocation.source.sourceReference = undefined;
+                sourceLocation.source.origin = undefined;
             }
         }
     }
