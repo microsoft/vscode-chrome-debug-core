@@ -7,6 +7,8 @@
 	"reason.description.step": "Приостановлено на шаге",
 	"reason.description.breakpoint": "Приостановлено в точке останова",
 	"reason.description.exception": "Приостановлено на исключении",
+	"reason.description.uncaughtException": "Приостановлено на неперехваченном исключении",
+	"reason.description.caughtException": "Приостановлено на перехваченном исключении",
 	"reason.description.user_request": "Приостановлено на запросе пользователя",
 	"reason.description.entry": "Приостановлено на записи",
 	"reason.description.debugger_statement": "Приостановлено на операторе отладчика",

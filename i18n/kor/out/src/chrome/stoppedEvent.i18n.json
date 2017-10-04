@@ -7,6 +7,8 @@
 	"reason.description.step": "단계에서 일시 중지됨",
 	"reason.description.breakpoint": "중단점에서 일시 중지됨",
 	"reason.description.exception": "예외에서 일시 중지됨",
+	"reason.description.uncaughtException": "catch되지 않은 예외에서 일시 중지됨",
+	"reason.description.caughtException": "catch된 예외에서 일시 중지됨",
 	"reason.description.user_request": "사용자 요청에서 일시 중지됨",
 	"reason.description.entry": "항목에서 일시 중지됨",
 	"reason.description.debugger_statement": "디버거 문에서 일시 중지됨",
