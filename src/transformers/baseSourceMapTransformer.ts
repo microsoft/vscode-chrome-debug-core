@@ -186,7 +186,9 @@ export class BaseSourceMapTransformer {
     public async stackTraceResponse(response: IInternalStackTraceResponseBody): Promise<void> {
         if (this._sourceMaps) {
             await this._processingNewSourceMap;
-            response.stackFrames.forEach(stackFrame => this.fixSourceLocation(stackFrame));
+            for (let stackFrame of response.stackFrames) {
+                await this.fixSourceLocation(stackFrame);
+            }
         }
     }
 
