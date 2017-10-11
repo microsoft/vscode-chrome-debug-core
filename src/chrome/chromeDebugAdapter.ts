@@ -28,6 +28,7 @@ import {BasePathTransformer} from '../transformers/basePathTransformer';
 import {RemotePathTransformer} from '../transformers/remotePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
+import {FallbackToClientPathTransformer} from '../transformers/fallbackToClientPathTransformer';
 
 import * as path from 'path';
 
@@ -218,6 +219,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 filter: 'promise_reject',
                 default: false
             });
+        }
+
+        if (args.supportsMappingURLsToFilePaths) {
+            this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
         // This debug adapter supports two exception breakpoint filters
@@ -611,7 +616,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         };
 
-        const mappedUrl = this._pathTransformer.scriptParsed(script.url);
+        const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
         const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
             if (this._hasTerminated) {
                 return undefined;
@@ -937,7 +942,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private async mapCallFrame(frame: Crdp.Runtime.CallFrame): Promise<DebugProtocol.StackFrame> {
         const debuggerCF = this.runtimeCFToDebuggerCF(frame);
         const stackFrame = this.callFrameToStackFrame(debuggerCF);
-        this._pathTransformer.fixSource(stackFrame.source);
+        await this._pathTransformer.fixSource(stackFrame.source);
         await this._sourceMapTransformer.fixSourceLocation(stackFrame);
         this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
         return stackFrame;

@@ -64,11 +64,11 @@ export class UrlPathTransformer extends BasePathTransformer {
         this._targetUrlToClientPath = new Map<string, string>();
     }
 
-    public scriptParsed(scriptUrl: string): string {
+    public async scriptParsed(scriptUrl: string): Promise<string> {
         let clientPath = ChromeUtils.targetUrlToClientPathByPathMappings(scriptUrl, this._pathMapping);
 
         if (!clientPath) {
-            clientPath = ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl);
+            clientPath = await this.targetUrlToClientPath(this._webRoot, scriptUrl);
         }
 
         if (!clientPath) {
@@ -78,25 +78,26 @@ export class UrlPathTransformer extends BasePathTransformer {
             }
         } else {
             logger.log(`Paths.scriptParsed: resolved ${scriptUrl} to ${clientPath}. webRoot: ${this._webRoot}`);
-            this._clientPathToTargetUrl.set(clientPath, scriptUrl);
+            const canonicalizedClientPath = utils.canonicalizeUrl(clientPath);
+            this._clientPathToTargetUrl.set(canonicalizedClientPath, scriptUrl);
             this._targetUrlToClientPath.set(scriptUrl, clientPath);
 
             scriptUrl = clientPath;
         }
 
-        return scriptUrl;
+        return Promise.resolve(scriptUrl);
     }
 
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(frame => this.fixSource(frame.source));
+    public async stackTraceResponse(response: IStackTraceResponseBody): Promise<void> {
+        await Promise.all(response.stackFrames.map(frame => this.fixSource(frame.source)));
     }
 
-    public fixSource(source: DebugProtocol.Source): void {
+    public async fixSource(source: DebugProtocol.Source): Promise<void> {
         if (source && source.path) {
             // Try to resolve the url to a path in the workspace. If it's not in the workspace,
             // just use the script.url as-is. It will be resolved or cleared by the SourceMapTransformer.
             const clientPath = this.getClientPathFromTargetPath(source.path) ||
-                ChromeUtils.targetUrlToClientPath(this._webRoot, source.path);
+                await this.targetUrlToClientPath(this._webRoot, source.path);
 
             // Incoming stackFrames have sourceReference and path set. If the path was resolved to a file in the workspace,
             // clear the sourceReference since it's not needed.
@@ -118,5 +119,9 @@ export class UrlPathTransformer extends BasePathTransformer {
 
     public getClientPathFromTargetPath(targetPath: string): string {
         return this._targetUrlToClientPath.get(targetPath);
+    }
+
+    protected async targetUrlToClientPath(webRoot: string, scriptUrl: string): Promise<string> {
+        return Promise.resolve(ChromeUtils.targetUrlToClientPath(this._webRoot, scriptUrl));
     }
 }
