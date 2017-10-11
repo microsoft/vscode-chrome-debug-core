@@ -554,7 +554,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private smartStepEnabled(): boolean {
-        return this._launchAttachArgs.sourceMaps && this._launchAttachArgs.smartStep;
+        return this._launchAttachArgs.smartStep;
     }
 
     protected onResumed(): void {
@@ -852,7 +852,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
-                this._session.sendEvent(new BreakpointEvent('new', bp));
+                this._session.sendEvent(new BreakpointEvent('changed', bp));
             });
         });
     }
@@ -881,7 +881,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
         this._sourceMapTransformer.breakpointResolved(bp, scriptPath);
         this._lineColTransformer.breakpointResolved(bp);
-        this._session.sendEvent(new BreakpointEvent('new', bp));
+        this._session.sendEvent(new BreakpointEvent('changed', bp));
     }
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
