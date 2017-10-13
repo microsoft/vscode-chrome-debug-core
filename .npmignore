@@ -1,3 +1,4 @@
+.github/
 .vscode/
 src/
 crdp/
@@ -7,6 +8,7 @@ typings/
 testSupport/
 
 .travis.yml
+appveyor.yml
 gulpfile.js
 STYLE.md
 tsconfig.json
