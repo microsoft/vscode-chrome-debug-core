@@ -902,7 +902,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 msg = await this.mapFormattedException(msg);
             }
 
-            e = new OutputEvent(msg + '\n', category);
+            const optionalNewLine = !msg.endsWith('\n') ? '\n' : '';
+            e = new OutputEvent(msg + optionalNewLine, category);
         } else {
             e = new OutputEvent('output', category);
             e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
@@ -922,7 +923,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const formattedException = formatExceptionDetails(params.exceptionDetails);
         const exceptionStr = await this.mapFormattedException(formattedException);
 
-        const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + '\n', 'stderr');
+        const optionalNewLine = !exceptionStr.endsWith('\n') ? '\n' : '';
+        const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + optionalNewLine, 'stderr');
         const stackTrace = params.exceptionDetails.stackTrace;
         if (stackTrace && stackTrace.callFrames.length) {
             const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
