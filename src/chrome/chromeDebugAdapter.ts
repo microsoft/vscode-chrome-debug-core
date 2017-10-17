@@ -462,7 +462,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             reason = 'promise_rejection';
 
             // After processing smartStep and so on, check whether we are paused on a promise rejection, and should continue past it
-            if (!this._pauseOnPromiseRejections) {
+            if (this._promiseRejectExceptionFilterEnabled && !this._pauseOnPromiseRejections) {
                 this.chrome.Debugger.resume()
                     .catch(e => { /* ignore failures */ });
                 return;
