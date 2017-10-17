@@ -68,19 +68,6 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
 type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
-export class Script {
-    private static count: number = 0;
-    private id: number;
-    private source: DebugProtocol.Source;
-    private children?: Script[];
-
-    constructor(source: DebugProtocol.Source, children?: Script[]) {
-        this.id = Script.count++;
-        this.source = source;
-        this.children = children;
-    }
-}
-
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
