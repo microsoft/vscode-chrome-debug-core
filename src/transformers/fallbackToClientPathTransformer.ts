@@ -22,10 +22,9 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
         return super.targetUrlToClientPath(webRoot, scriptUrl).then(filePath => {
                 // If it returns a valid non empty file path then that should be a valid result, so we use that
                 // If it's an eval script we won't be able to map it, so we also return that
-                // In any other case we ask the client.
                 return (filePath || ChromeUtils.isEvalScript(scriptUrl))
                     ? filePath
-                    // If it doesn't, we ask the client to map it as a fallback
+                    // In any other case we ask the client to map it as a fallback, and return filePath if there is any failures
                     : this.requestClientToMapURLToFilePath(scriptUrl).catch(rejection => {
                         logger.log("The fallback transformation failed due to: " + rejection);
                         return filePath;
