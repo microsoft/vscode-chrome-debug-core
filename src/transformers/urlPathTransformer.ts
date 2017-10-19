@@ -9,7 +9,6 @@ import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
 import {DebugProtocol} from 'vscode-debugprotocol';
 import * as ChromeUtils from '../chrome/chromeUtils';
-import {ChromeDebugAdapter} from '../chrome/chromeDebugAdapter';
 
 import * as path from 'path';
 
@@ -73,7 +72,7 @@ export class UrlPathTransformer extends BasePathTransformer {
 
         if (!clientPath) {
             // It's expected that eval scripts (eval://) won't be resolved
-            if (!scriptUrl.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX)) {
+            if (!scriptUrl.startsWith(ChromeUtils.EVAL_NAME_PREFIX)) {
                 logger.log(`Paths.scriptParsed: could not resolve ${scriptUrl} to a file under webRoot: ${this._webRoot}. It may be external or served directly from the server's memory (and that's OK).`);
             }
         } else {

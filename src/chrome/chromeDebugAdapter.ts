@@ -85,7 +85,7 @@ export class Script {
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
-    public static EVAL_NAME_PREFIX = 'VM';
+    public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
 
     private static SCRIPTS_COMMAND = '.scripts';
@@ -183,6 +183,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
+        if (args.supportsMapURLToFilePathRequest) {
+            // We do this at the top of the method so we are less likely to add some code working on pathTransformer before this.
+            this._pathTransformer = new FallbackToClientPathTransformer(this._session);
+        }
+
         this._caseSensitivePaths = args.clientID !== 'visualstudio';
 
         if (args.pathFormat !== 'path') {
@@ -219,10 +224,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 filter: 'promise_reject',
                 default: false
             });
-        }
-
-        if (args.supportsMappingURLsToFilePaths) {
-            this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
         // This debug adapter supports two exception breakpoint filters
@@ -1151,7 +1152,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected addBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         let responsePs: Promise<ISetBreakpointResult>[];
-        if (this.isEvalScript(url)) {
+        if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint
             const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.EVAL_NAME_PREFIX);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => this.chrome.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
@@ -1446,7 +1447,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
-            if (frame.source.path && this.isEvalScript(frame.source.path)) {
+            if (frame.source.path && ChromeUtils.isEvalScript(frame.source.path)) {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
@@ -1583,7 +1584,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * tweak it, since it's only for display.
      */
     protected realPathToDisplayPath(realPath: string): string {
-        if (this.isEvalScript(realPath)) {
+        if (ChromeUtils.isEvalScript(realPath)) {
             return `${ChromeDebugAdapter.EVAL_ROOT}/${realPath}`;
         }
 
@@ -2307,9 +2308,5 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private fixPathCasing(str: string): string {
         return str && (this._caseSensitivePaths ? str : str.toLowerCase());
-    }
-
-    private isEvalScript(scriptPath: string): boolean {
-        return scriptPath.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX);
     }
 }
