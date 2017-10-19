@@ -282,7 +282,7 @@ export function selectBreakpointLocation(lineNumber: number, columnNumber: numbe
     return locations[0];
 }
 
-export var EVAL_NAME_PREFIX = 'VM';
+export const EVAL_NAME_PREFIX = 'VM';
 
 export function isEvalScript(scriptPath: string): boolean {
     return scriptPath.startsWith(EVAL_NAME_PREFIX);

@@ -54,7 +54,7 @@ suite('UrlPathTransformer', () => {
             SET_BP_ARGS = { source: { path: CLIENT_PATH } };
         });
 
-        test('resolves correctly when it can map the client script to the target script', () => {
+        test('resolves correctly when it can map the client script to the target script', async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
                 .returns(() => '').verifiable();
@@ -63,7 +63,7 @@ suite('UrlPathTransformer', () => {
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
 
-            transformer.scriptParsed(TARGET_URL);
+            await transformer.scriptParsed(TARGET_URL);
             transformer.setBreakpoints(<any>SET_BP_ARGS);
             assert.deepEqual(SET_BP_ARGS, EXPECTED_SET_BP_ARGS);
         });
@@ -82,7 +82,7 @@ suite('UrlPathTransformer', () => {
     });
 
     suite('scriptParsed', () => {
-        test('returns the client path when the file can be mapped', () => {
+        test('returns the client path when the file can be mapped', async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
                 .returns(() => '').verifiable();
@@ -91,10 +91,10 @@ suite('UrlPathTransformer', () => {
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
 
-            assert.equal(transformer.scriptParsed(TARGET_URL), CLIENT_PATH);
+            assert.equal(await transformer.scriptParsed(TARGET_URL), CLIENT_PATH);
         });
 
-        test(`returns the given path when the file can't be mapped`, () => {
+        test(`returns the given path when the file can't be mapped`, async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL), It.isAny()))
                 .returns(() => '').verifiable();
@@ -103,15 +103,19 @@ suite('UrlPathTransformer', () => {
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => '').verifiable();
 
-            assert.equal(transformer.scriptParsed(TARGET_URL), TARGET_URL);
+            chromeUtilsMock
+                .setup(x => x.EVAL_NAME_PREFIX)
+                .returns(() => 'VM').verifiable();
+
+            assert.equal(await transformer.scriptParsed(TARGET_URL), TARGET_URL);
         });
 
-        test('ok with uncanonicalized paths', () => {
+        test('ok with uncanonicalized paths', async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPathByPathMappings(It.isValue(TARGET_URL + '?queryparam'), It.isAny()))
                 .returns(() => CLIENT_PATH).verifiable();
 
-            assert.equal(transformer.scriptParsed(TARGET_URL + '?queryparam'), CLIENT_PATH);
+            assert.equal(await transformer.scriptParsed(TARGET_URL + '?queryparam'), CLIENT_PATH);
             assert.equal(transformer.getClientPathFromTargetPath(TARGET_URL + '?queryparam'), CLIENT_PATH);
             assert.equal(transformer.getTargetPathFromClientPath(CLIENT_PATH), TARGET_URL + '?queryparam');
         });
@@ -124,7 +128,7 @@ suite('UrlPathTransformer', () => {
             { line: 8, column: 9 }
         ];
 
-        test('modifies the source path and clears sourceReference when the file can be mapped', () => {
+        test('modifies the source path and clears sourceReference when the file can be mapped', async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
                 .returns(() => CLIENT_PATH).verifiable();
@@ -132,7 +136,7 @@ suite('UrlPathTransformer', () => {
             const response = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LOCATIONS, [1, 2, 3]);
             const expectedResponse = testUtils.getStackTraceResponseBody(CLIENT_PATH, RUNTIME_LOCATIONS);
 
-            transformer.stackTraceResponse(response);
+            await transformer.stackTraceResponse(response);
             assert.deepEqual(response, expectedResponse);
         });
 

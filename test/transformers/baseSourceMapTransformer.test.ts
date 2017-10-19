@@ -142,7 +142,7 @@ suite('BaseSourceMapTransformer', () => {
         });
 
         // #106
-        test.skip(`if the source can't be mapped, waits until the runtime script is loaded`, () => {
+        test.skip(`if the source can't be mapped, waits until the runtime script is loaded`, async () => {
             const args = createArgs(AUTHORED_PATH, AUTHORED_BPS());
             const expected = createExpectedArgs(AUTHORED_PATH, RUNTIME_PATH, RUNTIME_BPS());
             const sourceMapURL = 'script.js.map';
@@ -172,7 +172,7 @@ suite('BaseSourceMapTransformer', () => {
             assert.deepEqual(args, expected);
             mock.verifyAll();
 
-            transformer.scriptParsed(RUNTIME_PATH, sourceMapURL);
+            await transformer.scriptParsed(RUNTIME_PATH, sourceMapURL);
             // return setBreakpointsP;
         });
 
