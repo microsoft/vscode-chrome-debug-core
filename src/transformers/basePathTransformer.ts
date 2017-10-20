@@ -24,8 +24,8 @@ export class BasePathTransformer {
     public clearTargetContext(): void {
     }
 
-    public scriptParsed(scriptPath: string): string {
-        return scriptPath;
+    public scriptParsed(scriptPath: string): Promise<string> {
+        return Promise.resolve(scriptPath);
     }
 
     public breakpointResolved(bp: DebugProtocol.Breakpoint, targetPath: string): string {
@@ -35,7 +35,7 @@ export class BasePathTransformer {
     public stackTraceResponse(response: IStackTraceResponseBody): void {
     }
 
-    public fixSource(source: DebugProtocol.Source): void {
+    public async fixSource(source: DebugProtocol.Source): Promise<void> {
     }
 
     public getTargetPathFromClientPath(clientPath: string): string {

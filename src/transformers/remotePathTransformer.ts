@@ -63,16 +63,16 @@ export class RemotePathTransformer extends BasePathTransformer {
         return super.setBreakpoints(args);
     }
 
-    public scriptParsed(scriptPath: string): string {
+    public scriptParsed(scriptPath: string): Promise<string> {
         scriptPath = this.getClientPathFromTargetPath(scriptPath);
         return super.scriptParsed(scriptPath);
     }
 
-    public stackTraceResponse(response: IStackTraceResponseBody): void {
-        response.stackFrames.forEach(stackFrame => this.fixSource(stackFrame.source));
+    public async stackTraceResponse(response: IStackTraceResponseBody): Promise<void> {
+        await Promise.all(response.stackFrames.map(stackFrame => this.fixSource(stackFrame.source)));
     }
 
-    public fixSource(source: DebugProtocol.Source): void {
+    public async fixSource(source: DebugProtocol.Source): Promise<void> {
         const remotePath = source && source.path;
         if (remotePath) {
             const localPath = this.getClientPathFromTargetPath(remotePath);

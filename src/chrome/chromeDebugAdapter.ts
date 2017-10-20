@@ -28,6 +28,7 @@ import {BasePathTransformer} from '../transformers/basePathTransformer';
 import {RemotePathTransformer} from '../transformers/remotePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
+import {FallbackToClientPathTransformer} from '../transformers/fallbackToClientPathTransformer';
 
 import * as path from 'path';
 
@@ -71,7 +72,7 @@ type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
-    public static EVAL_NAME_PREFIX = 'VM';
+    public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
 
     private static SCRIPTS_COMMAND = '.scripts';
@@ -169,6 +170,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
+        if (args.supportsMapURLToFilePathRequest) {
+            // We do this at the top of the method so we are less likely to add some code working on pathTransformer before this.
+            this._pathTransformer = new FallbackToClientPathTransformer(this._session);
+        }
+
         this._caseSensitivePaths = args.clientID !== 'visualstudio';
 
         if (args.pathFormat !== 'path') {
@@ -598,7 +604,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         };
 
-        const mappedUrl = this._pathTransformer.scriptParsed(script.url);
+        const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
         const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
             if (this._hasTerminated) {
                 return undefined;
@@ -924,7 +930,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private async mapCallFrame(frame: Crdp.Runtime.CallFrame): Promise<DebugProtocol.StackFrame> {
         const debuggerCF = this.runtimeCFToDebuggerCF(frame);
         const stackFrame = this.callFrameToStackFrame(debuggerCF);
-        this._pathTransformer.fixSource(stackFrame.source);
+        await this._pathTransformer.fixSource(stackFrame.source);
         await this._sourceMapTransformer.fixSourceLocation(stackFrame);
         this._lineColTransformer.convertDebuggerLocationToClient(stackFrame);
         return stackFrame;
@@ -1133,7 +1139,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected addBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         let responsePs: Promise<ISetBreakpointResult>[];
-        if (this.isEvalScript(url)) {
+        if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint
             const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeDebugAdapter.EVAL_NAME_PREFIX);
             responsePs = breakpoints.map(({ line, column = 0, condition }, i) => this.chrome.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
@@ -1428,7 +1434,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
-            if (frame.source.path && this.isEvalScript(frame.source.path)) {
+            if (frame.source.path && ChromeUtils.isEvalScript(frame.source.path)) {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
@@ -1565,7 +1571,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * tweak it, since it's only for display.
      */
     protected realPathToDisplayPath(realPath: string): string {
-        if (this.isEvalScript(realPath)) {
+        if (ChromeUtils.isEvalScript(realPath)) {
             return `${ChromeDebugAdapter.EVAL_ROOT}/${realPath}`;
         }
 
@@ -2289,9 +2295,5 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private fixPathCasing(str: string): string {
         return str && (this._caseSensitivePaths ? str : str.toLowerCase());
-    }
-
-    private isEvalScript(scriptPath: string): boolean {
-        return scriptPath.startsWith(ChromeDebugAdapter.EVAL_NAME_PREFIX);
     }
 }
