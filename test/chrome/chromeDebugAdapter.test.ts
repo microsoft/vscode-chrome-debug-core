@@ -374,6 +374,32 @@ suite('ChromeDebugAdapter', () => {
         });
     });
 
+    suite('Runtime.consoleAPICalled', () => {
+        test('Fires an output event when a console api is called', done => {
+            const testLog = 'Hello, world!';
+            sendEventHandler = (event: DebugProtocol.Event) => {
+                if (event.event === 'output') {
+                    assert.equal(event.body.output.trim(), testLog);
+                    done();
+                } else {
+                    testUtils.assertFail('An unexpected event was fired');
+                }
+            };
+
+            chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+                mockEventEmitter.emit('Runtime.consoleAPICalled', {
+                    type: 'log',
+                    args: [{
+                        type: 'string',
+                        value: testLog
+                    }],
+                    executionContextId: 1,
+                    timestamp: 1754079033.244016
+                });
+            });
+        });
+    });
+
     suite('Debugger.scriptParsed', () => {
         const FILE_NAME = 'file:///a.js';
         const SCRIPT_ID = '1';
