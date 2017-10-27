@@ -19,10 +19,10 @@ export interface IMockChromeConnectionAPI {
 }
 
 // See https://github.com/florinn/typemoq/issues/20
-function getConsoleStubs() {
+function getConsoleStubs(mockEventEmitter) {
     return {
         enable() { },
-        onMessageAdded() { }
+        onMessageAdded(handler) { mockEventEmitter.on('Console.messageAdded', handler); }
     };
 }
 
@@ -62,7 +62,7 @@ function getInspectorStubs(mockEventEmitter) {
 export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     const mockEventEmitter = new EventEmitter();
 
-    let mockConsole = Mock.ofInstance<Crdp.ConsoleClient>(<any>getConsoleStubs());
+    let mockConsole = Mock.ofInstance<Crdp.ConsoleClient>(<any>getConsoleStubs(mockEventEmitter));
     mockConsole.callBase = true;
     mockConsole
         .setup(x => x.enable())

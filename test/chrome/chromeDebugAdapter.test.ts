@@ -342,33 +342,34 @@ suite('ChromeDebugAdapter', () => {
     });
 
     suite('Console.messageAdded', () => {
-        test('Fires an output event when a console message is added', () => {
+        test('Fires an output event when a console message is added', done => {
             const testLog = 'Hello, world!';
-            let outputEventFired = false;
             sendEventHandler = (event: DebugProtocol.Event) => {
                 if (event.event === 'output') {
-                    outputEventFired = true;
-                    assert.equal(event.body.text, testLog);
+                    assert.equal(event.body.output.trim(), testLog);
+                    done();
                 } else {
                     testUtils.assertFail('An unexpected event was fired');
                 }
             };
 
-            mockEventEmitter.emit('Console.onMessageAdded', {
-                message: {
-                    source: 'console-api',
-                    level: 'log',
-                    type: 'log',
-                    text: testLog,
-                    timestamp: Date.now(),
-                    line: 2,
-                    column: 13,
-                    url: 'file:///c:/page/script.js',
-                    executionContextId: 2,
-                    parameters: [
-                        { type: 'string', value: testLog }
-                    ]
-                }
+            chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+                mockEventEmitter.emit('Console.messageAdded', {
+                    message: {
+                        source: 'console-api',
+                        level: 'log',
+                        type: 'log',
+                        text: testLog,
+                        timestamp: Date.now(),
+                        line: 2,
+                        column: 13,
+                        url: 'file:///c:/page/script.js',
+                        executionContextId: 2,
+                        parameters: [
+                            { type: 'string', value: testLog }
+                        ]
+                    }
+                });
             });
         });
     });
