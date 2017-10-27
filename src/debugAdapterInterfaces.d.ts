@@ -36,6 +36,10 @@ export interface ICommonRequestArgs {
     extraCRDPChannelPort?: number;
 }
 
+export interface IInitializeRequestArgs extends DebugProtocol.InitializeRequestArguments {
+    supportsMapURLToFilePathRequest?: boolean;
+}
+
 export interface IRestartRequestArgs {
     port: number;
 }

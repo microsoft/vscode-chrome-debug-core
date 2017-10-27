@@ -9,7 +9,7 @@ import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpo
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs} from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -169,9 +169,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.clearTargetContext();
     }
 
-    public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
+    public initialize(args: IInitializeRequestArgs): DebugProtocol.Capabilities {
         if (args.supportsMapURLToFilePathRequest) {
-            // We do this at the top of the method so we are less likely to add some code working on pathTransformer before this.
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
