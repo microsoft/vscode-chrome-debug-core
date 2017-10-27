@@ -1887,7 +1887,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             result: variable.value,
             variablesReference: variable.variablesReference,
             indexedVariables: variable.indexedVariables,
-            namedVariables: variable.namedVariables
+            namedVariables: variable.namedVariables,
+            type: variable.type
         };
     }
 
