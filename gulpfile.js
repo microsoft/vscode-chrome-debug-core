@@ -109,7 +109,7 @@ gulp.task('tslint', () => {
 });
 
 gulp.task('transifex-push', function () {
-    return gulp.src('**/*.nls.json')
+    return gulp.src(['**/*.nls.json', '!testSupport/**'])
         .pipe(nls.prepareXlfFiles(transifexProjectName, transifexExtensionName))
         .pipe(nls.pushXlfFiles(transifexApiHostname, transifexApiName, transifexApiToken));
 });
