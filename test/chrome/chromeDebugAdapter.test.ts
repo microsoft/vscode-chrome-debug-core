@@ -414,7 +414,8 @@ suite('ChromeDebugAdapter', () => {
                 result,
                 variablesReference,
                 indexedVariables: undefined,
-                namedVariables: undefined
+                namedVariables: undefined,
+                type: resultObj.type
             };
         }
 

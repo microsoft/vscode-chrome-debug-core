@@ -2125,7 +2125,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
         const value = variables.getRemoteObjectPreview_primitive(object, stringify);
-        return this.createPrimitiveVariableWithValue(name, value, parentEvaluateName);
+        const variable = this.createPrimitiveVariableWithValue(name, value, parentEvaluateName);
+        variable.type = object.type;
+
+        return variable;
     }
 
     public createPrimitiveVariableWithValue(name: string, value: string, parentEvaluateName?: string): DebugProtocol.Variable {
