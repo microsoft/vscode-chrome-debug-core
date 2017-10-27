@@ -304,7 +304,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
              */
             telemetry.reportEvent('debugStopped', { reason });
             this._hasTerminated = true;
-            if (this._clientAttached || (<ILaunchRequestArgs>this._launchAttachArgs).noDebug) {
+            if (this._clientAttached || (this._launchAttachArgs && (<ILaunchRequestArgs>this._launchAttachArgs).noDebug)) {
                 this._session.sendEvent(new TerminatedEvent(restart));
             }
 
