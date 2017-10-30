@@ -9,7 +9,7 @@ import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpo
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs, BreakOnLoadStrategy} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -29,6 +29,7 @@ import {RemotePathTransformer} from '../transformers/remotePathTransformer';
 import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
 import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
 import {FallbackToClientPathTransformer} from '../transformers/fallbackToClientPathTransformer';
+import {BreakOnLoadHelper} from './breakOnLoadHelper';
 
 import * as path from 'path';
 
@@ -53,7 +54,7 @@ export interface ISourceContainer {
     mappedPath?: string;
 }
 
-interface IPendingBreakpoint {
+export interface IPendingBreakpoint {
     args: ISetBreakpointsArgs;
     ids: number[];
     requestSeq: number;
@@ -67,7 +68,7 @@ interface IHitConditionBreakpoint {
 
 export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
-type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
+export type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
@@ -131,17 +132,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
 
-    private _userBreakpointOnLine1Col1: boolean = false;
-
-    private _breakOnLoadActive: boolean = true;
-
-    private _useBreakOnLoadRegex: boolean = false;
-    private _instrumentationBreakpointSet: boolean = false;
-
-    // Break on load: Store some mapping between the requested file names, the regex for the file, and the chrome breakpoint id to perform lookup operations efficiently
-    private _stopOnEntryBreakpointIdToRequestedFileName = new Map<string, [string, Set<string>]>();
-    private _stopOnEntryRequestedFileNameToBreakpointId = new Map<string, string>();
-    private _stopOnEntryRegexToBreakpointId = new Map<string, string>();
+    private _breakOnLoadHelper: BreakOnLoadHelper;
+    private _breakOnLoadStrategy: BreakOnLoadStrategy = 'none';
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -162,8 +154,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.clearTargetContext();
     }
 
-    protected get chrome(): Crdp.CrdpClient {
+    public get chrome(): Crdp.CrdpClient {
         return this._chromeConnection.api;
+    }
+
+    public get scriptsById(): Map<Crdp.Runtime.ScriptId, CrdpScript> {
+        return this._scriptsById;
+    }
+
+    public get pathTransformer(): BasePathTransformer {
+        return this._pathTransformer;
+    }
+
+    public get pendingBreakpointsByUrl(): Map<string, IPendingBreakpoint> {
+        return this._pendingBreakpointsByUrl;
     }
 
     /**
@@ -248,8 +252,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        if (args.useBreakOnLoadRegex === true) {
-            this._useBreakOnLoadRegex = true;
+        if (args.breakOnLoadStrategy) {
+            this._breakOnLoadStrategy = args.breakOnLoadStrategy;
+            this._breakOnLoadHelper = new BreakOnLoadHelper(this);
         }
 
         if (!args.__restart) {
@@ -453,45 +458,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this.clearTargetContext());
     }
 
-    /**
-     * Checks and resolves the pending breakpoints of a script. If any breakpoints were resolved returns true, else false.
-     * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
-     */
-    private async ifResolvedPendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
-        const pausedScriptUrl = this._scriptsById.get(scriptId).url;
-        const mappedUrl = await this._pathTransformer.scriptParsed(pausedScriptUrl);
-
-        const pendingBreakpoints = this._pendingBreakpointsByUrl.get(mappedUrl);
-        // If the file has unbound breakpoints, resolve them and return true
-        if (pendingBreakpoints !== undefined) {
-            await this.resolvePendingBreakpoint(pendingBreakpoints);
-            return true;
-        } else {
-            // If no pending breakpoints, return false
-            return false;
-        }
-    }
-
-    /**
-     * Handles a script with a stop on entry breakpoint and returns whether we should continue or not on hitting that breakpoint
-     * Only used when using regex approach for break on load
-     */
-    private async shouldContinueOnStopOnEntryBreakpoint(scriptId: string): Promise<boolean> {
-        // If the file has no unbound breakpoints or none of the resolved breakpoints are at (1,1), we should continue after hitting the stopOnEntry breakpoint
-        let shouldContinue = true;
-        let anyPendingBreakpointsResolved = await this.ifResolvedPendingBreakpointsOfPausedScript(scriptId);
-
-        // If there were any pending breakpoints resolved and any of them was at (1,1) we shouldn't continue
-        if (anyPendingBreakpointsResolved && this._userBreakpointOnLine1Col1) {
-            // Here we need to store this information per file, but since we can safely assume that scriptParsed would immediately be followed by onPaused event
-            // for the breakonload files, this implementation should be fine
-            this._userBreakpointOnLine1Col1 = false;
-            shouldContinue = false;
-        }
-
-        return shouldContinue;
-    }
-
     protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
         this._variableHandles.onPaused();
         this._frameHandles.reset();
@@ -520,36 +486,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
 
-            if (this._breakOnLoadActive && this._useBreakOnLoadRegex) {
-                const hitBreakpoints = notification.hitBreakpoints;
-                let allStopOnEntryBreakpoints = true;
-
-                // If there is a breakpoint which is not a stopOnEntry breakpoint, we appear as if we hit that one
-                // This is particularly done for cases when we end up with a user breakpoint and a stopOnEntry breakpoint on the same line
-                hitBreakpoints.forEach(bp => {
-                    if (!this._stopOnEntryBreakpointIdToRequestedFileName.has(bp)) {
-                        notification.hitBreakpoints = [bp];
-                        allStopOnEntryBreakpoints = false;
-                    }
-                });
-
-                // If all the breakpoints on this point are stopOnEntry breakpoints
-                // This will be true in cases where it's a single breakpoint and it's a stopOnEntry breakpoint
-                // This can also be true when we have multiple breakpoints and all of them are stopOnEntry breakpoints, for example in cases like index.js and index.bin.js
-                // Suppose user puts breakpoints in both index.js and index.bin.js files, when the setBreakpoints function is called for index.js it will set a stopOnEntry
-                // breakpoint on index.* files which will also match index.bin.js. Now when setBreakpoints is called for index.bin.js it will again put a stopOnEntry breakpoint
-                // in itself. So when the file is actually loaded, we would have 2 stopOnEntry breakpoints */
-
-                if (allStopOnEntryBreakpoints) {
-                    const pausedScriptId = notification.callFrames[0].location.scriptId;
-                    let shouldContinue = await this.shouldContinueOnStopOnEntryBreakpoint(pausedScriptId);
-                    if (shouldContinue) {
-                        this.chrome.Debugger.resume()
-                            .catch(e => {
-                                logger.error("Failed to resume due to exception: " + e.message);
-                            });
-                        return;
-                    }
+            // If breakOnLoadStrategy is set to regex, we may have hit a stopOnEntry breakpoint we put.
+            // So we need to resolve all the pending breakpoints in this script and then decide to continue or not
+            if (this._breakOnLoadStrategy === 'regex') {
+                let shouldContinue = await this._breakOnLoadHelper.handleStopOnEntryBreakpointAndContinue(notification);
+                if (shouldContinue) {
+                    this.chrome.Debugger.resume()
+                        .catch(e => {
+                            logger.error("Failed to resume due to exception: " + e.message);
+                        });
+                    return;
                 }
             }
 
@@ -576,7 +522,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             const pausedScriptId = notification.callFrames[0].location.scriptId;
             // Now we should resolve all the pending breakpoints and then continue
-            await this.ifResolvedPendingBreakpointsOfPausedScript(pausedScriptId);
+            await this._breakOnLoadHelper.resolvePendingBreakpointsOfPausedScript(pausedScriptId);
             this.chrome.Debugger.resume()
                 .catch(e => {
                     logger.error("Failed to resume due to exception: " + e.message);
@@ -724,8 +670,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // If break on load is active and we are using the regex approach, only call the resolvePendingBreakpoint function for files where we do not
                 // set break on load breakpoints. For those files, it is called from onPaused function.
                 // For the default Chrome's API approach, we don't need to call resolvePendingBPs from inside scriptParsed
-                if (this._breakOnLoadActive) {
-                    if (this._useBreakOnLoadRegex && !this._stopOnEntryRequestedFileNameToBreakpointId.has(mappedUrl)) {
+                if (this._breakOnLoadStrategy !== 'none') {
+                    if (this._breakOnLoadStrategy === 'regex' && !this._breakOnLoadHelper.stopOnEntryRequestedFileNameToBreakpointId.has(mappedUrl)) {
                         resolvePendingBPs(mappedUrl);
                     }
                 } else {
@@ -950,13 +896,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return { sources: sources.sort((a, b) => a.path.localeCompare(b.path)) };
     }
 
-    private resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
+    public resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
         return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 // If any of the unbound breakpoints in this file is on (1,1), we set userBreakpointOnLine1Col1 to true
                 if (bp.line === 1 && bp.column === 1) {
-                    this._userBreakpointOnLine1Col1 = true;
+                    this._breakOnLoadHelper.userBreakpointOnLine1Col1 = true;
                 }
                 this._session.sendEvent(new BreakpointEvent('changed', bp));
             });
@@ -971,7 +917,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         // If the breakpoint resolved is a stopOnEntry breakpoint, we just return since we don't need to send it to client
-        if (this._stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
+        if (this._breakOnLoadHelper && this._breakOnLoadHelper.stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
             return;
         }
 
@@ -1195,7 +1141,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (!args.source.path || args.source.sourceReference) return Promise.resolve();
 
         // When break on load is active, we don't need to validate the path, so return
-        if (this._breakOnLoadActive) {
+        if (this._breakOnLoadStrategy !== 'none') {
             return Promise.resolve();
         }
 
@@ -1277,65 +1223,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const script = this.getScriptByUrl(url);
 
             // If script has been parsed, script object won't be undefined and we would have the mapping file on the disk and we can directly set breakpoint using that
-            if (!this._breakOnLoadActive || script) {
+            if (this._breakOnLoadStrategy === 'none' || script) {
                 const urlRegex = utils.pathToRegex(url, this._caseSensitivePaths);
                 responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                     return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
                 });
-            } else { // Else if script hasn't been parsed, we need to do extra processing to enable break on load
+            } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
 
-                // If the flag is set we create a regex we think will match the file where user put the breakpoint and tell Chrome to put a stop on entry breakpoint there
-                if (this._useBreakOnLoadRegex) {
-
-                    // Check if file already has a stop on entry breakpoint
-                    if (!this._stopOnEntryRequestedFileNameToBreakpointId.has(url)) {
-
-                        // Generate regex we need for the file
-                        const urlRegex = this.getUrlRegexForBreakOnLoad(url);
-
-                        // Check if we already have a breakpoint for this regexp since two different files like script.ts and script.js may have the same regexp
-                        let breakpointId: string;
-                        breakpointId = this._stopOnEntryRegexToBreakpointId.get(urlRegex);
-
-                        // If breakpointId is undefined it means the breakpoint doesn't exist yet so we add it
-                        if (breakpointId === undefined) {
-                            let result;
-                            try {
-                                result = await this.setStopOnEntryBreakpoint(urlRegex);
-                            } catch (e) {
-                                logger.log(`Exception occured while trying to set stop on entry breakpoint ${e.message}.`);
-                            }
-                            breakpointId = result.breakpointId;
-                            if (breakpointId) {
-                                this._stopOnEntryRegexToBreakpointId.set(urlRegex, breakpointId);
-                            } else {
-                                logger.log(`BreakpointId was null when trying to set on urlregex ${urlRegex}. This normally happens if the breakpoint already exists.`);
-                            }
-                            responsePs = [result];
-                        } else {
-                            responsePs = [];
-                        }
-
-                        // Store the new breakpointId and the file name in the right mappings
-                        this._stopOnEntryRequestedFileNameToBreakpointId.set(url, breakpointId);
-
-                        let regexAndFileNames = this._stopOnEntryBreakpointIdToRequestedFileName.get(breakpointId);
-
-                        // If there already exists an entry for the breakpoint Id, we add this file to the list of file mappings
-                        if (regexAndFileNames !== undefined) {
-                            regexAndFileNames[1].add(url);
-                        } else { // else create an entry for this breakpoint id
-                            const fileSet = new Set<string>();
-                            fileSet.add(url);
-                            this._stopOnEntryBreakpointIdToRequestedFileName.set(breakpointId, [urlRegex, fileSet]);
-                        }
-                    } else {
-                        responsePs = [];
-                    }
-                } else {
-                    // The default solution is to use Chrome's experimental API to stop on all scripts at the first statement
-                    if (!this._instrumentationBreakpointSet) {
-                        await this.setInstrumentationBreakpoint();
+                // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
+                if (this._breakOnLoadStrategy === 'regex') {
+                     return this._breakOnLoadHelper.addStopOnEntryBreakpoint(url);
+                } else if (this._breakOnLoadStrategy === 'instrument') {
+                    // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
+                    if (!this._breakOnLoadHelper.instrumentationBreakpointSet) {
+                        await this._breakOnLoadHelper.setInstrumentationBreakpoint();
                     }
                     responsePs = [];
                 }
@@ -1344,29 +1245,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Join all setBreakpoint requests to a single promise
         return Promise.all(responsePs);
-    }
-
-    // This tells Chrome to stop on the 1st line of all the scripts. This helps us to hit breakpoints on load.
-    private async setInstrumentationBreakpoint(): Promise<void> {
-        this.chrome.DOMDebugger.setInstrumentationBreakpoint({eventName: "scriptFirstStatement"});
-        this._instrumentationBreakpointSet = true;
-    }
-
-    // Sets a breakpoint on (0,0) for the files matching the given regex
-    private async setStopOnEntryBreakpoint(urlRegex: string): Promise<Crdp.Debugger.SetBreakpointByUrlResponse> {
-        let result = await this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: 0, columnNumber: 0, condition: '' });
-        return result;
-    }
-
-    /* Constructs the regex for files to enable break on load
-       For example, for a file index.js the regex will match urls containing index.js, index.ts, abc/index.ts, index.bin.js etc
-       It won't match index100.js, indexabc.ts etc */
-    private getUrlRegexForBreakOnLoad(url: string): string {
-        const fileNameWithoutFullPath = path.parse(url).base;
-        const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
-        const escapedFileName = fileNameWithoutExtension.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-        return ".*[\\\\\\/]" + escapedFileName + "([^A-z^0-9].*)?$";
     }
 
     private async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId | undefined, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<ISetBreakpointResult> {
