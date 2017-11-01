@@ -254,7 +254,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.breakOnLoadStrategy) {
             this._breakOnLoadStrategy = args.breakOnLoadStrategy;
-            this._breakOnLoadHelper = new BreakOnLoadHelper(this);
+            this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
         }
 
         if (!args.__restart) {
@@ -465,6 +465,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lastPauseState = { event: notification, expecting: expectingStopReason };
         this._currentPauseNotification = notification;
 
+        // If break on load is active, we pass the notification object to breakonload helper
+        // If it returns true, we continue and return
+        if (this._breakOnLoadStrategy !== 'none') {
+            let shouldContinue = await this._breakOnLoadHelper.handleOnPaused(notification);
+            if (shouldContinue) {
+                this.chrome.Debugger.resume()
+                    .catch(e => {
+                        logger.error("Failed to resume due to exception: " + e.message);
+                    });
+                return;
+            }
+        }
+
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
         let reason: ReasonType;
@@ -486,19 +499,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
 
-            // If breakOnLoadStrategy is set to regex, we may have hit a stopOnEntry breakpoint we put.
-            // So we need to resolve all the pending breakpoints in this script and then decide to continue or not
-            if (this._breakOnLoadStrategy === 'regex') {
-                let shouldContinue = await this._breakOnLoadHelper.handleStopOnEntryBreakpointAndContinue(notification);
-                if (shouldContinue) {
-                    this.chrome.Debugger.resume()
-                        .catch(e => {
-                            logger.error("Failed to resume due to exception: " + e.message);
-                        });
-                    return;
-                }
-            }
-
             // Did we hit a hit condition breakpoint?
             for (let hitBp of notification.hitBreakpoints) {
                 if (this._hitConditionBreakpointsById.has(hitBp)) {
@@ -517,17 +517,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
             smartStepP = this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
-        } else if (notification.reason === 'EventListener' && notification.data.eventName === "instrumentation:scriptFirstStatement" ) {
-            // This is fired when Chrome stops on the first line of a script when using the setInstrumentationBreakpoint API
-
-            const pausedScriptId = notification.callFrames[0].location.scriptId;
-            // Now we should resolve all the pending breakpoints and then continue
-            await this._breakOnLoadHelper.resolvePendingBreakpointsOfPausedScript(pausedScriptId);
-            this.chrome.Debugger.resume()
-                .catch(e => {
-                    logger.error("Failed to resume due to exception: " + e.message);
-                });
-            return;
         } else {
             reason = 'debugger_statement';
         }
@@ -667,14 +656,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // to be resolved in this loaded script, and remove the pendingBP.
                 this._pendingBreakpointsByUrl.delete(mappedUrl);
             } else {
-                // If break on load is active and we are using the regex approach, only call the resolvePendingBreakpoint function for files where we do not
-                // set break on load breakpoints. For those files, it is called from onPaused function.
-                // For the default Chrome's API approach, we don't need to call resolvePendingBPs from inside scriptParsed
-                if (this._breakOnLoadStrategy !== 'none') {
-                    if (this._breakOnLoadStrategy === 'regex' && !this._breakOnLoadHelper.stopOnEntryRequestedFileNameToBreakpointId.has(mappedUrl)) {
-                        resolvePendingBPs(mappedUrl);
-                    }
-                } else {
+                // If break on load is active, check whether we should call resolvePendingBPs
+                if (this._breakOnLoadStrategy === 'none' || (this._breakOnLoadHelper && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
                     resolvePendingBPs(mappedUrl);
                 }
             }
@@ -901,7 +884,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 // If any of the unbound breakpoints in this file is on (1,1), we set userBreakpointOnLine1Col1 to true
-                if (bp.line === 1 && bp.column === 1) {
+                if (bp.line === 1 && bp.column === 1 && this._breakOnLoadHelper) {
                     this._breakOnLoadHelper.userBreakpointOnLine1Col1 = true;
                 }
                 this._session.sendEvent(new BreakpointEvent('changed', bp));
@@ -1229,16 +1212,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
-
-                // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
-                if (this._breakOnLoadStrategy === 'regex') {
-                     return this._breakOnLoadHelper.addStopOnEntryBreakpoint(url);
-                } else if (this._breakOnLoadStrategy === 'instrument') {
-                    // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
-                    if (!this._breakOnLoadHelper.instrumentationBreakpointSet) {
-                        await this._breakOnLoadHelper.setInstrumentationBreakpoint();
-                    }
-                    responsePs = [];
+                if (this._breakOnLoadHelper) {
+                    return this._breakOnLoadHelper.handleAddBreakpoints(url);
                 }
             }
         }
