@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "所有例外狀況",
 	"exceptions.uncaught": "未攔截的例外狀況",
+	"exceptions.promise_rejects": "承諾 (Promise) 拒絕",
 	"setBPTimedOut": "設定中斷點要求逾時",
 	"bp.fail.unbound": "中斷點已設定，但尚未繫結",
 	"bp.fail.noscript": "無法找到中斷點要求的腳本",

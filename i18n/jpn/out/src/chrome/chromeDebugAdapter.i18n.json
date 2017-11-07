@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "すべての例外",
 	"exceptions.uncaught": "キャッチされない例外",
+	"exceptions.promise_rejects": "Promise が失敗",
 	"setBPTimedOut": "ブレークポイントのリクエスト タイム アウトを設定する",
 	"bp.fail.unbound": "ブレークポイントを設定しましたが、まだバインドされていません",
 	"bp.fail.noscript": "ブレークポイントを要求するスクリプトが見つかりません",

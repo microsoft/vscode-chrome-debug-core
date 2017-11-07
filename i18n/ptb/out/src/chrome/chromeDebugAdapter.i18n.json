@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "Todas Exceções",
 	"exceptions.uncaught": "Exceções não capturadas",
+	"exceptions.promise_rejects": "Rejeições de Promessas",
 	"setBPTimedOut": "Tempo definido em pontos de interrupção expirado",
 	"bp.fail.unbound": "Pontos de interrupção definido, mas ainda não vinculados",
 	"bp.fail.noscript": "Não foi possivel encontrar o script para a requisição de ponto de interrupção",

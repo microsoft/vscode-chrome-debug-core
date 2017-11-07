@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "Toutes les exceptions",
 	"exceptions.uncaught": "Exceptions interceptées",
+	"exceptions.promise_rejects": "Rejets de promesse",
 	"setBPTimedOut": "La demande de définition des points d'arrêt a expiré",
 	"bp.fail.unbound": "Points d’arrêt définis, mais pas encore liés",
 	"bp.fail.noscript": "Script introuvable pour la demande de points d'arrêt",

@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "Todas las excepciones",
 	"exceptions.uncaught": "Excepciones no detectadas",
+	"exceptions.promise_rejects": "Rechazos de Promise",
 	"setBPTimedOut": "La solicitud para establecer puntos de ruptura excedió el tiempo de espera",
 	"bp.fail.unbound": "Puntos de interrupción establecidos pero no enlazados aún",
 	"bp.fail.noscript": "No se puede encontrar el script para la solicitud de punto de ruptura",
