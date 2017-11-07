@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "Összes kivétel",
 	"exceptions.uncaught": "Elkapott kivételek",
+	"exceptions.promise_rejects": "Promise-visszautasítások",
 	"setBPTimedOut": "Időtúllépés a kért töréspont beállítása során",
 	"bp.fail.unbound": "A töréspont be van állítva, de még nincs bekötve",
 	"bp.fail.noscript": "Nem található a kért törésponthoz tartozó parancsfájl.",

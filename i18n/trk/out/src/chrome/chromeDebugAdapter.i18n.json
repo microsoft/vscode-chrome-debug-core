@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "Tüm İstisnalar",
 	"exceptions.uncaught": "Yakalanmamış İstisnalar",
+	"exceptions.promise_rejects": "Promise Retleri",
 	"setBPTimedOut": "Kesme noktaları ayarlama isteği zaman aşımına uğradı",
 	"bp.fail.unbound": "Kesme noktaları ayarlandı, ancak henüz bağlanmadı",
 	"bp.fail.noscript": "Kesme noktası isteği için betik bulunamıyor",

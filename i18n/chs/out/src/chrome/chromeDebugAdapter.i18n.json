@@ -6,6 +6,7 @@
 {
 	"exceptions.all": "所有异常",
 	"exceptions.uncaught": "未捕获的异常",
+	"exceptions.promise_rejects": "Promise 拒绝",
 	"setBPTimedOut": "设置断点命令超时。",
 	"bp.fail.unbound": "已设置断点但还未绑定",
 	"bp.fail.noscript": "无法找到断点命令的脚本。",
