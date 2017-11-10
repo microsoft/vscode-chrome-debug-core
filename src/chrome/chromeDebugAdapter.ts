@@ -170,6 +170,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._pendingBreakpointsByUrl;
     }
 
+    public get sourceMapTransformer(): BaseSourceMapTransformer{
+        return this._sourceMapTransformer;
+    }
+
     /**
      * Called on 'clearEverything' or on a navigation/refresh
      */
@@ -646,9 +650,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             if (sources) {
-                sources
-                    .filter(source => source !== mappedUrl) // Tools like babel-register will produce sources with the same path as the generated script
-                    .forEach(resolvePendingBPs);
+                // If break on load is active, check whether we should call resolvePendingBPs
+                if (this._breakOnLoadStrategy !== "none") {
+                    sources
+                        .filter(source => source !== mappedUrl && this._breakOnLoadHelper.shouldResolvePendingBPs(source)) // Tools like babel-register will produce sources with the same path as the generated script
+                        .forEach(resolvePendingBPs);
+                } else {
+                    sources
+                        .filter(source => source !== mappedUrl) // Tools like babel-register will produce sources with the same path as the generated script
+                        .forEach(resolvePendingBPs);
+                }
             }
 
             if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).bpsSet) {
@@ -657,7 +668,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this._pendingBreakpointsByUrl.delete(mappedUrl);
             } else {
                 // If break on load is active, check whether we should call resolvePendingBPs
-                if (this._breakOnLoadStrategy === 'none' || (this._breakOnLoadHelper && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
+                if (this._breakOnLoadStrategy === 'none' || (this._breakOnLoadHelper && !sources && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
                     resolvePendingBPs(mappedUrl);
                 }
             }

@@ -40,22 +40,47 @@ export class BreakOnLoadHelper {
     }
 
     /**
-     * Checks and resolves the pending breakpoints of a script. If any breakpoints were resolved returns true, else false.
+     * Checks and resolves the pending breakpoints of a script given it's source. If any breakpoints were resolved returns true, else false.
      * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
      */
-    private async resolvePendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
-        const pausedScriptUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).url;
-        const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
-
-        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(mappedUrl);
+    private async resolvePendingBreakpoints(source: string): Promise<boolean> {
+        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(source);
         // If the file has unbound breakpoints, resolve them and return true
         if (pendingBreakpoints !== undefined) {
             await this._chromeDebugAdapter.resolvePendingBreakpoint(pendingBreakpoints);
+            this._chromeDebugAdapter.pendingBreakpointsByUrl.delete(source);
             return true;
         } else {
             // If no pending breakpoints, return false
             return false;
         }
+    }
+
+    /**
+     * Checks and resolves the pending breakpoints given a script Id. If any breakpoints were resolved returns true, else false.
+     * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
+     */
+    private async resolvePendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
+        const pausedScriptUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).url;
+        const sourceMapUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).sourceMapURL;
+        const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
+        let breakpointsResolved = false;
+
+        let sources = await this._chromeDebugAdapter.sourceMapTransformer.scriptParsed(mappedUrl, sourceMapUrl);
+
+        // If user breakpoint was put in a typescript file, pendingBreakpoints would store the typescript file in the mapping, so we need to hit those
+        if (sources) {
+            for (let source of sources) {
+                let anySourceBPResolved = await this.resolvePendingBreakpoints(source);
+                // If any of the source files had breakpoints resolved, we should return true
+                breakpointsResolved = breakpointsResolved || anySourceBPResolved;
+            }
+        }
+        // If sources is not present or user breakpoint was put in a compiled javascript file
+        let scriptBPResolved = await this.resolvePendingBreakpoints(mappedUrl);
+        breakpointsResolved = breakpointsResolved || scriptBPResolved;
+
+        return breakpointsResolved;
     }
 
     /**
