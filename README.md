@@ -6,13 +6,13 @@
 A library for building VS Code debug adapters for targets that support the [Chrome Debugging Protocol](https://chromedevtools.github.io/debugger-protocol-viewer/).
 
 # Debuggers using this library
-- VS Code Chrome Debugger https://github.com/Microsoft/vscode-chrome-debug
-- VS Code iOS Web Debugger. https://github.com/Microsoft/vscode-ios-web-debug
-- VS Code PhatomJS Debugger. https://github.com/iradul/vscode-phantomjs-debug
-- VS Code Node Debugger. https://github.com/Microsoft/vscode-node-debug2
-- VS Code Edge Debugger. https://github.com/Microsoft/vscode-edge-debug
-- VS Code NWjs Debugger. https://github.com/karikera/vscode-nwjs
-- VS Code Cordova. https://github.com/Microsoft/vscode-cordova
+- [VS Code Chrome Debugger](https://github.com/Microsoft/vscode-chrome-debug)
+- [VS Code iOS Web Debugger](https://github.com/Microsoft/vscode-ios-web-debug)
+- [VS Code PhantomJS Debugger](https://github.com/iradul/vscode-phantomjs-debug)
+- [VS Code Node Debugger](https://github.com/Microsoft/vscode-node-debug2)
+- [VS Code Edge Debugger](https://github.com/Microsoft/vscode-edge-debug)
+- [VS Code NWjs Debugger](https://github.com/karikera/vscode-nwjs)
+- [VS Code Cordova](https://github.com/Microsoft/vscode-cordova)
 - Visual Studio 2017 Update 2 Node.js Debugger
 
 ---
