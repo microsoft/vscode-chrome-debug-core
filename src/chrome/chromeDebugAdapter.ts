@@ -493,7 +493,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         smartStepP.then(should => {
             if (should) {
                 this._smartStepCount++;
-                return this.stepIn();
+                return this.stepIn(false);
             } else {
                 if (this._smartStepCount > 0) {
                     logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
@@ -1333,13 +1333,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    public stepIn(): Promise<void> {
+    public stepIn(userInitiated = true): Promise<void> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
 
-        /* __GDPR__ "stepInRequest" : { } */
-        telemetry.reportEvent('stepInRequest');
+        if (userInitiated) {
+            /* __GDPR__ "stepInRequest" : { } */
+            telemetry.reportEvent('stepInRequest');
+        }
+
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepInto()
