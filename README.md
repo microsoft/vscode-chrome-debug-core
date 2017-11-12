@@ -3,7 +3,7 @@
 [![Build status](https://travis-ci.org/Microsoft/vscode-chrome-debug-core.svg?branch=master)](https://travis-ci.org/Microsoft/vscode-chrome-debug-core)
 [![Build status](https://ci.appveyor.com/api/projects/status/4txeyylky6aori9q?svg=true)](https://ci.appveyor.com/project/roblourens/vscode-chrome-debug-core)
 
-A library for building VS Code debug adapters for targets that support the [Chrome Debugging Protocol](https://chromedevtools.github.io/debugger-protocol-viewer/).
+A library for building VS Code debug adapters for targets that support the [Chrome Debugging Protocol](https://chromedevtools.github.io/devtools-protocol/).
 
 # Debuggers using this library
 - VS Code Chrome Debugger https://github.com/Microsoft/vscode-chrome-debug
