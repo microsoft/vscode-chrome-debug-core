@@ -11,6 +11,8 @@ import Crdp from '../crdp/crdp';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };
 
+export type BreakOnLoadStrategy = 'regex' | 'instrument' | 'none';
+
 /**
  * Properties valid for both Launch and Attach
  */
@@ -49,6 +51,9 @@ export interface IRestartRequestArgs {
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
     __restart?: IRestartRequestArgs;
+
+    /** Private undocumented property for enabling break on load */
+    breakOnLoadStrategy: BreakOnLoadStrategy;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {

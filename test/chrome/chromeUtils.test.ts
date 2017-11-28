@@ -381,4 +381,27 @@ suite('ChromeUtils', () => {
             assert.equal(chromeUtils.getEvaluateName('obj', 'a-b'), 'obj["a-b"]');
         });
     });
+
+    suite('getUrlRegexForBreakOnLoad', () => {
+
+        test('Works with a base file path', () => {
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index123.js'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
+        });
+
+        test('Strips the nested file path', () => {
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\index123.ts'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
+        });
+
+        test('Works case sensitive', () => {
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex.js'), '.*[\\\\\\/]inDex([^A-z^0-9].*)?$');
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\INDex123.ts'), '.*[\\\\\\/]INDex123([^A-z^0-9].*)?$');
+        });
+
+        test('Escapes special characters', () => {
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex?abc.js'), '.*[\\\\\\/]inDex\\?abc([^A-z^0-9].*)?$');
+            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\IN+De*x123.ts'), '.*[\\\\\\/]IN\\+De\\*x123([^A-z^0-9].*)?$');
+        });
+    });
 });

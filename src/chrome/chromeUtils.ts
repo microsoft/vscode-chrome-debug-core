@@ -287,3 +287,14 @@ export const EVAL_NAME_PREFIX = 'VM';
 export function isEvalScript(scriptPath: string): boolean {
     return scriptPath.startsWith(EVAL_NAME_PREFIX);
 }
+
+/* Constructs the regex for files to enable break on load
+For example, for a file index.js the regex will match urls containing index.js, index.ts, abc/index.ts, index.bin.js etc
+It won't match index100.js, indexabc.ts etc */
+export function getUrlRegexForBreakOnLoad(url: string): string {
+    const fileNameWithoutFullPath = path.parse(url).base;
+    const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
+    const escapedFileName = fileNameWithoutExtension.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+    return ".*[\\\\\\/]" + escapedFileName + "([^A-z^0-9].*)?$";
+}
