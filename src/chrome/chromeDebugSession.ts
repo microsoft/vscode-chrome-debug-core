@@ -16,7 +16,6 @@ import {IDebugAdapter} from '../debugAdapterInterfaces';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
-    logFilePath?: string;
     enableSourceMapCaching?: boolean;
 
     // Override services
@@ -64,7 +63,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
     }
 
     public constructor(obsolete_debuggerLinesAndColumnsStartAt1?: boolean, obsolete_isServer?: boolean, opts?: IChromeDebugSessionOpts) {
-        super(opts.logFilePath, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
+        super(obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
@@ -165,6 +164,10 @@ export class ChromeDebugSession extends LoggingDebugSession {
 }
 
 function logVersionInfo(): void {
+    const d = new Date();
+    const timestamp = d.toLocaleTimeString() + ', ' + d.toLocaleDateString();
+    logger.verbose(timestamp);
+
     logger.log(`OS: ${os.platform()} ${os.arch()}`);
     logger.log(`Adapter node: ${process.version} ${process.arch}`);
     logger.log('vscode-chrome-debug-core: ' + require('../../../package.json').version);

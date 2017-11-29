@@ -295,17 +295,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
-        if (args.trace === 'verbose') {
-            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
-        } else if (args.trace) {
-            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/true);
-        } else if (args.verboseDiagnosticLogging) { // deprecated
-            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
-        } else if (args.diagnosticLogging) { // deprecated
-            logger.setup(Logger.LogLevel.Log, /*logToFile=*/true);
-        } else {
-            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/false);
-        }
+        // if (args.trace === 'verbose') {
+        //     logLevel = Logger.LogLevel.Verbose;
+        // } else if (args.trace) {
+        //     logLevel = Logger.LogLevel.Warn;
+        // } else if (args.verboseDiagnosticLogging) { // deprecated
+        //     logLevel = Logger.LogLevel.Verbose;
+        // } else if (args.diagnosticLogging) { // deprecated
+        //     logLevel = Logger.LogLevel.Log;
+        // } else {
+        //     logLevel = Logger.LogLevel.Warn;
+        // }
+
+        logger.setup(Logger.LogLevel.Warn, args.logFilePath);
 
         this._launchAttachArgs = args;
 
