@@ -53,7 +53,7 @@ export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments
     __restart?: IRestartRequestArgs;
 
     /** Private undocumented property for enabling break on load */
-    breakOnLoadStrategy: BreakOnLoadStrategy;
+    breakOnLoadStrategy?: BreakOnLoadStrategy;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {
