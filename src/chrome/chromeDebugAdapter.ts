@@ -119,6 +119,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _caseSensitivePaths = true;
 
     private _currentStep = Promise.resolve();
+    private _currentLogMessage = Promise.resolve();
     private _nextUnboundBreakpointId = 0;
     private _pauseOnPromiseRejections = true;
     protected _promiseRejectExceptionFilterEnabled = false;
@@ -945,30 +946,35 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async logObjects(objs: Crdp.Runtime.RemoteObject[], isError = false, stackTrace?: Crdp.Runtime.StackTrace): Promise<void> {
-        const category = isError ? 'stderr' : 'stdout';
+        // This is an asynchronous method, so ensure that we handle one at a time so that they are sent out in the same order that they came in.
+        this._currentLogMessage = this._currentLogMessage
+            .catch(err => logger.error(err.toString()))
+            .then(async () => {
+                const category = isError ? 'stderr' : 'stdout';
 
-        // Shortcut the common log case to reduce unnecessary back and forth
-        let e: DebugProtocol.OutputEvent;
-        if (objs.length === 1 && objs[0].type === 'string') {
-            let msg = objs[0].value;
-            if (isError) {
-                msg = await this.mapFormattedException(msg);
-            }
+                // Shortcut the common log case to reduce unnecessary back and forth
+                let e: DebugProtocol.OutputEvent;
+                if (objs.length === 1 && objs[0].type === 'string') {
+                    let msg = objs[0].value;
+                    if (isError) {
+                        msg = await this.mapFormattedException(msg);
+                    }
 
-            e = new OutputEvent(msg + '\n', category);
-        } else {
-            e = new OutputEvent('output', category);
-            e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
-        }
+                    e = new OutputEvent(msg + '\n', category);
+                } else {
+                    e = new OutputEvent('output', category);
+                    e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
+                }
 
-        if (stackTrace && stackTrace.callFrames.length) {
-            const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
-            e.body.source = stackFrame.source;
-            e.body.line = stackFrame.line;
-            e.body.column = stackFrame.column;
-        }
+                if (stackTrace && stackTrace.callFrames.length) {
+                    const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
+                    e.body.source = stackFrame.source;
+                    e.body.line = stackFrame.line;
+                    e.body.column = stackFrame.column;
+                }
 
-        this._session.sendEvent(e);
+                this._session.sendEvent(e);
+            });
     }
 
     protected async onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): Promise<void> {
