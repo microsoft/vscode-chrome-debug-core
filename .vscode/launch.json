@@ -39,7 +39,7 @@
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
             "cwd": "${workspaceFolder}/../vscode-chrome-debug",
-            "program": "${workspaceFolder}/../vscode-chrome-debug/out/bundle.js",
+            "program": "${workspaceFolder}/../vscode-chrome-debug/out/src/chromeDebug.js",
             "args": [ "--server=4712" ],
             "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
