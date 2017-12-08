@@ -320,8 +320,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async terminateSession(reason: string, disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): Promise<void> {
-        logger.log('Terminated: ' + reason);
+        logger.log(`Terminated: ${reason}. Waiting for any pending steps or log messages`);
         await this._currentStep;
+        await this._currentLogMessage;
+        logger.log(`Current step and log messages complete`);
 
         if (!this._hasTerminated) {
             /* __GDPR__
