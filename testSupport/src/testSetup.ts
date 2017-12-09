@@ -10,8 +10,6 @@ import {ExtendedDebugClient} from './debugClient';
 // ES6 default export...
 const LoggingReporter = require('./loggingReporter');
 
-let dc: ExtendedDebugClient;
-
 let unhandledAdapterErrors: string[];
 const origTest = test;
 const checkLogTest = (title: string, testCallback?: any, testFn: Function = origTest): Mocha.ITest => {
@@ -63,25 +61,30 @@ function log(e: DebugProtocol.OutputEvent): void {
     if (msg.indexOf('********') >= 0) unhandledAdapterErrors.push(msg);
 }
 
-let patchLaunchArgsCb: Function;
-function patchLaunchArgFns(): void {
-    function patchLaunchArgs(launchArgs): void {
+export type PatchLaunchArgsCb = (launchArgs: any) => Promise<void> | void;
+
+let dc: ExtendedDebugClient;
+function patchLaunchFn(patchLaunchArgsCb: PatchLaunchArgsCb): void {
+    function patchLaunchArgs(launchArgs): Promise<void> {
         launchArgs.trace = 'verbose';
-        patchLaunchArgsCb(launchArgs);
+        const patchReturnVal = patchLaunchArgsCb(launchArgs);
+        return patchReturnVal || Promise.resolve();
     }
 
     const origLaunch = dc.launch;
     dc.launch = (launchArgs: any) => {
-        patchLaunchArgs(launchArgs);
-        return origLaunch.call(dc, launchArgs);
+        return patchLaunchArgs(launchArgs)
+            .then(() => origLaunch.call(dc, launchArgs));
     };
 }
 
-export function setup(entryPoint: string, type: string, patchLaunchArgs?: Function, port?: number): Promise<ExtendedDebugClient> {
+export function setup(entryPoint: string, type: string, patchLaunchArgs?: PatchLaunchArgsCb, port?: number): Promise<ExtendedDebugClient> {
     unhandledAdapterErrors = [];
-    patchLaunchArgsCb = patchLaunchArgs;
     dc = new ExtendedDebugClient('node', entryPoint, type);
-    patchLaunchArgFns();
+    if (patchLaunchArgs) {
+        patchLaunchFn(patchLaunchArgs);
+    }
+
     dc.addListener('output', log);
 
     return dc.start(port)
