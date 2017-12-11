@@ -149,7 +149,6 @@ suite('CRDPMultiplexor', () => {
         let domain1Notification = "Domain1.notification";
         let domain2Notification = "Domain2.notification";
 
-        let domain2Enabled = false;
         let receivedMessages = [];
         let expectedMessages = [
             '{"id":1,"result":{}}',
@@ -169,8 +168,6 @@ suite('CRDPMultiplexor', () => {
         Assert.equal(socketMessageCallbacks.length, 1);
         socketMessageCallbacks[0]('{"method":"' + domain1Notification + '"}');
         socketMessageCallbacks[0]('{"method":"' + domain2Notification + '"}');
-
-        domain2Enabled = true;
 
         // Enable the second domain - we should get the pending notification
         channel.send('{"method":"' + domain2Enable + '","id":2}');

@@ -4,14 +4,11 @@
 
 import * as mockery from 'mockery';
 import * as assert from 'assert';
-import * as _path from 'path';
 
 import * as testUtils from './testUtils';
 
 /** Utils without mocks - use for type only */
 import * as _Utils from '../src/utils';
-
-let path: typeof _path;
 
 const MODULE_UNDER_TEST = '../src/utils';
 suite('Utils', () => {
@@ -26,7 +23,6 @@ suite('Utils', () => {
         testUtils.registerWin32Mocks();
         mockery.registerMock('fs', { statSync: () => { } });
         mockery.registerMock('http', {});
-        path = require('path');
     });
 
     teardown(() => {
