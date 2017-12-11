@@ -72,7 +72,7 @@ export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     mockDebugger.callBase = true;
     mockDebugger
         .setup(x => x.enable())
-        .returns(() => Promise.resolve());
+        .returns(() => Promise.resolve(null));
 
     let mockRuntime = Mock.ofInstance<Crdp.RuntimeClient>(<any>getRuntimeStubs(mockEventEmitter));
     mockRuntime.callBase = true;
