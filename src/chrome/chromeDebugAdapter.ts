@@ -367,7 +367,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return [
             this.chrome.Console.enable()
                 .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
-            this.chrome.Debugger.enable(),
+            utils.toVoidP(this.chrome.Debugger.enable()),
             this.chrome.Runtime.enable(),
             this._chromeConnection.run()
         ];
@@ -1428,7 +1428,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
-        return this._currentStep = this.chrome.Debugger.stepInto()
+        return this._currentStep = this.chrome.Debugger.stepInto({ })
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
@@ -2236,7 +2236,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         await this.chrome.Debugger.restartFrame({ callFrameId: callFrame.callFrameId });
         this._expectingStopReason = 'frame_entry';
-        return this.chrome.Debugger.stepInto();
+        return this.chrome.Debugger.stepInto({ });
     }
 
     public async completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {

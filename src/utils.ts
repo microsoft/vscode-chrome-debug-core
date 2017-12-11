@@ -542,3 +542,7 @@ export function isNumber(num: number): boolean {
 export function escapeRegExpCharacters(value: string): string {
     return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\[\]\(\)\#]/g, '\\$&');
 }
+
+export function toVoidP(p: Promise<any>): Promise<void> {
+    return p.then(() => { });
+}
