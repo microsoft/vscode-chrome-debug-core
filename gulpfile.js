@@ -59,12 +59,16 @@ const exclusion = '!' + testDataDir + '**';
 tsBuildSources.push(exclusion);
 lintSources.push(exclusion);
 
-function doBuild(buildNls) {
+function doBuild(buildNls, failOnError) {
+    let gotError = false;
     const tsProject = ts.createProject('tsconfig.json', { typescript });
     const tsResult = gulp.src(tsBuildSources, { base: '.' })
         .pipe(plumber())
         .pipe(sourcemaps.init())
-        .pipe(ts(tsProject));
+        .pipe(ts(tsProject))
+        .once('error', () => {
+            gotError = true;
+        });
 
     return merge([
         tsResult.dts
@@ -80,15 +84,23 @@ function doBuild(buildNls) {
             .pipe(gulp.dest('lib')),
         gulp.src(testDataDir + 'app*', { base: '.' })
             .pipe(gulp.dest('out'))
-    ]);
+    ])
+        .once('error', () => {
+            gotError = true;
+        })
+        .once('finish', () => {
+            if (failOnError && gotError) {
+                process.exit(1);
+            }
+        });
 }
 
 gulp.task('build', () => {
-    return doBuild(true);
+    return doBuild(true, true);
 });
 
 gulp.task('dev-build', () => {
-    return doBuild(false);
+    return doBuild(false, false);
 });
 
 gulp.task('clean', () => {
