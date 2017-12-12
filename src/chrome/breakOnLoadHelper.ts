@@ -23,8 +23,15 @@ export class BreakOnLoadHelper {
     private _breakOnLoadStrategy: BreakOnLoadStrategy;
 
     public constructor(chromeDebugAdapter: ChromeDebugAdapter, breakOnLoadStrategy: BreakOnLoadStrategy) {
+        this.validateStrategy(breakOnLoadStrategy);
         this._chromeDebugAdapter = chromeDebugAdapter;
         this._breakOnLoadStrategy = breakOnLoadStrategy;
+    }
+
+    validateStrategy(breakOnLoadStrategy: BreakOnLoadStrategy): void {
+        if (breakOnLoadStrategy !== 'regex' && breakOnLoadStrategy !== 'instrument') {
+            throw new Error('Invalid breakOnLoadStrategy: ' + breakOnLoadStrategy);
+        }
     }
 
     public get stopOnEntryRequestedFileNameToBreakpointId(): Map<string, string> {
