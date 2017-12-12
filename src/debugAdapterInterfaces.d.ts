@@ -11,7 +11,7 @@ import Crdp from '../crdp/crdp';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };
 
-export type BreakOnLoadStrategy = 'regex' | 'instrument' | 'none';
+export type BreakOnLoadStrategy = 'regex' | 'instrument' | 'off';
 
 /**
  * Properties valid for both Launch and Attach
@@ -160,7 +160,7 @@ export interface IExceptionInfoResponseBody {
     details?: IExceptionDetailsVS;
 }
 
-declare type PromiseOrNot<T> = T | Promise<T>;
+export declare type PromiseOrNot<T> = T | Promise<T>;
 
 export interface TimeTravelClient {
     stepBack(): Promise<any>;

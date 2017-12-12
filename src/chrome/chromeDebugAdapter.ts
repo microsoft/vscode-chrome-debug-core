@@ -9,7 +9,7 @@ import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpo
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs, BreakOnLoadStrategy} from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -133,8 +133,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
 
-    private _breakOnLoadHelper: BreakOnLoadHelper;
-    private _breakOnLoadStrategy: BreakOnLoadStrategy = 'none';
+    private _breakOnLoadHelper: BreakOnLoadHelper | null;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -252,13 +251,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return Promise.resolve();
     }
 
+    public get breakOnLoadActive(): boolean {
+        return !!this._breakOnLoadHelper;
+    }
+
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        if (args.breakOnLoadStrategy) {
-            this._breakOnLoadStrategy = args.breakOnLoadStrategy;
+        if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
             this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
         }
 
@@ -475,7 +477,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // If break on load is active, we pass the notification object to breakonload helper
         // If it returns true, we continue and return
-        if (this._breakOnLoadStrategy !== 'none') {
+        if (this.breakOnLoadActive) {
             let shouldContinue = await this._breakOnLoadHelper.handleOnPaused(notification);
             if (shouldContinue) {
                 this.chrome.Debugger.resume()
@@ -655,7 +657,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             if (sources) {
                 // If break on load is active, check whether we should call resolvePendingBPs
-                if (this._breakOnLoadStrategy !== "none") {
+                if (this.breakOnLoadActive) {
                     sources
                         .filter(source => source !== mappedUrl && this._breakOnLoadHelper.shouldResolvePendingBPs(source)) // Tools like babel-register will produce sources with the same path as the generated script
                         .forEach(resolvePendingBPs);
@@ -672,7 +674,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 this._pendingBreakpointsByUrl.delete(mappedUrl);
             } else {
                 // If break on load is active, check whether we should call resolvePendingBPs
-                if (this._breakOnLoadStrategy === 'none' || (this._breakOnLoadHelper && !sources && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
+                if (!this.breakOnLoadActive || (this._breakOnLoadHelper && !sources && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
                     resolvePendingBPs(mappedUrl);
                 }
             }
@@ -899,7 +901,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 // If any of the unbound breakpoints in this file is on (1,1), we set userBreakpointOnLine1Col1 to true
-                if (bp.line === 1 && bp.column === 1 && this._breakOnLoadHelper) {
+                if (bp.line === 1 && bp.column === 1 && this.breakOnLoadActive) {
                     this._breakOnLoadHelper.userBreakpointOnLine1Col1 = true;
                 }
                 this._session.sendEvent(new BreakpointEvent('changed', bp));
@@ -915,7 +917,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         // If the breakpoint resolved is a stopOnEntry breakpoint, we just return since we don't need to send it to client
-        if (this._breakOnLoadHelper && this._breakOnLoadHelper.stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
+        if (this.breakOnLoadActive && this._breakOnLoadHelper.stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
             return;
         }
 
@@ -1144,7 +1146,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (!args.source.path || args.source.sourceReference) return Promise.resolve();
 
         // When break on load is active, we don't need to validate the path, so return
-        if (this._breakOnLoadStrategy !== 'none') {
+        if (this.breakOnLoadActive) {
             return Promise.resolve();
         }
 
@@ -1226,13 +1228,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const script = this.getScriptByUrl(url);
 
             // If script has been parsed, script object won't be undefined and we would have the mapping file on the disk and we can directly set breakpoint using that
-            if (this._breakOnLoadStrategy === 'none' || script) {
+            if (!this.breakOnLoadActive || script) {
                 const urlRegex = utils.pathToRegex(url, this._caseSensitivePaths);
                 responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                     return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
-                if (this._breakOnLoadHelper) {
+                if (this.breakOnLoadActive) {
                     return this._breakOnLoadHelper.handleAddBreakpoints(url);
                 }
             }
