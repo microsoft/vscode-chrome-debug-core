@@ -15,7 +15,7 @@
     "@types/source-map": "^0.1.27",
     "glob": "^7.0.6",
     "noice-json-rpc": "1.0.1",
-    "source-map": "^0.5.6",
+    "source-map": "^0.6.1",
     "vscode-debugadapter": "^1.25.0",
     "vscode-debugprotocol": "^1.25.0",
     "vscode-nls": "^2.0.2",
