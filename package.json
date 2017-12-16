@@ -19,7 +19,7 @@
     "vscode-debugadapter": "^1.25.0",
     "vscode-debugprotocol": "^1.25.0",
     "vscode-nls": "^2.0.2",
-    "ws": "^1.1.1"
+    "ws": "^3.3.2"
   },
   "devDependencies": {
     "@types/glob": "^5.0.30",
