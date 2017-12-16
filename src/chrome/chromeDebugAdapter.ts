@@ -221,7 +221,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             {
                 label: localize('exceptions.uncaught', "Uncaught Exceptions"),
                 filter: 'uncaught',
-                default: true
+                default: false
             }
         ];
         if (this._promiseRejectExceptionFilterEnabled) {
