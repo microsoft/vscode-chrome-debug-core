@@ -36,7 +36,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
             } else {
                 // generatedPath is a URL so runtime script is not on disk, resolve the sourceRoot location on disk
                 const genDirname = path.dirname(url.parse(generatedPath).pathname);
-                absSourceRoot =  path.join(webRoot, genDirname, sourceRoot);
+                absSourceRoot = path.join(webRoot, genDirname, sourceRoot);
             }
         }
 
@@ -48,7 +48,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         // runtime script is not on disk, resolve the sourceRoot location on disk
         const urlPath = url.parse(generatedPath).pathname;
         const scriptPathDirname = urlPath ? path.dirname(urlPath) : ''; // could be debugadapter://123, no other info.
-        absSourceRoot =  path.join(webRoot, scriptPathDirname);
+        absSourceRoot = path.join(webRoot, scriptPathDirname);
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
     }
 
@@ -87,7 +87,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         const patternSegment = pattern
             .replace(/\*/g, '(.*)')
             .replace(/\\/g, '/');
-        const patternRegex = new RegExp(`^${patternSegment}$`, 'i');
+        const patternRegex = new RegExp(`^${utils.escapeSomeRegExpCharacters(patternSegment)}$`, 'i');
         const overridePatternMatches = forwardSlashSourcePath.match(patternRegex);
         if (!overridePatternMatches)
             continue;

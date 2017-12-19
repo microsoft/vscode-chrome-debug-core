@@ -88,7 +88,7 @@ suite('SourceMapUtils', () => {
 
         test('works using the laptop emoji', () => {
             assert.deepEqual(
-                applySourceMapPathOverrides('meteor:///💻app/src/main.js', { 'meteor:///💻app/*': testUtils.pathResolve('/project/*')}),
+                applySourceMapPathOverrides('meteor:///💻app/src/main.js', { 'meteor:///💻app/*': testUtils.pathResolve('/project/*') }),
                 testUtils.pathResolve('/project/src/main.js'));
         });
 
@@ -125,6 +125,12 @@ suite('SourceMapUtils', () => {
         test('replaces an asterisk at the beginning', () => {
             assert.deepEqual(
                 applySourceMapPathOverrides('/src/app.js', { '*/app.js': testUtils.pathResolve('/project/*/app.js') }),
+                testUtils.pathResolve('/project/src/app.js'));
+        });
+
+        test('allows some regex characters in the pattern', () => {
+            assert.deepEqual(
+                applySourceMapPathOverrides('webpack+foo:///src/app.js', { 'webpack+foo:///*/app.js': testUtils.pathResolve('/project/*/app.js') }),
                 testUtils.pathResolve('/project/src/app.js'));
         });
 
