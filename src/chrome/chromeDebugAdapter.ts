@@ -1722,7 +1722,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return resultScope;
         });
 
-        if (this._exception) {
+        if (this._exception && this.lookupFrameIndex(args.frameId) === 0) {
             scopes.unshift(<DebugProtocol.Scope>{
                 name: localize('scope.exception', "Exception"),
                 variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
@@ -1736,6 +1736,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return scopesResponse;
+    }
+
+    /**
+     * Try to lookup the index of the frame with given ID. Returns -1 for async frames and unknown frames.
+     */
+    private lookupFrameIndex(frameId: number): number {
+        const currentFrame = this._frameHandles.get(frameId);
+        if (!currentFrame || !currentFrame.callFrameId) {
+            return -1;
+        }
+
+        return this._currentPauseNotification.callFrames.findIndex(frame => frame.callFrameId === currentFrame.callFrameId);
     }
 
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
