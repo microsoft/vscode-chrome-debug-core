@@ -8,7 +8,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import {ExtendedDebugClient} from './debugClient';
 
 // ES6 default export...
-const LoggingReporter = require('./loggingReporter');
+import LoggingReporter from './loggingReporter';
 
 let unhandledAdapterErrors: string[];
 const origTest = test;

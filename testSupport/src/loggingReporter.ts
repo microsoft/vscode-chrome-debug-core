@@ -6,7 +6,7 @@
 import * as mocha from 'mocha';
 import * as events from 'events';
 
-class LoggingReporter extends mocha.reporters.Spec {
+export default class LoggingReporter extends mocha.reporters.Spec {
     static logEE = new events.EventEmitter();
 
     private testLogs: string[];
@@ -40,5 +40,3 @@ class LoggingReporter extends mocha.reporters.Spec {
         });
     }
 }
-
-export = LoggingReporter;
