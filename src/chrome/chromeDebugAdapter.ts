@@ -984,19 +984,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): Promise<void> {
-        const formattedException = formatExceptionDetails(params.exceptionDetails);
-        const exceptionStr = await this.mapFormattedException(formattedException);
+        return this._currentLogMessage = this._currentLogMessage.then(async () => {
+            const formattedException = formatExceptionDetails(params.exceptionDetails);
+            const exceptionStr = await this.mapFormattedException(formattedException);
 
-        const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + '\n', 'stderr');
-        const stackTrace = params.exceptionDetails.stackTrace;
-        if (stackTrace && stackTrace.callFrames.length) {
-            const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
-            e.body.source = stackFrame.source;
-            e.body.line = stackFrame.line;
-            e.body.column = stackFrame.column;
-        }
+            const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + '\n', 'stderr');
+            const stackTrace = params.exceptionDetails.stackTrace;
+            if (stackTrace && stackTrace.callFrames.length) {
+                const stackFrame = await this.mapCallFrame(stackTrace.callFrames[0]);
+                e.body.source = stackFrame.source;
+                e.body.line = stackFrame.line;
+                e.body.column = stackFrame.column;
+            }
 
-        this._session.sendEvent(e);
+            this._session.sendEvent(e);
+        });
     }
 
     private async mapCallFrame(frame: Crdp.Runtime.CallFrame): Promise<DebugProtocol.StackFrame> {
