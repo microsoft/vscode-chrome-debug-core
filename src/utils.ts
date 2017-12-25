@@ -384,7 +384,7 @@ export function multiGlob(patterns: string[], opts?: any): Promise<string[]> {
                 }
             });
         });
-    })).then(results =>  {
+    })).then(results => {
         const set = new Set<string>();
         for (let paths of results) {
             for (let p of paths) {
@@ -541,6 +541,10 @@ export function isNumber(num: number): boolean {
 
 export function escapeRegExpCharacters(value: string): string {
     return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\[\]\(\)\#]/g, '\\$&');
+}
+
+export function escapeSomeRegExpCharacters(value: string): string {
+    return value.replace(/[-[\]{}+?,^$|#\s]/g, '\\$&');
 }
 
 export function toVoidP(p: Promise<any>): Promise<void> {
