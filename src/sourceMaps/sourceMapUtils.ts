@@ -87,7 +87,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         const patternSegment = pattern
             .replace(/\*/g, '(.*)')
             .replace(/\\/g, '/');
-        const patternRegex = new RegExp(`^${utils.escapeSomeRegExpCharacters(patternSegment)}$`, 'i');
+        const patternRegex = new RegExp(`^${utils.escapeRegexSpecialChars(patternSegment, '/*().')}$`, 'i');
         const overridePatternMatches = forwardSlashSourcePath.match(patternRegex);
         if (!overridePatternMatches)
             continue;

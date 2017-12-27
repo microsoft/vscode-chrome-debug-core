@@ -464,7 +464,7 @@ export function pathToRegex(aPath: string, caseSensitive: boolean): string {
 }
 
 export function pathGlobToBlackboxedRegex(glob: string): string {
-    return escapeRegexSpecialCharsForBlackbox(glob)
+    return escapeRegexSpecialChars(glob, '*')
         .replace(/\*\*(\\\/|\\\\)?/g, '(.*\\\/)?') // **/ -> (.*\/)?
         .replace(/([^\.]|^)\*/g, '$1.*') // * -> .*
 
@@ -476,15 +476,16 @@ export function pathGlobToBlackboxedRegex(glob: string): string {
         .replace(/\\\/|\\\\/g, '[\/\\\\]'); // / -> [/|\], \ -> [/|\]
 }
 
-function escapeRegexSpecialChars(str: string): string {
-    return str.replace(/([/\\.?*()^${}|[\]+])/g, '\\$1');
-}
+const regexChars = '/\\.?*()^${}|[]+';
+export function escapeRegexSpecialChars(str: string, except?: string): string {
+    const useRegexChars = regexChars
+        .split('')
+        .filter(c => !except || except.indexOf(c) < 0)
+        .join('')
+        .replace(/[\\\]]/g, '\\$&');
 
-/**
- * Does not escape *, as str is a simple glob pattern
- */
-function escapeRegexSpecialCharsForBlackbox(str: string): string {
-    return str.replace(/([/\\.?()^${}|[\]+])/g, '\\$1');
+    const r = new RegExp(`[${useRegexChars}]`, 'g');
+    return str.replace(r, '\\$&');
 }
 
 export function trimLastNewline(str: string): string {
@@ -537,14 +538,6 @@ export function firstLine(msg: string): string {
 
 export function isNumber(num: number): boolean {
     return typeof num === 'number';
-}
-
-export function escapeRegExpCharacters(value: string): string {
-    return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\[\]\(\)\#]/g, '\\$&');
-}
-
-export function escapeSomeRegExpCharacters(value: string): string {
-    return value.replace(/[-[\]{}+?,^$|#\s]/g, '\\$&');
 }
 
 export function toVoidP(p: Promise<any>): Promise<void> {

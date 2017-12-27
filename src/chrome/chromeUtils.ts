@@ -182,7 +182,7 @@ export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string)
     };
 
     targetUrlPattern = standardizeMatch(targetUrlPattern);
-    targetUrlPattern = utils.escapeRegExpCharacters(targetUrlPattern).replace(/\\\*/g, '.*');
+    targetUrlPattern = utils.escapeRegexSpecialChars(targetUrlPattern, '/*').replace(/\*/g, '.*');
 
     const targetUrlRegex = new RegExp('^' + targetUrlPattern + '$', 'g');
     return targets.filter(target => !!standardizeMatch(target.url).match(targetUrlRegex));
