@@ -67,35 +67,36 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
 
     // Iterate the key/vals, only apply the first one that matches.
     // for...in iterates in order, (unless the key is a number)
-    for (let pattern in sourceMapPathOverrides) {
-        let replacePattern = sourceMapPathOverrides[pattern];
-        const entryStr = `"${pattern}": "${replacePattern}"`;
+    for (let leftPattern in sourceMapPathOverrides) {
+        const rightPattern = sourceMapPathOverrides[leftPattern];
+        const entryStr = `"${leftPattern}": "${rightPattern}"`;
 
-        const asterisks = pattern.match(/\*/g) || [];
+        const asterisks = leftPattern.match(/\*/g) || [];
         if (asterisks.length > 1) {
             logger.log(`Warning: only one asterisk allowed in a sourceMapPathOverrides entry - ${entryStr}`);
             continue;
         }
 
-        const replacePatternAsterisks = replacePattern.match(/\*/g) || [];
+        const replacePatternAsterisks = rightPattern.match(/\*/g) || [];
         if (replacePatternAsterisks.length > asterisks.length) {
             logger.log(`Warning: the right side of a sourceMapPathOverrides entry must have 0 or 1 asterisks - ${entryStr}}`);
             continue;
         }
 
         // Does it match?
-        const patternSegment = pattern
+        const escapedLeftPattern = utils.escapeRegexSpecialChars(leftPattern, '/*');
+        const leftRegexSegment = escapedLeftPattern
             .replace(/\*/g, '(.*)')
-            .replace(/\\/g, '/');
-        const patternRegex = new RegExp(`^${utils.escapeRegexSpecialChars(patternSegment, '/*().')}$`, 'i');
-        const overridePatternMatches = forwardSlashSourcePath.match(patternRegex);
+            .replace(/\\\\/g, '/');
+        const leftRegex = new RegExp(`^${leftRegexSegment}$`, 'i');
+        const overridePatternMatches = forwardSlashSourcePath.match(leftRegex);
         if (!overridePatternMatches)
             continue;
 
         // Grab the value of the wildcard from the match above, replace the wildcard in the
         // replacement pattern, and return the result.
         const wildcardValue = overridePatternMatches[1];
-        let mappedPath = replacePattern.replace(/\*/g, wildcardValue);
+        let mappedPath = rightPattern.replace(/\*/g, wildcardValue);
         mappedPath = path.join(mappedPath); // Fix any ..
         logger.log(`SourceMap: mapping ${sourcePath} => ${mappedPath}, via sourceMapPathOverrides entry - ${entryStr}`);
         return mappedPath;

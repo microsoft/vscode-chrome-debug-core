@@ -130,7 +130,7 @@ suite('SourceMapUtils', () => {
 
         test('allows some regex characters in the pattern', () => {
             assert.deepEqual(
-                applySourceMapPathOverrides('webpack+foo:///src/app.js', { 'webpack+foo:///*/app.js': testUtils.pathResolve('/project/*/app.js') }),
+                applySourceMapPathOverrides('webpack+(foo):///src/app.js', { 'webpack+(foo):///*/app.js': testUtils.pathResolve('/project/*/app.js') }),
                 testUtils.pathResolve('/project/src/app.js'));
         });
 
