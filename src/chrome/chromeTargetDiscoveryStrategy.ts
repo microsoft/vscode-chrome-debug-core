@@ -53,7 +53,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
     };
 
     private _getTargets(address: string, port: number): Promise<ITarget[]> {
-        const url = `http://${address}:${port}/json`;
+        // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
+        // Chrome and Node alias /json to /json/list so this should work too
+        const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
             try {

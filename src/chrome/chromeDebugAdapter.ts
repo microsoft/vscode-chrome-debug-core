@@ -409,14 +409,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
 
+            // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
+            await Promise.all(this.runConnection());
+
             if (patterns.length) {
                 this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
                 this.refreshBlackboxPatterns();
             }
 
-            await Promise.all(this.runConnection());
             await this.initSupportedDomains();
-
             const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
             try {
                 return await this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
