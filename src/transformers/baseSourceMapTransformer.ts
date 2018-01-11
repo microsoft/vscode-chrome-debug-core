@@ -91,7 +91,7 @@ export class BaseSourceMapTransformer {
             // If the source contents were inlined, then args.source has no path, but we
             // stored it in the handle
             const handle = this._sourceHandles.get(args.source.sourceReference);
-            if (handle.mappedPath) {
+            if (handle && handle.mappedPath) {
                 args.source.path = handle.mappedPath;
             }
         }
