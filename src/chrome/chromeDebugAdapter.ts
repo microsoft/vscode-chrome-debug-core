@@ -924,7 +924,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
-        committedBps.push(params.breakpointId);
+        if (committedBps.indexOf(params.breakpointId) === -1) {
+            committedBps.push(params.breakpointId);
+        }
         this._committedBreakpointsByUrl.set(script.url, committedBps);
 
         const bp = <DebugProtocol.Breakpoint>{
