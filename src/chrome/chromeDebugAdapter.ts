@@ -471,6 +471,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
+        if (notification.asyncCallStackTraceId) {
+            await this.chrome.Debugger.pauseOnAsyncCall({ parentStackTraceId: notification.asyncCallStackTraceId });
+            return this.chrome.Debugger.resume();
+        }
+
         this._variableHandles.onPaused();
         this._frameHandles.reset();
         this._exception = undefined;
@@ -1436,7 +1441,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._expectingStopReason = 'step';
         this._expectingResumedEvent = true;
-        return this._currentStep = this.chrome.Debugger.stepInto({ })
+        return this._currentStep = this.chrome.Debugger.stepInto({ breakOnAsyncCall: true })
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }

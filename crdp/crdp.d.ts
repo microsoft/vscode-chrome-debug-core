@@ -2637,6 +2637,35 @@ applies to images. */
 
         }
 
+        /** Chrome histogram bucket. */
+        export interface Bucket {
+            /** Minimum value (inclusive). */
+            low: integer;
+
+            /** Maximum value (exclusive). */
+            high: integer;
+
+            /** Number of samples. */
+            count: integer;
+
+        }
+
+        /** Chrome histogram. */
+        export interface Histogram {
+            /** Name. */
+            name: string;
+
+            /** Sum of sample values. */
+            sum: integer;
+
+            /** Total number of samples. */
+            count: integer;
+
+            /** Buckets. */
+            buckets: Bucket[];
+
+        }
+
         export interface GetVersionResponse {
             /** Protocol version. */
             protocolVersion: string;
@@ -2652,6 +2681,32 @@ applies to images. */
 
             /** V8 version. */
             jsVersion: string;
+
+        }
+
+        export interface GetHistogramsRequest {
+            /** Requested substring in name. Only histograms which have query as a
+substring in their name are extracted. An empty or absent query returns
+all histograms. */
+            query?: string;
+
+        }
+
+        export interface GetHistogramsResponse {
+            /** Histograms. */
+            histograms: Histogram[];
+
+        }
+
+        export interface GetHistogramRequest {
+            /** Requested histogram name. */
+            name: string;
+
+        }
+
+        export interface GetHistogramResponse {
+            /** Histogram. */
+            histogram: Histogram;
 
         }
 
@@ -2701,6 +2756,12 @@ with 'left', 'top', 'width' or 'height'. Leaves unspecified fields unchanged. */
 
         /** Returns version information. */
         getVersion?: () => Promise<Browser.GetVersionResponse>;
+
+        /** Get Chrome histograms. */
+        getHistograms?: (params: Browser.GetHistogramsRequest) => Promise<Browser.GetHistogramsResponse>;
+
+        /** Get a Chrome histogram by name. */
+        getHistogram?: (params: Browser.GetHistogramRequest) => Promise<Browser.GetHistogramResponse>;
 
         /** Get position and size of the browser window. */
         getWindowBounds?: (params: Browser.GetWindowBoundsRequest) => Promise<Browser.GetWindowBoundsResponse>;
@@ -4809,6 +4870,9 @@ event listeners attached via JavaScript as well as anchor tags that naturally na
 clicked. */
             isClickable?: boolean;
 
+            /** Details of the node's event listeners, if any. */
+            eventListeners?: DOMDebugger.EventListener[];
+
         }
 
         /** Details of post layout rendered text positions. The exact layout should not be regarded as
@@ -4864,6 +4928,9 @@ stable and may change between versions. */
         export interface GetSnapshotRequest {
             /** Whitelist of computed styles to return. */
             computedStyleWhitelist: string[];
+
+            /** Whether or not to retrieve details of DOM listeners (default false). */
+            includeEventListeners?: boolean;
 
         }
 
@@ -5282,6 +5349,10 @@ virtualTimeBudgetExpired event is sent. */
 forwards to prevent deadlock. */
             maxVirtualTimeTaskStarvationCount?: integer;
 
+            /** If set the virtual time policy change should be deferred until any frame starts navigating.
+Note any previous deferred policy change is superseded. */
+            waitForNavigation?: boolean;
+
         }
 
         export interface SetVirtualTimePolicyResponse {
@@ -5422,6 +5493,11 @@ calculated from the frameTime and interval. */
             /** The interval between BeginFrames that is reported to the compositor, in milliseconds.
 Defaults to a 60 frames/second interval, i.e. about 16.666 milliseconds. */
             interval?: number;
+
+            /** Whether updates should not be committed and drawn onto the display. False by default. If
+true, only side effects of the BeginFrame will be run, such as layout and animations, but
+any visual updates may not be visible on the display or in screenshots. */
+            noDisplayUpdates?: boolean;
 
             /** If set, a screenshot of the frame will be captured and returned in the response. Otherwise,
 no screenshot will be captured. */
@@ -6622,6 +6698,9 @@ milliseconds relatively to this requestTime. */
             /** HTTP POST request data. */
             postData?: string;
 
+            /** True when the request has POST data. Note that postData might still be omitted when this flag is true when the data is too long. */
+            hasPostData?: boolean;
+
             /** The mixed content type of the request. */
             mixedContentType?: Security.MixedContentType;
 
@@ -7051,6 +7130,9 @@ provided URL. */
             /** Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc). */
             maxResourceBufferSize?: integer;
 
+            /** Longest post body size (in bytes) that would be included in requestWillBeSent notification */
+            maxPostDataSize?: integer;
+
         }
 
         export interface GetAllCookiesResponse {
@@ -7094,6 +7176,18 @@ provided URL. */
 
             /** True, if content was sent as base64. */
             base64Encoded: boolean;
+
+        }
+
+        export interface GetRequestPostDataRequest {
+            /** Identifier of the network request to get content for. */
+            requestId: RequestId;
+
+        }
+
+        export interface GetRequestPostDataResponse {
+            /** Base64-encoded request body. */
+            postData: string;
 
         }
 
@@ -7291,6 +7385,9 @@ continueInterceptedRequest call. */
 
             /** Total number of bytes received for this request. */
             encodedDataLength: number;
+
+            /** Set when response was blocked due to being cross-site document response. */
+            blockedCrossSiteDocument?: boolean;
 
         }
 
@@ -7536,6 +7633,9 @@ detailed cookie information in the `cookies` field. */
 
         /** Returns content served for the given request. */
         getResponseBody?: (params: Network.GetResponseBodyRequest) => Promise<Network.GetResponseBodyResponse>;
+
+        /** Returns post data sent with the request. Returns an error when no data was sent with the request. */
+        getRequestPostData?: (params: Network.GetRequestPostDataRequest) => Promise<Network.GetRequestPostDataResponse>;
 
         /** Returns content served for the given currently intercepted request. */
         getResponseBodyForInterception?: (params: Network.GetResponseBodyForInterceptionRequest) => Promise<Network.GetResponseBodyForInterceptionResponse>;
@@ -8383,6 +8483,20 @@ print all pages. */
 Defaults to false. */
             ignoreInvalidPageRanges?: boolean;
 
+            /** HTML template for the print header. Should be valid HTML markup with following
+classes used to inject printing values into them:
+- date - formatted print date
+- title - document title
+- url - document location
+- pageNumber - current page number
+- totalPages - total pages in the document
+
+For example, <span class=title></span> would generate span containing the title. */
+            headerTemplate?: string;
+
+            /** HTML template for the print footer. Should use the same format as the `headerTemplate`. */
+            footerTemplate?: string;
+
         }
 
         export interface PrintToPDFResponse {
@@ -8395,7 +8509,8 @@ Defaults to false. */
             /** If true, browser cache is ignored (as if the user pressed Shift+refresh). */
             ignoreCache?: boolean;
 
-            /** If set, the script will be injected into all frames of the inspected page after reload. */
+            /** If set, the script will be injected into all frames of the inspected page after reload.
+Argument will be ignored if reloading dataURL origin. */
             scriptToEvaluateOnLoad?: string;
 
         }
@@ -8443,12 +8558,6 @@ Defaults to false. */
         export interface SetAdBlockingEnabledRequest {
             /** Whether to block ads. */
             enabled: boolean;
-
-        }
-
-        export interface SetAutoAttachToCreatedPagesRequest {
-            /** If true, browser will open a new inspector window for every page created from this one. */
-            autoAttach: boolean;
 
         }
 
@@ -8794,9 +8903,6 @@ information in the `cookies` field. */
         /** Enable Chrome's experimental ad filter on all sites. */
         setAdBlockingEnabled?: (params: Page.SetAdBlockingEnabledRequest) => Promise<void>;
 
-        /** Controls whether browser will open a new inspector window for connected pages. */
-        setAutoAttachToCreatedPages?: (params: Page.SetAutoAttachToCreatedPagesRequest) => Promise<void>;
-
         /** Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
 window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
 query results). */
@@ -8826,6 +8932,9 @@ unavailable. */
 
         /** Force the page stop all navigations and pending resource fetches. */
         stopLoading?: () => Promise<void>;
+
+        /** Crashes renderer on the IO thread, generates minidumps. */
+        crash?: () => Promise<void>;
 
         /** Stops sending each frame in the `screencastFrame`. */
         stopScreencast?: () => Promise<void>;
@@ -9020,6 +9129,9 @@ https://www.w3.org/TR/mixed-content/#categories */
             /** Security state representing the severity of the factor being explained. */
             securityState: SecurityState;
 
+            /** Title describing the type of factor. */
+            title: string;
+
             /** Short phrase describing the type of factor. */
             summary: string;
 
@@ -9064,6 +9176,12 @@ such as images that were loaded with certificate errors. */
         /** The action to take when a certificate error occurs. continue will continue processing the
 request and cancel will cancel the request. */
         export type CertificateErrorAction = ('continue' | 'cancel');
+
+        export interface SetIgnoreCertificateErrorsRequest {
+            /** If true, all certificate errors will be ignored. */
+            ignore: boolean;
+
+        }
 
         export interface HandleCertificateErrorRequest {
             /** The ID of the event. */
@@ -9119,6 +9237,9 @@ request and cancel will cancel the request. */
         /** Enables tracking security state changes. */
         enable?: () => Promise<void>;
 
+        /** Enable/disable whether all certificate errors should be ignored. */
+        setIgnoreCertificateErrors?: (params: Security.SetIgnoreCertificateErrorsRequest) => Promise<void>;
+
         /** Handles a certificate error that fired a certificateError event. */
         handleCertificateError?: (params: Security.HandleCertificateErrorRequest) => Promise<void>;
 
@@ -9131,7 +9252,8 @@ be handled by the DevTools client and should be answered with handleCertificateE
     export interface SecurityClient extends SecurityCommands {
         /** There is a certificate error. If overriding certificate errors is enabled, then it should be
 handled with the handleCertificateError command. Note: this event does not fire if the
-certificate error has been allowed internally. */
+certificate error has been allowed internally. Only one client per target should override
+certificate errors at the same time. */
         onCertificateError(handler: (params: Security.CertificateErrorEvent) => void): void;
 
         /** The security state of the page changed. */
@@ -9142,7 +9264,8 @@ certificate error has been allowed internally. */
     export interface SecurityServer {
         /** There is a certificate error. If overriding certificate errors is enabled, then it should be
 handled with the handleCertificateError command. Note: this event does not fire if the
-certificate error has been allowed internally. */
+certificate error has been allowed internally. Only one client per target should override
+certificate errors at the same time. */
         emitCertificateError(params: Security.CertificateErrorEvent): void;
 
         /** The security state of the page changed. */
