@@ -30,7 +30,7 @@ export interface ITarget {
 
 export type ITargetFilter = (target: ITarget) => boolean;
 export interface ITargetDiscoveryStrategy {
-    getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<string>;
+    getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget>;
     getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]>;
 }
 
@@ -94,6 +94,7 @@ export class ChromeConnection {
     private _client: Client;
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
+    private _attachedTarget: ITarget;
 
     constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
@@ -104,6 +105,10 @@ export class ChromeConnection {
 
     public get api(): Crdp.CrdpClient {
         return this._client && this._client.api();
+    }
+
+    public get attachedTarget(): ITarget {
+        return this._attachedTarget;
     }
 
     /**
@@ -127,11 +132,19 @@ export class ChromeConnection {
         this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
     }
 
+    public getAllTargets(address = '127.0.0.1', port = 9222, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]> {
+        return this._targetDiscoveryStrategy.getAllTargets(address, port, targetFilter, targetUrl);
+    }
+
     private _attach(address: string, port: number, targetUrl?: string, timeout = ChromeConnection.ATTACH_TIMEOUT, extraCRDPChannelPort?: number): Promise<void> {
+        let selectedTarget: ITarget;
         return utils.retryAsync(() => this._targetDiscoveryStrategy.getTarget(address, port, this._targetFilter, targetUrl), timeout, /*intervalDelay=*/200)
             .catch(err => Promise.reject(errors.runtimeConnectionTimeout(timeout, err.message)))
-            .then(wsUrl => {
-                return this.attachToWebsocketUrl(wsUrl, extraCRDPChannelPort);
+            .then(target => {
+                selectedTarget = target;
+                return this.attachToWebsocketUrl(target.webSocketDebuggerUrl, extraCRDPChannelPort);
+            }).then(() => {
+                this._attachedTarget = selectedTarget;
             });
     }
 

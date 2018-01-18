@@ -103,9 +103,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _pendingBreakpointsByUrl: Map<string, IPendingBreakpoint>;
     private _hitConditionBreakpointsById: Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>;
 
-    private _chromeConnection: ChromeConnection;
-
     private _lineColTransformer: LineColTransformer;
+    protected _chromeConnection: ChromeConnection;
     protected _sourceMapTransformer: BaseSourceMapTransformer;
     protected _pathTransformer: BasePathTransformer;
 

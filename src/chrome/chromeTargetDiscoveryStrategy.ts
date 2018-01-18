@@ -22,7 +22,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         this.telemetry = _telemetry;
     }
 
-    async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<string> {
+    async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
         const targets = await this.getAllTargets(address, port, targetFilter, targetUrl);
         if (targets.length > 1) {
             this.logger.log('Warning: Found more than one valid target page. Attaching to the first one. Available pages: ' + JSON.stringify(targets.map(target => target.url)));
@@ -33,7 +33,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         this.logger.verbose(`Attaching to target: ${JSON.stringify(selectedTarget)}`);
         this.logger.verbose(`WebSocket Url: ${selectedTarget.webSocketDebuggerUrl}`);
 
-        return selectedTarget.webSocketDebuggerUrl;
+        return selectedTarget;
     }
 
     async getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]> {
