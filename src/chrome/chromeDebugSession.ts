@@ -63,7 +63,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
     }
 
     public constructor(obsolete_debuggerLinesAndColumnsStartAt1?: boolean, obsolete_isServer?: boolean, opts?: IChromeDebugSessionOpts) {
-        super(obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
+        super(undefined, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
