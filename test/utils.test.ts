@@ -352,6 +352,10 @@ suite('Utils', () => {
             // but not something that ends in foo.js
             assert(!r.test('barfoo.js'));
         });
+
+        test('.* in glob', () => {
+            testPathGlobToBlackboxedRegex('foo.*.bar', 'foo\\..*\\.bar');
+        });
     });
 
     suite('makeRegexNotMatchPath/makeRegexMatchPath', () => {

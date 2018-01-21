@@ -465,8 +465,8 @@ export function pathToRegex(aPath: string, caseSensitive: boolean): string {
 
 export function pathGlobToBlackboxedRegex(glob: string): string {
     return escapeRegexSpecialChars(glob, '*')
+        .replace(/([^*]|^)\*([^*]|$)/g, '$1.*$2') // * -> .*
         .replace(/\*\*(\\\/|\\\\)?/g, '(.*\\\/)?') // **/ -> (.*\/)?
-        .replace(/([^\.]|^)\*/g, '$1.*') // * -> .*
 
         // Just to simplify
         .replace(/\.\*\\\/\.\*/g, '.*') // .*\/.* -> .*
