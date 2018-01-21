@@ -16,7 +16,7 @@ import {IDebugAdapter} from '../debugAdapterInterfaces';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
-    logFilePath?: string;
+    logFilePath?: string; // obsolete, vscode log dir should be used
     enableSourceMapCaching?: boolean;
 
     // Override services

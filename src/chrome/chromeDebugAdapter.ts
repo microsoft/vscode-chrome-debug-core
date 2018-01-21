@@ -297,17 +297,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
+        let logLevel: Logger.LogLevel;
         if (args.trace === 'verbose') {
-            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
+            logLevel = Logger.LogLevel.Verbose;
         } else if (args.trace) {
-            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/true);
-        } else if (args.verboseDiagnosticLogging) { // deprecated
-            logger.setup(Logger.LogLevel.Verbose, /*logToFile=*/true);
-        } else if (args.diagnosticLogging) { // deprecated
-            logger.setup(Logger.LogLevel.Log, /*logToFile=*/true);
+            logLevel = Logger.LogLevel.Warn;
         } else {
-            logger.setup(Logger.LogLevel.Warn, /*logToFile=*/false);
+            logLevel = Logger.LogLevel.Warn;
         }
+
+        // The debug configuration provider should have set logFilePath on the launch config. If not, default to 'true' to use the
+        // "legacy" log file path from the CDA subclass
+        const logFilePath = args.logFilePath || true;
+        logger.setup(logLevel, logFilePath);
 
         this._launchAttachArgs = args;
 

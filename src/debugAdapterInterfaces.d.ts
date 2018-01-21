@@ -24,9 +24,8 @@ export interface ICommonRequestArgs {
     outDir?: string;
     outFiles?: string[];
     sourceMaps?: boolean;
-    diagnosticLogging?: boolean;
-    verboseDiagnosticLogging?: boolean;
     trace?: boolean|string;
+    logFilePath?: string;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
     skipFiles?: string[]; // an array of file names or glob patterns
