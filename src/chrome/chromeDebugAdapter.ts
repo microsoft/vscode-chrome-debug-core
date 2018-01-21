@@ -707,28 +707,30 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private async resolveSkipFiles(script: CrdpScript, mappedUrl: string, sources: string[], toggling?: boolean): Promise<void> {
         if (sources && sources.length) {
             const parentIsSkipped = this.shouldSkipSource(script.url);
-            const details = await this._sourceMapTransformer.allSourcePathDetails(mappedUrl);
             const libPositions: Crdp.Debugger.ScriptPosition[] = [];
 
             // Figure out skip/noskip transitions within script
             let inLibRange = parentIsSkipped;
-            details.forEach(async (detail, i) => {
-                let isSkippedFile = this.shouldSkipSource(detail.inferredPath);
+            const allSources = await this.sourceMapTransformer.allSources(mappedUrl);
+            await Promise.all(allSources.map(async s => {
+                let isSkippedFile = this.shouldSkipSource(s);
                 if (typeof isSkippedFile !== 'boolean') {
                     // Inherit the parent's status
                     isSkippedFile = parentIsSkipped;
                 }
 
-                this._skipFileStatuses.set(detail.inferredPath, isSkippedFile);
+                this._skipFileStatuses.set(s, isSkippedFile);
 
                 if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
+                    const details = await this.sourceMapTransformer.allSourcePathDetails(mappedUrl);
+                    const detail = details.find(d => d.inferredPath === s);
                     libPositions.push({
                         lineNumber: detail.startPosition.line,
                         columnNumber: detail.startPosition.column
                     });
                     inLibRange = !inLibRange;
                 }
-            });
+            }));
 
             // If there's any change from the default, set proper blackboxed ranges
             if (libPositions.length || toggling) {
