@@ -24,7 +24,7 @@ import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
 
 /** Not mocked - use for type only */
-import {ChromeDebugAdapter as _ChromeDebugAdapter} from '../../src/chrome/chromeDebugAdapter';
+import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason} from '../../src/chrome/chromeDebugAdapter';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -424,6 +424,29 @@ suite('ChromeDebugAdapter', () => {
                     });
 
                 emitScriptParsed(/*url=*/'');
+            });
+        });
+
+        // This is needed for Edge debug adapter, please keep the signature and logic of sendLoadedSourceEvent() method intact.
+        test('tests that sendLoadedSourceEvent can accept an additional paramter to override the `reason` parameter', () => {
+            const loadedSourceEventReason: LoadedSourceEventReason = 'changed';
+            sendEventHandler = (event) => {
+                assert.equal('loadedSource', event.event);
+                assert.notEqual(null, event.body);
+                assert.equal(loadedSourceEventReason, event.body.reason);
+            };
+
+            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
+                return (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                }, loadedSourceEventReason);
             });
         });
 
