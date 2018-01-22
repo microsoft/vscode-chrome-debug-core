@@ -72,6 +72,8 @@ export type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
+export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -701,8 +703,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        const scriptEvent = await this.scriptToLoadedSourceEvent('new', script);
+    protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
+        const scriptEvent = await this.scriptToLoadedSourceEvent(loadedSourceEventReason, script);
         this._session.sendEvent(scriptEvent);
     }
 
@@ -1585,7 +1587,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private async scriptToLoadedSourceEvent(reason: 'new' | 'changed' | 'removed', script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
+    private async scriptToLoadedSourceEvent(reason: LoadedSourceEventReason, script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
         const source = await this.scriptToSource(script);
         return new LoadedSourceEvent(reason, source as any);
     }
