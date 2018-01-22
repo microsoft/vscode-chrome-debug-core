@@ -33,7 +33,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
     const UTILS_PATH = '../utils';
     const TARGET_ADDRESS = '127.0.0.1';
     const TARGET_PORT = 9222;
-    const TARGET_LIST_URL = `http://${TARGET_ADDRESS}:${TARGET_PORT}/json`;
+    const TARGET_LIST_URL = `http://${TARGET_ADDRESS}:${TARGET_PORT}/json/list`;
 
     function registerTargetListContents(targetListJSON: string): void {
         testUtils.registerMockGetURL(UTILS_PATH, TARGET_LIST_URL, targetListJSON);
