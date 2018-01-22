@@ -1093,7 +1093,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 let targetScriptUrl: string;
                 if (args.source.sourceReference) {
                     const handle = this._sourceHandles.get(args.source.sourceReference);
-                    if (!handle.scriptId && args.source.path) {
+                    if ((!handle || !handle.scriptId) && args.source.path) {
                         // A sourcemapped script with inline sources won't have a scriptId here, but the
                         // source.path has been fixed.
                         targetScriptUrl = args.source.path;
