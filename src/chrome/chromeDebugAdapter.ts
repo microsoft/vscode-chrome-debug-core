@@ -656,8 +656,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const resolvePendingBPs = (source: string) => {
             source = source && this.fixPathCasing(source);
-            if (this._pendingBreakpointsByUrl.has(source)) {
-                this.resolvePendingBreakpoint(this._pendingBreakpointsByUrl.get(source))
+            const pendingBP = this._pendingBreakpointsByUrl.get(source);
+            if (pendingBP && !pendingBP.bpsSet) {
+                this.resolvePendingBreakpoint(pendingBP)
                     .then(() => this._pendingBreakpointsByUrl.delete(source));
             }
         };
@@ -1208,7 +1209,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
-            this._pendingBreakpointsByUrl.set(this.fixPathCasing(args.source.path), { args, ids, requestSeq, bpsSet });
+            this._pendingBreakpointsByUrl.set(
+                this.fixPathCasing(args.source.path),
+                { args, ids, requestSeq, bpsSet });
         }
 
         return { breakpoints };
