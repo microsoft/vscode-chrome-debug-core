@@ -721,7 +721,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // Figure out skip/noskip transitions within script
             let inLibRange = parentIsSkipped;
             const allSources = await this.sourceMapTransformer.allSources(mappedUrl);
-            await Promise.all(allSources.map(async s => {
+            for (let s of allSources) {
                 let isSkippedFile = this.shouldSkipSource(s);
                 if (typeof isSkippedFile !== 'boolean') {
                     // Inherit the parent's status
@@ -739,7 +739,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     });
                     inLibRange = !inLibRange;
                 }
-            }));
+            }
 
             // If there's any change from the default, set proper blackboxed ranges
             if (libPositions.length || toggling) {
