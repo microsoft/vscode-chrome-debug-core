@@ -1,7 +1,7 @@
 {
   "name": "vscode-chrome-debug-core",
   "displayName": "vscode-chrome-debug-core",
-  "version": "3.22.2",
+  "version": "3.22.3",
   "description": "A library for building VS Code debug adapters for targets that support the Chrome Remote Debug Protocol",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
     "glob": "^7.0.6",
     "noice-json-rpc": "1.0.1",
     "source-map": "^0.6.1",
-    "vscode-debugadapter": "^1.26.0-pre.1",
+    "vscode-debugadapter": "^1.26.0-pre.2",
     "vscode-debugprotocol": "^1.25.0-pre.3",
     "vscode-nls": "^2.0.2",
     "ws": "^3.3.2"
