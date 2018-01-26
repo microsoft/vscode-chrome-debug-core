@@ -8,7 +8,9 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import {ExtendedDebugClient} from './debugClient';
 
 // ES6 default export...
-import LoggingReporter from './loggingReporter';
+// tslint:disable-next-line:no-var-requires
+const LoggingReporter = require('./loggingReporter');
+// LoggingReporter.alwaysDumpLogs = true;
 
 let unhandledAdapterErrors: string[];
 const origTest = test;
