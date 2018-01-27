@@ -162,6 +162,7 @@ export interface IExceptionInfoResponseBody {
 export declare type PromiseOrNot<T> = T | Promise<T>;
 
 export interface TimeTravelClient {
+    writeTTDLog(uri: string): Promise<any>;
     stepBack(): Promise<any>;
     reverse(): Promise<any>;
 }

@@ -1472,6 +1472,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
+    public writeTTDLog(uri: string): Promise<void> {
+        return (<TimeTravelRuntime>this.chrome).TimeTravel.writeTTDLog(uri)
+            .then(() => { /* make void */ },
+                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+    }
+
     public stepBack(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack()
             .then(() => { /* make void */ },
