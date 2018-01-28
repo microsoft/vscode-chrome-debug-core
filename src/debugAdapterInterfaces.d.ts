@@ -162,13 +162,29 @@ export interface IExceptionInfoResponseBody {
 export declare type PromiseOrNot<T> = T | Promise<T>;
 
 export interface TimeTravelClient {
-    writeTTDLog(uri: string): Promise<any>;
+    writeTTDLog(args: any): Promise<any>;
     stepBack(): Promise<any>;
     reverse(): Promise<any>;
 }
 
 export interface TimeTravelRuntime extends Crdp.CrdpClient {
     TimeTravel: TimeTravelClient;
+}
+
+export interface IGetTTDTraceWriteURIResponseBody {
+    uri: string;
+}
+
+export interface IGetTTDReplayConfigurationResponseBody {
+    jsonLaunchConfig: string;
+}
+
+export interface IIsTTDLiveModeResponseBody {
+    isInLiveMode: boolean;
+}
+
+export interface IIsTTDReplayModeResponseBody {
+    isInReplayMode: boolean;
 }
 
 /**
