@@ -149,7 +149,9 @@ export function fileUrlToPath(urlOrPath: string): string {
  * blah\something => blah/something
  */
 export function forceForwardSlashes(aUrl: string): string {
-    return aUrl.replace(/\\/g, '/');
+    return aUrl
+        .replace(/\\\//g, '/') // Replace \/ (unnecessarily escaped forward slash)
+        .replace(/\\/g, '/');
 }
 
 /**
@@ -268,8 +270,13 @@ export function lstrip(s: string, lStr: string): string {
  * C:/code/app.js => file:///C:/code/app.js
  * /code/app.js => file:///code/app.js
  */
-export function pathToFileURL(absPath: string): string {
+export function pathToFileURL(absPath: string, normalize?: boolean): string {
     absPath = forceForwardSlashes(absPath);
+    if (normalize) {
+        absPath = path.normalize(absPath);
+        absPath = forceForwardSlashes(absPath);
+    }
+
     absPath = (absPath.startsWith('/') ? 'file://' : 'file:///') +
         absPath;
     return encodeURI(absPath);

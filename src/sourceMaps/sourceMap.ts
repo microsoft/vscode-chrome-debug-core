@@ -95,6 +95,7 @@ export class SourceMap {
         // Overwrite the sourcemap's sourceRoot with the version that's resolved to an absolute path,
         // so the work above only has to be done once
         this._originalSourceRoot = sm.sourceRoot;
+        this._originalSources = sm.sources;
         sm.sourceRoot = null;
 
         // sm.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
@@ -123,13 +124,12 @@ export class SourceMap {
         });
 
         // Rewrite sm.sources to same as this._sources but file url with forward slashes
-        this._originalSources = sm.sources;
         sm.sources = this._sources.map(sourceAbsPath => {
             // Convert to file:/// url. After this, it's a file URL for an absolute path to a file on disk with forward slashes.
             // We lowercase so authored <-> generated mapping is not case sensitive.
             const lowerCaseSourceAbsPath = sourceAbsPath.toLowerCase();
             this._authoredPathCaseMap.set(lowerCaseSourceAbsPath, sourceAbsPath);
-            return utils.pathToFileURL(lowerCaseSourceAbsPath);
+            return utils.pathToFileURL(lowerCaseSourceAbsPath, true);
         });
 
         this._smc = new SourceMapConsumer(sm);
@@ -203,7 +203,7 @@ export class SourceMap {
 
         // sources in the sourcemap have been forced to file:///
         // Convert to lowerCase so search is case insensitive
-        source = utils.pathToFileURL(source.toLowerCase());
+        source = utils.pathToFileURL(source.toLowerCase(), true);
 
         const lookupArgs = {
             line,
@@ -231,7 +231,7 @@ export class SourceMap {
     }
 
     public sourceContentFor(authoredSourcePath: string): string {
-        authoredSourcePath = utils.pathToFileURL(authoredSourcePath);
+        authoredSourcePath = utils.pathToFileURL(authoredSourcePath, true);
         return (<any>this._smc).sourceContentFor(authoredSourcePath, /*returnNullOnMissing=*/true);
     }
 }

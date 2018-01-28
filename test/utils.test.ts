@@ -190,6 +190,23 @@ suite('Utils', () => {
         });
     });
 
+    suite('forceForwardSlashes', () => {
+        test('works for c:/... cases', () => {
+            assert.equal(getUtils().forceForwardSlashes('C:\\foo\\bar'), 'C:/foo/bar');
+            assert.equal(getUtils().forceForwardSlashes('C:\\'), 'C:/');
+            assert.equal(getUtils().forceForwardSlashes('C:/foo\\bar'), 'C:/foo/bar');
+        });
+
+        test('works for relative paths', () => {
+            assert.equal(getUtils().forceForwardSlashes('foo\\bar'), 'foo/bar');
+            assert.equal(getUtils().forceForwardSlashes('foo\\bar/baz'), 'foo/bar/baz');
+        });
+
+        test('fixes escaped forward slashes', () => {
+            assert.equal(getUtils().forceForwardSlashes('foo\\/bar'), 'foo/bar');
+        });
+    });
+
     suite('fixDriveLetterAndSlashes', () => {
         test('works for c:/... cases', () => {
             assert.equal(getUtils().fixDriveLetterAndSlashes('C:/path/stuff'), 'c:\\path\\stuff');
@@ -260,6 +277,10 @@ suite('Utils', () => {
 
         test('encodes as URI and forces forwards slash', () => {
             assert.equal(getUtils().pathToFileURL('c:\\path with spaces\\blah.js'), 'file:///c:/path%20with%20spaces/blah.js');
+        });
+
+        test('normalizes', () => {
+            assert.equal(getUtils().pathToFileURL('c:\\path with spaces\\.\\foo\\..\\blah.js', true), 'file:///c:/path%20with%20spaces/blah.js');
         });
     });
 
