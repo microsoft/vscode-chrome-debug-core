@@ -449,15 +449,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * This event tells the client to begin sending setBP requests, etc. Some consumers need to override this
      * to send it at a later time of their choosing.
      */
-    protected sendInitializedEvent(): void {
+    protected async sendInitializedEvent(): Promise<void> {
         // Wait to finish loading sourcemaps from the initial scriptParsed events
         if (this._initialSourceMapsP) {
             const initialSourceMapsP = this._initialSourceMapsP;
             this._initialSourceMapsP = null;
 
-            initialSourceMapsP.then(() => {
+            await initialSourceMapsP.then(async () => {
                 this._session.sendEvent(new InitializedEvent());
-                this._earlyScripts.forEach(script => this.sendLoadedSourceEvent(script));
+                await Promise.all(this._earlyScripts.map(async script => await this.sendLoadedSourceEvent(script)));
                 this._earlyScripts = null;
             });
         }
@@ -640,8 +640,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
         if (typeof this._columnBreakpointsEnabled === 'undefined') {
-            this.detectColumnBreakpointSupport(script.scriptId).then(() => {
-                this.sendInitializedEvent();
+            await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
+                await this.sendInitializedEvent();
             });
         }
 
@@ -704,7 +704,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (this._earlyScripts) {
             this._earlyScripts.push(script);
         } else {
-            this.sendLoadedSourceEvent(script);
+            await this.sendLoadedSourceEvent(script);
         }
     }
 
