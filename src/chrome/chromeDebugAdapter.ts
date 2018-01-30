@@ -136,6 +136,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _breakOnLoadHelper: BreakOnLoadHelper | null;
 
+    // Queue to synchronize onScriptParsed events and onExecutionContextsCleared events so that 'remove' script events
+    // won't be send before the corresponding 'new' event has been sent
+    private _scriptParsedQueue: Promise<any> = Promise.resolve(null);
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
@@ -359,13 +363,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected hookConnectionEvents(): void {
         this.chrome.Debugger.onPaused(params => this.onPaused(params));
         this.chrome.Debugger.onResumed(() => this.onResumed());
-        this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
+        this.chrome.Debugger.onScriptParsed(params => {
+            this._scriptParsedQueue = this._scriptParsedQueue.then(async () => // This will block future onExecutionContextsCleared events from processing
+                await this.onScriptParsed(params));
+        });
         this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
 
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
-        this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
+        this.chrome.Runtime.onExecutionContextsCleared(() => {
+            this._scriptParsedQueue = this._scriptParsedQueue.then(() => // This will not execute until all previous onScriptParsed events have been processed
+                this.onExecutionContextsCleared());
+        });
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
@@ -466,14 +476,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     /**
      * e.g. the target navigated
      */
-    private onExecutionContextsCleared(): void {
+    private onExecutionContextsCleared(): Promise<void> {
         const asyncOperations = [];
         this._scriptsById.forEach(scriptedParseEvent => {
             asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent =>
                 this._session.sendEvent(scriptEvent)));
         });
 
-        Promise.all(asyncOperations).then(() =>
+        return Promise.all(asyncOperations).then(() =>
             this.clearTargetContext());
     }
 
