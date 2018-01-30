@@ -80,16 +80,25 @@ function patchLaunchFn(patchLaunchArgsCb: PatchLaunchArgsCb): void {
     };
 }
 
-export function setup(entryPoint: string, type: string, patchLaunchArgs?: PatchLaunchArgsCb, port?: number): Promise<ExtendedDebugClient> {
+export interface ISetupOpts {
+    entryPoint: string;
+    type: string;
+    patchLaunchArgs?: PatchLaunchArgsCb;
+    port?: number;
+    alwaysDumpLogs?: boolean;
+}
+
+export function setup(opts: ISetupOpts): Promise<ExtendedDebugClient> {
     unhandledAdapterErrors = [];
-    dc = new ExtendedDebugClient('node', entryPoint, type);
-    if (patchLaunchArgs) {
-        patchLaunchFn(patchLaunchArgs);
+    dc = new ExtendedDebugClient('node', opts.entryPoint, opts.type);
+    if (opts.patchLaunchArgs) {
+        patchLaunchFn(opts.patchLaunchArgs);
     }
 
+    LoggingReporter.alwaysDumpLogs = opts.alwaysDumpLogs;
     dc.addListener('output', log);
 
-    return dc.start(port)
+    return dc.start(opts.port)
         .then(() => dc);
 }
 

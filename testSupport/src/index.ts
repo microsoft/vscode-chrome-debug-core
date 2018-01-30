@@ -5,7 +5,7 @@
 
 import {ExtendedDebugClient, IExpectedStopLocation, THREAD_ID} from './debugClient';
 import * as debugClient from './debugClient';
-import {setup, teardown} from './testSetup';
+import {setup, teardown, ISetupOpts} from './testSetup';
 
 export {
     ExtendedDebugClient,
@@ -15,5 +15,6 @@ export {
     debugClient,
 
     setup,
-    teardown
+    teardown,
+    ISetupOpts
 };
