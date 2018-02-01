@@ -136,9 +136,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _breakOnLoadHelper: BreakOnLoadHelper | null;
 
-    // Queue to synchronize onScriptParsed events and onExecutionContextsCleared events so that 'remove' script events
+    // Queue to synchronize new source loaded and source removed events so that 'remove' script events
     // won't be send before the corresponding 'new' event has been sent
-    private _scriptParsedQueue: Promise<any> = Promise.resolve(null);
+    private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -363,19 +363,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected hookConnectionEvents(): void {
         this.chrome.Debugger.onPaused(params => this.onPaused(params));
         this.chrome.Debugger.onResumed(() => this.onResumed());
-        this.chrome.Debugger.onScriptParsed(params => {
-            this._scriptParsedQueue = this._scriptParsedQueue.then(async () => // This will block future onExecutionContextsCleared events from processing
-                await this.onScriptParsed(params));
-        });
+        this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
         this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
 
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
-        this.chrome.Runtime.onExecutionContextsCleared(() => {
-            this._scriptParsedQueue = this._scriptParsedQueue.then(() => // This will not execute until all previous onScriptParsed events have been processed
-                this.onExecutionContextsCleared());
-        });
+        this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
@@ -473,18 +467,25 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
+    public doAfterProcessingSourceEvents(action: () => void): Promise<void> {
+        return this._sourceLoadedQueue = this._sourceLoadedQueue.then(action);
+    }
+
     /**
      * e.g. the target navigated
      */
     private onExecutionContextsCleared(): Promise<void> {
-        const asyncOperations = [];
-        this._scriptsById.forEach(scriptedParseEvent => {
-            asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent =>
-                this._session.sendEvent(scriptEvent)));
-        });
+            const asyncOperations = [];
+            this._scriptsById.forEach(scriptedParseEvent => {
+                return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
+                    asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent => {
+                        this._session.sendEvent(scriptEvent);
+                    }));
+                });
+            });
 
-        return Promise.all(asyncOperations).then(() =>
-            this.clearTargetContext());
+            return Promise.all(asyncOperations).then(() =>
+                this.clearTargetContext());
     }
 
     protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
@@ -649,11 +650,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        if (typeof this._columnBreakpointsEnabled === 'undefined') {
-            await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
-                await this.sendInitializedEvent();
-            });
-        }
+        this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
+            if (typeof this._columnBreakpointsEnabled === 'undefined') {
+                await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
+                    await this.sendInitializedEvent();
+                });
+            }
+
+            if (this._earlyScripts) {
+                this._earlyScripts.push(script);
+            } else {
+                await this.sendLoadedSourceEvent(script);
+            }
+        });
 
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
@@ -709,12 +718,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._initialSourceMapsP) {
             this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
-        }
-
-        if (this._earlyScripts) {
-            this._earlyScripts.push(script);
-        } else {
-            await this.sendLoadedSourceEvent(script);
         }
     }
 
