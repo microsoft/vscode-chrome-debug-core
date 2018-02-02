@@ -459,11 +459,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const initialSourceMapsP = this._initialSourceMapsP;
             this._initialSourceMapsP = null;
 
-            await initialSourceMapsP.then(async () => {
-                this._session.sendEvent(new InitializedEvent());
-                await Promise.all(this._earlyScripts.map(async script => await this.sendLoadedSourceEvent(script)));
-                this._earlyScripts = null;
-            });
+            await initialSourceMapsP;
+
+            this._session.sendEvent(new InitializedEvent());
+            await Promise.all(this._earlyScripts.map(script => this.sendLoadedSourceEvent(script)));
+            this._earlyScripts = null;
         }
     }
 
@@ -475,17 +475,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * e.g. the target navigated
      */
     private onExecutionContextsCleared(): Promise<void> {
-            const asyncOperations = [];
-            this._scriptsById.forEach(scriptedParseEvent => {
-                return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
-                    asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent => {
-                        this._session.sendEvent(scriptEvent);
-                    }));
-                });
+        const asyncOperations = [];
+        this._scriptsById.forEach(scriptedParseEvent => {
+            return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
+                asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent => {
+                    this._session.sendEvent(scriptEvent);
+                }));
             });
+        });
 
+        return this.doAfterProcessingSourceEvents(async () => { // Execute after sending all the 'removed' events
             return Promise.all(asyncOperations).then(() =>
                 this.clearTargetContext());
+        });
     }
 
     protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
