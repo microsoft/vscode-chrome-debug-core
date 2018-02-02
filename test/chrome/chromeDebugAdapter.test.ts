@@ -25,6 +25,7 @@ import * as utils from '../../src/utils';
 
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason} from '../../src/chrome/chromeDebugAdapter';
+import { InitializedEvent, LoadedSourceEvent, Source } from 'vscode-debugadapter/lib/debugSession';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -404,6 +405,8 @@ suite('ChromeDebugAdapter', () => {
         const FILE_NAME = 'file:///a.js';
         const SCRIPT_ID = '1';
         function emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID, otherArgs: any = {}): void {
+            mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), It.isValue(undefined)))
+                .returns(() => Promise.resolve([]));
             otherArgs.url = url;
             otherArgs.scriptId = scriptId;
 
@@ -450,6 +453,38 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
+        function createSource(name: string, path?: string, sourceReference?: number, origin?: string): Source {
+            return <Source>{
+                name: name,
+                path: path,
+                // if the path exists, do not send the sourceReference
+                sourceReference: sourceReference,
+                origin
+            };
+        }
+
+        test('When a page refreshes, finish sending the "new" source events, before sending the corresponding "removed" source event', async () => {
+            const expectedEvents: DebugProtocol.Event[] = [
+                new InitializedEvent(),
+                new LoadedSourceEvent('new', createSource("about:blank", "about:blank", 1000)),
+                new LoadedSourceEvent('removed', createSource("about:blank", "about:blank", 1000)),
+                new LoadedSourceEvent('new', createSource("localhost:61312", "http://localhost:61312/", 1001))
+              ];
+
+              const receivedEvents: DebugProtocol.Event[] = [];
+              sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            emitScriptParsed('about:blank', "1");
+
+            mockEventEmitter.emit('Debugger.globalObjectCleared');
+            mockEventEmitter.emit('Runtime.executionContextsCleared');
+            emitScriptParsed('http://localhost:61312/', "2");
+
+            await chromeDebugAdapter.doAfterProcessingSourceEvents(() => {
+                assert.deepEqual(receivedEvents, expectedEvents);
+            });
+        });
     });
 
     suite('evaluate()', () => {

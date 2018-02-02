@@ -136,6 +136,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _breakOnLoadHelper: BreakOnLoadHelper | null;
 
+    // Queue to synchronize new source loaded and source removed events so that 'remove' script events
+    // won't be send before the corresponding 'new' event has been sent
+    private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
@@ -449,32 +453,37 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * This event tells the client to begin sending setBP requests, etc. Some consumers need to override this
      * to send it at a later time of their choosing.
      */
-    protected sendInitializedEvent(): void {
+    protected async sendInitializedEvent(): Promise<void> {
         // Wait to finish loading sourcemaps from the initial scriptParsed events
         if (this._initialSourceMapsP) {
             const initialSourceMapsP = this._initialSourceMapsP;
             this._initialSourceMapsP = null;
 
-            initialSourceMapsP.then(() => {
-                this._session.sendEvent(new InitializedEvent());
-                this._earlyScripts.forEach(script => this.sendLoadedSourceEvent(script));
-                this._earlyScripts = null;
-            });
+            await initialSourceMapsP;
+
+            this._session.sendEvent(new InitializedEvent());
+            await Promise.all(this._earlyScripts.map(script => this.sendLoadedSourceEvent(script)));
+            this._earlyScripts = null;
         }
+    }
+
+    public doAfterProcessingSourceEvents(action: () => void): Promise<void> {
+        return this._sourceLoadedQueue = this._sourceLoadedQueue.then(action);
     }
 
     /**
      * e.g. the target navigated
      */
-    private onExecutionContextsCleared(): void {
-        const asyncOperations = [];
-        this._scriptsById.forEach(scriptedParseEvent => {
-            asyncOperations.push(this.scriptToLoadedSourceEvent('removed', scriptedParseEvent).then(scriptEvent =>
-                this._session.sendEvent(scriptEvent)));
-        });
+    private onExecutionContextsCleared(): Promise<void> {
+        const cachedScriptParsedEvents = Array.from(this._scriptsById.values());
+        return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
+            for (let scriptedParseEvent of cachedScriptParsedEvents) {
+                const scriptEvent = await this.scriptToLoadedSourceEvent('removed', scriptedParseEvent);
+                this._session.sendEvent(scriptEvent);
+            }
 
-        Promise.all(asyncOperations).then(() =>
-            this.clearTargetContext());
+            this.clearTargetContext();
+        });
     }
 
     protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
@@ -639,11 +648,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        if (typeof this._columnBreakpointsEnabled === 'undefined') {
-            this.detectColumnBreakpointSupport(script.scriptId).then(() => {
-                this.sendInitializedEvent();
-            });
-        }
+        this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
+            if (typeof this._columnBreakpointsEnabled === 'undefined') {
+                await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
+                    await this.sendInitializedEvent();
+                });
+            }
+
+            if (this._earlyScripts) {
+                this._earlyScripts.push(script);
+            } else {
+                await this.sendLoadedSourceEvent(script);
+            }
+        });
 
         if (script.url) {
             script.url = utils.fixDriveLetter(script.url);
@@ -699,12 +716,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._initialSourceMapsP) {
             this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
-        }
-
-        if (this._earlyScripts) {
-            this._earlyScripts.push(script);
-        } else {
-            this.sendLoadedSourceEvent(script);
         }
     }
 

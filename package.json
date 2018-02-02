@@ -47,7 +47,7 @@
     "tslint-eslint-rules": "^1.5.0",
     "tslint-microsoft-contrib": "^2.0.10",
     "typemoq": "^0.3.3",
-    "typescript": "^2.4.1",
+    "typescript": "2.6.2",
     "vscode-nls-dev": "^2.1.6"
   },
   "scripts": {
