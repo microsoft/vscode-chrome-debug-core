@@ -1269,7 +1269,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
                 if (this.breakOnLoadActive) {
-                    return this._breakOnLoadHelper.handleAddBreakpoints(url);
+                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
                 }
             }
         }
