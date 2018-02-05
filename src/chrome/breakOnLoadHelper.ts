@@ -230,7 +230,7 @@ export class BreakOnLoadHelper {
     public async handleAddBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
         if (this._breakOnLoadStrategy === 'regex') {
-            this.addStopOnEntryBreakpoint(url);
+        await this.addStopOnEntryBreakpoint(url);
         } else if (this._breakOnLoadStrategy === 'instrument') {
             // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
             if (!this.instrumentationBreakpointSet) {
