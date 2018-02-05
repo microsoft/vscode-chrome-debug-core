@@ -2,6 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import {DebugProtocol} from 'vscode-debugprotocol';
 import {logger} from 'vscode-debugadapter';
 import {ISetBreakpointResult, BreakOnLoadStrategy} from '../debugAdapterInterfaces';
 
@@ -226,18 +227,19 @@ export class BreakOnLoadHelper {
      * Handles the AddBreakpoints request when break on load is active
      * Takes the action based on the strategy
      */
-    public async handleAddBreakpoints(url: string): Promise<ISetBreakpointResult[]> {
+    public async handleAddBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
         if (this._breakOnLoadStrategy === 'regex') {
-            return this.addStopOnEntryBreakpoint(url);
+            this.addStopOnEntryBreakpoint(url);
         } else if (this._breakOnLoadStrategy === 'instrument') {
             // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
             if (!this.instrumentationBreakpointSet) {
                 await this.setInstrumentationBreakpoint();
             }
-            return [];
         }
-        return undefined;
+
+        // Temporary fix: We return an empty element for each breakpoint that was requested
+        return breakpoints.map(breakpoint => { return {}; });
     }
 
     /**

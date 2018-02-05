@@ -1269,12 +1269,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
                 if (this.breakOnLoadActive) {
-                    const result = await this._breakOnLoadHelper.handleAddBreakpoints(url);
-                    // Temporary fix: If we have more than 1 breakpoint, make sure we return a result for each
-                    for (let i = 1; i < breakpoints.length; ++i) {
-                        result.push({});
-                    }
-                    return result;
+                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
                 }
             }
         }
