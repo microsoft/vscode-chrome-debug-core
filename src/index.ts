@@ -21,6 +21,7 @@ export * from './debugAdapterInterfaces';
 
 import * as utils from './utils';
 import * as telemetry from './telemetry';
+import * as variables from './chrome/variables';
 import {NullLogger} from './nullLogger';
 
 import Crdp from '../crdp/crdp';
@@ -43,6 +44,7 @@ export {
 
     utils,
     telemetry,
+    variables,
     NullLogger,
 
     Crdp
