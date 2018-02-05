@@ -5,7 +5,7 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {Handles} from 'vscode-debugadapter';
 
-import {ChromeDebugAdapter, VariableContext} from './chromeDebugAdapter';
+import {ChromeDebugAdapter, VariableContext, ExtendedDebugProtocolVariable} from './chromeDebugAdapter';
 import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 
@@ -18,7 +18,7 @@ export abstract class BaseVariableContainer implements IVariableContainer {
     constructor(protected objectId: string, protected evaluateName?: string) {
     }
 
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<ExtendedDebugProtocolVariable[]> {
         return adapter.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
     }
 

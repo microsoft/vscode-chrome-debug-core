@@ -14,7 +14,7 @@ import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession'
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
-import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
+import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer} from './variables';
 import * as variables from './variables';
 import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 import {StoppedEvent2, ReasonType} from './stoppedEvent';
@@ -73,6 +73,10 @@ export type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
+
+export interface ExtendedDebugProtocolVariable extends DebugProtocol.Variable {
+    msVariableMetadata?: string;
+}
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
@@ -1801,7 +1805,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
     }
 
-    public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
+    public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<ExtendedDebugProtocolVariable> {
         if (propDesc.get) {
             // Getter
             const grabGetterValue = 'function remoteFunction(propName) { return this[propName]; }';
@@ -1832,7 +1836,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    public getVariablesForObjectId(objectId: string, evaluateName?: string, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public getVariablesForObjectId(objectId: string, evaluateName?: string, filter?: string, start?: number, count?: number): Promise<ExtendedDebugProtocolVariable[]> {
         if (typeof start === 'number' && typeof count === 'number') {
             return this.getFilteredVariablesForObject(objectId, evaluateName, filter, start, count);
         }
@@ -2177,7 +2181,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
     }
 
-    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
+    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<ExtendedDebugProtocolVariable> {
         name = name || '""';
 
         if (object) {
@@ -2247,7 +2251,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
-        const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context);
+        const variablesReference = this._variableHandles.create(this.createPropertyContainer(object, evaluateName), context);
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
             name,
             value,
@@ -2259,7 +2263,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }));
     }
 
-    public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
+    protected createPropertyContainer(object: Crdp.Runtime.RemoteObject, evaluateName: string): IVariableContainer {
+        return new PropertyContainer(object.objectId, evaluateName);
+    }
+
+    public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): ExtendedDebugProtocolVariable {
         const value = variables.getRemoteObjectPreview_primitive(object, stringify);
         const variable = this.createPrimitiveVariableWithValue(name, value, parentEvaluateName);
         variable.type = object.type;
