@@ -157,14 +157,31 @@ export class BreakOnLoadHelper {
         const hitBreakpoints = notification.hitBreakpoints;
         let allStopOnEntryBreakpoints = true;
 
+        const pausedScriptId = notification.callFrames[0].location.scriptId;
+        const pausedScriptUrl = this._chromeDebugAdapter.scriptsById.get(pausedScriptId).url;
+        const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
+
         // If there is a breakpoint which is not a stopOnEntry breakpoint, we appear as if we hit that one
         // This is particularly done for cases when we end up with a user breakpoint and a stopOnEntry breakpoint on the same line
-        hitBreakpoints.forEach(bp => {
-            if (!this._stopOnEntryBreakpointIdToRequestedFileName.has(bp)) {
+        for (let bp of hitBreakpoints) {
+            let regexAndFileNames = this._stopOnEntryBreakpointIdToRequestedFileName.get(bp);
+            if (!regexAndFileNames) {
                 notification.hitBreakpoints = [bp];
                 allStopOnEntryBreakpoints = false;
+            } else {
+                const normalizedMappedUrl = this._chromeDebugAdapter.fixPathCasing(mappedUrl);
+                if (regexAndFileNames[1].has(normalizedMappedUrl)) {
+                    regexAndFileNames[1].delete(normalizedMappedUrl);
+
+                    if (regexAndFileNames[1].size === 0) {
+                        logger.log(`Stop on entry breakpoint hit for last remaining file. Removing: ${bp} created for: ${normalizedMappedUrl}`);
+                        await this.removeBreakpointById(bp);
+                    } else {
+                        logger.log(`Stop on entry breakpoint hit but still has remaining files. Keeping: ${bp} that was hit for: ${normalizedMappedUrl} because it's still needed for: ${Array.from(regexAndFileNames.entries()).join(", ")}`);
+                    }
+                }
             }
-        });
+        }
 
         // If all the breakpoints on this point are stopOnEntry breakpoints
         // This will be true in cases where it's a single breakpoint and it's a stopOnEntry breakpoint
@@ -193,7 +210,8 @@ export class BreakOnLoadHelper {
         if (!this._stopOnEntryRequestedFileNameToBreakpointId.has(url)) {
 
             // Generate regex we need for the file
-            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(url);
+            const normalizedUrl = this._chromeDebugAdapter.fixPathCasing(url);
+            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl);
 
             // Check if we already have a breakpoint for this regexp since two different files like script.ts and script.js may have the same regexp
             let breakpointId: string;
@@ -219,16 +237,16 @@ export class BreakOnLoadHelper {
             }
 
             // Store the new breakpointId and the file name in the right mappings
-            this._stopOnEntryRequestedFileNameToBreakpointId.set(url, breakpointId);
+            this._stopOnEntryRequestedFileNameToBreakpointId.set(normalizedUrl, breakpointId);
 
             let regexAndFileNames = this._stopOnEntryBreakpointIdToRequestedFileName.get(breakpointId);
 
             // If there already exists an entry for the breakpoint Id, we add this file to the list of file mappings
             if (regexAndFileNames !== undefined) {
-                regexAndFileNames[1].add(url);
+                regexAndFileNames[1].add(normalizedUrl);
             } else { // else create an entry for this breakpoint id
                 const fileSet = new Set<string>();
-                fileSet.add(url);
+                fileSet.add(normalizedUrl);
                 this._stopOnEntryBreakpointIdToRequestedFileName.set(breakpointId, [urlRegex, fileSet]);
             }
         } else {
@@ -269,6 +287,11 @@ export class BreakOnLoadHelper {
     private async setStopOnEntryBreakpoint(urlRegex: string): Promise<Crdp.Debugger.SetBreakpointByUrlResponse> {
         let result = await this._chromeDebugAdapter.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: 0, columnNumber: 0 });
         return result;
+    }
+
+    // Removes a breakpoint on (0,0) for the files matching the given regex
+    private async removeBreakpointById(breakpointId: string): Promise<void> {
+        return await this._chromeDebugAdapter.chrome.Debugger.removeBreakpoint({breakpointId: breakpointId });
     }
 
     /**
