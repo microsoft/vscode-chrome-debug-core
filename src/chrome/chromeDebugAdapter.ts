@@ -2432,7 +2432,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
     }
 
-    private fixPathCasing(str: string): string {
+    public fixPathCasing(str: string): string {
         return str && (this._caseSensitivePaths ? str : str.toLowerCase());
     }
 }

@@ -51,7 +51,7 @@ export class BreakOnLoadHelper {
      * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
      */
     private async resolvePendingBreakpoints(source: string): Promise<boolean> {
-        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(source);
+        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(this._chromeDebugAdapter.fixPathCasing(source));
         // If the file has unbound breakpoints, resolve them and return true
         if (pendingBreakpoints !== undefined) {
             await this._chromeDebugAdapter.resolvePendingBreakpoint(pendingBreakpoints);
