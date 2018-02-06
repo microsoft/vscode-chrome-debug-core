@@ -260,7 +260,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return !!this._breakOnLoadHelper;
     }
 
-    public launch(args: ILaunchRequestArgs): Promise<void> {
+    public async launch(args: ILaunchRequestArgs): Promise<DebugProtocol.Capabilities|void> {
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
@@ -278,11 +278,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             */
             telemetry.reportEvent('debugStarted', { request: 'launch', args: Object.keys(args) });
         }
-
-        return Promise.resolve();
     }
 
-    public attach(args: IAttachRequestArgs): Promise<void> {
+    public async attach(args: IAttachRequestArgs): Promise<DebugProtocol.Capabilities|void> {
         this._attachMode = true;
         this.commonArgs(args);
         this._sourceMapTransformer.attach(args);
@@ -387,7 +385,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         ];
     }
 
-    protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
+    protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<DebugProtocol.Capabilities|void> {
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
@@ -430,13 +428,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             await this.initSupportedDomains();
             const maxDepth = this._launchAttachArgs.showAsyncStacks ? ChromeDebugAdapter.ASYNC_CALL_STACK_DEPTH : 0;
             try {
-                return await this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
+                await this.chrome.Debugger.setAsyncCallStackDepth({ maxDepth });
             } catch (e) {
                 // Not supported by older runtimes, ignore it.
-                return;
             }
-        } else {
-            return Promise.resolve();
         }
     }
 
