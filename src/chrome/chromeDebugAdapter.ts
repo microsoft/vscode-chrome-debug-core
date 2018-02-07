@@ -14,7 +14,7 @@ import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession'
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
-import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName} from './variables';
+import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer} from './variables';
 import * as variables from './variables';
 import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 import {StoppedEvent2, ReasonType} from './stoppedEvent';
@@ -2242,7 +2242,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
-        const variablesReference = this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context);
+        const variablesReference = this._variableHandles.create(this.createPropertyContainer(object, evaluateName), context);
         return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
             name,
             value,
@@ -2252,6 +2252,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             namedVariables,
             evaluateName
         }));
+    }
+
+    protected createPropertyContainer(object: Crdp.Runtime.RemoteObject, evaluateName: string): IVariableContainer {
+        return new PropertyContainer(object.objectId, evaluateName);
     }
 
     public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
