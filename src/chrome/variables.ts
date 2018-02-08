@@ -227,6 +227,7 @@ export function getRemoteObjectPreview(object: Crdp.Runtime.RemoteObject, string
 }
 
 export function getRemoteObjectPreview_object(object: Crdp.Runtime.RemoteObject, context?: string): string {
+    const objectDescription = object.description || '';
     if ((<string>object.subtype) === 'internal#location') {
         // Could format this nicely later, see #110
         return 'internal#location';
@@ -237,24 +238,24 @@ export function getRemoteObjectPreview_object(object: Crdp.Runtime.RemoteObject,
     } else if (object.subtype === 'error') {
         // The Error's description contains the whole stack which is not a nice description.
         // Up to the first newline is just the error name/message.
-        const firstNewlineIdx = object.description.indexOf('\n');
+        const firstNewlineIdx = objectDescription.indexOf('\n');
         return firstNewlineIdx >= 0 ?
-            object.description.substr(0, firstNewlineIdx) :
-            object.description;
+            objectDescription.substr(0, firstNewlineIdx) :
+            objectDescription;
     } else if (object.subtype === 'promise' && object.preview) {
         const promiseStatus = object.preview.properties.filter(prop => prop.name === '[[PromiseStatus]]')[0];
         return promiseStatus ?
-            object.description + ' { ' + promiseStatus.value + ' }' :
-            object.description;
+            objectDescription + ' { ' + promiseStatus.value + ' }' :
+            objectDescription;
     } else if (object.subtype === 'generator' && object.preview) {
         const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
         return generatorStatus ?
-            object.description + ' { ' + generatorStatus.value + ' }' :
-            object.description;
+            objectDescription + ' { ' + generatorStatus.value + ' }' :
+            objectDescription;
     } else if (object.type === 'object' && object.preview) {
         return getObjectPreview(object, context);
     } else {
-        return object.description;
+        return objectDescription;
     }
 }
 
