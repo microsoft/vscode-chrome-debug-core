@@ -13,6 +13,7 @@ import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 
 import {IDebugAdapter} from '../debugAdapterInterfaces';
+import { telemetry } from '../telemetry';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -93,39 +94,78 @@ export class ChromeDebugSession extends LoggingDebugSession {
     }
 
     /**
-     * Takes a response and a promise to the response body. If the promise is successful, assigns the response body and sends the response.
-     * If the promise fails, sets the appropriate response parameters and sends the response.
-     */
-    private sendResponseAsync(request: DebugProtocol.Request, response: DebugProtocol.Response, responseP: Promise<any>): void {
-        responseP.then(
-            (body?) => {
-                response.body = body;
-                this.sendResponse(response);
-            },
-            e => this.failedRequest(request.command, response, e));
-    }
-
-    /**
      * Overload dispatchRequest to the debug adapters' Promise-based methods instead of DebugSession's callback-based methods
      */
     protected dispatchRequest(request: DebugProtocol.Request): void {
-        const response = new Response(request);
-        try {
-            logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
+        // We want the request to be non-blocking, so we won't await for reportTelemetry
+        this.reportTelemetry(`clientRequest/${request.command}`, { requestType: request.type }, async (reportFailure) => {
+            const response: DebugProtocol.Response = new Response(request);
+            try {
+                logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
 
-            if (!(request.command in this._debugAdapter)) {
-                this.sendUnknownCommandResponse(response, request.command);
-                return;
+                if (!(request.command in this._debugAdapter)) {
+                    reportFailure("The debug adapter doesn't recognize this command");
+                    this.sendUnknownCommandResponse(response, request.command);
+                } else {
+                    response.body = await this._debugAdapter[request.command](request.arguments, request.seq);
+                    this.sendResponse(response);
+                }
+            } catch (e) {
+                if (!this.isEvaluateRequest(request.command, e)) {
+                    reportFailure(e);
+                }
+                this.failedRequest(request.command, response, e);
+            }
+        });
+    }
+
+    // { command: request.command, type: request.type };
+    private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
+        const startProcessingTime = process.hrtime();
+        const properties: {
+            // There is an issue on some clients and reportEvent only currently accept strings properties
+            successful?: "true" | "false";
+            exceptionMessage?: string;
+            exceptionName?: string;
+            exceptionStack?: string;
+            timeTakenInMilliseconds?: string;
+        } = propertiesSpecificToAction;
+
+        let failed = false;
+
+        const sendTelemetry = () => {
+            const NanoSecondsPerMillisecond = 1000000;
+            const MillisecondsPerSecond = 1000;
+
+            const ellapsedTime = process.hrtime(startProcessingTime);
+            const ellapsedMilliseconds = ellapsedTime[0] * MillisecondsPerSecond + ellapsedTime[1] / NanoSecondsPerMillisecond;
+            properties.timeTakenInMilliseconds = ellapsedMilliseconds.toString();
+
+            telemetry.reportEvent(eventName, properties);
+        };
+
+        const reportFailure = e => {
+            failed = true;
+            properties.successful = "false";
+            properties.exceptionMessage = e.toString();
+            if (e instanceof Error)  {
+                properties.exceptionName = e.name;
+                properties.exceptionStack = e.stack;
             }
 
-            const responseP = Promise.resolve(this._debugAdapter[request.command](request.arguments, request.seq));
-            this.sendResponseAsync(
-                request,
-                response,
-                responseP);
-        } catch (e) {
-            this.failedRequest(request.command, response, e);
+            sendTelemetry();
+        };
+
+        // We use the reportFailure callback because the client might exit immediately after the first failed request, so we need to send the telemetry before that, if not it might get dropped
+        await action(reportFailure);
+        if (!failed) {
+            properties.successful = "true";
+            sendTelemetry();
         }
+    }
+
+    private isEvaluateRequest(requestType: string, error: RequestHandleError): boolean {
+        return !isMessage(error) && (requestType === 'evaluate');
     }
 
     private failedRequest(requestType: string, response: DebugProtocol.Response, error: RequestHandleError): void {
@@ -134,7 +174,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
             return;
         }
 
-        if (requestType === 'evaluate') {
+        if (this.isEvaluateRequest(requestType, error)) {
             // Errors from evaluate show up in the console or watches pane. Doesn't seem right
             // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
             response.message = error ? error.message : 'Unknown error';
