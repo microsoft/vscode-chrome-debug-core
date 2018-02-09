@@ -52,11 +52,14 @@ export class BreakOnLoadHelper {
      * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
      */
     private async resolvePendingBreakpoints(source: string): Promise<boolean> {
-        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(this._chromeDebugAdapter.fixPathCasing(source));
+        const normalizedSource = this._chromeDebugAdapter.fixPathCasing(source);
+        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(normalizedSource);
         // If the file has unbound breakpoints, resolve them and return true
         if (pendingBreakpoints !== undefined) {
             await this._chromeDebugAdapter.resolvePendingBreakpoint(pendingBreakpoints);
-            this._chromeDebugAdapter.pendingBreakpointsByUrl.delete(source);
+            if (!this._chromeDebugAdapter.pendingBreakpointsByUrl.delete(normalizedSource)) {
+                logger.warn(`Expected to delete ${normalizedSource} from the list of pending breakpoints, but it wasn't there`);
+            }
             return true;
         } else {
             // If no pending breakpoints, return false
