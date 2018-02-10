@@ -52,7 +52,6 @@
             "protocol": "inspector",
             "port": 1235,
 
-            // These paths are only valid for my particular setup! You need to replace them with your own.
             "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true
