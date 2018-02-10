@@ -1096,8 +1096,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return this.validateBreakpointsPath(args)
             .then(() => {
-                // Deep copy args to originalArgs
-                const originalArgs: ISetBreakpointsArgs = JSON.parse(JSON.stringify(args));
+                // Deep copy the args that we are going to modify, and keep the original values in originalArgs
+                const originalArgs = args;
+                args = JSON.parse(JSON.stringify(args));
                 this._lineColTransformer.setBreakpoints(args);
                 this._sourceMapTransformer.setBreakpoints(args, requestSeq);
                 this._pathTransformer.setBreakpoints(args);
