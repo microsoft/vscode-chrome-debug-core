@@ -58,7 +58,7 @@ export class BreakOnLoadHelper {
         if (pendingBreakpoints !== undefined) {
             await this._chromeDebugAdapter.resolvePendingBreakpoint(pendingBreakpoints);
             if (!this._chromeDebugAdapter.pendingBreakpointsByUrl.delete(normalizedSource)) {
-                logger.warn(`Expected to delete ${normalizedSource} from the list of pending breakpoints, but it wasn't there`);
+                logger.log(`Expected to delete ${normalizedSource} from the list of pending breakpoints, but it wasn't there`);
             }
             return true;
         } else {
