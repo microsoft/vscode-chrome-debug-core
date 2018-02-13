@@ -334,6 +334,20 @@ suite('ChromeUtils', () => {
                 chromeUtils.getMatchingTargets(targets, 'http://localhost'),
                 targets);
         });
+
+        test('works with file://', () => {
+            const targets = makeTargets('file:///foo/bar', 'http://localhost');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, '/foo/bar'),
+                [targets[0]]);
+        });
+
+        test('works with file:// + query params', () => {
+            const targets = makeTargets('file:///foo/bar?a%3A%2F%2Fb', 'http://localhost');
+            assert.deepEqual(
+                chromeUtils.getMatchingTargets(targets, '/foo/bar?a://*'),
+                [targets[0]]);
+        });
     });
 
     suite('compareVariableNames', () => {

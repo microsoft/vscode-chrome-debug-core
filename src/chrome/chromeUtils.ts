@@ -169,11 +169,14 @@ export function remoteObjectToValue(object: Crdp.Runtime.RemoteObject, stringify
  */
 export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string): ITarget[] {
     const standardizeMatch = (aUrl: string) => {
-        // Strip file:///, if present
-        aUrl = utils.fileUrlToPath(aUrl).toLowerCase();
-
-        // Strip the protocol, if present
-        if (aUrl.indexOf('://') >= 0) aUrl = aUrl.split('://')[1];
+        aUrl = aUrl.toLowerCase();
+        if (utils.isFileUrl(aUrl)) {
+            // Strip file:///, if present
+            aUrl = utils.fileUrlToPath(aUrl);
+        } else if (utils.isURL(aUrl) && aUrl.indexOf('://') >= 0) {
+            // Strip the protocol, if present
+            aUrl = aUrl.substr(aUrl.indexOf('://') + 3);
+        }
 
         // Remove optional trailing /
         if (aUrl.endsWith('/')) aUrl = aUrl.substr(0, aUrl.length - 1);
