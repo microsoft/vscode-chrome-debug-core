@@ -21,6 +21,7 @@ export interface ICommonRequestArgs {
     remoteRoot?: string;
     localRoot?: string;
     pathMapping?: {[url: string]: string};
+    pathMappingOverrides?: {[find: string]: string};
     outDir?: string;
     outFiles?: string[];
     sourceMaps?: boolean;

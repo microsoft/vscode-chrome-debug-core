@@ -9,7 +9,7 @@ import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 import {ITarget} from './chromeConnection';
 
-export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
+export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any, pathMappingOverrides?: {[find: string]: string}): string {
     const parsedUrl = url.parse(scriptUrl);
     if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
         // Skip file: URLs and paths, and invalid things
@@ -18,6 +18,8 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
 
     const urlWithoutQuery = parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname;
     const mappingKeys = Object.keys(pathMapping)
+        .sort((a, b) => b.length - a.length);
+    const mappingKeyOverrides = Object.keys(pathMappingOverrides || {})
         .sort((a, b) => b.length - a.length);
     for (let pattern of mappingKeys) {
         // empty pattern match nothing use / to match root
@@ -36,8 +38,13 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
             } else if (pattern[0] === "/") {
                 // pattern is absolute
                 if (parsedUrl.pathname.startsWith(pattern)) {
-                    const clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
+                    let clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
                     if (clientPath) {
+                        if (mappingKeyOverrides.length) {
+                            for (let patternOverride of mappingKeyOverrides) {
+                                clientPath = clientPath.replace(patternOverride, pathMappingOverrides[patternOverride]);
+                            }
+                        }
                         return clientPath;
                     }
                 }
