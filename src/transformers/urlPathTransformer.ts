@@ -20,16 +20,19 @@ export class UrlPathTransformer extends BasePathTransformer {
     private _pathMapping: {[url: string]: string} = {};
     private _clientPathToTargetUrl = new Map<string, string>();
     private _targetUrlToClientPath = new Map<string, string>();
+    private _pathMappingOverrides: {[find: string]: string};
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
         this._pathMapping = args.pathMapping || {};
+        this._pathMappingOverrides = args.pathMappingOverrides;
         return super.launch(args);
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
         this._webRoot = args.webRoot;
         this._pathMapping = args.pathMapping || {};
+        this._pathMappingOverrides = args.pathMappingOverrides;
         return super.attach(args);
     }
 
@@ -64,7 +67,7 @@ export class UrlPathTransformer extends BasePathTransformer {
     }
 
     public async scriptParsed(scriptUrl: string): Promise<string> {
-        let clientPath = ChromeUtils.targetUrlToClientPathByPathMappings(scriptUrl, this._pathMapping);
+        let clientPath = ChromeUtils.targetUrlToClientPathByPathMappings(scriptUrl, this._pathMapping, this._pathMappingOverrides);
 
         if (!clientPath) {
             clientPath = await this.targetUrlToClientPath(this._webRoot, scriptUrl);
