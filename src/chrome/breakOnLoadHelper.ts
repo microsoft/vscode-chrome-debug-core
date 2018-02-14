@@ -12,7 +12,6 @@ import * as ChromeUtils from './chromeUtils';
 
 export class BreakOnLoadHelper {
 
-    public userBreakpointOnLine1Col1: boolean = false;
     private _instrumentationBreakpointSet: boolean = false;
 
     // Break on load: Store some mapping between the requested file names, the regex for the file, and the chrome breakpoint id to perform lookup operations efficiently
@@ -67,12 +66,16 @@ export class BreakOnLoadHelper {
         }
     }
 
+    private getPausedScriptUrlFromId(scriptId: string): string {
+        return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
+    }
+
     /**
      * Checks and resolves the pending breakpoints given a script Id. If any breakpoints were resolved returns true, else false.
      * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
      */
     private async resolvePendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
-        const pausedScriptUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).url;
+        const pausedScriptUrl = this.getPausedScriptUrlFromId(scriptId);
         const sourceMapUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).sourceMapURL;
         const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
         let breakpointsResolved = false;
@@ -122,16 +125,24 @@ export class BreakOnLoadHelper {
      * Returns whether we should continue on hitting a stopOnEntry breakpoint
      * Only used when using regex approach for break on load
      */
-    private async shouldContinueOnStopOnEntryBreakpoint(scriptId: string): Promise<boolean> {
+    private async shouldContinueOnStopOnEntryBreakpoint(pausedLocation: Crdp.Debugger.Location): Promise<boolean> {
         // If the file has no unbound breakpoints or none of the resolved breakpoints are at (1,1), we should continue after hitting the stopOnEntry breakpoint
         let shouldContinue = true;
-        let anyPendingBreakpointsResolved = await this.resolvePendingBreakpointsOfPausedScript(scriptId);
+
+        // Important: For the logic that verifies if a user breakpoint is set in the paused location, we need to resolve pending breakpoints, and commit them, before
+        // using committedBreakpointsByUrl for our logic.
+        let anyPendingBreakpointsResolved = await this.resolvePendingBreakpointsOfPausedScript(pausedLocation.scriptId);
+
+        const pausedScriptUrl = this.getPausedScriptUrlFromId(pausedLocation.scriptId);
+        // Important: We need to get the commited breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
+        const commitedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl);
+        const anyBreakpointsAtPausedLocation = commitedBps.filter(bp =>
+            bp.actualLocation.lineNumber === pausedLocation.lineNumber && bp.actualLocation.columnNumber === pausedLocation.columnNumber).length > 0;
 
         // If there were any pending breakpoints resolved and any of them was at (1,1) we shouldn't continue
-        if (anyPendingBreakpointsResolved && this.userBreakpointOnLine1Col1) {
+        if (anyPendingBreakpointsResolved && anyBreakpointsAtPausedLocation) {
             // Here we need to store this information per file, but since we can safely assume that scriptParsed would immediately be followed by onPaused event
             // for the breakonload files, this implementation should be fine
-            this.userBreakpointOnLine1Col1 = false;
             shouldContinue = false;
         }
 
@@ -163,8 +174,8 @@ export class BreakOnLoadHelper {
         // in itself. So when the file is actually loaded, we would have 2 stopOnEntry breakpoints */
 
         if (allStopOnEntryBreakpoints) {
-            const pausedScriptId = notification.callFrames[0].location.scriptId;
-            let shouldContinue = await this.shouldContinueOnStopOnEntryBreakpoint(pausedScriptId);
+            const pausedLocation = notification.callFrames[0].location;
+            let shouldContinue = await this.shouldContinueOnStopOnEntryBreakpoint(pausedLocation);
             if (shouldContinue) {
                 return true;
             }
