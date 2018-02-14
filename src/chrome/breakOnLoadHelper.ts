@@ -134,9 +134,9 @@ export class BreakOnLoadHelper {
         let anyPendingBreakpointsResolved = await this.resolvePendingBreakpointsOfPausedScript(pausedLocation.scriptId);
 
         const pausedScriptUrl = this.getPausedScriptUrlFromId(pausedLocation.scriptId);
-        // Important: We need to get the commited breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
-        const commitedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl);
-        const anyBreakpointsAtPausedLocation = commitedBps.filter(bp =>
+        // Important: We need to get the committed breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
+        const committedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl);
+        const anyBreakpointsAtPausedLocation = committedBps.filter(bp =>
             bp.actualLocation.lineNumber === pausedLocation.lineNumber && bp.actualLocation.columnNumber === pausedLocation.columnNumber).length > 0;
 
         // If there were any pending breakpoints resolved and any of them was at (1,1) we shouldn't continue
