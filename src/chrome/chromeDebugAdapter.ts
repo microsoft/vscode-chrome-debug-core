@@ -1319,7 +1319,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
         // Don't cache errored responses
         const committedBps = responses
-            .filter(response => response && response.breakpointId)
+            .filter(response => response && response.breakpointId);
 
         // Cache successfully set breakpoint ids from chrome in committedBreakpoints set
         this._committedBreakpointsByUrl.set(url, committedBps);
