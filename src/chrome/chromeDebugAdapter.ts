@@ -88,7 +88,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _domains = new Map<CrdpDomain, Crdp.Schema.Domain>();
     private _clientAttached: boolean;
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
-    private _committedBreakpointsByUrl: Map<string, Crdp.Debugger.BreakpointId[]>;
+    private _committedBreakpointsByUrl: Map<string, ISetBreakpointResult[]>;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
     private _expectingResumedEvent: boolean;
@@ -175,6 +175,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._pendingBreakpointsByUrl;
     }
 
+    public get committedBreakpointsByUrl(): Map<string, ISetBreakpointResult[]> {
+        return this._committedBreakpointsByUrl;
+    }
+
     public get sourceMapTransformer(): BaseSourceMapTransformer{
         return this._sourceMapTransformer;
     }
@@ -188,7 +192,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsById = new Map<Crdp.Runtime.ScriptId, Crdp.Debugger.ScriptParsedEvent>();
         this._scriptsByUrl = new Map<string, Crdp.Debugger.ScriptParsedEvent>();
 
-        this._committedBreakpointsByUrl = new Map<string, Crdp.Debugger.BreakpointId[]>();
+        this._committedBreakpointsByUrl = new Map<string, ISetBreakpointResult[]>();
         this._setBreakpointsRequestQ = Promise.resolve();
 
         this._pathTransformer.clearTargetContext();
@@ -923,10 +927,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
-                // If any of the unbound breakpoints in this file is on (1,1), we set userBreakpointOnLine1Col1 to true
-                if (bp.line === 1 && bp.column === 1 && this.breakOnLoadActive) {
-                    this._breakOnLoadHelper.userBreakpointOnLine1Col1 = true;
-                }
                 this._session.sendEvent(new BreakpointEvent('changed', bp));
             });
         });
@@ -945,8 +945,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
-        if (committedBps.indexOf(params.breakpointId) === -1) {
-            committedBps.push(params.breakpointId);
+        if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
+            committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
         }
         this._committedBreakpointsByUrl.set(script.url, committedBps);
 
@@ -1233,8 +1233,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         // but there is a chrome bug where when removing 5+ or so breakpoints at once, it gets into a weird
         // state where later adds on the same line will fail with 'breakpoint already exists' even though it
         // does not break there.
-        return this._committedBreakpointsByUrl.get(url).reduce((p, breakpointId) => {
-            return p.then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId })).then(() => { });
+        return this._committedBreakpointsByUrl.get(url).reduce((p, bp) => {
+            return p.then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId: bp.breakpointId })).then(() => { });
         }, Promise.resolve()).then(() => {
             this._committedBreakpointsByUrl.delete(url);
         });
@@ -1318,12 +1318,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
         // Don't cache errored responses
-        const committedBpIds = responses
-            .filter(response => response && response.breakpointId)
-            .map(response => response.breakpointId);
+        const committedBps = responses
+            .filter(response => response && response.breakpointId);
 
         // Cache successfully set breakpoint ids from chrome in committedBreakpoints set
-        this._committedBreakpointsByUrl.set(url, committedBpIds);
+        this._committedBreakpointsByUrl.set(url, committedBps);
 
         // Map committed breakpoints to DebugProtocol response breakpoints
         return responses
