@@ -66,7 +66,7 @@ export class BreakOnLoadHelper {
         }
     }
 
-    private getPausedScriptUrlFromId(scriptId: string): string {
+    private getScriptUrlFromId(scriptId: string): string {
         return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
     }
 
@@ -75,7 +75,7 @@ export class BreakOnLoadHelper {
      * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
      */
     private async resolvePendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
-        const pausedScriptUrl = this.getPausedScriptUrlFromId(scriptId);
+        const pausedScriptUrl = this.getScriptUrlFromId(scriptId);
         const sourceMapUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).sourceMapURL;
         const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
         let breakpointsResolved = false;
@@ -133,7 +133,7 @@ export class BreakOnLoadHelper {
         // using committedBreakpointsByUrl for our logic.
         let anyPendingBreakpointsResolved = await this.resolvePendingBreakpointsOfPausedScript(pausedLocation.scriptId);
 
-        const pausedScriptUrl = this.getPausedScriptUrlFromId(pausedLocation.scriptId);
+        const pausedScriptUrl = this.getScriptUrlFromId(pausedLocation.scriptId);
         // Important: We need to get the committed breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
         const committedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl);
         const anyBreakpointsAtPausedLocation = committedBps.filter(bp =>
