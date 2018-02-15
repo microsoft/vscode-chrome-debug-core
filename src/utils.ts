@@ -558,7 +558,8 @@ export interface PromiseDefer<T> {
 }
 
 export function promiseDefer<T>(): PromiseDefer<T> {
-    let resolveCallback, rejectCallback;
+    let resolveCallback;
+    let rejectCallback;
     const promise = new Promise<void>((resolve, reject) => {
         resolveCallback = resolve;
         rejectCallback = reject;
