@@ -33,6 +33,21 @@ export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {
     extensionName: string;
 }
 
+export type ExceptionType = "uncaughtException" | "unhandledRejection" | "generic";
+
+export interface  IExceptionTelemetryProperties {
+    // There is an issue on some clients and reportEvent only currently accept strings properties,
+    // hence all the following properties must be strings.
+    successful?: "true" | "false";
+    exceptionType?: ExceptionType;
+    exceptionMessage?: string;
+    exceptionName?: string;
+    exceptionStack?: string;
+    timeTakenInMilliseconds?: string;
+}
+
+export const ErrorTelemetryEventName = 'error';
+
 // A failed request can return either an Error, an error from Chrome, or a DebugProtocol.Message which is returned as-is to the client
 type RequestHandleError = Error | DebugProtocol.Message | IChromeError;
 
@@ -82,14 +97,28 @@ export class ChromeDebugSession extends LoggingDebugSession {
             return errMsg;
         };
 
+        const reportErrorTelemetry = (err, exceptionType: ExceptionType)  => {
+            let properties: IExceptionTelemetryProperties = {};
+            properties.successful = "false";
+            properties.exceptionType = exceptionType;
+            properties.timeTakenInMilliseconds = "";
+
+            this.fillErrorDetails(properties, err);
+            telemetry.reportEvent(ErrorTelemetryEventName, properties);
+        };
+
         process.on('uncaughtException', (err: any) => {
             logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
+
+            reportErrorTelemetry(err, 'uncaughtException');
             throw err;
         });
 
         process.addListener('unhandledRejection', (err: Error|DebugProtocol.Message) => {
             // Node tests are watching for the ********, so fix the tests if it's changed
             logger.error(`******** Unhandled error in debug adapter - Unhandled promise rejection: ${safeGetErrDetails(err)}`);
+
+            reportErrorTelemetry(err, 'unhandledRejection');
         });
     }
 
@@ -122,14 +151,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
     // { command: request.command, type: request.type };
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
-        const properties: {
-            // There is an issue on some clients and reportEvent only currently accept strings properties
-            successful?: "true" | "false";
-            exceptionMessage?: string;
-            exceptionName?: string;
-            exceptionStack?: string;
-            timeTakenInMilliseconds?: string;
-        } = propertiesSpecificToAction;
+        const properties: IExceptionTelemetryProperties = propertiesSpecificToAction;
 
         let failed = false;
 
@@ -147,11 +169,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
         const reportFailure = e => {
             failed = true;
             properties.successful = "false";
-            properties.exceptionMessage = e.toString();
-            if (e instanceof Error)  {
-                properties.exceptionName = e.name;
-                properties.exceptionStack = e.stack;
-            }
+            properties.exceptionType = "generic";
+            this.fillErrorDetails(properties, e);
 
             sendTelemetry();
         };
@@ -201,6 +220,16 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
     private sendUnknownCommandResponse(response: DebugProtocol.Response, command: string): void {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
+    }
+
+    private fillErrorDetails(properties: IExceptionTelemetryProperties, e: any): void {
+        properties.exceptionMessage = e.message || e.toString();
+        if (e.name) {
+            properties.exceptionName = e.name;
+        }
+        if (e.stack) {
+            properties.exceptionStack = e.stack;
+        }
     }
 }
 
