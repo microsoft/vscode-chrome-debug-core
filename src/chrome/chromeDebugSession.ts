@@ -74,7 +74,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
         const safeGetErrDetails = err => {
             let errMsg;
             try {
-                errMsg = (<Error>err).stack ? (<Error>err).stack : JSON.stringify(err);
+                errMsg = (err && (<Error>err).stack) ? (<Error>err).stack : JSON.stringify(err);
             } catch (e) {
                 errMsg = 'Error while handling previous error: ' + e.stack;
             }
