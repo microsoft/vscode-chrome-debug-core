@@ -9,13 +9,19 @@ import {ISetBreakpointResult, BreakOnLoadStrategy} from '../debugAdapterInterfac
 import Crdp from '../../crdp/crdp';
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
+import * as assert from 'assert';
+
+export interface UrlRegexAndFileSet {
+    urlRegex: string;
+    fileSet: Set<string>;
+}
 
 export class BreakOnLoadHelper {
 
     private _instrumentationBreakpointSet: boolean = false;
 
     // Break on load: Store some mapping between the requested file names, the regex for the file, and the chrome breakpoint id to perform lookup operations efficiently
-    private _stopOnEntryBreakpointIdToRequestedFileName = new Map<string, [string, Set<string>]>();
+    private _stopOnEntryBreakpointIdToRequestedFileName = new Map<string, UrlRegexAndFileSet>();
     private _stopOnEntryRequestedFileNameToBreakpointId = new Map<string, string>();
     private _stopOnEntryRegexToBreakpointId = new Map<string, string>();
 
@@ -38,7 +44,7 @@ export class BreakOnLoadHelper {
         return this._stopOnEntryRequestedFileNameToBreakpointId;
     }
 
-    public get stopOnEntryBreakpointIdToRequestedFileName(): Map<string, [string, Set<string>]> {
+    public get stopOnEntryBreakpointIdToRequestedFileName(): Map<string, UrlRegexAndFileSet> {
         return this._stopOnEntryBreakpointIdToRequestedFileName;
     }
 
@@ -170,14 +176,16 @@ export class BreakOnLoadHelper {
                 allStopOnEntryBreakpoints = false;
             } else {
                 const normalizedMappedUrl = this._chromeDebugAdapter.fixPathCasing(mappedUrl);
-                if (regexAndFileNames[1].has(normalizedMappedUrl)) {
-                    regexAndFileNames[1].delete(normalizedMappedUrl);
+                if (regexAndFileNames.fileSet.has(normalizedMappedUrl)) {
+                    regexAndFileNames.fileSet.delete(normalizedMappedUrl);
+                    assert(this._stopOnEntryRequestedFileNameToBreakpointId.delete(normalizedMappedUrl), `Expected to delete break-on-load information associated with url: ${normalizedMappedUrl}`);
 
-                    if (regexAndFileNames[1].size === 0) {
+                    if (regexAndFileNames.fileSet.size === 0) {
                         logger.log(`Stop on entry breakpoint hit for last remaining file. Removing: ${bp} created for: ${normalizedMappedUrl}`);
                         await this.removeBreakpointById(bp);
+                        assert(this._stopOnEntryRegexToBreakpointId.delete(regexAndFileNames.urlRegex), `Expected to delete break-on-load information associated with regexp: ${regexAndFileNames.urlRegex}`);
                     } else {
-                        logger.log(`Stop on entry breakpoint hit but still has remaining files. Keeping: ${bp} that was hit for: ${normalizedMappedUrl} because it's still needed for: ${Array.from(regexAndFileNames.entries()).join(", ")}`);
+                        logger.log(`Stop on entry breakpoint hit but still has remaining files. Keeping: ${bp} that was hit for: ${normalizedMappedUrl} because it's still needed for: ${Array.from(regexAndFileNames.fileSet.entries()).join(", ")}`);
                     }
                 }
             }
@@ -243,11 +251,11 @@ export class BreakOnLoadHelper {
 
             // If there already exists an entry for the breakpoint Id, we add this file to the list of file mappings
             if (regexAndFileNames !== undefined) {
-                regexAndFileNames[1].add(normalizedUrl);
+                regexAndFileNames.fileSet.add(normalizedUrl);
             } else { // else create an entry for this breakpoint id
                 const fileSet = new Set<string>();
                 fileSet.add(normalizedUrl);
-                this._stopOnEntryBreakpointIdToRequestedFileName.set(breakpointId, [urlRegex, fileSet]);
+                this._stopOnEntryBreakpointIdToRequestedFileName.set(breakpointId, { urlRegex, fileSet });
             }
         } else {
             responsePs = [];
@@ -289,7 +297,7 @@ export class BreakOnLoadHelper {
         return result;
     }
 
-    // Removes a breakpoint on (0,0) for the files matching the given regex
+    // Removes a breakpoint by it's chrome-crdp-id
     private async removeBreakpointById(breakpointId: string): Promise<void> {
         return await this._chromeDebugAdapter.chrome.Debugger.removeBreakpoint({breakpointId: breakpointId });
     }
