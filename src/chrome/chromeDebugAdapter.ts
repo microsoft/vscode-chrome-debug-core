@@ -127,6 +127,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _columnBreakpointsEnabled: boolean;
 
+    private _smartStepEnabled: boolean;
     private _smartStepCount = 0;
     private _earlyScripts: Crdp.Debugger.ScriptParsedEvent[] = [];
 
@@ -326,6 +327,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
+
+        this._smartStepEnabled = this._launchAttachArgs.smartStep;
     }
 
     public shutdown(): void {
@@ -603,17 +606,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        if (!this.smartStepEnabled()) return Promise.resolve(false);
+        if (!this._smartStepEnabled) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
         const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
 
         return !mapping;
-    }
-
-    private smartStepEnabled(): boolean {
-        return this._launchAttachArgs.smartStep;
     }
 
     protected onResumed(): void {
@@ -821,6 +820,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return undefined;
+    }
+
+    public async toggleSmartStep(): Promise<void> {
+        this._smartStepEnabled = !this._smartStepEnabled;
+        this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
@@ -1541,7 +1545,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('skipFiles');
                 frame.source.presentationHint = 'deemphasize';
-            } else if (this.smartStepEnabled() && !isSourceMapped) {
+            } else if (this._smartStepEnabled && !isSourceMapped) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('smartStep');
                 frame.source.presentationHint = 'deemphasize';
             }
