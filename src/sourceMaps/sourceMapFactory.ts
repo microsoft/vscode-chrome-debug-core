@@ -106,7 +106,7 @@ export class SourceMapFactory {
         if (utils.isURL(mapPathOrURL) && !utils.isFileUrl(mapPathOrURL)) {
             logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
             contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(e => {
-                logger.error(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
+                logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
                 return null;
             });
         } else {
