@@ -65,9 +65,12 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
 export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOverrides: ISourceMapPathOverrides): string {
     const forwardSlashSourcePath = sourcePath.replace(/\\/g, '/');
 
+    // Sort the overrides by length, large to small
+    const sortedOverrideKeys = Object.keys(sourceMapPathOverrides)
+        .sort((a, b) => b.length - a.length);
+
     // Iterate the key/vals, only apply the first one that matches.
-    // for...in iterates in order, (unless the key is a number)
-    for (let leftPattern in sourceMapPathOverrides) {
+    for (let leftPattern of sortedOverrideKeys) {
         const rightPattern = sourceMapPathOverrides[leftPattern];
         const entryStr = `"${leftPattern}": "${rightPattern}"`;
 

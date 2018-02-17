@@ -159,6 +159,18 @@ suite('SourceMapUtils', () => {
                 testUtils.pathResolve('/project/src/app.js'));
         });
 
+        test('applies overrides in order by longest key first', () => {
+            assert.deepEqual(
+                applySourceMapPathOverrides(
+                    '/src/app.js',
+                    {
+                        '*': testUtils.pathResolve('/main.js'),
+                        '*/app.js': testUtils.pathResolve('/project/*/app.js'),
+                        '*.js': 'main.js'
+                    }),
+                testUtils.pathResolve('/project/src/app.js'));
+        });
+
         test('is slash agnostic', () => {
             assert.deepEqual(
                 applySourceMapPathOverrides('/src/app.js', { '*\\app.js': testUtils.pathResolve('/*/app.js') }),
