@@ -75,6 +75,11 @@ export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
 
+export interface BreakpointSetResult {
+    isSet: boolean;
+    breakpoint: DebugProtocol.Breakpoint;
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -692,7 +697,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const resolvePendingBPs = (source: string) => {
                 source = source && this.fixPathCasing(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(source);
-                if (pendingBP) { // DIEGO: Why did this say  && !pendingBP.bpsSet? Can I remove that?
+                if (pendingBP && !pendingBP.bpsSet) {
                     this.resolvePendingBreakpoint(pendingBP)
                         .then(() => {
                             this._pendingBreakpointsByUrl.delete(source);
@@ -1157,10 +1162,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     });
 
                     // Return the setBP request, no matter how long it takes. It may take awhile in Node 7.5 - 7.7, see https://github.com/nodejs/node/issues/11589
-                    return setBreakpointsPFailOnError.then(body => {
+                    return setBreakpointsPFailOnError.then(setBpResultBody => {
+                        const body = { breakpoints: setBpResultBody.breakpoints.map(setBpResult => setBpResult.breakpoint) };
                         if (body.breakpoints.every(bp => !bp.verified)) {
+                            // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
+                            const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', "Breakpoints set but not yet bound"), true);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', "Breakpoints set but not yet bound"), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
@@ -1333,7 +1341,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
+    private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
         const committedBps = responses
             .filter(response => response && response.breakpointId);
@@ -1347,9 +1355,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // The output list needs to be the same length as the input list, so map errors to
                 // unverified breakpoints.
                 if (!response) {
-                    return <DebugProtocol.Breakpoint>{
+                    return { isSet: false, breakpoint: <DebugProtocol.Breakpoint>{
                         verified: false
-                    };
+                    }};
                 }
 
                 // response.breakpointId is undefined when no target BP is backing this BP, e.g. it's at the same location
@@ -1367,29 +1375,31 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 if (!response.actualLocation) {
-                    return <DebugProtocol.Breakpoint>{
+                    // If we don't have an actualLocation nor a breakpointId this is a pseudo-breakpoint because we are using break-on-load
+                    // so we mark the breakpoint as not set, so i'll be set after we load the actual script that has the breakpoint
+                    return { isSet: response.breakpointId !== undefined, breakpoint: <DebugProtocol.Breakpoint>{
                         id: bpId,
                         verified: false
-                    };
+                    }};
                 }
 
                 const thisBpRequest = requestBps[i];
                 if (thisBpRequest.hitCondition) {
                     if (!this.addHitConditionBreakpoint(thisBpRequest, response)) {
-                        return <DebugProtocol.Breakpoint>{
+                        return  { isSet: true, breakpoint: <DebugProtocol.Breakpoint>{
                             id: bpId,
                             message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
                             verified: false
-                        };
+                        }};
                     }
                 }
 
-                return <DebugProtocol.Breakpoint>{
+                return { isSet: true, breakpoint: <DebugProtocol.Breakpoint>{
                     id: bpId,
                     verified: true,
                     line: response.actualLocation.lineNumber,
                     column: response.actualLocation.columnNumber
-                };
+                }};
             });
     }
 
