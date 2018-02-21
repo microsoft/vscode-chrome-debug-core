@@ -11,6 +11,8 @@ import {Handles, logger} from 'vscode-debugadapter';
 import * as http from 'http';
 import * as https from 'https';
 
+import {IExecutionResultTelemetryProperties} from './telemetry';
+
 export const enum Platform {
     Windows, OSX, Linux
 }
@@ -566,4 +568,25 @@ export function promiseDefer<T>(): PromiseDefer<T> {
     });
 
     return { promise, resolve: resolveCallback, reject: rejectCallback };
+}
+
+export type HighResTimer = [number, number];
+
+export function calculateElapsedTime(startProcessingTime: HighResTimer): number {
+    const NanoSecondsPerMillisecond = 1000000;
+    const NanoSecondsPerSecond = 1e9;
+
+    const ellapsedTime = process.hrtime(startProcessingTime);
+    const ellapsedMilliseconds = (ellapsedTime[0] * NanoSecondsPerSecond + ellapsedTime[1]) / NanoSecondsPerMillisecond;
+    return ellapsedMilliseconds;
+}
+
+export function fillErrorDetails(properties: IExecutionResultTelemetryProperties, e: any): void {
+    properties.exceptionMessage = e.message || e.toString();
+    if (e.name) {
+        properties.exceptionName = e.name;
+    }
+    if (e.stack) {
+        properties.exceptionStack = e.stack;
+    }
 }

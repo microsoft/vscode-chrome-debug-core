@@ -13,7 +13,8 @@ import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 
 import {IDebugAdapter} from '../debugAdapterInterfaces';
-import { telemetry } from '../telemetry';
+import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
+import * as utils from '../utils';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -31,19 +32,6 @@ export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {
     /** The class of the adapter, which is instantiated for each session */
     adapter: typeof ChromeDebugAdapter;
     extensionName: string;
-}
-
-export type ExceptionType = "uncaughtException" | "unhandledRejection" | "generic";
-
-export interface  IExceptionTelemetryProperties {
-    // There is an issue on some clients and reportEvent only currently accept strings properties,
-    // hence all the following properties must be strings.
-    successful?: "true" | "false";
-    exceptionType?: ExceptionType;
-    exceptionMessage?: string;
-    exceptionName?: string;
-    exceptionStack?: string;
-    timeTakenInMilliseconds?: string;
 }
 
 export const ErrorTelemetryEventName = 'error';
@@ -98,12 +86,11 @@ export class ChromeDebugSession extends LoggingDebugSession {
         };
 
         const reportErrorTelemetry = (err, exceptionType: ExceptionType)  => {
-            let properties: IExceptionTelemetryProperties = {};
+            let properties: IExecutionResultTelemetryProperties = {};
             properties.successful = "false";
             properties.exceptionType = exceptionType;
-            properties.timeTakenInMilliseconds = "";
 
-            this.fillErrorDetails(properties, err);
+            utils.fillErrorDetails(properties, err);
             telemetry.reportEvent(ErrorTelemetryEventName, properties);
         };
 
@@ -151,26 +138,20 @@ export class ChromeDebugSession extends LoggingDebugSession {
     // { command: request.command, type: request.type };
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
-        const properties: IExceptionTelemetryProperties = propertiesSpecificToAction;
+        const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
 
         let failed = false;
 
         const sendTelemetry = () => {
-            const NanoSecondsPerMillisecond = 1000000;
-            const MillisecondsPerSecond = 1000;
-
-            const ellapsedTime = process.hrtime(startProcessingTime);
-            const ellapsedMilliseconds = ellapsedTime[0] * MillisecondsPerSecond + ellapsedTime[1] / NanoSecondsPerMillisecond;
-            properties.timeTakenInMilliseconds = ellapsedMilliseconds.toString();
-
+            properties.timeTakenInMilliseconds = utils.calculateElapsedTime(startProcessingTime).toString();
             telemetry.reportEvent(eventName, properties);
         };
 
         const reportFailure = e => {
             failed = true;
             properties.successful = "false";
-            properties.exceptionType = "generic";
-            this.fillErrorDetails(properties, e);
+            properties.exceptionType = "firstChance";
+            utils.fillErrorDetails(properties, e);
 
             sendTelemetry();
         };
@@ -220,16 +201,6 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
     private sendUnknownCommandResponse(response: DebugProtocol.Response, command: string): void {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
-    }
-
-    private fillErrorDetails(properties: IExceptionTelemetryProperties, e: any): void {
-        properties.exceptionMessage = e.message || e.toString();
-        if (e.name) {
-            properties.exceptionName = e.name;
-        }
-        if (e.stack) {
-            properties.exceptionStack = e.stack;
-        }
     }
 }
 
