@@ -655,7 +655,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
     }
 
-    public breakpointsResolvedDefer(scriptId: string): PromiseDefer<void> {
+    public getBreakpointsResolvedDefer(scriptId: string): PromiseDefer<void> {
         const existingValue =  this._scriptIdToBreakpointsAreResolvedDefer.get(scriptId);
         if (existingValue) {
             return existingValue;
@@ -667,13 +667,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        const breakpointsAreResolvedDefer = this.breakpointsResolvedDefer(script.scriptId);
+        const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
         try {
             this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
                 if (typeof this._columnBreakpointsEnabled === 'undefined') {
-                    await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
-                        await this.sendInitializedEvent();
-                    });
+                    await this.detectColumnBreakpointSupport(script.scriptId);
+                    await this.sendInitializedEvent();
                 }
 
                 if (this._earlyScripts) {
@@ -1148,7 +1147,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
                         .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
-                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToClientBreakpoints(targetScriptUrl, responses, args.breakpoints, ids) }));
+                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, args.breakpoints, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', "Set breakpoints request timed out"));
 
@@ -1341,7 +1340,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
+    private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
         const committedBps = responses
             .filter(response => response && response.breakpointId);

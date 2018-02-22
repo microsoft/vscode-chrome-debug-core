@@ -74,7 +74,7 @@ export class BreakOnLoadHelper {
 
             const pausedScriptId = notification.callFrames[0].location.scriptId;
             // Now we wait for all the pending breakpoints to be resolved and then continue
-            await this._chromeDebugAdapter.breakpointsResolvedDefer(pausedScriptId).promise;
+            await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
             return true;
         }
         return false;
@@ -90,7 +90,7 @@ export class BreakOnLoadHelper {
 
         // Important: For the logic that verifies if a user breakpoint is set in the paused location, we need to resolve pending breakpoints, and commit them, before
         // using committedBreakpointsByUrl for our logic.
-        await this._chromeDebugAdapter.breakpointsResolvedDefer(pausedLocation.scriptId).promise;
+        await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedLocation.scriptId).promise;
 
         const pausedScriptUrl = this.getScriptUrlFromId(pausedLocation.scriptId);
         // Important: We need to get the committed breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
@@ -98,7 +98,7 @@ export class BreakOnLoadHelper {
         const anyBreakpointsAtPausedLocation = committedBps.filter(bp =>
             bp.actualLocation.lineNumber === pausedLocation.lineNumber && bp.actualLocation.columnNumber === pausedLocation.columnNumber).length > 0;
 
-        // If there were any breakpoints at (1,1) we shouldn't continue
+        // If there were any breakpoints at this location (Which generally should be (1,1)) we shouldn't continue
         if (anyBreakpointsAtPausedLocation) {
             // Here we need to store this information per file, but since we can safely assume that scriptParsed would immediately be followed by onPaused event
             // for the breakonload files, this implementation should be fine
