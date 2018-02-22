@@ -697,7 +697,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 source = source && this.fixPathCasing(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(source);
                 if (pendingBP && !pendingBP.bpsSet) {
-                    await this.resolvePendingBreakpoint(pendingBP)
+                    await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
                     breakpointsAreResolvedDefer.resolve();
                 } else {
