@@ -693,15 +693,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
 
-            const resolvePendingBPs = (source: string) => {
+            const resolvePendingBPs = async (source: string) => {
                 source = source && this.fixPathCasing(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(source);
                 if (pendingBP && !pendingBP.bpsSet) {
-                    this.resolvePendingBreakpoint(pendingBP)
-                        .then(() => {
-                            this._pendingBreakpointsByUrl.delete(source);
-                            breakpointsAreResolvedDefer.resolve();
-                        });
+                    await this.resolvePendingBreakpoint(pendingBP)
+                    this._pendingBreakpointsByUrl.delete(source);
+                    breakpointsAreResolvedDefer.resolve();
                 } else {
                     breakpointsAreResolvedDefer.resolve();
                 }
@@ -713,9 +711,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 if (sources) {
-                    sources
-                        .filter(source => source !== mappedUrl) // Tools like babel-register will produce sources with the same path as the generated script
-                        .forEach(resolvePendingBPs);
+                    const filteredSources = sources.filter(source => source !== mappedUrl); // Tools like babel-register will produce sources with the same path as the generated script
+                    for (const filteredSource of filteredSources) {
+                        await resolvePendingBPs(filteredSource);
+                    }
                 }
 
                 if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).bpsSet) {
@@ -723,7 +722,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     // to be resolved in this loaded script, and remove the pendingBP.
                     this._pendingBreakpointsByUrl.delete(mappedUrl);
                 } else {
-                    resolvePendingBPs(mappedUrl);
+                    await resolvePendingBPs(mappedUrl);
                 }
 
                 await this.resolveSkipFiles(script, mappedUrl, sources);
