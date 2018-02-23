@@ -699,9 +699,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 if (pendingBP && !pendingBP.bpsSet) {
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
-                    breakpointsAreResolvedDefer.resolve();
-                } else {
-                    breakpointsAreResolvedDefer.resolve();
                 }
             };
 
@@ -726,13 +723,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 await this.resolveSkipFiles(script, mappedUrl, sources);
-                breakpointsAreResolvedDefer.resolve(); // Make sure that the defer was resolved (this might be the second time we are calling resolve, if it is, it'll be ignored)
             });
 
             if (this._initialSourceMapsP) {
                 this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
+                await sourceMapsP;
             }
 
+            breakpointsAreResolvedDefer.resolve(); // By now no matter which code path we choose, resolving pending breakpoints should be finished, so trigger the defer
         } catch (exception) {
             breakpointsAreResolvedDefer.reject(exception);
         }
@@ -1353,9 +1351,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // The output list needs to be the same length as the input list, so map errors to
                 // unverified breakpoints.
                 if (!response) {
-                    return { isSet: false, breakpoint: <DebugProtocol.Breakpoint>{
-                        verified: false
-                    }};
+                    return {
+                        isSet: false,
+                        breakpoint: <DebugProtocol.Breakpoint>{
+                            verified: false
+                        }
+                    };
                 }
 
                 // response.breakpointId is undefined when no target BP is backing this BP, e.g. it's at the same location
@@ -1375,29 +1376,38 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 if (!response.actualLocation) {
                     // If we don't have an actualLocation nor a breakpointId this is a pseudo-breakpoint because we are using break-on-load
                     // so we mark the breakpoint as not set, so i'll be set after we load the actual script that has the breakpoint
-                    return { isSet: response.breakpointId !== undefined, breakpoint: <DebugProtocol.Breakpoint>{
-                        id: bpId,
-                        verified: false
-                    }};
+                    return {
+                        isSet: response.breakpointId !== undefined,
+                            breakpoint: <DebugProtocol.Breakpoint>{
+                                id: bpId,
+                                verified: false
+                        }
+                    };
                 }
 
                 const thisBpRequest = requestBps[i];
                 if (thisBpRequest.hitCondition) {
                     if (!this.addHitConditionBreakpoint(thisBpRequest, response)) {
-                        return  { isSet: true, breakpoint: <DebugProtocol.Breakpoint>{
-                            id: bpId,
-                            message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
-                            verified: false
-                        }};
+                        return  {
+                            isSet: true,
+                            breakpoint: <DebugProtocol.Breakpoint>{
+                                id: bpId,
+                                message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
+                                verified: false
+                            }
+                        };
                     }
                 }
 
-                return { isSet: true, breakpoint: <DebugProtocol.Breakpoint>{
-                    id: bpId,
-                    verified: true,
-                    line: response.actualLocation.lineNumber,
-                    column: response.actualLocation.columnNumber
-                }};
+                return {
+                    isSet: true,
+                    breakpoint: <DebugProtocol.Breakpoint>{
+                        id: bpId,
+                        verified: true,
+                        line: response.actualLocation.lineNumber,
+                        column: response.actualLocation.columnNumber
+                    }
+                };
             });
     }
 
