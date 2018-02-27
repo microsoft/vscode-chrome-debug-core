@@ -5,6 +5,7 @@
 import {Logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
+import {ProgressReporter, NullProgressReporter} from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -16,10 +17,12 @@ const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
+    private _launchProgressReporter: ProgressReporter;
 
-    constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter) {
+    constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter, launchProgressReporter: ProgressReporter = new NullProgressReporter()) {
         this.logger = _logger;
         this.telemetry = _telemetry;
+        this._launchProgressReporter = launchProgressReporter;
     }
 
     async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
@@ -57,7 +60,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
+        this._launchProgressReporter.startRepeatableStep("Attach.RequestDebuggerTargetsInformation");
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
+            this._launchProgressReporter.startRepeatableStep("Attach.ProcessDebuggerTargetsInformation");
             try {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {

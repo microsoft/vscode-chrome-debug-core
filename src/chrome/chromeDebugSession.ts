@@ -14,6 +14,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry } from '../telemetry';
+import { NullProgressReporter, ProgressReporterWrapper, ExecutionTimingsReporter} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -62,6 +63,7 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
 export class ChromeDebugSession extends LoggingDebugSession {
     private _debugAdapter: IDebugAdapter;
     private _extensionName: string;
+    private _launchProgressReporter = new ProgressReporterWrapper(new ExecutionTimingsReporter());
 
     /**
      * This needs a bit of explanation -
@@ -84,7 +86,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
-        this._debugAdapter = new (<any>opts.adapter)(opts, this);
+        this._debugAdapter = new (<any>opts.adapter)(opts, this, this._launchProgressReporter);
 
         const safeGetErrDetails = err => {
             let errMsg;
@@ -131,6 +133,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
+                this._launchProgressReporter.startRepeatableStep(`ClientRequest.${request.command}`);
 
                 if (!(request.command in this._debugAdapter)) {
                     reportFailure("The debug adapter doesn't recognize this command");
@@ -144,6 +147,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
                     reportFailure(e);
                 }
                 this.failedRequest(request.command, response, e);
+            } finally {
+                this._launchProgressReporter.startRepeatableStep(`WaitingAfter.ClientRequest.${request.command}`);
             }
         });
     }
@@ -230,6 +235,17 @@ export class ChromeDebugSession extends LoggingDebugSession {
         if (e.stack) {
             properties.exceptionStack = e.stack;
         }
+    }
+
+    public reportTimingsUntilUserPage() {
+        const report = this._launchProgressReporter.generateReport();
+        const telemetryData = {};
+        for (const reportProperty in report) {
+            telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
+        }
+
+        telemetry.reportEvent('TimingsUntilUserPage', telemetryData);
+        this._launchProgressReporter.changeWrappedTo(new NullProgressReporter());
     }
 }
 
