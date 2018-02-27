@@ -22,6 +22,7 @@ import {StoppedEvent2, ReasonType} from './stoppedEvent';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
+import {ProgressReporter, NullProgressReporter} from '../executionTimingsReporter';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
@@ -142,11 +143,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _batchTelemetryReporter: BatchTelemetryReporter;
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
+    protected _launchProgressReporter: ProgressReporter;
+
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
+        session: ChromeDebugSession, launchProgressReporter: ProgressReporter = new NullProgressReporter()) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
-        this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
+        this._launchProgressReporter = launchProgressReporter;
+        this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter, this._launchProgressReporter);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();
@@ -419,6 +424,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<DebugProtocol.Capabilities|void> {
+        this._launchProgressReporter.startStep("Attach");
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
@@ -427,6 +433,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
+
+            this._launchProgressReporter.startStep("Attach.ConfigureDebuggingSession.Internal");
 
             this._port = port;
 
@@ -449,6 +457,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (this._launchAttachArgs.skipFileRegExps) {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
+
+            this._launchProgressReporter.startStep("Attach.ConfigureDebuggingSession.Target");
 
             // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
             await Promise.all(this.runConnection());
