@@ -21,7 +21,7 @@ import {StoppedEvent2, ReasonType} from './stoppedEvent';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import {telemetry} from '../telemetry';
+import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
@@ -140,8 +140,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     // won't be send before the corresponding 'new' event has been sent
     private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
 
+    private _batchTelemetryReporter: BatchTelemetryReporter;
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
+        this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
 
@@ -329,6 +332,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public shutdown(): void {
+        this._batchTelemetryReporter.finalize();
         this._inShutdown = true;
         this._session.shutdown();
     }
@@ -363,7 +367,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Hook up all connection events
      */
     protected hookConnectionEvents(): void {
-        this.chrome.Debugger.onPaused(params => this.onPaused(params));
+        this.chrome.Debugger.onPaused((params) => {
+            this.runAndMeasureProcessingTime('target/notification/onPaused', () => {
+                return this.onPaused(params);
+            });
+        });
         this.chrome.Debugger.onResumed(() => this.onResumed());
         this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
         this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
@@ -374,6 +382,27 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
+    }
+
+    private async runAndMeasureProcessingTime(notificationName: string, procedure: () => Promise<void>): Promise<void> {
+        const startTime = Date.now();
+        const startTimeMark = process.hrtime();
+        let properties: IExecutionResultTelemetryProperties = {
+            startTime: startTime.toString()
+        };
+
+        try {
+            await procedure();
+            properties.successful = 'true';
+        } catch (e) {
+            properties.successful = 'false';
+            properties.exceptionType = 'firstChance';
+            utils.fillErrorDetails(properties, e);
+        }
+
+        const elapsedTime = utils.calculateElapsedTime(startTimeMark);
+        properties.timeTakenInMilliseconds = elapsedTime.toString();
+        this._batchTelemetryReporter.reportEvent(notificationName, properties);
     }
 
     /**
