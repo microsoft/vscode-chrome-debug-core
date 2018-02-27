@@ -5,6 +5,7 @@
 import {Logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
+import {StepStartedEventsEmitter, StepProgressEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -13,9 +14,10 @@ import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnecti
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
-export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
+export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, ObservableEvents<StepStartedEventsEmitter> {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
+    public readonly Events = new StepProgressEventsEmitter();
 
     constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter) {
         this.logger = _logger;
@@ -57,7 +59,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
+        this.Events.emitStepStarted("Attach.RequestDebuggerTargetsInformation");
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
+            this.Events.emitStepStarted("Attach.ProcessDebuggerTargetsInformation");
             try {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {
