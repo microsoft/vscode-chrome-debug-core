@@ -135,6 +135,6 @@ export class ProgressReporterWrapper implements ProgressReporter {
     }
 
     public isNull(): boolean {
-        return false;
+        return this._wrapped.isNull();
     }
 }

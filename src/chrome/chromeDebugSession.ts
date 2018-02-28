@@ -208,15 +208,22 @@ export class ChromeDebugSession extends LoggingDebugSession {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
     }
 
-    public reportTimingsUntilUserPage(): void {
+    public reportTimingsUntilUserPage(userPageWasDetected: boolean): void {
         const report = this._launchProgressReporter.generateReport();
-        const telemetryData = {};
+        const telemetryData = { userPageWasDetected: userPageWasDetected.toString() };
         for (const reportProperty in report) {
             telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
         }
 
         telemetry.reportEvent('TimingsUntilUserPage', telemetryData);
         this._launchProgressReporter.changeWrappedTo(new NullProgressReporter());
+    }
+
+    public shutdown(): void {
+        if (!this._launchProgressReporter.isNull()) {
+            this.reportTimingsUntilUserPage(/*userPageWasDetected*/false);
+        }
+        super.shutdown();
     }
 }
 
