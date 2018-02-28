@@ -5,7 +5,7 @@
 import {Logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
-import {ProgressReporter, NullProgressReporter} from '../executionTimingsReporter';
+import {StepStartedEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -14,15 +14,14 @@ import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnecti
 import * as nls from 'vscode-nls';
 const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
-export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
+export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, ObservableEvents {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
-    private _launchProgressReporter: ProgressReporter;
+    public readonly Events = new StepStartedEventsEmitter();
 
-    constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter, launchProgressReporter: ProgressReporter = new NullProgressReporter()) {
+    constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter) {
         this.logger = _logger;
         this.telemetry = _telemetry;
-        this._launchProgressReporter = launchProgressReporter;
     }
 
     async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
@@ -60,9 +59,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
-        this._launchProgressReporter.startRepeatableStep("Attach.RequestDebuggerTargetsInformation");
+        this.Events.emitRepetableStepStarted("Attach.RequestDebuggerTargetsInformation");
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
-            this._launchProgressReporter.startRepeatableStep("Attach.ProcessDebuggerTargetsInformation");
+            this.Events.emitRepetableStepStarted("Attach.ProcessDebuggerTargetsInformation");
             try {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {

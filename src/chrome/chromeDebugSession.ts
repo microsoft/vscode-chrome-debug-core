@@ -15,7 +15,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
-import { NullProgressReporter, ProgressReporterWrapper, ExecutionTimingsReporter} from '../executionTimingsReporter';
+import { ExecutionTimingsReporter, StepStartedEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -48,10 +48,14 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
     return !!(<IChromeError>e).data;
 }
 
-export class ChromeDebugSession extends LoggingDebugSession {
-    private _debugAdapter: IDebugAdapter;
+export class ChromeDebugSession extends LoggingDebugSession implements ObservableEvents {
+    private _debugAdapter: IDebugAdapter & ObservableEvents;
     private _extensionName: string;
-    private _launchProgressReporter = new ProgressReporterWrapper(new ExecutionTimingsReporter());
+    public readonly Events: StepStartedEventsEmitter;
+    private reporter = new ExecutionTimingsReporter();
+    private haveLaunchExecutionTimingsBeenReported = false;
+
+    public static readonly NavigatedToUserRequestedUrlEventName = 'navigatedToUserRequestedUrl';
 
     /**
      * This needs a bit of explanation -
@@ -74,7 +78,9 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
-        this._debugAdapter = new (<any>opts.adapter)(opts, this, this._launchProgressReporter);
+        this._debugAdapter = new (<any>opts.adapter)(opts, this);
+        this.Events = new StepStartedEventsEmitter([this._debugAdapter.Events]);
+        this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = err => {
             let errMsg;
@@ -120,7 +126,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
-                this._launchProgressReporter.startRepeatableStep(`ClientRequest.${request.command}`);
+                this.Events.emitRepetableStepStarted(`ClientRequest.${request.command}`);
 
                 if (!(request.command in this._debugAdapter)) {
                     reportFailure("The debug adapter doesn't recognize this command");
@@ -135,7 +141,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
                 }
                 this.failedRequest(request.command, response, e);
             } finally {
-                this._launchProgressReporter.startRepeatableStep(`WaitingAfter.ClientRequest.${request.command}`);
+                this.Events.emitRepetableStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
             }
         });
     }
@@ -208,21 +214,28 @@ export class ChromeDebugSession extends LoggingDebugSession {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
     }
 
-    public reportTimingsUntilUserPage(userPageWasDetected: boolean): void {
-        const report = this._launchProgressReporter.generateReport();
-        const telemetryData = { userPageWasDetected: userPageWasDetected.toString() };
-        for (const reportProperty in report) {
-            telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
-        }
+    public reportLaunchExecutionTimingsIfNeeded(userPageWasDetected: boolean): void {
+        if (!this.haveLaunchExecutionTimingsBeenReported) {
+            const report = this.reporter.generateReport();
+            const telemetryData = { userPageWasDetected: userPageWasDetected.toString() };
+            for (const reportProperty in report) {
+                telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
+            }
 
-        telemetry.reportEvent('TimingsUntilUserPage', telemetryData);
-        this._launchProgressReporter.changeWrappedTo(new NullProgressReporter());
+            telemetry.reportEvent('timings-until-user-page-loads', telemetryData);
+            this.haveLaunchExecutionTimingsBeenReported = true;
+        }
+    }
+
+    private configureExecutionTimingsReporting(): void {
+        this.reporter.subscribeTo(this.Events);
+        this._debugAdapter.Events.once(ChromeDebugSession.NavigatedToUserRequestedUrlEventName, () => {
+            this.reportLaunchExecutionTimingsIfNeeded(true);
+        });
     }
 
     public shutdown(): void {
-        if (!this._launchProgressReporter.isNull()) {
-            this.reportTimingsUntilUserPage(/*userPageWasDetected*/false);
-        }
+        this.reportLaunchExecutionTimingsIfNeeded(/*userPageWasDetected*/false);
         super.shutdown();
     }
 }

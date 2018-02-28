@@ -1,22 +1,51 @@
 import { HighResTimer, calculateElapsedTime } from "./utils";
+import { EventEmitter } from "events";
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 
-export interface ProgressReporter {
-    startStep(stepName: string): void;
-    startRepeatableStep(stepName: string): void;
-    generateReport(): TimingsReport;
-    isNull(): boolean;
+const stepStartedEventName = 'stepStarted';
+
+interface StepStartedEventArguments {
+    stepName: string;
+    isRepetable: boolean;
+}
+
+export interface ObservableEvents {
+    Events: EventEmitter;
+}
+
+export class StepStartedEventsEmitter extends EventEmitter {
+    constructor(public readonly NestedEmitters: [EventEmitter] = [] as [EventEmitter]) {
+        super();
+    }
+
+    public emitStepStarted(stepName: string): void {
+        this.emit(stepStartedEventName, { isRepetable: false, stepName: stepName } as StepStartedEventArguments);
+    }
+
+    public emitRepetableStepStarted(stepName: string): void {
+        this.emit(stepStartedEventName, { isRepetable: true, stepName: stepName } as StepStartedEventArguments);
+    }
+}
+
+export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function) {
+    eventEmitter.on(event, listener);
+
+    if (eventEmitter instanceof StepStartedEventsEmitter) {
+        for (const nestedEventEmitter of eventEmitter.NestedEmitters) {
+            subscribeIncludingNestedEmitters(nestedEventEmitter, event, listener);
+        }
+    }
 }
 
 /* Use to track the time executing each step during launch
     Usage:
-        reporter.startStep("Attach");
-        reporter.startStep("Attach.AttachToTargetDebuggerWebsocket");
-        reporter.startStep("ClientRequest.setBreakpoints");
-        reporter.startStep("WaitingAfter.ClientRequest.setBreakpoints");
-        reporter.startStep("ClientRequest.setBreakpoints");
-        reporter.startStep("WaitingAfter.ClientRequest.setBreakpoints");
+        this.Events.emitStepStarted("Attach");
+        this.Events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
+        this.Events.emitRepetableStepStarted("ClientRequest.setBreakpoints");
+        this.Events.emitRepetableStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
+        this.Events.emitRepetableStepStarted("ClientRequest.setBreakpoints");
+        this.Events.emitRepetableStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
         reporter.generateReport() // Returns the report. Do not call any more methods after this
 
     The report/telemetry generated looks like this:
@@ -47,7 +76,7 @@ export interface ProgressReporter {
             "WaitingAfter.ClientRequest.configurationDone"] // The order in which steps were recorder during this execution
  */
 
-export class ExecutionTimingsReporter implements ProgressReporter {
+export class ExecutionTimingsReporter {
     private readonly _allStartTime: HighResTimer;
     private readonly _repeatableStepsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
     private readonly _stepExecutionTimesInMilliseconds: {[stepName: string]: number} = {};
@@ -59,18 +88,6 @@ export class ExecutionTimingsReporter implements ProgressReporter {
 
     constructor() {
         this._currentStepStartTime = this._allStartTime = process.hrtime();
-    }
-
-    public startStep(stepName: string): void {
-        if (this._stepExecutionTimesInMilliseconds[stepName] || this._repeatableStepsExecutionTimesInMilliseconds[stepName] || this._currentStepName === stepName) {
-            throw new RangeError(`A step named ${stepName} was already reported.`);
-        }
-
-        this.recordPreviousStepAndConfigureNewStep(stepName, false);
-    }
-
-    public startRepeatableStep(stepName: string): void {
-        this.recordPreviousStepAndConfigureNewStep(stepName, true);
     }
 
     private recordPreviousStepAndConfigureNewStep(newStepName: string, newStepIsRepeatable: boolean): void {
@@ -90,6 +107,7 @@ export class ExecutionTimingsReporter implements ProgressReporter {
         } else {
             this._stepExecutionTimesInMilliseconds[this._currentStepName] = previousStepTimeTakenInMilliseconds;
         }
+
         this._stepsList.push(this._currentStepName);
     }
 
@@ -97,44 +115,17 @@ export class ExecutionTimingsReporter implements ProgressReporter {
         this.recordPreviousStepAndConfigureNewStep("AfterLastStep", false);
         this._stepExecutionTimesInMilliseconds.All = calculateElapsedTime(this._allStartTime);
 
-        return Object.assign({}, this._stepExecutionTimesInMilliseconds, this._repeatableStepsExecutionTimesInMilliseconds, {steps: this._stepsList});
+        return Object.assign({}, this._stepExecutionTimesInMilliseconds, this._repeatableStepsExecutionTimesInMilliseconds, { steps: this._stepsList });
     }
 
-    public isNull(): boolean {
-        return false;
-    }
-}
+    public subscribeTo(eventEmitter: EventEmitter): void {
+        subscribeIncludingNestedEmitters(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
+            const stepName = args.stepName;
+            if (!args.isRepetable && (this._stepExecutionTimesInMilliseconds[stepName] || this._repeatableStepsExecutionTimesInMilliseconds[stepName] || this._currentStepName === stepName)) {
+                throw new RangeError(`A step named ${stepName} was already reported.`);
+            }
 
-export class NullProgressReporter implements ProgressReporter {
-    public startStep(stepName: string): void {}
-    public startRepeatableStep(stepName: string): void {}
-    public generateReport(): TimingsReport {
-        throw new Error("A null progress reporter can't generate a report");
-    }
-    public isNull(): boolean {
-        return true;
-    }
-}
-
-export class ProgressReporterWrapper implements ProgressReporter {
-    constructor(private _wrapped: ProgressReporter) {}
-    public startStep(stepName: string): void {
-        this._wrapped.startStep(stepName);
-    }
-
-    public startRepeatableStep(stepName: string): void {
-        this._wrapped.startRepeatableStep(stepName);
-    }
-
-    public generateReport(): TimingsReport {
-        return this._wrapped.generateReport();
-    }
-
-    public changeWrappedTo(newWrapped: ProgressReporter): void {
-        this._wrapped = newWrapped;
-    }
-
-    public isNull(): boolean {
-        return this._wrapped.isNull();
+            this.recordPreviousStepAndConfigureNewStep(stepName, args.isRepetable);
+        });
     }
 }

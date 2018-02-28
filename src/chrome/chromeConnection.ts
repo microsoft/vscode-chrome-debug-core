@@ -5,7 +5,7 @@
 import * as WebSocket from 'ws';
 
 import {telemetry} from '../telemetry';
-import {ProgressReporter, NullProgressReporter} from '../executionTimingsReporter';
+import {StepStartedEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
@@ -30,7 +30,7 @@ export interface ITarget {
 }
 
 export type ITargetFilter = (target: ITarget) => boolean;
-export interface ITargetDiscoveryStrategy {
+export interface ITargetDiscoveryStrategy extends ObservableEvents {
     getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget>;
     getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]>;
 }
@@ -87,7 +87,7 @@ export interface IChromeError {
 /**
  * Connects to a target supporting the Chrome Debug Protocol and sends and receives messages
  */
-export class ChromeConnection {
+export class ChromeConnection implements ObservableEvents {
     private static ATTACH_TIMEOUT = 10000; // ms
 
     private _socket: WebSocket;
@@ -96,12 +96,12 @@ export class ChromeConnection {
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
     private _attachedTarget: ITarget;
-    private _launchProgressReporter: ProgressReporter;
+    public readonly Events: StepStartedEventsEmitter;
 
-    constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter, launchProgressReporter: ProgressReporter = new NullProgressReporter()) {
+    constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
-        this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry, launchProgressReporter);
-        this._launchProgressReporter = launchProgressReporter;
+        this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
+        this.Events = new StepStartedEventsEmitter([this._targetDiscoveryStrategy.Events]);
     }
 
     public get isAttached(): boolean { return !!this._client; }
@@ -123,7 +123,7 @@ export class ChromeConnection {
     }
 
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
-        this._launchProgressReporter.startStep("Attach.AttachToTargetDebuggerWebsocket");
+        this.Events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
             this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);
