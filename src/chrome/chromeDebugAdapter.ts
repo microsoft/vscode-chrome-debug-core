@@ -385,7 +385,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
         });
         this.chrome.Debugger.onResumed(() => this.onResumed());
-        this.chrome.Debugger.onScriptParsed(params => this.onScriptParsed(params));
+        this.chrome.Debugger.onScriptParsed((params) => {
+            this.runAndMeasureProcessingTime('target/notification/onScriptParsed', () => {
+                return this.onScriptParsed(params);
+            });
+        });
         this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
 
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
@@ -596,7 +600,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._expectingStopReason = undefined;
 
-        smartStepP.then(should => {
+        await smartStepP.then(should => {
             if (should) {
                 this._smartStepCount++;
                 return this.stepIn(false);
