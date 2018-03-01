@@ -4,10 +4,15 @@ import { EventEmitter } from "events";
 export type TimingsReport = {[stepName: string]: [number] | number};
 
 const stepStartedEventName = 'stepStarted';
+const milestoneReachedEventName = 'milestoneReached';
 
 interface StepStartedEventArguments {
     stepName: string;
     isRepetable: boolean;
+}
+
+interface MilestoneReachedEventArguments {
+    milestoneName: string;
 }
 
 export interface ObservableEvents {
@@ -26,6 +31,11 @@ export class StepStartedEventsEmitter extends EventEmitter {
     public emitRepetableStepStarted(stepName: string): void {
         this.emit(stepStartedEventName, { isRepetable: true, stepName: stepName } as StepStartedEventArguments);
     }
+
+    public emitMilestoneReached(milestoneName: string): void {
+        this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as MilestoneReachedEventArguments);
+    }
+
 }
 
 export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function) {
@@ -90,6 +100,12 @@ export class ExecutionTimingsReporter {
         this._currentStepStartTime = this._allStartTime = process.hrtime();
     }
 
+    private validateNoExistingStepOrMilestone(stepOrMilestoneName: string) {
+        if (this._stepExecutionTimesInMilliseconds[stepOrMilestoneName] || this._repeatableStepsExecutionTimesInMilliseconds[stepOrMilestoneName] || this._currentStepName === stepOrMilestoneName) {
+            throw new RangeError(`A step or milestone named ${stepOrMilestoneName} was already reported.`);
+        }
+    }
+
     private recordPreviousStepAndConfigureNewStep(newStepName: string, newStepIsRepeatable: boolean): void {
         this.recordPreviousStep();
 
@@ -111,6 +127,10 @@ export class ExecutionTimingsReporter {
         this._stepsList.push(this._currentStepName);
     }
 
+    private recordTotalTimeUntilMilestone(milestoneName: string): void {
+        this._stepExecutionTimesInMilliseconds[milestoneName] = calculateElapsedTime(this._allStartTime);
+    }
+
     public generateReport(): {[stepName: string]: [number] | number} {
         this.recordPreviousStepAndConfigureNewStep("AfterLastStep", false);
         this._stepExecutionTimesInMilliseconds.All = calculateElapsedTime(this._allStartTime);
@@ -120,12 +140,16 @@ export class ExecutionTimingsReporter {
 
     public subscribeTo(eventEmitter: EventEmitter): void {
         subscribeIncludingNestedEmitters(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
-            const stepName = args.stepName;
-            if (!args.isRepetable && (this._stepExecutionTimesInMilliseconds[stepName] || this._repeatableStepsExecutionTimesInMilliseconds[stepName] || this._currentStepName === stepName)) {
-                throw new RangeError(`A step named ${stepName} was already reported.`);
+            if (!args.isRepetable) {
+                this.validateNoExistingStepOrMilestone(args.stepName);
             }
 
-            this.recordPreviousStepAndConfigureNewStep(stepName, args.isRepetable);
+            this.recordPreviousStepAndConfigureNewStep(args.stepName, args.isRepetable);
+        });
+
+        subscribeIncludingNestedEmitters(eventEmitter, milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
+            this.validateNoExistingStepOrMilestone(args.milestoneName);
+            this.recordTotalTimeUntilMilestone(args.milestoneName);
         });
     }
 }

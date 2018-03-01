@@ -512,7 +512,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     /**
      * e.g. the target navigated
      */
-    private onExecutionContextsCleared(): Promise<void> {
+    protected onExecutionContextsCleared(): Promise<void> {
         const cachedScriptParsedEvents = Array.from(this._scriptsById.values());
         return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
             for (let scriptedParseEvent of cachedScriptParsedEvents) {
