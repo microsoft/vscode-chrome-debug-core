@@ -8,7 +8,6 @@ const milestoneReachedEventName = 'milestoneReached';
 
 interface StepStartedEventArguments {
     stepName: string;
-    isRepetable: boolean;
 }
 
 interface MilestoneReachedEventArguments {
@@ -25,11 +24,7 @@ export class StepStartedEventsEmitter extends EventEmitter {
     }
 
     public emitStepStarted(stepName: string): void {
-        this.emit(stepStartedEventName, { isRepetable: false, stepName: stepName } as StepStartedEventArguments);
-    }
-
-    public emitRepetableStepStarted(stepName: string): void {
-        this.emit(stepStartedEventName, { isRepetable: true, stepName: stepName } as StepStartedEventArguments);
+        this.emit(stepStartedEventName, { stepName: stepName } as StepStartedEventArguments);
     }
 
     public emitMilestoneReached(milestoneName: string): void {
@@ -52,10 +47,10 @@ export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, eve
     Usage:
         this.Events.emitStepStarted("Attach");
         this.Events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
-        this.Events.emitRepetableStepStarted("ClientRequest.setBreakpoints");
-        this.Events.emitRepetableStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
-        this.Events.emitRepetableStepStarted("ClientRequest.setBreakpoints");
-        this.Events.emitRepetableStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
+        this.Events.emitStepStarted("ClientRequest.setBreakpoints");
+        this.Events.emitStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
+        this.Events.emitStepStarted("ClientRequest.setBreakpoints");
+        this.Events.emitStepStarted("WaitingAfter.ClientRequest.setBreakpoints");
         reporter.generateReport() // Returns the report. Do not call any more methods after this
 
     The report/telemetry generated looks like this:
@@ -88,67 +83,45 @@ export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, eve
 
 export class ExecutionTimingsReporter {
     private readonly _allStartTime: HighResTimer;
-    private readonly _repeatableStepsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
-    private readonly _stepExecutionTimesInMilliseconds: {[stepName: string]: number} = {};
+    private readonly _eventsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
     private readonly _stepsList = [] as [string];
 
     private _currentStepStartTime: HighResTimer;
     private _currentStepName = "BeforeFirstStep";
-    private _currentStepIsRepeatable = false;
 
     constructor() {
         this._currentStepStartTime = this._allStartTime = process.hrtime();
     }
 
-    private validateNoExistingStepOrMilestone(stepOrMilestoneName: string) {
-        if (this._stepExecutionTimesInMilliseconds[stepOrMilestoneName] || this._repeatableStepsExecutionTimesInMilliseconds[stepOrMilestoneName] || this._currentStepName === stepOrMilestoneName) {
-            throw new RangeError(`A step or milestone named ${stepOrMilestoneName} was already reported.`);
-        }
-    }
-
-    private recordPreviousStepAndConfigureNewStep(newStepName: string, newStepIsRepeatable: boolean): void {
-        this.recordPreviousStep();
-
+    private recordPreviousStepAndConfigureNewStep(newStepName: string): void {
+        this.recordTimeTaken(this._currentStepName, this._currentStepStartTime);
+        this._stepsList.push(this._currentStepName);
         this._currentStepStartTime = process.hrtime();
         this._currentStepName = newStepName;
-        this._currentStepIsRepeatable = newStepIsRepeatable;
     }
 
-    private recordPreviousStep(): void {
-        const previousStepTimeTakenInMilliseconds = calculateElapsedTime(this._currentStepStartTime);
-
-        if (this._currentStepIsRepeatable) {
-            const executionTimes = this._repeatableStepsExecutionTimesInMilliseconds[this._currentStepName] = this._repeatableStepsExecutionTimesInMilliseconds[this._currentStepName] || [] as [number];
-            executionTimes.push(previousStepTimeTakenInMilliseconds);
-        } else {
-            this._stepExecutionTimesInMilliseconds[this._currentStepName] = previousStepTimeTakenInMilliseconds;
-        }
-
-        this._stepsList.push(this._currentStepName);
+    private recordTimeTaken(eventName: string, sinceWhen: HighResTimer): void {
+        const timeTakenInMilliseconds = calculateElapsedTime(sinceWhen);
+        const executionTimes = this._eventsExecutionTimesInMilliseconds[eventName] = this._eventsExecutionTimesInMilliseconds[eventName] || [] as [number];
+        executionTimes.push(timeTakenInMilliseconds);
     }
 
     private recordTotalTimeUntilMilestone(milestoneName: string): void {
-        this._stepExecutionTimesInMilliseconds[milestoneName] = calculateElapsedTime(this._allStartTime);
+        this.recordTimeTaken(milestoneName, this._allStartTime);
     }
 
     public generateReport(): {[stepName: string]: [number] | number} {
-        this.recordPreviousStepAndConfigureNewStep("AfterLastStep", false);
-        this._stepExecutionTimesInMilliseconds.All = calculateElapsedTime(this._allStartTime);
+        this.recordPreviousStepAndConfigureNewStep("AfterLastStep");
 
-        return Object.assign({}, this._stepExecutionTimesInMilliseconds, this._repeatableStepsExecutionTimesInMilliseconds, { steps: this._stepsList });
+        return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._eventsExecutionTimesInMilliseconds);
     }
 
     public subscribeTo(eventEmitter: EventEmitter): void {
         subscribeIncludingNestedEmitters(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
-            if (!args.isRepetable) {
-                this.validateNoExistingStepOrMilestone(args.stepName);
-            }
-
-            this.recordPreviousStepAndConfigureNewStep(args.stepName, args.isRepetable);
+            this.recordPreviousStepAndConfigureNewStep(args.stepName);
         });
 
         subscribeIncludingNestedEmitters(eventEmitter, milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
-            this.validateNoExistingStepOrMilestone(args.milestoneName);
             this.recordTotalTimeUntilMilestone(args.milestoneName);
         });
     }

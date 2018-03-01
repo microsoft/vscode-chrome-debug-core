@@ -126,7 +126,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
-                this.Events.emitRepetableStepStarted(`ClientRequest.${request.command}`);
+                this.Events.emitStepStarted(`ClientRequest.${request.command}`);
 
                 if (!(request.command in this._debugAdapter)) {
                     reportFailure("The debug adapter doesn't recognize this command");
@@ -141,7 +141,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
                 }
                 this.failedRequest(request.command, response, e);
             } finally {
-                this.Events.emitRepetableStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
+                this.Events.emitStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
             }
         });
     }

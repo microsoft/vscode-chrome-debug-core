@@ -59,9 +59,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, Observab
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
-        this.Events.emitRepetableStepStarted("Attach.RequestDebuggerTargetsInformation");
+        this.Events.emitStepStarted("Attach.RequestDebuggerTargetsInformation");
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
-            this.Events.emitRepetableStepStarted("Attach.ProcessDebuggerTargetsInformation");
+            this.Events.emitStepStarted("Attach.ProcessDebuggerTargetsInformation");
             try {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {
