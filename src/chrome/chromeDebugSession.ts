@@ -15,6 +15,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
+import { ExecutionTimingsReporter, StepProgressEventsEmitter, ObservableEvents, StepStartedEventsEmitter, NavigatedToUserRequestedUrlEventsEmitter} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -47,9 +48,14 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
     return !!(<IChromeError>e).data;
 }
 
-export class ChromeDebugSession extends LoggingDebugSession {
-    private _debugAdapter: IDebugAdapter;
+export class ChromeDebugSession extends LoggingDebugSession implements ObservableEvents<StepStartedEventsEmitter & NavigatedToUserRequestedUrlEventsEmitter> {
+    private _debugAdapter: IDebugAdapter & ObservableEvents<StepStartedEventsEmitter & NavigatedToUserRequestedUrlEventsEmitter>;
     private _extensionName: string;
+    public readonly Events: StepProgressEventsEmitter;
+    private reporter = new ExecutionTimingsReporter();
+    private haveLaunchExecutionTimingsBeenReported = false;
+
+    public static readonly NavigatedToUserRequestedUrlEventName = 'navigatedToUserRequestedUrl';
 
     /**
      * This needs a bit of explanation -
@@ -73,6 +79,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
         logVersionInfo();
         this._extensionName = opts.extensionName;
         this._debugAdapter = new (<any>opts.adapter)(opts, this);
+        this.Events = new StepProgressEventsEmitter([this._debugAdapter.Events]);
+        this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = err => {
             let errMsg;
@@ -118,6 +126,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
+                this.Events.emitStepStarted(`ClientRequest.${request.command}`);
 
                 if (!(request.command in this._debugAdapter)) {
                     reportFailure("The debug adapter doesn't recognize this command");
@@ -131,6 +140,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
                     reportFailure(e);
                 }
                 this.failedRequest(request.command, response, e);
+            } finally {
+                this.Events.emitStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
             }
         });
     }
@@ -201,6 +212,31 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
     private sendUnknownCommandResponse(response: DebugProtocol.Response, command: string): void {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
+    }
+
+    public reportLaunchExecutionTimingsIfNeeded(userPageWasDetected: boolean): void {
+        if (!this.haveLaunchExecutionTimingsBeenReported) {
+            const report = this.reporter.generateReport();
+            const telemetryData = { userPageWasDetected: userPageWasDetected.toString() };
+            for (const reportProperty in report) {
+                telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
+            }
+
+            telemetry.reportEvent('timings-until-user-page-loads', telemetryData);
+            this.haveLaunchExecutionTimingsBeenReported = true;
+        }
+    }
+
+    private configureExecutionTimingsReporting(): void {
+        this.reporter.subscribeTo(this.Events);
+        this._debugAdapter.Events.once(ChromeDebugSession.NavigatedToUserRequestedUrlEventName, () => {
+            this.reportLaunchExecutionTimingsIfNeeded(true);
+        });
+    }
+
+    public shutdown(): void {
+        this.reportLaunchExecutionTimingsIfNeeded(/*userPageWasDetected*/false);
+        super.shutdown();
     }
 }
 

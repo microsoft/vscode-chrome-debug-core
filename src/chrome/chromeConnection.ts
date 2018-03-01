@@ -5,6 +5,7 @@
 import * as WebSocket from 'ws';
 
 import {telemetry} from '../telemetry';
+import {StepProgressEventsEmitter, ObservableEvents, StepStartedEventsEmitter} from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
@@ -86,19 +87,21 @@ export interface IChromeError {
 /**
  * Connects to a target supporting the Chrome Debug Protocol and sends and receives messages
  */
-export class ChromeConnection {
+export class ChromeConnection implements ObservableEvents<StepStartedEventsEmitter> {
     private static ATTACH_TIMEOUT = 10000; // ms
 
     private _socket: WebSocket;
     private _crdpSocketMultiplexor: CRDPMultiplexor;
     private _client: Client;
     private _targetFilter: ITargetFilter;
-    private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
+    private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & ObservableEvents<StepStartedEventsEmitter>;
     private _attachedTarget: ITarget;
+    public readonly Events: StepProgressEventsEmitter;
 
-    constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
+    constructor(targetDiscovery?: ITargetDiscoveryStrategy & ObservableEvents<StepStartedEventsEmitter>, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
         this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
+        this.Events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.Events]);
     }
 
     public get isAttached(): boolean { return !!this._client; }
@@ -120,6 +123,7 @@ export class ChromeConnection {
     }
 
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
+        this.Events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
             this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);
