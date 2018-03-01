@@ -3,23 +3,33 @@ import { EventEmitter } from "events";
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 
-const stepStartedEventName = 'stepStarted';
-const milestoneReachedEventName = 'milestoneReached';
+export const stepStartedEventName = 'stepStarted';
+export const milestoneReachedEventName = 'milestoneReached';
 
-interface StepStartedEventArguments {
+export interface StepStartedEventArguments {
     stepName: string;
 }
 
-interface MilestoneReachedEventArguments {
+export interface MilestoneReachedEventArguments {
     milestoneName: string;
 }
 
-export interface ObservableEvents {
-    Events: EventEmitter;
+export interface ObservableEvents<T> { // Normally T will be an EventEmitter
+    Events: T;
+}
+
+export interface StepStartedEventsEmitter {
+    on(event: 'stepStarted', listener: (args: StepStartedEventArguments) => void): this;
+    on(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
+}
+
+export interface NavigatedToUserRequestedUrlEventsEmitter {
+    on(event: 'navigatedToUserRequestedUrl', listener: () => void): this;
+    once(event: 'navigatedToUserRequestedUrl', listener: () => void): this;
 }
 
 export class StepProgressEventsEmitter extends EventEmitter {
-    constructor(private readonly _nestedEmitters: [EventEmitter] = [] as [EventEmitter]) {
+    constructor(private readonly _nestedEmitters: [StepStartedEventsEmitter] = [] as [StepStartedEventsEmitter]) {
         super();
     }
 
@@ -31,13 +41,13 @@ export class StepProgressEventsEmitter extends EventEmitter {
         this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as MilestoneReachedEventArguments);
     }
 
-    private subscribeToAllNestedEmitters(event: string | symbol, listener: Function): void {
+    private subscribeToAllNestedEmitters(event: string, listener: Function): void {
         for (const nestedEventEmitter of this._nestedEmitters) {
-            nestedEventEmitter.on(event, listener);
+            nestedEventEmitter.on(event as any, listener as any);
         }
     }
 
-    public on(event: string | symbol, listener: Function): this {
+    public on(event: string, listener: Function): this {
         super.on(event, listener);
         this.subscribeToAllNestedEmitters(event, listener);
         return this;
