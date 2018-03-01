@@ -19,7 +19,7 @@ export interface ObservableEvents {
 }
 
 export class StepProgressEventsEmitter extends EventEmitter {
-    constructor(public readonly NestedEmitters: [EventEmitter] = [] as [EventEmitter]) {
+    constructor(private readonly _nestedEmitters: [EventEmitter] = [] as [EventEmitter]) {
         super();
     }
 
@@ -31,15 +31,16 @@ export class StepProgressEventsEmitter extends EventEmitter {
         this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as MilestoneReachedEventArguments);
     }
 
-}
-
-export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function): void {
-    eventEmitter.on(event, listener);
-
-    if (eventEmitter instanceof StepProgressEventsEmitter) {
-        for (const nestedEventEmitter of eventEmitter.NestedEmitters) {
-            subscribeIncludingNestedEmitters(nestedEventEmitter, event, listener);
+    private subscribeToAllNestedEmitters(event: string | symbol, listener: Function): void {
+        for (const nestedEventEmitter of this._nestedEmitters) {
+            nestedEventEmitter.on(event, listener);
         }
+    }
+
+    public on(event: string | symbol, listener: Function): this {
+        super.on(event, listener);
+        this.subscribeToAllNestedEmitters(event, listener);
+        return this;
     }
 }
 
@@ -117,11 +118,11 @@ export class ExecutionTimingsReporter {
     }
 
     public subscribeTo(eventEmitter: EventEmitter): void {
-        subscribeIncludingNestedEmitters(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
+        eventEmitter.on(stepStartedEventName, (args: StepStartedEventArguments) => {
             this.recordPreviousStepAndConfigureNewStep(args.stepName);
         });
 
-        subscribeIncludingNestedEmitters(eventEmitter, milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
+        eventEmitter.on(milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
             this.recordTotalTimeUntilMilestone(args.milestoneName);
         });
     }
