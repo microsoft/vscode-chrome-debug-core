@@ -26,6 +26,7 @@ import * as utils from '../../src/utils';
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason} from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source } from 'vscode-debugadapter/lib/debugSession';
+import { StepStartedEventsEmitter } from '../../src/executionTimingsReporter';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -57,11 +58,14 @@ suite('ChromeDebugAdapter', () => {
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined), It.isValue(undefined)))
             .returns(() => utils.errP('Testing attach failed'));
-        mockChromeConnection
+            mockChromeConnection
             .setup(x => x.isAttached)
             .returns(() => false);
         mockChromeConnection
             .setup(x => x.onClose(It.isAny()));
+        mockChromeConnection
+            .setup(x => x.Events)
+            .returns(() => new StepStartedEventsEmitter);
 
         mockChrome = getMockChromeConnectionApi();
         mockEventEmitter = mockChrome.mockEventEmitter;

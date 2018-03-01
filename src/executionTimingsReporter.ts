@@ -33,7 +33,7 @@ export class StepStartedEventsEmitter extends EventEmitter {
 
 }
 
-export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function) {
+export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function): void {
     eventEmitter.on(event, listener);
 
     if (eventEmitter instanceof StepStartedEventsEmitter) {
