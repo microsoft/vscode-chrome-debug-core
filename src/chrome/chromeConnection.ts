@@ -5,7 +5,7 @@
 import * as WebSocket from 'ws';
 
 import {telemetry} from '../telemetry';
-import {StepStartedEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
+import {StepProgressEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {logger} from 'vscode-debugadapter';
@@ -30,7 +30,7 @@ export interface ITarget {
 }
 
 export type ITargetFilter = (target: ITarget) => boolean;
-export interface ITargetDiscoveryStrategy extends ObservableEvents {
+export interface ITargetDiscoveryStrategy {
     getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget>;
     getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]>;
 }
@@ -94,14 +94,14 @@ export class ChromeConnection implements ObservableEvents {
     private _crdpSocketMultiplexor: CRDPMultiplexor;
     private _client: Client;
     private _targetFilter: ITargetFilter;
-    private _targetDiscoveryStrategy: ITargetDiscoveryStrategy;
+    private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & ObservableEvents;
     private _attachedTarget: ITarget;
-    public readonly Events: StepStartedEventsEmitter;
+    public readonly Events: StepProgressEventsEmitter;
 
-    constructor(targetDiscovery?: ITargetDiscoveryStrategy, targetFilter?: ITargetFilter) {
+    constructor(targetDiscovery?: ITargetDiscoveryStrategy & ObservableEvents, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
         this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
-        this.Events = new StepStartedEventsEmitter([this._targetDiscoveryStrategy.Events]);
+        this.Events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.Events]);
     }
 
     public get isAttached(): boolean { return !!this._client; }

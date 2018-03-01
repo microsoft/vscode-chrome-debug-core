@@ -22,7 +22,7 @@ import {StoppedEvent2, ReasonType} from './stoppedEvent';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
-import {StepStartedEventsEmitter} from '../executionTimingsReporter';
+import {StepProgressEventsEmitter} from '../executionTimingsReporter';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
@@ -143,7 +143,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _batchTelemetryReporter: BatchTelemetryReporter;
 
-    public readonly Events: StepStartedEventsEmitter;
+    public readonly Events: StepProgressEventsEmitter;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
@@ -151,7 +151,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
-        this.Events = new StepStartedEventsEmitter([this._chromeConnection.Events]);
+        this.Events = new StepProgressEventsEmitter([this._chromeConnection.Events]);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();

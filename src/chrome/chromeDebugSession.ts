@@ -15,7 +15,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
-import { ExecutionTimingsReporter, StepStartedEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
+import { ExecutionTimingsReporter, StepProgressEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -51,7 +51,7 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
 export class ChromeDebugSession extends LoggingDebugSession implements ObservableEvents {
     private _debugAdapter: IDebugAdapter & ObservableEvents;
     private _extensionName: string;
-    public readonly Events: StepStartedEventsEmitter;
+    public readonly Events: StepProgressEventsEmitter;
     private reporter = new ExecutionTimingsReporter();
     private haveLaunchExecutionTimingsBeenReported = false;
 
@@ -79,7 +79,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
         logVersionInfo();
         this._extensionName = opts.extensionName;
         this._debugAdapter = new (<any>opts.adapter)(opts, this);
-        this.Events = new StepStartedEventsEmitter([this._debugAdapter.Events]);
+        this.Events = new StepProgressEventsEmitter([this._debugAdapter.Events]);
         this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = err => {

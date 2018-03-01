@@ -18,7 +18,7 @@ export interface ObservableEvents {
     Events: EventEmitter;
 }
 
-export class StepStartedEventsEmitter extends EventEmitter {
+export class StepProgressEventsEmitter extends EventEmitter {
     constructor(public readonly NestedEmitters: [EventEmitter] = [] as [EventEmitter]) {
         super();
     }
@@ -36,7 +36,7 @@ export class StepStartedEventsEmitter extends EventEmitter {
 export function subscribeIncludingNestedEmitters(eventEmitter: EventEmitter, event: string | symbol, listener: Function): void {
     eventEmitter.on(event, listener);
 
-    if (eventEmitter instanceof StepStartedEventsEmitter) {
+    if (eventEmitter instanceof StepProgressEventsEmitter) {
         for (const nestedEventEmitter of eventEmitter.NestedEmitters) {
             subscribeIncludingNestedEmitters(nestedEventEmitter, event, listener);
         }
