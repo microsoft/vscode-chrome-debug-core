@@ -1351,7 +1351,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     this._breakpointIdHandles.set(bpId, responseBpId);
                 } else {
                     bpId = this._breakpointIdHandles.lookup(responseBpId) ||
-                    this._breakpointIdHandles.create(responseBpId);
+                        this._breakpointIdHandles.create(responseBpId);
                 }
 
                 if (!response.actualLocation) {
