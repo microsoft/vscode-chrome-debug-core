@@ -727,8 +727,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             if (this._initialSourceMapsP) {
                 this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
-                await sourceMapsP;
             }
+            await sourceMapsP;
 
             breakpointsAreResolvedDefer.resolve(); // By now no matter which code path we choose, resolving pending breakpoints should be finished, so trigger the defer
         } catch (exception) {
