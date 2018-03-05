@@ -98,7 +98,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
     private _variableHandles: variables.VariableHandles;
     private _breakpointIdHandles: utils.ReverseHandles<Crdp.Debugger.BreakpointId>;
-    private _unboundBreakpointIdHandles: utils.ReverseHandles<Crdp.Debugger.BreakpointId>;
     private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
 
     private _scriptsById: Map<Crdp.Runtime.ScriptId, CrdpScript>;
@@ -149,7 +148,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();
         this._breakpointIdHandles = new utils.ReverseHandles<Crdp.Debugger.BreakpointId>();
-        this._unboundBreakpointIdHandles = new utils.ReverseHandles<Crdp.Debugger.BreakpointId>();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
@@ -1195,6 +1193,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
+    private generateNextUnboundBreakpointId(): string {
+        const unboundBreakpointUniquePrefix = "__::[vscode_chrome_debug_adapter_unbound_breakpoint]::"
+        return `${unboundBreakpointUniquePrefix}${this._nextUnboundBreakpointId++}`;
+    }
+
     private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, message?: string, bpsSet = false): ISetBreakpointsResponseBody {
         const breakpoints = args.breakpoints.map(bp => {
             return <DebugProtocol.Breakpoint>{
@@ -1202,7 +1205,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 line: bp.line,
                 column: bp.column,
                 message,
-                id: this._unboundBreakpointIdHandles.create(this._nextUnboundBreakpointId++ + '')
+                id: this._breakpointIdHandles.create(this.generateNextUnboundBreakpointId())
             };
         });
 
@@ -1339,17 +1342,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                 // response.breakpointId is undefined when no target BP is backing this BP, e.g. it's at the same location
                 // as another BP
-                const responseBpId = response.breakpointId || (this._nextUnboundBreakpointId++ + '');
-                const breakpointIdHandlesForThisBpId = response.breakpointId ? this._breakpointIdHandles : this._unboundBreakpointIdHandles;
+                const responseBpId = response.breakpointId || this.generateNextUnboundBreakpointId();
 
                 let bpId: number;
                 if (ids && ids[i]) {
                     // IDs passed in for previously unverified BPs
                     bpId = ids[i];
-                    breakpointIdHandlesForThisBpId.set(bpId, responseBpId);
+                    this._breakpointIdHandles.set(bpId, responseBpId);
                 } else {
-                    bpId = breakpointIdHandlesForThisBpId.lookup(responseBpId) ||
-                    breakpointIdHandlesForThisBpId.create(responseBpId);
+                    bpId = this._breakpointIdHandles.lookup(responseBpId) ||
+                    this._breakpointIdHandles.create(responseBpId);
                 }
 
                 if (!response.actualLocation) {
