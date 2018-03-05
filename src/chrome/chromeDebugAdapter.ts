@@ -1194,7 +1194,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private generateNextUnboundBreakpointId(): string {
-        const unboundBreakpointUniquePrefix = "__::[vscode_chrome_debug_adapter_unbound_breakpoint]::"
+        const unboundBreakpointUniquePrefix = "__::[vscode_chrome_debug_adapter_unbound_breakpoint]::";
         return `${unboundBreakpointUniquePrefix}${this._nextUnboundBreakpointId++}`;
     }
 
