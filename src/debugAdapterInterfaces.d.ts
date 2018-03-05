@@ -179,8 +179,8 @@ export interface IDebugAdapter {
     shutdown(): void;
 
     initialize(args: DebugProtocol.InitializeRequestArguments, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities>;
-    launch(args: ILaunchRequestArgs, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities|void>;
-    attach(args: IAttachRequestArgs, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities|void>;
+    launch(args: ILaunchRequestArgs, requestSeq?: number): PromiseOrNot<void>;
+    attach(args: IAttachRequestArgs, requestSeq?: number): PromiseOrNot<void>;
     disconnect(args: DebugProtocol.DisconnectArguments): PromiseOrNot<void>;
     setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, requestSeq?: number): PromiseOrNot<ISetBreakpointsResponseBody>;
     setExceptionBreakpoints(args: DebugProtocol.SetExceptionBreakpointsArguments, requestSeq?: number): PromiseOrNot<void>;
