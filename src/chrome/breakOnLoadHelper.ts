@@ -52,55 +52,8 @@ export class BreakOnLoadHelper {
         return this._instrumentationBreakpointSet;
     }
 
-    /**
-     * Checks and resolves the pending breakpoints of a script given it's source. If any breakpoints were resolved returns true, else false.
-     * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
-     */
-    private async resolvePendingBreakpoints(source: string): Promise<boolean> {
-        const normalizedSource = this._chromeDebugAdapter.fixPathCasing(source);
-        const pendingBreakpoints = this._chromeDebugAdapter.pendingBreakpointsByUrl.get(normalizedSource);
-        // If the file has unbound breakpoints, resolve them and return true
-        if (pendingBreakpoints !== undefined) {
-            await this._chromeDebugAdapter.resolvePendingBreakpoint(pendingBreakpoints);
-            if (!this._chromeDebugAdapter.pendingBreakpointsByUrl.delete(normalizedSource)) {
-                logger.log(`Expected to delete ${normalizedSource} from the list of pending breakpoints, but it wasn't there`);
-            }
-            return true;
-        } else {
-            // If no pending breakpoints, return false
-            return false;
-        }
-    }
-
     private getScriptUrlFromId(scriptId: string): string {
         return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
-    }
-
-    /**
-     * Checks and resolves the pending breakpoints given a script Id. If any breakpoints were resolved returns true, else false.
-     * Used when break on load active, either through Chrome's Instrumentation Breakpoint API or the regex approach
-     */
-    private async resolvePendingBreakpointsOfPausedScript(scriptId: string): Promise<boolean> {
-        const pausedScriptUrl = this.getScriptUrlFromId(scriptId);
-        const sourceMapUrl = this._chromeDebugAdapter.scriptsById.get(scriptId).sourceMapURL;
-        const mappedUrl = await this._chromeDebugAdapter.pathTransformer.scriptParsed(pausedScriptUrl);
-        let breakpointsResolved = false;
-
-        let sources = await this._chromeDebugAdapter.sourceMapTransformer.scriptParsed(mappedUrl, sourceMapUrl);
-
-        // If user breakpoint was put in a typescript file, pendingBreakpoints would store the typescript file in the mapping, so we need to hit those
-        if (sources) {
-            for (let source of sources) {
-                let anySourceBPResolved = await this.resolvePendingBreakpoints(source);
-                // If any of the source files had breakpoints resolved, we should return true
-                breakpointsResolved = breakpointsResolved || anySourceBPResolved;
-            }
-        }
-        // If sources is not present or user breakpoint was put in a compiled javascript file
-        let scriptBPResolved = await this.resolvePendingBreakpoints(mappedUrl);
-        breakpointsResolved = breakpointsResolved || scriptBPResolved;
-
-        return breakpointsResolved;
     }
 
     /**
@@ -120,8 +73,8 @@ export class BreakOnLoadHelper {
             // This is fired when Chrome stops on the first line of a script when using the setInstrumentationBreakpoint API
 
             const pausedScriptId = notification.callFrames[0].location.scriptId;
-            // Now we should resolve all the pending breakpoints and then continue
-            await this.resolvePendingBreakpointsOfPausedScript(pausedScriptId);
+            // Now we wait for all the pending breakpoints to be resolved and then continue
+            await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
             return true;
         }
         return false;
@@ -137,16 +90,16 @@ export class BreakOnLoadHelper {
 
         // Important: For the logic that verifies if a user breakpoint is set in the paused location, we need to resolve pending breakpoints, and commit them, before
         // using committedBreakpointsByUrl for our logic.
-        let anyPendingBreakpointsResolved = await this.resolvePendingBreakpointsOfPausedScript(pausedLocation.scriptId);
+        await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedLocation.scriptId).promise;
 
         const pausedScriptUrl = this.getScriptUrlFromId(pausedLocation.scriptId);
         // Important: We need to get the committed breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
-        const committedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl);
+        const committedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl) || [];
         const anyBreakpointsAtPausedLocation = committedBps.filter(bp =>
             bp.actualLocation.lineNumber === pausedLocation.lineNumber && bp.actualLocation.columnNumber === pausedLocation.columnNumber).length > 0;
 
-        // If there were any pending breakpoints resolved and any of them was at (1,1) we shouldn't continue
-        if (anyPendingBreakpointsResolved && anyBreakpointsAtPausedLocation) {
+        // If there were any breakpoints at this location (Which generally should be (1,1)) we shouldn't continue
+        if (anyBreakpointsAtPausedLocation) {
             // Here we need to store this information per file, but since we can safely assume that scriptParsed would immediately be followed by onPaused event
             // for the breakonload files, this implementation should be fine
             shouldContinue = false;

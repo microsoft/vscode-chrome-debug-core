@@ -34,6 +34,7 @@ import {BreakOnLoadHelper} from './breakOnLoadHelper';
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
+import { PromiseDefer, promiseDefer } from '../utils';
 let localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
 interface IPropCount {
@@ -73,6 +74,11 @@ export type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 export type CrdpDomain = keyof Crdp.CrdpClient;
 
 export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
+
+export interface BreakpointSetResult {
+    isSet: boolean;
+    breakpoint: DebugProtocol.Breakpoint;
+}
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
@@ -140,6 +146,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     // Queue to synchronize new source loaded and source removed events so that 'remove' script events
     // won't be send before the corresponding 'new' event has been sent
     private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
+
+    // Promises so ScriptPaused events can wait for ScriptParsed events to finish resolving breakpoints
+    private _scriptIdToBreakpointsAreResolvedDefer = new Map<string, PromiseDefer<void>>();
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -645,75 +654,84 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
     }
 
-    protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
-        this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
-            if (typeof this._columnBreakpointsEnabled === 'undefined') {
-                await this.detectColumnBreakpointSupport(script.scriptId).then(async () => {
-                    await this.sendInitializedEvent();
-                });
-            }
-
-            if (this._earlyScripts) {
-                this._earlyScripts.push(script);
-            } else {
-                await this.sendLoadedSourceEvent(script);
-            }
-        });
-
-        if (script.url) {
-            script.url = utils.fixDriveLetter(script.url);
+    public getBreakpointsResolvedDefer(scriptId: string): PromiseDefer<void> {
+        const existingValue =  this._scriptIdToBreakpointsAreResolvedDefer.get(scriptId);
+        if (existingValue) {
+            return existingValue;
         } else {
-            script.url = ChromeDebugAdapter.EVAL_NAME_PREFIX + script.scriptId;
+            const newValue = promiseDefer<void>();
+            this._scriptIdToBreakpointsAreResolvedDefer.set(scriptId, newValue);
+            return newValue;
         }
+    }
 
-        this._scriptsById.set(script.scriptId, script);
-        this._scriptsByUrl.set(this.fixPathCasing(script.url), script);
+    protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
+        try {
+            this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
+                if (typeof this._columnBreakpointsEnabled === 'undefined') {
+                    await this.detectColumnBreakpointSupport(script.scriptId);
+                    await this.sendInitializedEvent();
+                }
 
-        const resolvePendingBPs = (source: string) => {
-            source = source && this.fixPathCasing(source);
-            const pendingBP = this._pendingBreakpointsByUrl.get(source);
-            if (pendingBP && !pendingBP.bpsSet) {
-                this.resolvePendingBreakpoint(pendingBP)
-                    .then(() => this._pendingBreakpointsByUrl.delete(source));
-            }
-        };
-
-        const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
-
-        const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(sources => {
-            if (this._hasTerminated) {
-                return undefined;
-            }
-
-            if (sources) {
-                // If break on load is active, check whether we should call resolvePendingBPs
-                if (this.breakOnLoadActive) {
-                    sources
-                        .filter(source => source !== mappedUrl && this._breakOnLoadHelper.shouldResolvePendingBPs(source)) // Tools like babel-register will produce sources with the same path as the generated script
-                        .forEach(resolvePendingBPs);
+                if (this._earlyScripts) {
+                    this._earlyScripts.push(script);
                 } else {
-                    sources
-                        .filter(source => source !== mappedUrl) // Tools like babel-register will produce sources with the same path as the generated script
-                        .forEach(resolvePendingBPs);
+                    await this.sendLoadedSourceEvent(script);
                 }
-            }
+            });
 
-            if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).bpsSet) {
-                // If the pathTransformer had no effect, and we attempted to set the BPs with that path earlier, then assume that they are about
-                // to be resolved in this loaded script, and remove the pendingBP.
-                this._pendingBreakpointsByUrl.delete(mappedUrl);
+            if (script.url) {
+                script.url = utils.fixDriveLetter(script.url);
             } else {
-                // If break on load is active, check whether we should call resolvePendingBPs
-                if (!this.breakOnLoadActive || (this._breakOnLoadHelper && !sources && this._breakOnLoadHelper.shouldResolvePendingBPs(mappedUrl))) {
-                    resolvePendingBPs(mappedUrl);
-                }
+                script.url = ChromeDebugAdapter.EVAL_NAME_PREFIX + script.scriptId;
             }
 
-            return this.resolveSkipFiles(script, mappedUrl, sources);
-        });
+            this._scriptsById.set(script.scriptId, script);
+            this._scriptsByUrl.set(this.fixPathCasing(script.url), script);
 
-        if (this._initialSourceMapsP) {
-            this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
+            const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
+
+            const resolvePendingBPs = async (source: string) => {
+                source = source && this.fixPathCasing(source);
+                const pendingBP = this._pendingBreakpointsByUrl.get(source);
+                if (pendingBP && !pendingBP.bpsSet) {
+                    await this.resolvePendingBreakpoint(pendingBP);
+                    this._pendingBreakpointsByUrl.delete(source);
+                }
+            };
+
+            const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(async sources => {
+                if (this._hasTerminated) {
+                    return undefined;
+                }
+
+                if (sources) {
+                    const filteredSources = sources.filter(source => source !== mappedUrl); // Tools like babel-register will produce sources with the same path as the generated script
+                    for (const filteredSource of filteredSources) {
+                        await resolvePendingBPs(filteredSource);
+                    }
+                }
+
+                if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).bpsSet) {
+                    // If the pathTransformer had no effect, and we attempted to set the BPs with that path earlier, then assume that they are about
+                    // to be resolved in this loaded script, and remove the pendingBP.
+                    this._pendingBreakpointsByUrl.delete(mappedUrl);
+                } else {
+                    await resolvePendingBPs(mappedUrl);
+                }
+
+                await this.resolveSkipFiles(script, mappedUrl, sources);
+            });
+
+            if (this._initialSourceMapsP) {
+                this._initialSourceMapsP = <Promise<any>>Promise.all([this._initialSourceMapsP, sourceMapsP]);
+            }
+            await sourceMapsP;
+
+            breakpointsAreResolvedDefer.resolve(); // By now no matter which code path we choose, resolving pending breakpoints should be finished, so trigger the defer
+        } catch (exception) {
+            breakpointsAreResolvedDefer.reject(exception);
         }
     }
 
@@ -1130,7 +1148,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
                         .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
-                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToClientBreakpoints(targetScriptUrl, responses, args.breakpoints, ids) }));
+                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, args.breakpoints, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', "Set breakpoints request timed out"));
 
@@ -1144,10 +1162,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     });
 
                     // Return the setBP request, no matter how long it takes. It may take awhile in Node 7.5 - 7.7, see https://github.com/nodejs/node/issues/11589
-                    return setBreakpointsPFailOnError.then(body => {
+                    return setBreakpointsPFailOnError.then(setBpResultBody => {
+                        const body = { breakpoints: setBpResultBody.breakpoints.map(setBpResult => setBpResult.breakpoint) };
                         if (body.breakpoints.every(bp => !bp.verified)) {
+                            // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
+                            const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', "Breakpoints set but not yet bound"), true);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', "Breakpoints set but not yet bound"), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
@@ -1320,7 +1341,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private targetBreakpointResponsesToClientBreakpoints(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): DebugProtocol.Breakpoint[] {
+    private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
         const committedBps = responses
             .filter(response => response && response.breakpointId);
@@ -1334,8 +1355,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // The output list needs to be the same length as the input list, so map errors to
                 // unverified breakpoints.
                 if (!response) {
-                    return <DebugProtocol.Breakpoint>{
-                        verified: false
+                    return {
+                        isSet: false,
+                        breakpoint: <DebugProtocol.Breakpoint>{
+                            verified: false
+                        }
                     };
                 }
 
@@ -1354,28 +1378,39 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 if (!response.actualLocation) {
-                    return <DebugProtocol.Breakpoint>{
-                        id: bpId,
-                        verified: false
+                    // If we don't have an actualLocation nor a breakpointId this is a pseudo-breakpoint because we are using break-on-load
+                    // so we mark the breakpoint as not set, so i'll be set after we load the actual script that has the breakpoint
+                    return {
+                        isSet: response.breakpointId !== undefined,
+                            breakpoint: <DebugProtocol.Breakpoint>{
+                                id: bpId,
+                                verified: false
+                        }
                     };
                 }
 
                 const thisBpRequest = requestBps[i];
                 if (thisBpRequest.hitCondition) {
                     if (!this.addHitConditionBreakpoint(thisBpRequest, response)) {
-                        return <DebugProtocol.Breakpoint>{
-                            id: bpId,
-                            message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
-                            verified: false
+                        return  {
+                            isSet: true,
+                            breakpoint: <DebugProtocol.Breakpoint>{
+                                id: bpId,
+                                message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
+                                verified: false
+                            }
                         };
                     }
                 }
 
-                return <DebugProtocol.Breakpoint>{
-                    id: bpId,
-                    verified: true,
-                    line: response.actualLocation.lineNumber,
-                    column: response.actualLocation.columnNumber
+                return {
+                    isSet: true,
+                    breakpoint: <DebugProtocol.Breakpoint>{
+                        id: bpId,
+                        verified: true,
+                        line: response.actualLocation.lineNumber,
+                        column: response.actualLocation.columnNumber
+                    }
                 };
             });
     }

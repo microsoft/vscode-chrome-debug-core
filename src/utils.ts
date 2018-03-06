@@ -550,3 +550,20 @@ export function isNumber(num: number): boolean {
 export function toVoidP(p: Promise<any>): Promise<void> {
     return p.then(() => { });
 }
+
+export interface PromiseDefer<T> {
+    promise: Promise<void>;
+    resolve: (value?: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+}
+
+export function promiseDefer<T>(): PromiseDefer<T> {
+    let resolveCallback;
+    let rejectCallback;
+    const promise = new Promise<void>((resolve, reject) => {
+        resolveCallback = resolve;
+        rejectCallback = reject;
+    });
+
+    return { promise, resolve: resolveCallback, reject: rejectCallback };
+}
