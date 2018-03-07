@@ -18,7 +18,7 @@ export interface MilestoneReachedEventArguments {
     milestoneName: string;
 }
 
-export interface ObservableEvents<T extends EventEmitter> {
+export interface ObservableEvents<T> { // T is an interface that declares the on methods (listeners) that we can subscribe to
     events: T;
 }
 
