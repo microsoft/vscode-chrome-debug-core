@@ -96,12 +96,12 @@ export class ChromeConnection implements ObservableEvents<StepStartedEventsEmitt
     private _targetFilter: ITargetFilter;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & ObservableEvents<StepStartedEventsEmitter>;
     private _attachedTarget: ITarget;
-    public readonly Events: StepProgressEventsEmitter;
+    public readonly events: StepProgressEventsEmitter;
 
     constructor(targetDiscovery?: ITargetDiscoveryStrategy & ObservableEvents<StepStartedEventsEmitter>, targetFilter?: ITargetFilter) {
         this._targetFilter = targetFilter;
         this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
-        this.Events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.Events]);
+        this.events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.events]);
     }
 
     public get isAttached(): boolean { return !!this._client; }
@@ -123,7 +123,7 @@ export class ChromeConnection implements ObservableEvents<StepStartedEventsEmitt
     }
 
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
-        this.Events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
+        this.events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
             this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);

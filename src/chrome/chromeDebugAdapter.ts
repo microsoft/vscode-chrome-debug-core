@@ -153,7 +153,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _batchTelemetryReporter: BatchTelemetryReporter;
 
-    public readonly Events: StepProgressEventsEmitter;
+    public readonly events: StepProgressEventsEmitter;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
@@ -161,7 +161,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
-        this.Events = new StepProgressEventsEmitter([this._chromeConnection.Events]);
+        this.events = new StepProgressEventsEmitter([this._chromeConnection.events]);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();
@@ -440,7 +440,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
-        this.Events.emitStepStarted("Attach");
+        this.events.emitStepStarted("Attach");
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
@@ -450,7 +450,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
 
-            this.Events.emitStepStarted("Attach.ConfigureDebuggingSession.Internal");
+            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Internal");
 
             this._port = port;
 
@@ -474,7 +474,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
 
-            this.Events.emitStepStarted("Attach.ConfigureDebuggingSession.Target");
+            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Target");
 
             // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
             await Promise.all(this.runConnection());

@@ -59,14 +59,14 @@ suite('ChromeDebugAdapter', () => {
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined), It.isValue(undefined)))
             .returns(() => utils.errP('Testing attach failed'));
-            mockChromeConnection
+        mockChromeConnection
             .setup(x => x.isAttached)
             .returns(() => false);
         mockChromeConnection
             .setup(x => x.onClose(It.isAny()));
         mockChromeConnection
-            .setup(x => x.Events)
-            .returns(() => new StepProgressEventsEmitter);
+            .setup(x => x.events)
+            .returns(() => new StepProgressEventsEmitter());
 
         mockChrome = getMockChromeConnectionApi();
         mockEventEmitter = mockChrome.mockEventEmitter;

@@ -51,7 +51,7 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
 export class ChromeDebugSession extends LoggingDebugSession implements ObservableEvents<StepStartedEventsEmitter & NavigatedToUserRequestedUrlEventsEmitter> {
     private _debugAdapter: IDebugAdapter & ObservableEvents<StepStartedEventsEmitter & NavigatedToUserRequestedUrlEventsEmitter>;
     private _extensionName: string;
-    public readonly Events: StepProgressEventsEmitter;
+    public readonly events: StepProgressEventsEmitter;
     private reporter = new ExecutionTimingsReporter();
     private haveLaunchExecutionTimingsBeenReported = false;
 
@@ -79,7 +79,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
         logVersionInfo();
         this._extensionName = opts.extensionName;
         this._debugAdapter = new (<any>opts.adapter)(opts, this);
-        this.Events = new StepProgressEventsEmitter([this._debugAdapter.Events]);
+        this.events = new StepProgressEventsEmitter([this._debugAdapter.events]);
         this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = err => {
@@ -126,7 +126,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
-                this.Events.emitStepStarted(`ClientRequest.${request.command}`);
+                this.events.emitStepStarted(`ClientRequest.${request.command}`);
 
                 if (!(request.command in this._debugAdapter)) {
                     reportFailure('The debug adapter doesn\'t recognize this command');
@@ -141,7 +141,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
                 }
                 this.failedRequest(request.command, response, e);
             } finally {
-                this.Events.emitStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
+                this.events.emitStepStarted(`WaitingAfter.ClientRequest.${request.command}`);
             }
         });
     }
@@ -228,8 +228,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
     }
 
     private configureExecutionTimingsReporting(): void {
-        this.reporter.subscribeTo(this.Events);
-        this._debugAdapter.Events.once(ChromeDebugSession.NavigatedToUserRequestedUrlEventName, () => {
+        this.reporter.subscribeTo(this.events);
+        this._debugAdapter.events.once(ChromeDebugSession.NavigatedToUserRequestedUrlEventName, () => {
             this.reportLaunchExecutionTimingsIfNeeded(true);
         });
     }
