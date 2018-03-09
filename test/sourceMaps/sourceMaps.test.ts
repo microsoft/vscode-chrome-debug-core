@@ -25,6 +25,7 @@ suite('SourceMaps', () => {
         testUtils.setupUnhandledRejectionListener();
         mockery.enable({ warnOnReplace: false, useCleanCache: true, warnOnUnregistered: false });
         testUtils.registerWin32Mocks();
+        testUtils.registerLocMocks();
         sourceMaps.processNewSourceMap(GENERATED_PATH, SOURCEMAP_URL).then(done);
     });
 

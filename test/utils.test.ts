@@ -21,6 +21,7 @@ suite('Utils', () => {
 
         mockery.enable({ useCleanCache: true, warnOnReplace: false, warnOnUnregistered: false });
         testUtils.registerWin32Mocks();
+        testUtils.registerLocMocks();
         mockery.registerMock('fs', { statSync: () => { } });
         mockery.registerMock('http', {});
     });

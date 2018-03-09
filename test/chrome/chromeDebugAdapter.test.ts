@@ -48,6 +48,7 @@ suite('ChromeDebugAdapter', () => {
         testUtils.setupUnhandledRejectionListener();
         mockery.enable({ useCleanCache: true, warnOnReplace: false, warnOnUnregistered: false });
         testUtils.registerWin32Mocks();
+        testUtils.registerLocMocks();
 
         // Create a ChromeConnection mock with .on and .attach. Tests can fire events via mockEventEmitter
         mockChromeConnection = Mock.ofType(ChromeConnection, MockBehavior.Strict);

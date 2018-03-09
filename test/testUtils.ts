@@ -81,6 +81,17 @@ export function registerOSXMocks(): void {
     mockery.registerMock('path', path.posix);
 }
 
+export function registerLocMocks(): void {
+    mockery.registerMock('vscode-nls', {
+        config: () => () => dummyLocalize,
+        loadMessageBundle: () => dummyLocalize
+    });
+}
+
+function dummyLocalize(id: string, englishString: string): string {
+    return englishString;
+}
+
 /**
  * path.resolve + fixing the drive letter to match what VS Code does. Basically tests can use this when they
  * want to force a path to native slashes and the correct letter case, but maybe can't use un-mocked utils.

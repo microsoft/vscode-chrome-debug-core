@@ -24,6 +24,7 @@ suite('ChromeUtils', () => {
         testUtils.setupUnhandledRejectionListener();
         mockery.enable({ useCleanCache: true, warnOnReplace: false, warnOnUnregistered: false });
         testUtils.registerWin32Mocks();
+        testUtils.registerLocMocks();
 
         mockery.registerMock('fs', { statSync: () => { } });
 
