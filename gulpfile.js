@@ -77,8 +77,7 @@ function doBuild(buildNls, failOnError) {
             .pipe(buildNls ? nls.bundleMetaDataFiles('vscode-chrome-debug-core', 'out') : es.through()) // no outDir here because outDir is specified in the tsconfig
             .pipe(buildNls ? nls.bundleLanguageFiles() : es.through())
 
-            // .. to compensate for TS returning paths from 'out'
-            .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: '..' }))
+            .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: '.' }))
             .pipe(gulp.dest('out')),
         gulp.src(libs, { base: '.' })
             .pipe(gulp.dest('lib')),
