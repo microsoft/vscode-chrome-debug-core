@@ -2027,8 +2027,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             scriptId = handle.scriptId;
         } else if (args.source && args.source.path) {
-            const escapedPath = encodeURI(this.displayPathToRealPath(args.source.path)); // Request path has chars unescaped, but they should be escaped in scriptsByUrl
-            const script = this._scriptsByUrl.get(escapedPath);
+            const realPath = this.displayPathToRealPath(args.source.path);
+
+            // Request url has chars unescaped, but they will be escaped in scriptsByUrl
+            const script = this.getScriptByUrl(
+                utils.isURL(realPath) ?
+                    encodeURI(realPath) :
+                    realPath);
+
             if (!script) {
                 return Promise.reject(errors.sourceRequestCouldNotRetrieveContent());
             }
