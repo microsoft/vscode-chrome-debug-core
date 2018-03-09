@@ -9,7 +9,7 @@ import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
-const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+const localize = nls.loadMessageBundle();
 
 export type ReasonType = 'step' | 'breakpoint' | 'exception' | 'pause' | 'entry' | 'debugger_statement' | 'frame_entry' | 'promise_rejection';
 

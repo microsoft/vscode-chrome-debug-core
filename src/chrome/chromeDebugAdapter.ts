@@ -21,6 +21,7 @@ import {StoppedEvent2, ReasonType} from './stoppedEvent';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
+import { PromiseDefer, promiseDefer } from '../utils';
 import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
@@ -34,7 +35,6 @@ import {BreakOnLoadHelper} from './breakOnLoadHelper';
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
-import { PromiseDefer, promiseDefer } from '../utils';
 let localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
 
 interface IPropCount {

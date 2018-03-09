@@ -14,7 +14,7 @@ import {logger} from 'vscode-debugadapter';
 import {ISourceContainer} from '../chrome/chromeDebugAdapter';
 
 import * as nls from 'vscode-nls';
-const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+const localize = nls.loadMessageBundle();
 
 interface ISavedSetBreakpointsArgs {
     generatedPath: string;

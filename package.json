@@ -18,7 +18,7 @@
     "source-map": "^0.6.1",
     "vscode-debugadapter": "^1.27.0",
     "vscode-debugprotocol": "^1.27.0",
-    "vscode-nls": "^2.0.2",
+    "vscode-nls": "^3.2.1",
     "ws": "^3.3.2"
   },
   "devDependencies": {
@@ -37,7 +37,7 @@
     "gulp-plumber": "^1.1.0",
     "gulp-sourcemaps": "^1.6.0",
     "gulp-tslint": "^6.1.1",
-    "gulp-typescript": "^2.13.6",
+    "gulp-typescript": "^4.0.1",
     "gulp-util": "^3.0.7",
     "merge2": "^1.0.2",
     "mocha": "^3.0.2",
@@ -47,8 +47,8 @@
     "tslint-eslint-rules": "^1.5.0",
     "tslint-microsoft-contrib": "^2.0.10",
     "typemoq": "^0.3.3",
-    "typescript": "2.6.2",
-    "vscode-nls-dev": "^2.1.6"
+    "typescript": "^2.7.2",
+    "vscode-nls-dev": "^3.0.7"
   },
   "scripts": {
     "build": "gulp build",

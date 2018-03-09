@@ -29,7 +29,7 @@
             "args": [ "--server=4712" ],
             "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
-            "smartStep": true
+            // "smartStep": true
         },
         {
             "name": "launch chrome-debug",
@@ -64,6 +64,9 @@
 
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/node_modules/.bin/gulp",
+            "args": [
+                "transifex-push-test"
+            ],
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

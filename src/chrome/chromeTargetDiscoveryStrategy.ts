@@ -11,7 +11,7 @@ import * as chromeUtils from './chromeUtils';
 import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnection';
 
 import * as nls from 'vscode-nls';
-const localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+const localize = nls.loadMessageBundle();
 
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy {
     private logger: Logger.ILogger;
