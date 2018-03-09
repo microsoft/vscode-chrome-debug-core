@@ -69,7 +69,7 @@ export class BreakOnLoadHelper {
                 let shouldContinue = await this.handleStopOnEntryBreakpointAndContinue(notification);
                 return shouldContinue;
             }
-        } else if (notification.reason === 'EventListener' && notification.data.eventName === "instrumentation:scriptFirstStatement" ) {
+        } else if (notification.reason === 'EventListener' && notification.data.eventName === 'instrumentation:scriptFirstStatement' ) {
             // This is fired when Chrome stops on the first line of a script when using the setInstrumentationBreakpoint API
 
             const pausedScriptId = notification.callFrames[0].location.scriptId;
@@ -240,7 +240,7 @@ export class BreakOnLoadHelper {
      * Only used when using instrument approach for break on load
      */
     private async setInstrumentationBreakpoint(): Promise<void> {
-        this._chromeDebugAdapter.chrome.DOMDebugger.setInstrumentationBreakpoint({eventName: "scriptFirstStatement"});
+        this._chromeDebugAdapter.chrome.DOMDebugger.setInstrumentationBreakpoint({eventName: 'scriptFirstStatement'});
         this._instrumentationBreakpointSet = true;
     }
 

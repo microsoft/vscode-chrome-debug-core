@@ -69,6 +69,7 @@
     ],
     "radix": true,
     "semicolon": [
+      true,
       "always"
     ],
     "switch-default": true,

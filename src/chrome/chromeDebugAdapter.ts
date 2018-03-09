@@ -549,7 +549,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (shouldContinue) {
                 this.chrome.Debugger.resume()
                     .catch(e => {
-                        logger.error("Failed to resume due to exception: " + e.message);
+                        logger.error('Failed to resume due to exception: ' + e.message);
                     });
                 return;
             }
@@ -2486,7 +2486,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 const resultProps = response.result.value;
                 if (resultProps.length !== 2) {
-                    return Promise.reject<IPropCount>(errors.errorFromEvaluate("Did not get expected props, got " + JSON.stringify(resultProps)));
+                    return Promise.reject<IPropCount>(errors.errorFromEvaluate('Did not get expected props, got ' + JSON.stringify(resultProps)));
                 }
 
                 return { indexedVariables: resultProps[0], namedVariables: resultProps[1] };

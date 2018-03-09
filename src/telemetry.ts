@@ -5,11 +5,11 @@
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {OutputEvent} from 'vscode-debugadapter';
 
-export type ExceptionType = "uncaughtException" | "unhandledRejection" | "firstChance";
+export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
 export interface  IExecutionResultTelemetryProperties {
     // There is an issue on some clients and reportEvent only currently accept strings properties,
     // hence all the following properties must be strings.
-    successful?: "true" | "false";
+    successful?: 'true' | 'false';
     exceptionType?: ExceptionType;
     exceptionMessage?: string;
     exceptionName?: string;

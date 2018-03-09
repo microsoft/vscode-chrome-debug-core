@@ -87,7 +87,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
         const reportErrorTelemetry = (err, exceptionType: ExceptionType)  => {
             let properties: IExecutionResultTelemetryProperties = {};
-            properties.successful = "false";
+            properties.successful = 'false';
             properties.exceptionType = exceptionType;
 
             utils.fillErrorDetails(properties, err);
@@ -120,7 +120,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
 
                 if (!(request.command in this._debugAdapter)) {
-                    reportFailure("The debug adapter doesn't recognize this command");
+                    reportFailure('The debug adapter doesn\'t recognize this command');
                     this.sendUnknownCommandResponse(response, request.command);
                 } else {
                     response.body = await this._debugAdapter[request.command](request.arguments, request.seq);
@@ -149,8 +149,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
         const reportFailure = e => {
             failed = true;
-            properties.successful = "false";
-            properties.exceptionType = "firstChance";
+            properties.successful = 'false';
+            properties.exceptionType = 'firstChance';
             utils.fillErrorDetails(properties, e);
 
             sendTelemetry();
@@ -159,7 +159,7 @@ export class ChromeDebugSession extends LoggingDebugSession {
         // We use the reportFailure callback because the client might exit immediately after the first failed request, so we need to send the telemetry before that, if not it might get dropped
         await action(reportFailure);
         if (!failed) {
-            properties.successful = "true";
+            properties.successful = 'true';
             sendTelemetry();
         }
     }
