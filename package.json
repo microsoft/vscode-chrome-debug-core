@@ -16,8 +16,8 @@
     "glob": "^7.0.6",
     "noice-json-rpc": "1.0.1",
     "source-map": "^0.6.1",
-    "vscode-debugadapter": "^1.26.0-pre.2",
-    "vscode-debugprotocol": "^1.25.0-pre.3",
+    "vscode-debugadapter": "^1.27.0",
+    "vscode-debugprotocol": "^1.27.0",
     "vscode-nls": "^2.0.2",
     "ws": "^3.3.2"
   },
