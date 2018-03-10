@@ -37,11 +37,15 @@ export interface ObservableEvents<T> { // T is an interface that declares the on
 export interface StepStartedEventsEmitter {
     on(event: 'stepStarted', listener: (args: StepStartedEventArguments) => void): this;
     on(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
+    removeListener(event: 'stepStarted', listener: (args: StepStartedEventArguments) => void): this;
+    removeListener(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
 }
 
 export interface NavigatedToUserRequestedUrlEventsEmitter {
     on(event: 'finishedStartingUp', listener: () => void): this;
     once(event: 'finishedStartingUp', listener: () => void): this;
+    removeListener(event: 'finishedStartingUp', listener: () => void): this;
+    removeListener(event: 'finishedStartingUp', listener: () => void): this;
 }
 
 export class StepProgressEventsEmitter extends EventEmitter {
@@ -65,15 +69,15 @@ export class StepProgressEventsEmitter extends EventEmitter {
         this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as RequestCompletedEventArguments);
     }
 
-    private subscribeToAllNestedEmitters(event: string, listener: Function): void {
-        for (const nestedEventEmitter of this._nestedEmitters) {
-            nestedEventEmitter.on(event as any, listener as any);
-        }
-    }
-
     public on(event: string, listener: Function): this {
         super.on(event, listener);
-        this.subscribeToAllNestedEmitters(event, listener);
+        this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.on(event as any, listener as any));
+        return this;
+    }
+
+    public removeListener(event: string, listener: Function): this {
+        super.removeListener(event, listener);
+        this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.removeListener(event as any, listener as any));
         return this;
     }
 }
