@@ -320,7 +320,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         */
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
         await this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
-        this.events.emitMilestoneReached(ChromeDebugSession.FinishedStartingUpEventName);
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
