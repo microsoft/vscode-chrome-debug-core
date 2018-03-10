@@ -23,6 +23,7 @@ import * as errors from '../errors';
 import * as utils from '../utils';
 import { PromiseDefer, promiseDefer } from '../utils';
 import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
+import {StepProgressEventsEmitter} from '../executionTimingsReporter';
 
 import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {BasePathTransformer} from '../transformers/basePathTransformer';
@@ -152,11 +153,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _batchTelemetryReporter: BatchTelemetryReporter;
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts, session: ChromeDebugSession) {
+    public readonly events: StepProgressEventsEmitter;
+
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
+        session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
+        this.events = new StepProgressEventsEmitter([this._chromeConnection.events]);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();
@@ -314,7 +319,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         */
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
-        return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
+        await this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
@@ -435,6 +440,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
+        this.events.emitStepStarted("Attach");
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
@@ -443,6 +449,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
+
+            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Internal");
 
             this._port = port;
 
@@ -465,6 +473,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (this._launchAttachArgs.skipFileRegExps) {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
+
+            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Target");
 
             // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
             await Promise.all(this.runConnection());
@@ -506,6 +516,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             await initialSourceMapsP;
 
             this._session.sendEvent(new InitializedEvent());
+            this.events.emitStepCompleted("NotifyInitialized");
             await Promise.all(this._earlyScripts.map(script => this.sendLoadedSourceEvent(script)));
             this._earlyScripts = null;
         }
@@ -518,7 +529,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     /**
      * e.g. the target navigated
      */
-    private onExecutionContextsCleared(): Promise<void> {
+    protected onExecutionContextsCleared(): Promise<void> {
         const cachedScriptParsedEvents = Array.from(this._scriptsById.values());
         return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
             for (let scriptedParseEvent of cachedScriptParsedEvents) {

@@ -15,6 +15,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
+import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -47,9 +48,16 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
     return !!(<IChromeError>e).data;
 }
 
-export class ChromeDebugSession extends LoggingDebugSession {
-    private _debugAdapter: IDebugAdapter;
+export class ChromeDebugSession extends LoggingDebugSession implements IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter> {
+    private readonly _readyForUserTimeoutInMilliseconds = 5 * 60 * 1000; // 5 Minutes = 5 * 60 seconds = 5 * 60 * 1000 milliseconds
+
+    private _debugAdapter: IDebugAdapter & IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>;
     private _extensionName: string;
+    public readonly events: StepProgressEventsEmitter;
+    private reporter = new ExecutionTimingsReporter();
+    private haveTimingsWhileStartingUpBeenReported = false;
+
+    public static readonly FinishedStartingUpEventName = 'finishedStartingUp';
 
     /**
      * This needs a bit of explanation -
@@ -73,6 +81,8 @@ export class ChromeDebugSession extends LoggingDebugSession {
         logVersionInfo();
         this._extensionName = opts.extensionName;
         this._debugAdapter = new (<any>opts.adapter)(opts, this);
+        this.events = new StepProgressEventsEmitter([this._debugAdapter.events]);
+        this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = err => {
             let errMsg;
@@ -138,12 +148,23 @@ export class ChromeDebugSession extends LoggingDebugSession {
     // { command: request.command, type: request.type };
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
+        const startTime = Date.now();
+        const isSequentialRequest = eventName === "clientRequest/initialize" || eventName === "clientRequest/launch" || eventName === "clientRequest/attach";
         const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
+        if (isSequentialRequest) {
+            this.events.emitStepStarted(eventName);
+        }
 
         let failed = false;
 
         const sendTelemetry = () => {
-            properties.timeTakenInMilliseconds = utils.calculateElapsedTime(startProcessingTime).toString();
+            const timeTakenInMilliseconds = utils.calculateElapsedTime(startProcessingTime);
+            properties.timeTakenInMilliseconds = timeTakenInMilliseconds.toString();
+            if (isSequentialRequest) {
+                this.events.emitStepCompleted(eventName);
+            } else {
+                this.events.emitRequestCompleted(eventName, startTime, timeTakenInMilliseconds);
+            }
             telemetry.reportEvent(eventName, properties);
         };
 
@@ -201,6 +222,33 @@ export class ChromeDebugSession extends LoggingDebugSession {
 
     private sendUnknownCommandResponse(response: DebugProtocol.Response, command: string): void {
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
+    }
+
+    public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | "timeout"): void {
+        if (!this.haveTimingsWhileStartingUpBeenReported) {
+            const report = this.reporter.generateReport();
+            const telemetryData = { requestedContentWasDetected: requestedContentWasDetected.toString() };
+            for (const reportProperty in report) {
+                telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
+            }
+
+            telemetry.reportEvent('report-start-up-timings', telemetryData);
+            this.haveTimingsWhileStartingUpBeenReported = true;
+        }
+    }
+
+    private configureExecutionTimingsReporting(): void {
+        this.reporter.subscribeTo(this.events);
+        this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, () => {
+            this.reportTimingsWhileStartingUpIfNeeded(true);
+        });
+
+        setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded("timeout"), this._readyForUserTimeoutInMilliseconds);
+    }
+
+    public shutdown(): void {
+        this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false);
+        super.shutdown();
     }
 }
 

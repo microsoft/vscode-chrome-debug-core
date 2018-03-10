@@ -15,6 +15,20 @@
             ],
             "outFiles": ["${workspaceFolder}/out/**/*.js"]
         },
+        {
+            "name": "Grepped Tests",
+            "type": "node",
+            "request": "launch",
+            "protocol": "inspector",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [ "--no-timeouts", "${workspaceFolder}/out/**/*.js", "--ui", "tdd",  "--grep", "<tests to grep for>" ],
+            "cwd": "${workspaceFolder}",
+            "smartStep": true,
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ],
+            "outFiles": ["${workspaceFolder}/out/**/*.js"]
+        },
         // Since debugging is difficult when using npm link from the project that consumes this extension, here's a workaround.
         // Replace the paths below with the paths to your own project.
         {
