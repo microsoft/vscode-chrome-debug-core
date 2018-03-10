@@ -100,7 +100,7 @@ class SubscriptionManager {
 }
 
 export interface AllRequestProperties {
-    [propertyName: string]: string[];
+    [propertyName: string]: number[];
 }
 
 export class ExecutionTimingsReporter {
@@ -141,8 +141,8 @@ export class ExecutionTimingsReporter {
 
     public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number): void {
         const propertyPrefix = `Request.${requestName}.`;
-        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "startTime", startTime.toString());
-        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "timeTakenInMilliseconds", timeTakenInMilliseconds.toString());
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "startTime", startTime);
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "timeTakenInMilliseconds", timeTakenInMilliseconds);
     }
 
     private addElementToArrayProperty<T>(object: {[propertyName: string]: T[]}, propertyName: string, elementToAdd: T): void {
