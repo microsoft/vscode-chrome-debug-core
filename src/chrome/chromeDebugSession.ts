@@ -149,7 +149,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
         const startTime = Date.now();
-        const isSequentialRequest = eventName == "clientRequest/initialize" || eventName == "clientRequest/launch";
+        const isSequentialRequest = eventName === "clientRequest/initialize" || eventName === "clientRequest/launch";
         const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
         if (isSequentialRequest) {
             this.events.emitStepStarted(eventName);

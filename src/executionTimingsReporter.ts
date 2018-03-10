@@ -139,7 +139,7 @@ export class ExecutionTimingsReporter {
         return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
     }
 
-    public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number) {
+    public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number): void {
         const propertyPrefix = `Request.${requestName}.`;
         this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "startTime", startTime.toString());
         this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "timeTakenInMilliseconds", timeTakenInMilliseconds.toString());
