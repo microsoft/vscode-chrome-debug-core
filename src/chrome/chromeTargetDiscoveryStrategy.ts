@@ -5,7 +5,7 @@
 import {Logger} from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
-import {StepStartedEventsEmitter, StepProgressEventsEmitter, ObservableEvents} from '../executionTimingsReporter';
+import {IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents} from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -14,7 +14,7 @@ import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnecti
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
-export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, ObservableEvents<StepStartedEventsEmitter> {
+export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObservableEvents<IStepStartedEventsEmitter> {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
     public readonly events = new StepProgressEventsEmitter();

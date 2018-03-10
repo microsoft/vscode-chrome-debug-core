@@ -15,7 +15,7 @@ import {LineColTransformer} from '../transformers/lineNumberTransformer';
 import {IDebugAdapter} from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
-import { ExecutionTimingsReporter, StepProgressEventsEmitter, ObservableEvents, StepStartedEventsEmitter, FinishedStartingUpEventsEmitter} from '../executionTimingsReporter';
+import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter} from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -48,10 +48,10 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
     return !!(<IChromeError>e).data;
 }
 
-export class ChromeDebugSession extends LoggingDebugSession implements ObservableEvents<StepStartedEventsEmitter & FinishedStartingUpEventsEmitter> {
+export class ChromeDebugSession extends LoggingDebugSession implements IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter> {
     private readonly _readyForUserTimeoutInMilliseconds = 5 * 60 * 1000; // 5 Minutes = 5 * 60 seconds = 5 * 60 * 1000 milliseconds
 
-    private _debugAdapter: IDebugAdapter & ObservableEvents<StepStartedEventsEmitter & FinishedStartingUpEventsEmitter>;
+    private _debugAdapter: IDebugAdapter & IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>;
     private _extensionName: string;
     public readonly events: StepProgressEventsEmitter;
     private reporter = new ExecutionTimingsReporter();
