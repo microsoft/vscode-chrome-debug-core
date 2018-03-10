@@ -9,6 +9,8 @@ export type TimingsReport = {[stepName: string]: [number] | number};
 
 export const stepStartedEventName = 'stepStarted';
 export const milestoneReachedEventName = 'milestoneReached';
+export const stepCompletedEventName = 'stepCompleted';
+export const requestCompletedEventName = 'requestCompleted';
 
 export interface StepStartedEventArguments {
     stepName: string;
@@ -16,6 +18,16 @@ export interface StepStartedEventArguments {
 
 export interface MilestoneReachedEventArguments {
     milestoneName: string;
+}
+
+export interface StepCompletedEventArguments {
+    stepName: string;
+}
+
+export interface RequestCompletedEventArguments {
+    requestName: string;
+    startTime: number;
+    timeTakenInMilliseconds: number;
 }
 
 export interface ObservableEvents<T> { // T is an interface that declares the on methods (listeners) that we can subscribe to
@@ -28,8 +40,8 @@ export interface StepStartedEventsEmitter {
 }
 
 export interface NavigatedToUserRequestedUrlEventsEmitter {
-    on(event: 'navigatedToUserRequestedUrl', listener: () => void): this;
-    once(event: 'navigatedToUserRequestedUrl', listener: () => void): this;
+    on(event: 'finishedStartingUp', listener: () => void): this;
+    once(event: 'finishedStartingUp', listener: () => void): this;
 }
 
 export class StepProgressEventsEmitter extends EventEmitter {
@@ -43,6 +55,14 @@ export class StepProgressEventsEmitter extends EventEmitter {
 
     public emitMilestoneReached(milestoneName: string): void {
         this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as MilestoneReachedEventArguments);
+    }
+
+    public emitStepCompleted(stepName: string): void {
+        this.emit(stepCompletedEventName, { stepName: stepName } as StepCompletedEventArguments);
+    }
+
+    public emitRequestCompleted(requestName: string, requestStartTime: number, timeTakenByRequestInMilliseconds: number): void {
+        this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as RequestCompletedEventArguments);
     }
 
     private subscribeToAllNestedEmitters(event: string, listener: Function): void {
@@ -87,10 +107,33 @@ export class StepProgressEventsEmitter extends EventEmitter {
             "WaitingAfter.ClientRequest.configurationDone"] // The order in which steps were recorder during this execution
  */
 
+class SubscriptionManager {
+    private _removeSubscriptionActions = [] as [() => void];
+
+    public on(eventEmitter: EventEmitter, event: string | symbol, listener: Function): void {
+        eventEmitter.on(event, listener);
+        this._removeSubscriptionActions.push(() => eventEmitter.removeListener(event, listener));
+    }
+
+    public removeAll(): void {
+        for (const removeSubscriptionAction of this._removeSubscriptionActions) {
+            removeSubscriptionAction();
+        }
+
+        this._removeSubscriptionActions = [] as [() => void];
+    }
+}
+
+export interface AllRequestProperties {
+    [propertyName: string]: string[];
+}
+
 export class ExecutionTimingsReporter {
     private readonly _allStartTime: HighResTimer;
     private readonly _eventsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
     private readonly _stepsList = [] as [string];
+    private readonly _subscriptionManager = new SubscriptionManager();
+    private readonly _requestProperties = {} as AllRequestProperties;
 
     private _currentStepStartTime: HighResTimer;
     private _currentStepName = "BeforeFirstStep";
@@ -108,8 +151,7 @@ export class ExecutionTimingsReporter {
 
     private recordTimeTaken(eventName: string, sinceWhen: HighResTimer): void {
         const timeTakenInMilliseconds = calculateElapsedTime(sinceWhen);
-        const executionTimes = this._eventsExecutionTimesInMilliseconds[eventName] = this._eventsExecutionTimesInMilliseconds[eventName] || [] as [number];
-        executionTimes.push(timeTakenInMilliseconds);
+        this.addElementToArrayProperty(this._eventsExecutionTimesInMilliseconds, eventName, timeTakenInMilliseconds);
     }
 
     private recordTotalTimeUntilMilestone(milestoneName: string): void {
@@ -118,17 +160,36 @@ export class ExecutionTimingsReporter {
 
     public generateReport(): {[stepName: string]: [number] | number} {
         this.recordPreviousStepAndConfigureNewStep("AfterLastStep");
+        this._subscriptionManager.removeAll(); // Remove all subscriptions so we don't get any new events
+        return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
+    }
 
-        return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._eventsExecutionTimesInMilliseconds);
+    public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number) {
+        const propertyPrefix = `Request.${requestName}.`;
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "startTime", startTime.toString());
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "timeTakenInMilliseconds", timeTakenInMilliseconds.toString());
+    }
+
+    private addElementToArrayProperty<T>(object: {[propertyName: string]: T[]}, propertyName: string, elementToAdd: T): void {
+        const propertiesArray = object[propertyName] = object[propertyName] || [] as T[];
+        propertiesArray.push(elementToAdd);
     }
 
     public subscribeTo(eventEmitter: EventEmitter): void {
-        eventEmitter.on(stepStartedEventName, (args: StepStartedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
             this.recordPreviousStepAndConfigureNewStep(args.stepName);
         });
 
-        eventEmitter.on(milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
             this.recordTotalTimeUntilMilestone(args.milestoneName);
+        });
+
+        this._subscriptionManager.on(eventEmitter, stepCompletedEventName, (args: StepCompletedEventArguments) => {
+            this.recordTotalTimeUntilMilestone(`WaitingAfter.${args.stepName}`);
+        });
+
+        this._subscriptionManager.on(eventEmitter, requestCompletedEventName, (args: RequestCompletedEventArguments) => {
+            this.recordRequestCompleted(args.requestName, args.startTime, args.timeTakenInMilliseconds);
         });
     }
 }

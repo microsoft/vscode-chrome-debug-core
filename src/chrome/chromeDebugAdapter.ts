@@ -319,7 +319,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         */
         telemetry.reportEvent('debugStarted', { request: 'attach', args: Object.keys(args) });
-        return this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
+        await this.doAttach(args.port, args.url, args.address, args.timeout, args.websocketUrl, args.extraCRDPChannelPort);
+        this.events.emitMilestoneReached(ChromeDebugSession.FinishedStartingUpEventName);
     }
 
     protected commonArgs(args: ICommonRequestArgs): void {
@@ -516,6 +517,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             await initialSourceMapsP;
 
             this._session.sendEvent(new InitializedEvent());
+            this.events.emitStepCompleted("NotifyInitialized");
             await Promise.all(this._earlyScripts.map(script => this.sendLoadedSourceEvent(script)));
             this._earlyScripts = null;
         }
