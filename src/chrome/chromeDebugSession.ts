@@ -232,7 +232,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
                 telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
             }
 
-            telemetry.reportEvent('timings-while-starting-up', telemetryData);
+            telemetry.reportEvent('report-start-up-timings', telemetryData);
             this.haveTimingsWhileStartingUpBeenReported = true;
         }
     }
