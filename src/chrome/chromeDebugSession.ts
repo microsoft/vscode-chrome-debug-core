@@ -55,7 +55,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
     private _extensionName: string;
     public readonly events: StepProgressEventsEmitter;
     private reporter = new ExecutionTimingsReporter();
-    private haveTimingsWhileStartingUp = false;
+    private haveTimingsWhileStartingUpBeenReported = false;
 
     public static readonly FinishedStartingUpEventName = 'finishedStartingUp';
 
@@ -225,15 +225,15 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
     }
 
     public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | "timeout"): void {
-        if (!this.haveTimingsWhileStartingUp) {
+        if (!this.haveTimingsWhileStartingUpBeenReported) {
             const report = this.reporter.generateReport();
-            const telemetryData = { userPageWasDetected: requestedContentWasDetected.toString() };
+            const telemetryData = { requestedContentWasDetected: requestedContentWasDetected.toString() };
             for (const reportProperty in report) {
                 telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
             }
 
             telemetry.reportEvent('timings-while-starting-up', telemetryData);
-            this.haveTimingsWhileStartingUp = true;
+            this.haveTimingsWhileStartingUpBeenReported = true;
         }
     }
 
@@ -247,7 +247,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements Observabl
     }
 
     public shutdown(): void {
-        this.reportTimingsWhileStartingUpIfNeeded(/*userPageWasDetected*/false);
+        this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false);
         super.shutdown();
     }
 }
