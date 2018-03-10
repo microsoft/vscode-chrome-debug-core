@@ -41,7 +41,7 @@ export interface StepStartedEventsEmitter {
     removeListener(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
 }
 
-export interface NavigatedToUserRequestedUrlEventsEmitter {
+export interface FinishedStartingUpEventsEmitter {
     on(event: 'finishedStartingUp', listener: () => void): this;
     once(event: 'finishedStartingUp', listener: () => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
