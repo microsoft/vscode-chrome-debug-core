@@ -12,61 +12,61 @@ export const milestoneReachedEventName = 'milestoneReached';
 export const stepCompletedEventName = 'stepCompleted';
 export const requestCompletedEventName = 'requestCompleted';
 
-export interface StepStartedEventArguments {
+export interface IStepStartedEventArguments {
     stepName: string;
 }
 
-export interface MilestoneReachedEventArguments {
+export interface IMilestoneReachedEventArguments {
     milestoneName: string;
 }
 
-export interface StepCompletedEventArguments {
+export interface IStepCompletedEventArguments {
     stepName: string;
 }
 
-export interface RequestCompletedEventArguments {
+export interface IRequestCompletedEventArguments {
     requestName: string;
     startTime: number;
     timeTakenInMilliseconds: number;
 }
 
-export interface ObservableEvents<T> { // T is an interface that declares the on methods (listeners) that we can subscribe to
+export interface IObservableEvents<T> { // T is an interface that declares the on methods (listeners) that we can subscribe to
     events: T;
 }
 
-export interface StepStartedEventsEmitter {
-    on(event: 'stepStarted', listener: (args: StepStartedEventArguments) => void): this;
-    on(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
-    removeListener(event: 'stepStarted', listener: (args: StepStartedEventArguments) => void): this;
-    removeListener(event: 'milestoneReached', listener: (args: MilestoneReachedEventArguments) => void): this;
+export interface IStepStartedEventsEmitter {
+    on(event: 'stepStarted', listener: (args: IStepStartedEventArguments) => void): this;
+    on(event: 'milestoneReached', listener: (args: IMilestoneReachedEventArguments) => void): this;
+    removeListener(event: 'stepStarted', listener: (args: IStepStartedEventArguments) => void): this;
+    removeListener(event: 'milestoneReached', listener: (args: IMilestoneReachedEventArguments) => void): this;
 }
 
-export interface FinishedStartingUpEventsEmitter {
+export interface IFinishedStartingUpEventsEmitter {
     on(event: 'finishedStartingUp', listener: () => void): this;
     once(event: 'finishedStartingUp', listener: () => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
 }
 
-export class StepProgressEventsEmitter extends EventEmitter {
-    constructor(private readonly _nestedEmitters: [StepStartedEventsEmitter] = [] as [StepStartedEventsEmitter]) {
+export class StepProgressEventsEmitter extends EventEmitter implements IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter {
+    constructor(private readonly _nestedEmitters: [IStepStartedEventsEmitter] = [] as [IStepStartedEventsEmitter]) {
         super();
     }
 
     public emitStepStarted(stepName: string): void {
-        this.emit(stepStartedEventName, { stepName: stepName } as StepStartedEventArguments);
+        this.emit(stepStartedEventName, { stepName: stepName } as IStepStartedEventArguments);
     }
 
     public emitMilestoneReached(milestoneName: string): void {
-        this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as MilestoneReachedEventArguments);
+        this.emit(milestoneReachedEventName, { milestoneName: milestoneName } as IMilestoneReachedEventArguments);
     }
 
     public emitStepCompleted(stepName: string): void {
-        this.emit(stepCompletedEventName, { stepName: stepName } as StepCompletedEventArguments);
+        this.emit(stepCompletedEventName, { stepName: stepName } as IStepCompletedEventArguments);
     }
 
     public emitRequestCompleted(requestName: string, requestStartTime: number, timeTakenByRequestInMilliseconds: number): void {
-        this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as RequestCompletedEventArguments);
+        this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as IRequestCompletedEventArguments);
     }
 
     public on(event: string, listener: Function): this {
@@ -99,7 +99,7 @@ class SubscriptionManager {
     }
 }
 
-export interface AllRequestProperties {
+export interface IAllRequestProperties {
     [propertyName: string]: number[];
 }
 
@@ -108,7 +108,7 @@ export class ExecutionTimingsReporter {
     private readonly _eventsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
     private readonly _stepsList = [] as [string];
     private readonly _subscriptionManager = new SubscriptionManager();
-    private readonly _requestProperties = {} as AllRequestProperties;
+    private readonly _requestProperties = {} as IAllRequestProperties;
 
     private _currentStepStartTime: HighResTimer;
     private _currentStepName = "BeforeFirstStep";
@@ -151,19 +151,19 @@ export class ExecutionTimingsReporter {
     }
 
     public subscribeTo(eventEmitter: EventEmitter): void {
-        this._subscriptionManager.on(eventEmitter, stepStartedEventName, (args: StepStartedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, stepStartedEventName, (args: IStepStartedEventArguments) => {
             this.recordPreviousStepAndConfigureNewStep(args.stepName);
         });
 
-        this._subscriptionManager.on(eventEmitter, milestoneReachedEventName, (args: MilestoneReachedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, milestoneReachedEventName, (args: IMilestoneReachedEventArguments) => {
             this.recordTotalTimeUntilMilestone(args.milestoneName);
         });
 
-        this._subscriptionManager.on(eventEmitter, stepCompletedEventName, (args: StepCompletedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, stepCompletedEventName, (args: IStepCompletedEventArguments) => {
             this.recordTotalTimeUntilMilestone(`WaitingAfter.${args.stepName}`);
         });
 
-        this._subscriptionManager.on(eventEmitter, requestCompletedEventName, (args: RequestCompletedEventArguments) => {
+        this._subscriptionManager.on(eventEmitter, requestCompletedEventName, (args: IRequestCompletedEventArguments) => {
             this.recordRequestCompleted(args.requestName, args.startTime, args.timeTakenInMilliseconds);
         });
     }
