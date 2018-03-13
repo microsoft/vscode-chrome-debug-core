@@ -74,7 +74,7 @@ function doBuild(buildNls, failOnError) {
         tsResult.js
             .pipe(buildNls ? nls.rewriteLocalizeCalls() : es.through())
             .pipe(buildNls ? nls.createAdditionalLanguageFiles(defaultLanguages, 'i18n', 'out') : es.through())
-            .pipe(buildNls ? nls.bundleMetaDataFiles('vscode-chrome-debug-core', 'out') : es.through()) // no outDir here because outDir is specified in the tsconfig
+            .pipe(buildNls ? nls.bundleMetaDataFiles('vscode-chrome-debug-core', 'out') : es.through())
             .pipe(buildNls ? nls.bundleLanguageFiles() : es.through())
 
             .pipe(sourcemaps.write('.', { includeContent: true, sourceRoot: '.' }))
