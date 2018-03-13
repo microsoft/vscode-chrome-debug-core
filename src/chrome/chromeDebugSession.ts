@@ -204,11 +204,14 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             return;
         }
 
-        const errMsg = isChromeError(error) ?
+        const errUserMsg = isChromeError(error) ?
             error.message + ': ' + error.data :
-            (error.stack || error.message);
+            (error.message || error.stack);
 
-        logger.error(`Error processing "${requestType}": ${errMsg}`);
+        const errDiagnosticMsg = isChromeError(error) ?
+            errUserMsg : (error.stack || error.message);
+
+        logger.error(`Error processing "${requestType}": ${errDiagnosticMsg}`);
 
         // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
         // come from the adapter, so add extensionName
@@ -216,7 +219,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             response,
             1104,
             '[{_extensionName}] Error processing "{_requestType}": {_stack}',
-            { _extensionName: this._extensionName, _requestType: requestType, _stack: errMsg },
+            { _extensionName: this._extensionName, _requestType: requestType, _stack: errUserMsg },
             ErrorDestination.Telemetry);
     }
 
