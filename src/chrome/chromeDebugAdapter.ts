@@ -36,7 +36,7 @@ import {BreakOnLoadHelper} from './breakOnLoadHelper';
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
-let localize = nls.config(process.env.VSCODE_NLS_CONFIG)();
+let localize = nls.loadMessageBundle();
 
 interface IPropCount {
     indexedVariables: number;
