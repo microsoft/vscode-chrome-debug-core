@@ -739,7 +739,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             const resolvePendingBPs = async (source: string) => {
                 source = source && this.fixPathCasing(source);
-                const pendingBP = this._pendingBreakpointsByUrl.get(source);
+                const pendingBP = this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source)) || this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source, true));
                 if (pendingBP && !pendingBP.bpsSet) {
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
