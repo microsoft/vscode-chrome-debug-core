@@ -258,5 +258,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 function logVersionInfo(): void {
     logger.log(`OS: ${os.platform()} ${os.arch()}`);
     logger.log(`Adapter node: ${process.version} ${process.arch}`);
-    logger.log('vscode-chrome-debug-core: ' + require('../../../package.json').version);
+    const coreVersion = require('../../../package.json').version;
+    logger.log('vscode-chrome-debug-core: ' + coreVersion);
+    telemetry.addCustomGlobalProperty( { "Versions.DebugAdapterCore": coreVersion });
 }

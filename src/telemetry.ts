@@ -4,6 +4,7 @@
 
 import {DebugProtocol} from 'vscode-debugprotocol';
 import {OutputEvent} from 'vscode-debugadapter';
+import { fillErrorDetails } from './utils';
 
 export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
 export interface  IExecutionResultTelemetryProperties {
@@ -25,16 +26,58 @@ export interface ITelemetryReporter {
 
 export class TelemetryReporter implements ITelemetryReporter {
     private _sendEvent: (event: DebugProtocol.Event) => void;
+    private _globalTelemetryProperties: any = {};
 
     reportEvent(name: string, data?: any): void {
         if (this._sendEvent) {
-            const event = new OutputEvent(name, 'telemetry', data);
+            const combinedData = Object.assign({}, this._globalTelemetryProperties, data);
+            const event = new OutputEvent(name, 'telemetry', combinedData);
             this._sendEvent(event);
         }
     }
 
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void {
         this._sendEvent = _sendEvent;
+    }
+
+    public addCustomGlobalProperty(additionalGlobalTelemetryProperties: any): void {
+        Object.assign(this._globalTelemetryProperties, additionalGlobalTelemetryProperties);
+    }
+}
+
+// If you add an async global property, all events after that will include it
+export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporter {
+    private _actionsQueue = Promise.resolve();
+
+    constructor(private _telemetryReporter: TelemetryReporter) {
+        // We just store the parameter
+    }
+
+    public reportEvent(name: string, data?: any): void {
+        this._actionsQueue = this._actionsQueue.then(() => // We block the report event until all the addCustomGlobalProperty have finished
+            this._telemetryReporter.reportEvent(name, data));
+    }
+
+    public setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void {
+        this._telemetryReporter.setupEventHandler(_sendEvent);
+    }
+
+    public addCustomGlobalProperty(additionalGlobalPropertiesPromise: Promise<any> | any): void {
+        this._actionsQueue = this._actionsQueue.then(async () => {
+            try {
+                this._telemetryReporter.addCustomGlobalProperty(await additionalGlobalPropertiesPromise);
+            } catch (rejection) {
+                this.reportErrorWhileWaitingForProperty(rejection);
+            }
+        });
+    }
+
+    private reportErrorWhileWaitingForProperty(rejection: any): void {
+        let properties: IExecutionResultTelemetryProperties = {};
+        properties.successful = 'false';
+        properties.exceptionType = 'firstChance';
+        fillErrorDetails(properties, rejection);
+        this._telemetryReporter.reportEvent("error-while-adding-custom-global-property", properties);
     }
 }
 
@@ -55,7 +98,7 @@ export class BatchTelemetryReporter {
     private _eventBuckets: {[eventName: string]: any};
     private _timer: NodeJS.Timer;
 
-    public constructor(private _telemetryReporter: TelemetryReporter, private _cadenceInMilliseconds: number = DefaultTelemetryIntervalInMilliseconds) {
+    public constructor(private _telemetryReporter: ITelemetryReporter, private _cadenceInMilliseconds: number = DefaultTelemetryIntervalInMilliseconds) {
         this.reset();
         this.setup();
     }
@@ -163,4 +206,4 @@ export class BatchTelemetryReporter {
     }
 }
 
-export const telemetry = new TelemetryReporter();
+export const telemetry = new AsyncGlobalPropertiesTelemetryReporter(new TelemetryReporter());
