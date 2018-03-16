@@ -63,7 +63,7 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
     }
 
     public addCustomGlobalProperty(additionalGlobalPropertiesPromise: Promise<any> | any): void {
-        const reportedPropertyP = additionalGlobalPropertiesPromise.then(
+        const reportedPropertyP = Promise.resolve(additionalGlobalPropertiesPromise).then(
             property => this._telemetryReporter.addCustomGlobalProperty(property),
             rejection => this.reportErrorWhileWaitingForProperty(rejection));
         this._actionsQueue = Promise.all([this._actionsQueue, reportedPropertyP]);
