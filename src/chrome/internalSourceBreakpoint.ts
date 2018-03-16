@@ -4,9 +4,9 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
-export class InternalSourceBreakpoint implements DebugProtocol.SourceBreakpoint {
+export class InternalSourceBreakpoint {
     readonly line: number;
-    readonly column: number;
+    readonly column?: number;
     readonly condition?: string;
     readonly hitCondition?: string;
 

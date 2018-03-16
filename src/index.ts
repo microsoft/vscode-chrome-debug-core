@@ -11,6 +11,7 @@ import {ChromeDebugSession, IChromeDebugSessionOpts} from './chrome/chromeDebugS
 import * as chromeTargetDiscoveryStrategy from './chrome/chromeTargetDiscoveryStrategy';
 import * as chromeUtils from './chrome/chromeUtils';
 import * as stoppedEvent from './chrome/stoppedEvent';
+import { InternalSourceBreakpoint } from './chrome/internalSourceBreakpoint';
 
 import {BasePathTransformer} from './transformers/basePathTransformer';
 import {UrlPathTransformer} from './transformers/urlPathTransformer';
@@ -36,6 +37,7 @@ export {
     logger,
     stoppedEvent,
     LoadedSourceEventReason,
+    InternalSourceBreakpoint,
 
     UrlPathTransformer,
     BasePathTransformer,
