@@ -47,7 +47,7 @@ export class TelemetryReporter implements ITelemetryReporter {
 
 // If you add an async global property, all events after that will include it
 export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporter {
-    private _actionsQueue = Promise.resolve();
+    private _actionsQueue = Promise.resolve() as Promise<any>;
 
     constructor(private _telemetryReporter: TelemetryReporter) {
         // We just store the parameter
@@ -63,13 +63,10 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
     }
 
     public addCustomGlobalProperty(additionalGlobalPropertiesPromise: Promise<any> | any): void {
-        this._actionsQueue = this._actionsQueue.then(async () => {
-            try {
-                this._telemetryReporter.addCustomGlobalProperty(await additionalGlobalPropertiesPromise);
-            } catch (rejection) {
-                this.reportErrorWhileWaitingForProperty(rejection);
-            }
-        });
+        const reportedPropertyP = additionalGlobalPropertiesPromise.then(
+            property => this._telemetryReporter.addCustomGlobalProperty(property),
+            rejection => this.reportErrorWhileWaitingForProperty(rejection));
+        this._actionsQueue = Promise.all([this._actionsQueue, reportedPropertyP]);
     }
 
     private reportErrorWhileWaitingForProperty(rejection: any): void {

@@ -260,5 +260,5 @@ function logVersionInfo(): void {
     logger.log(`Adapter node: ${process.version} ${process.arch}`);
     const coreVersion = require('../../../package.json').version;
     logger.log('vscode-chrome-debug-core: ' + coreVersion);
-    telemetry.addCustomGlobalProperty( { "Versions.DebugAdapterCore": coreVersion });
+    telemetry.addCustomGlobalProperty( { 'Versions.DebugAdapterCore': coreVersion });
 }
