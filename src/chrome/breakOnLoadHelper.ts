@@ -2,7 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
 import {logger} from 'vscode-debugadapter';
 import {ISetBreakpointResult, BreakOnLoadStrategy} from '../debugAdapterInterfaces';
 
@@ -10,6 +9,7 @@ import Crdp from '../../crdp/crdp';
 import {ChromeDebugAdapter} from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
+import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
 
 export interface UrlRegexAndFileSet {
     urlRegex: string;
@@ -220,7 +220,7 @@ export class BreakOnLoadHelper {
      * Handles the AddBreakpoints request when break on load is active
      * Takes the action based on the strategy
      */
-    public async handleAddBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
+    public async handleAddBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
         if (this._breakOnLoadStrategy === 'regex') {
         await this.addStopOnEntryBreakpoint(url);

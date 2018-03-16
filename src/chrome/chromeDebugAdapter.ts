@@ -18,6 +18,7 @@ import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName
 import * as variables from './variables';
 import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
 import {StoppedEvent2, ReasonType} from './stoppedEvent';
+import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -1190,10 +1191,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                 if (targetScriptUrl) {
                     // DebugProtocol sends all current breakpoints for the script. Clear all breakpoints for the script then add all of them
+                    const internalBPs = args.breakpoints.map(bp => new InternalSourceBreakpoint(bp));
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
-                        .then(() => this.addBreakpoints(targetScriptUrl, args.breakpoints))
-                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, args.breakpoints, ids) }));
+                        .then(() => this.addBreakpoints(targetScriptUrl, internalBPs))
+                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, internalBPs, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', "Set breakpoints request timed out"));
 
@@ -1320,7 +1322,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Responses from setBreakpointByUrl are transformed to look like the response from setBreakpoint, so they can be
      * handled the same.
      */
-    protected async addBreakpoints(url: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
+    protected async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         let responsePs: Promise<ISetBreakpointResult>[];
         if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint
@@ -1391,7 +1393,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: DebugProtocol.SourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
+    private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: InternalSourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
         const committedBps = responses
             .filter(response => response && response.breakpointId);
@@ -1465,7 +1467,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
     }
 
-    private addHitConditionBreakpoint(requestBp: DebugProtocol.SourceBreakpoint, response: ISetBreakpointResult): boolean {
+    private addHitConditionBreakpoint(requestBp: InternalSourceBreakpoint, response: ISetBreakpointResult): boolean {
         const result = ChromeDebugAdapter.HITCONDITION_MATCHER.exec(requestBp.hitCondition.trim());
         if (result && result.length >= 3) {
             let op = result[1] || '>=';
