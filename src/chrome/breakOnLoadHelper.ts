@@ -240,7 +240,7 @@ export class BreakOnLoadHelper {
      * Only used when using instrument approach for break on load
      */
     private async setInstrumentationBreakpoint(): Promise<void> {
-        this._chromeDebugAdapter.chrome.DOMDebugger.setInstrumentationBreakpoint({eventName: 'scriptFirstStatement'});
+        await this._chromeDebugAdapter.chrome.DOMDebugger.setInstrumentationBreakpoint({eventName: 'scriptFirstStatement'});
         this._instrumentationBreakpointSet = true;
     }
 
