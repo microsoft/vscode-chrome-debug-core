@@ -14,9 +14,9 @@ import {MappedPosition} from '../../src/sourceMaps/sourceMap';
 suite('SourceMaps', () => {
     // VSCode expects lowercase windows drive names
     const DIRNAME = fixDriveLetterAndSlashes(__dirname);
-    const GENERATED_PATH = path.resolve(DIRNAME, 'testData/app.js');
-    const AUTHORED_PATH = path.resolve(DIRNAME, 'testData/source1.ts');
-    const ALL_SOURCES = [AUTHORED_PATH, path.resolve(DIRNAME, 'testData/source2.ts')];
+    const GENERATED_PATH = path.resolve(DIRNAME, 'testData/app.js').toLowerCase();
+    const AUTHORED_PATH = path.resolve(DIRNAME, 'testData/source1.ts').toLowerCase();
+    const ALL_SOURCES = [AUTHORED_PATH, path.resolve(DIRNAME, 'testData/source2.ts').toLowerCase()];
     const WEBROOT = 'http://localhost';
     const SOURCEMAP_URL = 'app.js.map';
     const sourceMaps = new SourceMaps(WEBROOT);
