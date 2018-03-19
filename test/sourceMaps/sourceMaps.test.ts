@@ -10,13 +10,14 @@ import * as path from 'path';
 import {fixDriveLetterAndSlashes} from '../../src/utils';
 import {SourceMaps} from '../../src/sourceMaps/sourceMaps';
 import {MappedPosition} from '../../src/sourceMaps/sourceMap';
+import { utils } from '../../src';
 
 suite('SourceMaps', () => {
     // VSCode expects lowercase windows drive names
     const DIRNAME = fixDriveLetterAndSlashes(__dirname);
-    const GENERATED_PATH = path.resolve(DIRNAME, 'testData/app.js').toLowerCase();
-    const AUTHORED_PATH = path.resolve(DIRNAME, 'testData/source1.ts').toLowerCase();
-    const ALL_SOURCES = [AUTHORED_PATH, path.resolve(DIRNAME, 'testData/source2.ts').toLowerCase()];
+    const GENERATED_PATH = path.resolve(DIRNAME, 'testData/app.js');
+    const AUTHORED_PATH = path.resolve(DIRNAME, 'testData/source1.ts');
+    const ALL_SOURCES = [AUTHORED_PATH, path.resolve(DIRNAME, 'testData/source2.ts')];
     const WEBROOT = 'http://localhost';
     const SOURCEMAP_URL = 'app.js.map';
     const sourceMaps = new SourceMaps(WEBROOT);
@@ -35,9 +36,16 @@ suite('SourceMaps', () => {
         mockery.disable();
     });
 
+    function assertAreSamePaths(actualPaths: string[], expectedPaths: string[]): void {
+        assert.equal(actualPaths.length, expectedPaths.length);
+        for (let i = 0; i < actualPaths.length; ++i) {
+            assert.equal(utils.canonicalizeUrl(actualPaths[i]), utils.canonicalizeUrl(expectedPaths[i]));
+        }
+    }
+
     test('allMappedSources is case insensitive', () => {
-        assert.deepEqual(sourceMaps.allMappedSources(GENERATED_PATH.toUpperCase()), ALL_SOURCES);
-        assert.deepEqual(sourceMaps.allMappedSources(GENERATED_PATH.toLowerCase()), ALL_SOURCES);
+        assertAreSamePaths(sourceMaps.allMappedSources(GENERATED_PATH.toUpperCase()), ALL_SOURCES);
+        assertAreSamePaths(sourceMaps.allMappedSources(GENERATED_PATH.toLowerCase()), ALL_SOURCES);
     });
 
     test('getGeneratedPathFromAuthoredPath is case insensitive', () => {
@@ -52,7 +60,7 @@ suite('SourceMaps', () => {
     });
 
     test('mapToAuthored is case insensitive', () => {
-        const position: MappedPosition = {line: 0, column: 0, name: null, source: AUTHORED_PATH};
+        const position: MappedPosition = {line: 0, column: 0, name: null, source: utils.canonicalizeUrl(AUTHORED_PATH)};
         assert.deepEqual(sourceMaps.mapToAuthored(GENERATED_PATH.toUpperCase(), 0, 0), position);
         assert.deepEqual(sourceMaps.mapToAuthored(GENERATED_PATH.toLowerCase(), 0, 0), position);
     });
