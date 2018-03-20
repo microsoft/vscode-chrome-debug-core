@@ -118,8 +118,19 @@ export function canonicalizeUrl(urlOrPath: string): string {
 
     urlOrPath = stripTrailingSlash(urlOrPath);
     urlOrPath = fixDriveLetterAndSlashes(urlOrPath);
+    urlOrPath = normalizeIfFSIsCaseInsensitive(urlOrPath);
 
     return urlOrPath;
+}
+
+function normalizeIfFSIsCaseInsensitive(urlOrPath: string): string {
+    return (getPlatform() === Platform.Windows && isFilePath(urlOrPath))
+        ? urlOrPath.toLowerCase()
+        : urlOrPath;
+}
+
+export function isFilePath(candidate: string): boolean {
+    return !!candidate.match(/[A-z]:[\\\/][^\\\/]/);
 }
 
 export function isFileUrl(candidate: string): boolean {
