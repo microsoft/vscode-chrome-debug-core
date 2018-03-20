@@ -54,8 +54,14 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
     }
 
     public reportEvent(name: string, data?: any): void {
+        /*
+         * TODO: Put this code back after VS stops dropping telemetry events that happen after fatal errors, and disconnecting...
+         * VS has a bug where it drops telemetry events that happen after a fatal error, or after the DA starts disconnecting. Our
+         * temporary workaround is to make telemetry sync, so it'll likely be sent before we send the fatal errors, etc...
         this._actionsQueue = this._actionsQueue.then(() => // We block the report event until all the addCustomGlobalProperty have finished
             this._telemetryReporter.reportEvent(name, data));
+         */
+        this._telemetryReporter.reportEvent(name, data);
     }
 
     public setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void {
