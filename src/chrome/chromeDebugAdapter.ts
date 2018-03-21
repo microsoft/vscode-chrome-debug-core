@@ -9,7 +9,7 @@ import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpo
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IGetTTDTraceWriteURIResponseBody, IGetTTDReplayConfigurationResponseBody, IIsTTDLiveModeResponseBody, IIsTTDReplayModeResponseBody, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
 import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
 import {ChromeConnection} from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -34,6 +34,7 @@ import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransform
 import {FallbackToClientPathTransformer} from '../transformers/fallbackToClientPathTransformer';
 import {BreakOnLoadHelper} from './breakOnLoadHelper';
 
+import * as fs from 'fs';
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
@@ -1569,16 +1570,129 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
+    public writeTTDLog(args: any): Promise<void> {
+        const okSetup = this.ensureTraceTarget(args["uri"]);
+        if (!okSetup[0]) {
+            return Promise.reject(new Error(okSetup[1]));
+        }
+        else {
+            return (<TimeTravelRuntime>this.chrome).TimeTravel.writeTTDLog(args);
+        }
+    }
+
+    ////
+    //Helper for getTTDTraceWriteURI -- TODO: ensure this isn't duplicating other functionality somewhere
+    //ensure directory exists and is empty...
+    private ensureTraceTarget(pth): [boolean, string | undefined] {
+        const okDir = this.createTargetDirectory(pth);
+        if (!okDir) {
+            return [false, `Failed to create directory for Time-Travel info: ${pth}`];
+        }
+
+        const okClean = this.deleteTargetDirectoryContents(pth);
+        if (!okClean) {
+            return [false, `Failed to clean directory for Time-Travel info: ${pth}`];
+        }
+
+        return [true, undefined];
+    }
+
+    private createTargetDirectory(pth): boolean {
+    //see if it just exists and, if so, just return true
+        const accessOk = fs.constants.W_OK;
+        try {
+            fs.accessSync(pth, accessOk);
+            if (fs.statSync(pth).isDirectory()) {
+                return true;
+            }
+        } catch (ei) { }
+
+        //walk up the directory to see where the first valid part of the path is
+        let prefixPath = pth;
+        let suffixPaths = [];
+        let baseFound = false;
+        do {
+            //check for bad prefix
+            if (prefixPath === path.dirname(prefixPath)) {
+                return false;
+            }
+
+            suffixPaths.push(path.basename(prefixPath)); //reverse order
+            prefixPath = path.dirname(prefixPath);
+
+            try {
+                fs.accessSync(prefixPath, accessOk);
+                baseFound = fs.statSync(prefixPath).isDirectory();
+            } catch (ei) { }
+        } while (!baseFound);
+
+        //now extend the prefix with all the suffix parts
+        while (suffixPaths.length > 0) {
+            try {
+                prefixPath = path.resolve(prefixPath, suffixPaths.pop());
+                fs.mkdirSync(prefixPath);
+            } catch (ec) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private deleteTargetDirectoryContents(pth): boolean {
+        try {
+            const items = fs.readdirSync(pth);
+            for (let i = 0; i < items.length; i++) {
+                let fPath = path.resolve(pth, items[i]);
+                let stats = fs.lstatSync(fPath);
+                if (stats.isFile()) {
+                    fs.unlinkSync(fPath);
+                }
+                else if (stats.isDirectory()) {
+                    let recOk = this.deleteTargetDirectoryContents(fPath);
+                    if (!recOk) {
+                        return false;
+                    }
+                    fs.rmdirSync(fPath);
+                }
+                else {
+                    return false; //something strange in here.
+                }
+            }
+        } catch (ex) {
+            return false;
+        }
+
+        return true;
+    }
+    ////
+
     public stepBack(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack()
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    protected reverseContinue(): Promise<void> {
+    public reverseContinue(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse()
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+    }
+
+    public getTTDTraceWriteURI(): Promise<IGetTTDTraceWriteURIResponseBody> {
+        return Promise.reject("Not implemented for this debug adapter.");
+    }
+
+    public getTTDReplayConfiguration(uri: string): Promise<IGetTTDReplayConfigurationResponseBody> {
+        return Promise.reject("Not implemented for this debug adapter.");
+    }
+
+    public isTTDLiveMode(): Promise<IIsTTDLiveModeResponseBody> {
+        return Promise.resolve({ isInLiveMode: false });
+    }
+
+    public isTTDReplayMode(): Promise<IIsTTDReplayModeResponseBody> {
+        return Promise.resolve({ isInReplayMode: false });
     }
 
     public pause(): Promise<void> {
