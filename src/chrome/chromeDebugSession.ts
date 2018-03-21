@@ -105,17 +105,18 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         };
 
         process.on('uncaughtException', (err: any) => {
+            reportErrorTelemetry(err, 'uncaughtException');
+
             logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
 
-            reportErrorTelemetry(err, 'uncaughtException');
             throw err;
         });
 
         process.addListener('unhandledRejection', (err: Error|DebugProtocol.Message) => {
+            reportErrorTelemetry(err, 'unhandledRejection');
+
             // Node tests are watching for the ********, so fix the tests if it's changed
             logger.error(`******** Unhandled error in debug adapter - Unhandled promise rejection: ${safeGetErrDetails(err)}`);
-
-            reportErrorTelemetry(err, 'unhandledRejection');
         });
     }
 
