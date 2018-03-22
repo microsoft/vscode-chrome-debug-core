@@ -125,7 +125,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
      */
     protected dispatchRequest(request: DebugProtocol.Request): void {
         // We want the request to be non-blocking, so we won't await for reportTelemetry
-        this.reportTelemetry(`clientRequest/${request.command}`, { requestType: request.type }, async (reportFailure) => {
+        this.reportTelemetry(`ClientRequest/${request.command}`, { requestType: request.type }, async (reportFailure) => {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
@@ -150,7 +150,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
         const startTime = Date.now();
-        const isSequentialRequest = eventName === 'clientRequest/initialize' || eventName === 'clientRequest/launch' || eventName === 'clientRequest/attach';
+        const isSequentialRequest = eventName === 'ClientRequest/initialize' || eventName === 'ClientRequest/launch' || eventName === 'ClientRequest/attach';
         const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
         if (isSequentialRequest) {
             this.events.emitStepStarted(eventName);
@@ -231,7 +231,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | 'timeout'): void {
         if (!this.haveTimingsWhileStartingUpBeenReported) {
             const report = this.reporter.generateReport();
-            const telemetryData = { requestedContentWasDetected: requestedContentWasDetected.toString() };
+            const telemetryData = { RequestedContentWasDetected: requestedContentWasDetected.toString() };
             for (const reportProperty in report) {
                 telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
             }
