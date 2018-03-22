@@ -209,4 +209,21 @@ export class BatchTelemetryReporter {
     }
 }
 
+export interface ITelemetryPropertyCollector {
+    getProperties(): {[propertyName: string]: string};
+    addTelemetryProperty(propertyName: string, value: string): void;
+}
+
+export class TelemetryPropertyCollector implements ITelemetryPropertyCollector {
+    private _properties: {[propertyName: string]: string} = {};
+
+    public getProperties() {
+        return this._properties;
+    }
+
+    public addTelemetryProperty(propertyName: string, value: string) {
+        this._properties[propertyName] = value;
+    }
+}
+
 export const telemetry = new AsyncGlobalPropertiesTelemetryReporter(new TelemetryReporter());

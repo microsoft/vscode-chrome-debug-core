@@ -9,7 +9,7 @@ import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakp
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs } from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector } from '../debugAdapterInterfaces';
 import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
 import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -284,7 +284,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return !!this._breakOnLoadHelper;
     }
 
-    public async launch(args: ILaunchRequestArgs): Promise<void> {
+    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<void> {
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);

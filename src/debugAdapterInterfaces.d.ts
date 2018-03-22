@@ -8,11 +8,13 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 import Crdp from '../crdp/crdp';
+import { ITelemetryPropertyCollector } from './telemetry';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };
 
 export type BreakOnLoadStrategy = 'regex' | 'instrument' | 'off';
 
+export { ITelemetryPropertyCollector } from './telemetry';
 /**
  * Properties valid for both Launch and Attach
  */
@@ -179,7 +181,7 @@ export interface IDebugAdapter {
     shutdown(): void;
 
     initialize(args: DebugProtocol.InitializeRequestArguments, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities>;
-    launch(args: ILaunchRequestArgs, requestSeq?: number): PromiseOrNot<void>;
+    launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<void>;
     attach(args: IAttachRequestArgs, requestSeq?: number): PromiseOrNot<void>;
     disconnect(args: DebugProtocol.DisconnectArguments): PromiseOrNot<void>;
     setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, requestSeq?: number): PromiseOrNot<ISetBreakpointsResponseBody>;
