@@ -16,7 +16,7 @@ export class InternalSourceBreakpoint {
         this.hitCondition = breakpoint.hitCondition;
 
         if (breakpoint.logMessage) {
-            this.condition = `console.log(${breakpoint.logMessage})`;
+            this.condition = logMessageToExpression(breakpoint.logMessage);
             if (breakpoint.condition) {
                 this.condition = `(${breakpoint.condition}) && ${this.condition}`;
             }
@@ -24,4 +24,25 @@ export class InternalSourceBreakpoint {
             this.condition = breakpoint.condition;
         }
     }
+}
+
+const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
+
+function logMessageToExpression(msg) {
+    msg = msg.replace('%', '%%');
+
+    let args: string[] = [];
+    let format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
+        const a = group.trim();
+        if (a) {
+            args.push(`(${a})`);
+            return '%s';
+        } else {
+            return '';
+        }
+    });
+
+    format = format.replace('\'', '\\\'');
+
+    return `console.log('${format}', ${args.join(', ')})`;
 }
