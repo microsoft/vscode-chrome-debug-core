@@ -3,8 +3,8 @@
  *--------------------------------------------------------*/
 /* tslint:disable:typedef */
 
-import {EventEmitter} from 'events';
-import {Mock} from 'typemoq';
+import { EventEmitter } from 'events';
+import { Mock } from 'typemoq';
 import Crdp from '../../crdp/crdp';
 
 export interface IMockChromeConnectionAPI {

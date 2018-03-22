@@ -9,8 +9,8 @@ import * as MozSourceMap from 'source-map';
 
 import * as testUtils from '../testUtils';
 
-import {SourceMap} from '../../src/sourceMaps/sourceMap';
-import {ISourceMapPathOverrides} from '../../src/debugAdapterInterfaces';
+import { SourceMap } from '../../src/sourceMaps/sourceMap';
+import { ISourceMapPathOverrides } from '../../src/debugAdapterInterfaces';
 
 /**
  * Unit tests for SourceMap + source-map (the mozilla lib). source-map is included in the test and not mocked

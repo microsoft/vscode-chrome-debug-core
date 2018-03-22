@@ -6,7 +6,7 @@ import * as mockery from 'mockery';
 import * as assert from 'assert';
 import * as _path from 'path';
 
-import {ITarget} from '../../src/chrome/chromeConnection';
+import { ITarget } from '../../src/chrome/chromeConnection';
 import * as testUtils from '../testUtils';
 
 /** ChromeUtils without mocks - use for type only */

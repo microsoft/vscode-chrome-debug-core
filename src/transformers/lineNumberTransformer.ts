@@ -2,10 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
-import {ChromeDebugSession} from '../chrome/chromeDebugSession';
-import {IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody} from '../debugAdapterInterfaces';
+import { ChromeDebugSession } from '../chrome/chromeDebugSession';
+import { IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody } from '../debugAdapterInterfaces';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side

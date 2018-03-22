@@ -4,11 +4,11 @@
 
 import * as path from 'path';
 
-import {BaseSourceMapTransformer} from './baseSourceMapTransformer';
+import { BaseSourceMapTransformer } from './baseSourceMapTransformer';
 
-import {ILaunchRequestArgs, IAttachRequestArgs} from '../debugAdapterInterfaces';
+import { ILaunchRequestArgs, IAttachRequestArgs } from '../debugAdapterInterfaces';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
+import { logger } from 'vscode-debugadapter';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because

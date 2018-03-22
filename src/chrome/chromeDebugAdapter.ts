@@ -2,37 +2,37 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
-import {InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, LoadedSourceEvent} from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, BreakpointEvent, OutputEvent, Logger, logger, LoadedSourceEvent } from 'vscode-debugadapter';
 
-import {ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
+import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody, IGetLoadedSourcesResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs} from '../debugAdapterInterfaces';
-import {IChromeDebugAdapterOpts, ChromeDebugSession} from './chromeDebugSession';
-import {ChromeConnection} from './chromeConnection';
+    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs } from '../debugAdapterInterfaces';
+import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
+import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import Crdp from '../../crdp/crdp';
-import {PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer} from './variables';
+import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer } from './variables';
 import * as variables from './variables';
-import {formatConsoleArguments, formatExceptionDetails} from './consoleHelper';
-import {StoppedEvent2, ReasonType} from './stoppedEvent';
+import { formatConsoleArguments, formatExceptionDetails } from './consoleHelper';
+import { StoppedEvent2, ReasonType } from './stoppedEvent';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { PromiseDefer, promiseDefer } from '../utils';
-import {telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties} from '../telemetry';
-import {StepProgressEventsEmitter} from '../executionTimingsReporter';
+import { telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties } from '../telemetry';
+import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 
-import {LineColTransformer} from '../transformers/lineNumberTransformer';
-import {BasePathTransformer} from '../transformers/basePathTransformer';
-import {RemotePathTransformer} from '../transformers/remotePathTransformer';
-import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
-import {EagerSourceMapTransformer} from '../transformers/eagerSourceMapTransformer';
-import {FallbackToClientPathTransformer} from '../transformers/fallbackToClientPathTransformer';
-import {BreakOnLoadHelper} from './breakOnLoadHelper';
+import { LineColTransformer } from '../transformers/lineNumberTransformer';
+import { BasePathTransformer } from '../transformers/basePathTransformer';
+import { RemotePathTransformer } from '../transformers/remotePathTransformer';
+import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
+import { EagerSourceMapTransformer } from '../transformers/eagerSourceMapTransformer';
+import { FallbackToClientPathTransformer } from '../transformers/fallbackToClientPathTransformer';
+import { BreakOnLoadHelper } from './breakOnLoadHelper';
 
 import * as path from 'path';
 
@@ -198,7 +198,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._committedBreakpointsByUrl;
     }
 
-    public get sourceMapTransformer(): BaseSourceMapTransformer{
+    public get sourceMapTransformer(): BaseSourceMapTransformer {
         return this._sourceMapTransformer;
     }
 
@@ -242,19 +242,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const exceptionBreakpointFilters = [
             {
-                label: localize('exceptions.all', "All Exceptions"),
+                label: localize('exceptions.all', 'All Exceptions'),
                 filter: 'all',
                 default: false
             },
             {
-                label: localize('exceptions.uncaught', "Uncaught Exceptions"),
+                label: localize('exceptions.uncaught', 'Uncaught Exceptions'),
                 filter: 'uncaught',
                 default: false
             }
         ];
         if (this._promiseRejectExceptionFilterEnabled) {
             exceptionBreakpointFilters.push({
-                label: localize('exceptions.promise_rejects', "Promise Rejects"),
+                label: localize('exceptions.promise_rejects', 'Promise Rejects'),
                 filter: 'promise_reject',
                 default: false
             });
@@ -442,7 +442,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
-        this.events.emitStepStarted("Attach");
+        this.events.emitStepStarted('Attach');
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
         if (!this._chromeConnection.isAttached) {
@@ -452,7 +452,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
 
-            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Internal");
+            this.events.emitStepStarted('Attach.ConfigureDebuggingSession.Internal');
 
             this._port = port;
 
@@ -476,7 +476,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
 
-            this.events.emitStepStarted("Attach.ConfigureDebuggingSession.Target");
+            this.events.emitStepStarted('Attach.ConfigureDebuggingSession.Target');
 
             // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
             await Promise.all(this.runConnection());
@@ -518,7 +518,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             await initialSourceMapsP;
 
             this._session.sendEvent(new InitializedEvent());
-            this.events.emitStepCompleted("NotifyInitialized");
+            this.events.emitStepCompleted('NotifyInitialized');
             await Promise.all(this._earlyScripts.map(script => this.sendLoadedSourceEvent(script)));
             this._earlyScripts = null;
         }
@@ -1197,7 +1197,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                         .then(() => this.addBreakpoints(targetScriptUrl, internalBPs))
                         .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, internalBPs, ids) }));
 
-                    const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', "Set breakpoints request timed out"));
+                    const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', 'Set breakpoints request timed out'));
 
                     // Do just one setBreakpointsRequest at a time to avoid interleaving breakpoint removed/breakpoint added requests to Crdp, which causes issues.
                     // Swallow errors in the promise queue chain so it doesn't get blocked, but return the failing promise for error handling.
@@ -1215,7 +1215,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
                             const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', "Breakpoints set but not yet bound"), areAllSet);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', 'Breakpoints set but not yet bound'), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
@@ -1253,12 +1253,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._sourceMapTransformer.getGeneratedPathFromAuthoredPath(args.source.path).then<void>(mappedPath => {
 
             if (!mappedPath) {
-                return utils.errP(localize('validateBP.sourcemapFail', "Breakpoint ignored because generated code not found (source map problem?)."));
+                return utils.errP(localize('validateBP.sourcemapFail', 'Breakpoint ignored because generated code not found (source map problem?).'));
             }
 
             const targetPath = this._pathTransformer.getTargetPathFromClientPath(mappedPath);
             if (!targetPath) {
-                return utils.errP(localize('validateBP.notFound', "Breakpoint ignored because target path not found"));
+                return utils.errP(localize('validateBP.notFound', 'Breakpoint ignored because target path not found'));
             }
 
             return undefined;
@@ -1266,7 +1266,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private generateNextUnboundBreakpointId(): string {
-        const unboundBreakpointUniquePrefix = "__::[vscode_chrome_debug_adapter_unbound_breakpoint]::";
+        const unboundBreakpointUniquePrefix = '__::[vscode_chrome_debug_adapter_unbound_breakpoint]::';
         return `${unboundBreakpointUniquePrefix}${this._nextUnboundBreakpointId++}`;
     }
 
@@ -1372,7 +1372,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         try {
             result = await this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, condition });
         } catch (e) {
-            if (e.message === "Breakpoint at specified location already exists.") {
+            if (e.message === 'Breakpoint at specified location already exists.') {
                 return {
                     actualLocation: { lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, scriptId }
                 };
@@ -1448,7 +1448,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             isSet: true,
                             breakpoint: <DebugProtocol.Breakpoint>{
                                 id: bpId,
-                                message: localize('invalidHitCondition', "Invalid hit condition: {0}", thisBpRequest.hitCondition),
+                                message: localize('invalidHitCondition', 'Invalid hit condition: {0}', thisBpRequest.hitCondition),
                                 verified: false
                             }
                         };
@@ -1842,7 +1842,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (this._exception && this.lookupFrameIndex(args.frameId) === 0) {
             scopes.unshift(<DebugProtocol.Scope>{
-                name: localize('scope.exception', "Exception"),
+                name: localize('scope.exception', 'Exception'),
                 variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
             });
         }
@@ -2409,7 +2409,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             logger.verbose(`Completions: Returning global completions`);
 
             // If no expression was passed, we must be getting global completions at a breakpoint
-            if (typeof args.frameId !== "number" || !this._frameHandles.get(args.frameId)) {
+            if (typeof args.frameId !== 'number' || !this._frameHandles.get(args.frameId)) {
                 return Promise.reject(errors.stackFrameNotValid());
             }
 

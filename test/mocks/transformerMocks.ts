@@ -2,11 +2,11 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {Mock, It} from 'typemoq';
+import { Mock, It } from 'typemoq';
 
-import {LineColTransformer} from '../../src/transformers/lineNumberTransformer';
-import {BaseSourceMapTransformer} from '../../src/transformers/baseSourceMapTransformer';
-import {UrlPathTransformer} from '../../src/transformers/urlPathTransformer';
+import { LineColTransformer } from '../../src/transformers/lineNumberTransformer';
+import { BaseSourceMapTransformer } from '../../src/transformers/baseSourceMapTransformer';
+import { UrlPathTransformer } from '../../src/transformers/urlPathTransformer';
 
 export function getMockLineNumberTransformer(): Mock<LineColTransformer> {
     return Mock.ofType(LineColTransformer);

@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {Logger} from 'vscode-debugadapter';
+import { Logger } from 'vscode-debugadapter';
 
 /**
  * Implements ILogger as a no-op

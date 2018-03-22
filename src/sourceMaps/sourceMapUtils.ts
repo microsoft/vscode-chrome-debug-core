@@ -6,8 +6,8 @@ import * as path from 'path';
 import * as url from 'url';
 
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
+import { logger } from 'vscode-debugadapter';
+import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
 
 /**
  * Resolves a relative path in terms of another file

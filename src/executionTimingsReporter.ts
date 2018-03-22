@@ -111,7 +111,7 @@ export class ExecutionTimingsReporter {
     private readonly _requestProperties = {} as IAllRequestProperties;
 
     private _currentStepStartTime: HighResTimer;
-    private _currentStepName = "BeforeFirstStep";
+    private _currentStepName = 'BeforeFirstStep';
 
     constructor() {
         this._currentStepStartTime = this._allStartTime = process.hrtime();
@@ -134,15 +134,15 @@ export class ExecutionTimingsReporter {
     }
 
     public generateReport(): {[stepName: string]: [number] | number} {
-        this.recordPreviousStepAndConfigureNewStep("AfterLastStep");
+        this.recordPreviousStepAndConfigureNewStep('AfterLastStep');
         this._subscriptionManager.removeAll(); // Remove all subscriptions so we don't get any new events
         return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
     }
 
     public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number): void {
         const propertyPrefix = `Request.${requestName}.`;
-        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "startTime", startTime);
-        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + "timeTakenInMilliseconds", timeTakenInMilliseconds);
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + 'startTime', startTime);
+        this.addElementToArrayProperty(this._requestProperties, propertyPrefix + 'timeTakenInMilliseconds', timeTakenInMilliseconds);
     }
 
     private addElementToArrayProperty<T>(object: {[propertyName: string]: T[]}, propertyName: string, elementToAdd: T): void {

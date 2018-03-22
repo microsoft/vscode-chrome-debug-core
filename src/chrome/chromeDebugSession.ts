@@ -3,19 +3,19 @@
  *--------------------------------------------------------*/
 
 import * as os from 'os';
-import {DebugProtocol} from 'vscode-debugprotocol';
-import {LoggingDebugSession, ErrorDestination, Response, logger} from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { LoggingDebugSession, ErrorDestination, Response, logger } from 'vscode-debugadapter';
 
-import {ChromeDebugAdapter} from './chromeDebugAdapter';
-import {ITargetFilter, ChromeConnection, IChromeError} from './chromeConnection';
-import {BasePathTransformer} from '../transformers/basePathTransformer';
-import {BaseSourceMapTransformer} from '../transformers/baseSourceMapTransformer';
-import {LineColTransformer} from '../transformers/lineNumberTransformer';
+import { ChromeDebugAdapter } from './chromeDebugAdapter';
+import { ITargetFilter, ChromeConnection, IChromeError } from './chromeConnection';
+import { BasePathTransformer } from '../transformers/basePathTransformer';
+import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
+import { LineColTransformer } from '../transformers/lineNumberTransformer';
 
-import {IDebugAdapter} from '../debugAdapterInterfaces';
+import { IDebugAdapter } from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties } from '../telemetry';
 import * as utils from '../utils';
-import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter} from '../executionTimingsReporter';
+import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -150,7 +150,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string}, action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
         const startTime = Date.now();
-        const isSequentialRequest = eventName === "clientRequest/initialize" || eventName === "clientRequest/launch" || eventName === "clientRequest/attach";
+        const isSequentialRequest = eventName === 'clientRequest/initialize' || eventName === 'clientRequest/launch' || eventName === 'clientRequest/attach';
         const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
         if (isSequentialRequest) {
             this.events.emitStepStarted(eventName);
@@ -228,7 +228,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
     }
 
-    public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | "timeout"): void {
+    public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | 'timeout'): void {
         if (!this.haveTimingsWhileStartingUpBeenReported) {
             const report = this.reporter.generateReport();
             const telemetryData = { requestedContentWasDetected: requestedContentWasDetected.toString() };
@@ -247,7 +247,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             this.reportTimingsWhileStartingUpIfNeeded(true);
         });
 
-        setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded("timeout"), this._readyForUserTimeoutInMilliseconds);
+        setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded('timeout'), this._readyForUserTimeoutInMilliseconds);
     }
 
     public shutdown(): void {

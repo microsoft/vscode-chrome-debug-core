@@ -3,17 +3,17 @@
  *--------------------------------------------------------*/
 /* tslint:disable:typedef */
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
 import * as assert from 'assert';
 import * as mockery from 'mockery';
-import {Mock, MockBehavior, It} from 'typemoq';
+import { Mock, MockBehavior, It } from 'typemoq';
 
-import {ISetBreakpointsResponseBody,
-    ILaunchRequestArgs, ISetBreakpointsArgs} from '../../src/debugAdapterInterfaces';
+import { ISetBreakpointsResponseBody,
+    ILaunchRequestArgs, ISetBreakpointsArgs } from '../../src/debugAdapterInterfaces';
 import * as testUtils from '../testUtils';
-import {SourceMaps} from '../../src/sourceMaps/sourceMaps';
-import {MappedPosition} from '../../src/sourceMaps/sourceMap';
+import { SourceMaps } from '../../src/sourceMaps/sourceMaps';
+import { MappedPosition } from '../../src/sourceMaps/sourceMap';
 import * as utils from '../../src/utils';
 
 /* tslint:disable:no-function-expression */
@@ -47,7 +47,7 @@ const RUNTIME_BPS2 = () => <DebugProtocol.SourceBreakpoint[]>[
     ];
 
 // Not mocked, use for type only
-import {BaseSourceMapTransformer as _BaseSourceMapTransformer} from '../../src/transformers/baseSourceMapTransformer';
+import {BaseSourceMapTransformer as _BaseSourceMapTransformer } from '../../src/transformers/baseSourceMapTransformer';
 
 suite('BaseSourceMapTransformer', () => {
     let utilsMock: Mock<typeof utils>;
@@ -325,10 +325,10 @@ class StubSourceMaps {
         return RUNTIME_PATH;
     }
 
-	/*
-	 * Map location in source language to location in generated code.
-	 * line and column are 0 based.
-	 */
+    /*
+     * Map location in source language to location in generated code.
+     * line and column are 0 based.
+     */
     public mapToGenerated(path: string, line: number, column: number): MappedPosition {
         const authored = AUTHORED_BPS();
         let i: number;
@@ -340,10 +340,10 @@ class StubSourceMaps {
         return { source: RUNTIME_PATH, line: mapping.line, column: mapping.column };
     }
 
-	/*
-	 * Map location in generated code to location in source language.
-	 * line and column are 0 based.
-	 */
+    /*
+     * Map location in generated code to location in source language.
+     * line and column are 0 based.
+     */
     public mapToAuthored(path: string, line: number, column: number): MappedPosition {
         const runtime = RUNTIME_BPS();
         let i: number;

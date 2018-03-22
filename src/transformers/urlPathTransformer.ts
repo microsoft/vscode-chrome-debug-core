@@ -2,12 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {BasePathTransformer} from './basePathTransformer';
+import { BasePathTransformer } from './basePathTransformer';
 
-import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
+import { ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { logger } from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
 import * as ChromeUtils from '../chrome/chromeUtils';
 
 import * as path from 'path';

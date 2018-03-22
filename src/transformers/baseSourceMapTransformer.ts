@@ -3,15 +3,15 @@
  *--------------------------------------------------------*/
 
 import * as path from 'path';
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
-import {ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody, IInternalStackFrame} from '../debugAdapterInterfaces';
-import {MappedPosition, ISourcePathDetails} from '../sourceMaps/sourceMap';
-import {SourceMaps} from '../sourceMaps/sourceMaps';
+import { ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
+    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody, IInternalStackFrame } from '../debugAdapterInterfaces';
+import { MappedPosition, ISourcePathDetails } from '../sourceMaps/sourceMap';
+import { SourceMaps } from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {ISourceContainer} from '../chrome/chromeDebugAdapter';
+import { logger } from 'vscode-debugadapter';
+import { ISourceContainer } from '../chrome/chromeDebugAdapter';
 
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
@@ -220,7 +220,7 @@ export class BaseSourceMapTransformer {
                 sourceLocation.source.name = path.basename(mapped.source);
                 sourceLocation.source.path = mapped.source;
                 sourceLocation.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
-                sourceLocation.source.origin = localize('origin.inlined.source.map', "read-only inlined content from source map");
+                sourceLocation.source.origin = localize('origin.inlined.source.map', 'read-only inlined content from source map');
                 sourceLocation.line = mapped.line;
                 sourceLocation.column = mapped.column;
                 sourceLocation.isSourceMapped = true;

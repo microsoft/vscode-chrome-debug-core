@@ -2,10 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
-import {Handles} from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { Handles } from 'vscode-debugadapter';
 
-import {ChromeDebugAdapter, VariableContext} from './chromeDebugAdapter';
+import { ChromeDebugAdapter, VariableContext } from './chromeDebugAdapter';
 import Crdp from '../../crdp/crdp';
 import * as utils from '../utils';
 

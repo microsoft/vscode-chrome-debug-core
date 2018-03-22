@@ -4,19 +4,19 @@
 
 import * as WebSocket from 'ws';
 
-import {telemetry} from '../telemetry';
-import {StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter} from '../executionTimingsReporter';
+import { telemetry } from '../telemetry';
+import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter } from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {ChromeTargetDiscovery} from './chromeTargetDiscoveryStrategy';
+import { logger } from 'vscode-debugadapter';
+import { ChromeTargetDiscovery } from './chromeTargetDiscoveryStrategy';
 
-import {Client, LikeSocket} from 'noice-json-rpc';
+import { Client, LikeSocket } from 'noice-json-rpc';
 
 import Crdp from '../../crdp/crdp';
 
-import {CRDPMultiplexor} from './crdpMultiplexing/crdpMultiplexor';
-import {WebSocketToLikeSocketProxy} from './crdpMultiplexing/webSocketToLikeSocketProxy';
+import { CRDPMultiplexor } from './crdpMultiplexing/crdpMultiplexor';
+import { WebSocketToLikeSocketProxy } from './crdpMultiplexing/webSocketToLikeSocketProxy';
 
 export interface ITarget {
     description: string;
@@ -123,7 +123,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
-        this.events.emitStepStarted("Attach.AttachToTargetDebuggerWebsocket");
+        this.events.emitStepStarted('Attach.AttachToTargetDebuggerWebsocket');
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
             this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);

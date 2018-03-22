@@ -18,11 +18,11 @@ export class WebSocketToLikeSocketProxy {
         });
 
         this._socket.on('close', () => {
-            logger.log("CRDP Proxy shutting down");
+            logger.log('CRDP Proxy shutting down');
             this._server.close(() => {
                 if (this._currentlyOpenedWebSocket !== null) {
                     this._currentlyOpenedWebSocket.close();
-                    logger.log("CRDP Proxy succesfully shut down");
+                    logger.log('CRDP Proxy succesfully shut down');
                 }
 
                 return {};
@@ -44,7 +44,7 @@ export class WebSocketToLikeSocketProxy {
             });
 
             openedWebSocket.on('close', () => {
-                logger.log("CRDP Proxy - Client closed the connection");
+                logger.log('CRDP Proxy - Client closed the connection');
                 this._currentlyOpenedWebSocket = null;
             });
 

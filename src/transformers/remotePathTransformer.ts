@@ -5,13 +5,13 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import {BasePathTransformer} from './basePathTransformer';
+import { BasePathTransformer } from './basePathTransformer';
 
-import {logger} from 'vscode-debugadapter';
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { logger } from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
 import * as utils from '../utils';
 import * as errors from '../errors';
-import {ISetBreakpointsArgs, ICommonRequestArgs, IAttachRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody} from '../debugAdapterInterfaces';
+import { ISetBreakpointsArgs, ICommonRequestArgs, IAttachRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 
 /**
  * Converts a local path from Code to a path on the target.

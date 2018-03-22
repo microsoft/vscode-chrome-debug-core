@@ -2,9 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {SourceMap, MappedPosition, ISourcePathDetails} from './sourceMap';
-import {SourceMapFactory} from './sourceMapFactory';
-import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
+import { SourceMap, MappedPosition, ISourcePathDetails } from './sourceMap';
+import { SourceMapFactory } from './sourceMapFactory';
+import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object

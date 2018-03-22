@@ -2,8 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
-import {OutputEvent} from 'vscode-debugadapter';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { OutputEvent } from 'vscode-debugadapter';
 import { fillErrorDetails } from './utils';
 
 export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
@@ -80,7 +80,7 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
         properties.successful = 'false';
         properties.exceptionType = 'firstChance';
         fillErrorDetails(properties, rejection);
-        this._telemetryReporter.reportEvent("error-while-adding-custom-global-property", properties);
+        this._telemetryReporter.reportEvent('error-while-adding-custom-global-property', properties);
     }
 }
 

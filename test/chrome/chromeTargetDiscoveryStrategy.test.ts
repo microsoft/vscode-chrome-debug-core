@@ -6,10 +6,10 @@ import * as mockery from 'mockery';
 import * as assert from 'assert';
 
 import * as testUtils from '../testUtils';
-import {ITargetDiscoveryStrategy} from '../../src/chrome/chromeConnection';
+import { ITargetDiscoveryStrategy } from '../../src/chrome/chromeConnection';
 
-import {NullLogger} from '../../src/nullLogger';
-import {NullTelemetryReporter} from '../../src/telemetry';
+import { NullLogger } from '../../src/nullLogger';
+import { NullTelemetryReporter } from '../../src/telemetry';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {

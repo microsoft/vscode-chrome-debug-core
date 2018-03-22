@@ -52,7 +52,7 @@ suite('Variables', () => {
         });
 
         test('one-item array', () => {
-            testArrayPreview(["hi"], 'Array[1] ["hi"]');
+            testArrayPreview(['hi'], 'Array[1] ["hi"]');
         });
 
         test('short array', () => {

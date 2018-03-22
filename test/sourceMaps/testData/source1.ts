@@ -2,7 +2,7 @@
  * Test class A
  */
 class A {
-    private _x: number = 3;
+    private _x = 3;
 
     constructor(x: number) {
         this._x = x;

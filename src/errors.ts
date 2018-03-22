@@ -2,13 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
-export const evalNotAvailableMsg = localize('eval.not.available', "not available");
-export const runtimeNotConnectedMsg = localize('not.connected', "not connected to runtime");
+export const evalNotAvailableMsg = localize('eval.not.available', 'not available');
+export const runtimeNotConnectedMsg = localize('not.connected', 'not connected to runtime');
 
 export const noRestartFrame = localize('restartFrame.cannot', "Can't restart frame");
 
@@ -42,14 +42,14 @@ export function withInfoLink(id: number, format: string, variables: any, infoId:
         variables,
         showUser: true,
         url: 'http://go.microsoft.com/fwlink/?linkID=534832#_' + infoId.toString(),
-        urlLabel: localize('more.information', "More Information")
+        urlLabel: localize('more.information', 'More Information')
     };
 }
 
 export function setValueNotSupported(): DebugProtocol.Message {
     return {
         id: 2004,
-        format: localize('setVariable.error', "Setting value not supported")
+        format: localize('setVariable.error', 'Setting value not supported')
     };
 }
 
@@ -71,7 +71,7 @@ export function sourceRequestIllegalHandle(): DebugProtocol.Message {
 export function sourceRequestCouldNotRetrieveContent(): DebugProtocol.Message {
     return {
         id: 2026,
-        format: localize('source.not.found', "Could not retrieve content.")
+        format: localize('source.not.found', 'Could not retrieve content.')
     };
 }
 
@@ -86,7 +86,7 @@ export function pathFormat(): DebugProtocol.Message {
 export function runtimeConnectionTimeout(timeoutMs: number, errMsg: string): DebugProtocol.Message {
     return {
         id: 2010,
-        format: localize('VSND2010', "Cannot connect to runtime process, timeout after {0} ms - (reason: {1}).", '{_timeout}', '{_error}'),
+        format: localize('VSND2010', 'Cannot connect to runtime process, timeout after {0} ms - (reason: {1}).', '{_timeout}', '{_error}'),
         variables: { _error: errMsg, _timeout: timeoutMs + '' }
     };
 }
@@ -102,7 +102,7 @@ export function stackFrameNotValid(): DebugProtocol.Message {
 export function noCallStackAvailable(): DebugProtocol.Message {
     return {
         id: 2023,
-        format: localize('VSND2023', "No call stack available.")
+        format: localize('VSND2023', 'No call stack available.')
     };
 }
 

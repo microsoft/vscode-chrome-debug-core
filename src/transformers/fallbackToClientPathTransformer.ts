@@ -1,10 +1,10 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-import {logger} from 'vscode-debugadapter';
+import { logger } from 'vscode-debugadapter';
 
 import { UrlPathTransformer } from './urlPathTransformer';
-import { ChromeDebugSession} from '../chrome/chromeDebugSession';
+import { ChromeDebugSession } from '../chrome/chromeDebugSession';
 import * as ChromeUtils from '../chrome/chromeUtils';
 
 /**
@@ -26,7 +26,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
                     ? filePath
                     // In any other case we ask the client to map it as a fallback, and return filePath if there is any failures
                     : this.requestClientToMapURLToFilePath(scriptUrl).catch(rejection => {
-                        logger.log("The fallback transformation failed due to: " + rejection);
+                        logger.log('The fallback transformation failed due to: ' + rejection);
                         return filePath;
                     });
         });
@@ -34,7 +34,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
 
     private async requestClientToMapURLToFilePath(url: string): Promise<string> {
         return new Promise<string>((resolve, reject) => {
-            this._session.sendRequest("mapURLToFilePath", {url: url}, FallbackToClientPathTransformer.ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT, response => {
+            this._session.sendRequest('mapURLToFilePath', {url: url}, FallbackToClientPathTransformer.ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT, response => {
                 if (response.success) {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${response.body.filePath}"`);
                     resolve(response.body.filePath);

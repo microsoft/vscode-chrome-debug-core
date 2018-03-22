@@ -2,14 +2,14 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {Logger} from 'vscode-debugadapter';
+import { Logger } from 'vscode-debugadapter';
 import * as utils from '../utils';
 import * as telemetry from '../telemetry';
-import {IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents} from '../executionTimingsReporter';
+import { IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents } from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
-import {ITargetDiscoveryStrategy, ITargetFilter, ITarget} from './chromeConnection';
+import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnection';
 
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
@@ -48,20 +48,20 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         this.telemetry.reportEvent('targetCount', { numTargets: targets.length });
 
         if (!targets.length) {
-            return utils.errP(localize('attach.responseButNoTargets', "Got a response from the target app, but no target pages found"));
+            return utils.errP(localize('attach.responseButNoTargets', 'Got a response from the target app, but no target pages found'));
         }
 
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
-    };
+    }
 
     private _getTargets(address: string, port: number): Promise<ITarget[]> {
         // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
-        this.events.emitStepStarted("Attach.RequestDebuggerTargetsInformation");
+        this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
-            this.events.emitStepStarted("Attach.ProcessDebuggerTargetsInformation");
+            this.events.emitStepStarted('Attach.ProcessDebuggerTargetsInformation');
             try {
                 const responseArray = JSON.parse(jsonResponse);
                 if (Array.isArray(responseArray)) {
@@ -72,10 +72,10 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                 // JSON.parse can throw
             }
 
-            return utils.errP(localize('attach.invalidResponse', "Response from the target seems invalid: {0}", jsonResponse));
+            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid: {0}', jsonResponse));
         },
         e => {
-            return utils.errP(localize('attach.cannotConnect', "Cannot connect to the target: {0}", e.message));
+            return utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message));
         });
     }
 

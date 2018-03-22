@@ -29,12 +29,12 @@ import { logger } from 'vscode-debugadapter';
  */
 
 function extractDomain(method: string): string {
-    const methodParts = method.split(".");
+    const methodParts = method.split('.');
     if (methodParts.length === 2) {
         return methodParts[0];
     } else {
         throwCriticalError(`The method ${method} didn't have exactly two parts`);
-        return "Unknown";
+        return 'Unknown';
     }
 }
 
@@ -50,7 +50,7 @@ function decodifyId(encodifiedId: number): number {
 }
 
 function throwCriticalError(message: string): void {
-    logger.error("CRDP Multiplexor - CRITICAL-ERROR: " + message);
+    logger.error('CRDP Multiplexor - CRITICAL-ERROR: ' + message);
     throw new Error(message);
 }
 
@@ -159,7 +159,7 @@ export class CRDPChannel implements LikeSocket {
     public send(messageData: string): void {
         const message = JSON.parse(messageData);
         const method = message.method;
-        const isEnableMethod = method && method.endsWith(".enable");
+        const isEnableMethod = method && method.endsWith('.enable');
         let domain;
 
         if (isEnableMethod) {
@@ -188,13 +188,13 @@ export class CRDPChannel implements LikeSocket {
     }
 
     private discardUnsentPendingMessages(): void {
-        logger.log(`CRDP Multiplexor - Discarding unsent pending messages for domains: ${Object.keys(this._pendingMessagesForDomain).join(", ")}`);
+        logger.log(`CRDP Multiplexor - Discarding unsent pending messages for domains: ${Object.keys(this._pendingMessagesForDomain).join(', ')}`);
         this._pendingMessagesForDomain = null;
     }
 
     public on(event: string, cb: Function): void;
-    public on(event: "open", cb: (ws: LikeSocket) => void): void;
-    public on(event: "message", cb: (data: string) => void): void;
+    public on(event: 'open', cb: (ws: LikeSocket) => void): void;
+    public on(event: 'message', cb: (data: string) => void): void;
     public on(event: string, cb: Function): void {
         if (event === 'message') {
             if (this._messageCallbacks.length === 0) {

@@ -9,9 +9,9 @@ import * as os from 'os';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {SourceMap} from './sourceMap';
-import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
+import { logger } from 'vscode-debugadapter';
+import { SourceMap } from './sourceMap';
+import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
 
 export class SourceMapFactory {
     constructor(

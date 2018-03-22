@@ -2,13 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {SourceMapConsumer, MappedPosition} from 'source-map';
+import { SourceMapConsumer, MappedPosition } from 'source-map';
 import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import {logger} from 'vscode-debugadapter';
-import {ISourceMapPathOverrides} from '../debugAdapterInterfaces';
+import { logger } from 'vscode-debugadapter';
+import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
 
 export type MappedPosition = MappedPosition;
 

@@ -2,12 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
-import {IInternalStackTraceResponseBody, IInternalStackFrame} from '../src/debugAdapterInterfaces';
+import { IInternalStackTraceResponseBody, IInternalStackFrame } from '../src/debugAdapterInterfaces';
 import * as utils from '../src/utils';
 
-import {Mock, It, MockBehavior} from 'typemoq';
+import { Mock, It, MockBehavior } from 'typemoq';
 import * as path from 'path';
 import * as mockery from 'mockery';
 import * as fs from 'fs';

@@ -7,7 +7,7 @@ import * as path from 'path';
 import Crdp from '../../crdp/crdp';
 
 import * as utils from '../utils';
-import {ITarget} from './chromeConnection';
+import { ITarget } from './chromeConnection';
 
 export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMapping: any): string {
     const parsedUrl = url.parse(scriptUrl);
@@ -16,7 +16,7 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
         return '';
     }
 
-    const urlWithoutQuery = parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname;
+    const urlWithoutQuery = parsedUrl.protocol + '//' + parsedUrl.host + parsedUrl.pathname;
     const mappingKeys = Object.keys(pathMapping)
         .sort((a, b) => b.length - a.length);
     for (let pattern of mappingKeys) {
@@ -33,7 +33,7 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
                         return clientPath;
                     }
                 }
-            } else if (pattern[0] === "/") {
+            } else if (pattern[0] === '/') {
                 // pattern is absolute
                 if (parsedUrl.pathname.startsWith(pattern)) {
                     const clientPath = toClientPath(localPath, parsedUrl.pathname, pattern);
@@ -44,7 +44,7 @@ export function targetUrlToClientPathByPathMappings(scriptUrl: string, pathMappi
             } else {
                 // pattern is relative
                 // avoid matching whole segment
-                pattern = "/" + pattern;
+                pattern = '/' + pattern;
                 const indexOf = parsedUrl.pathname.indexOf(pattern);
                 if (indexOf !== -1) {
                     const clientPath = toClientPath(localPath, parsedUrl.pathname.substring(indexOf), pattern);
@@ -63,8 +63,8 @@ function toClientPath(localPath: string, source: string, pattern: string): strin
         return localPath;
     } else {
         // Verify that matching whole segment of the pattern
-        if (source[pattern.length - 1] === "/"
-            || source[pattern.length] === "/") {
+        if (source[pattern.length - 1] === '/'
+            || source[pattern.length] === '/') {
             const r = decodeURIComponent(source.substring(pattern.length));
             return path.join(localPath, r);
         }
@@ -299,5 +299,5 @@ export function getUrlRegexForBreakOnLoad(url: string): string {
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
     const escapedFileName = fileNameWithoutExtension.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    return ".*[\\\\\\/]" + escapedFileName + "([^A-z^0-9].*)?$";
+    return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
 }

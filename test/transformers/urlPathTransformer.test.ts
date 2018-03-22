@@ -6,14 +6,14 @@ import * as assert from 'assert';
 import * as mockery from 'mockery';
 
 import * as testUtils from '../testUtils';
-import {UrlPathTransformer as _UrlPathTransformer} from '../../src/transformers/urlPathTransformer';
+import {UrlPathTransformer as _UrlPathTransformer } from '../../src/transformers/urlPathTransformer';
 import * as chromeUtils from '../../src/chrome/chromeUtils';
 
 // As of 0.1.0, the included .d.ts is not in the right format to use the import syntax here
 // https://github.com/florinn/typemoq/issues/4
 // const typemoq: ITypeMoqStatic = require('typemoq');
 
-import {Mock, MockBehavior, It} from 'typemoq';
+import { Mock, MockBehavior, It } from 'typemoq';
 
 const MODULE_UNDER_TEST = '../../src/transformers/urlPathTransformer';
 function createTransformer(): _UrlPathTransformer {

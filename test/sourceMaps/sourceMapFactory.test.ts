@@ -5,12 +5,12 @@
 import * as assert from 'assert';
 import * as mockery from 'mockery';
 import * as path from 'path';
-import {Mock} from 'typemoq';
+import { Mock } from 'typemoq';
 
 import * as utils from '../../src/utils';
 import * as testUtils from '../testUtils';
 
-import {SourceMapFactory as _SourceMapFactory} from '../../src/sourceMaps/sourceMapFactory';
+import {SourceMapFactory as _SourceMapFactory } from '../../src/sourceMaps/sourceMapFactory';
 const MODULE_UNDER_TEST = '../../src/sourceMaps/sourceMapFactory';
 
 /**

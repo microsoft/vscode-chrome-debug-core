@@ -6,7 +6,7 @@
  * This file contains extended forms of interfaces from vscode-debugprotocol
  */
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 import Crdp from '../crdp/crdp';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };

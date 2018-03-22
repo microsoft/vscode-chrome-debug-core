@@ -8,7 +8,7 @@ import * as os from 'os';
 
 import * as testUtils from '../testUtils';
 
-import {getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath} from '../../src/sourceMaps/sourceMapUtils';
+import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath } from '../../src/sourceMaps/sourceMapUtils';
 
 suite('SourceMapUtils', () => {
     setup(() => {

@@ -7,9 +7,9 @@ import * as mockery from 'mockery';
 import * as testUtils from '../testUtils';
 import * as path from 'path';
 
-import {fixDriveLetterAndSlashes} from '../../src/utils';
-import {SourceMaps} from '../../src/sourceMaps/sourceMaps';
-import {MappedPosition} from '../../src/sourceMaps/sourceMap';
+import { fixDriveLetterAndSlashes } from '../../src/utils';
+import { SourceMaps } from '../../src/sourceMaps/sourceMaps';
+import { MappedPosition } from '../../src/sourceMaps/sourceMap';
 
 suite('SourceMaps', () => {
     // VSCode expects lowercase windows drive names

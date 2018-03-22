@@ -51,13 +51,13 @@ suite('CRDPMultiplexor', () => {
     });
 
     test('Channel is successfully added', done => {
-        let testChannel = multiplexor.addChannel("testChannel");
-        Assert.notEqual(testChannel, null, "Test channel should not be null");
+        let testChannel = multiplexor.addChannel('testChannel');
+        Assert.notEqual(testChannel, null, 'Test channel should not be null');
         done();
     });
 
     test('Multiplexor message sent to underlying socket and response received.', done => {
-        let channel = multiplexor.addChannel("testChannel");
+        let channel = multiplexor.addChannel('testChannel');
         let messageId = 1;
         let channelCallback = (data: string) => {
             // Test receiving data - called when socket sends back response data
@@ -66,7 +66,7 @@ suite('CRDPMultiplexor', () => {
         };
 
         // Test sending data
-        channel.on("message", channelCallback);
+        channel.on('message', channelCallback);
         multiplexor.send(channel, '{"method":"Runtime.enable","id":' + messageId + '}');
         webSocketMock.verify(s => s.send(It.isAnyString()), Times.atLeastOnce());
     });
@@ -87,7 +87,7 @@ suite('CRDPMultiplexor', () => {
         };
 
         for (let i = 1; i < 10; i++) {
-            let channel = multiplexor.addChannel("Channel" + i);
+            let channel = multiplexor.addChannel('Channel' + i);
 
             let callbackPromise = new Promise<void>((resolve, reject) => {
                 let callback = (data: string) => {
@@ -95,7 +95,7 @@ suite('CRDPMultiplexor', () => {
                     resolve();
                 };
 
-                channel.on("message", callback);
+                channel.on('message', callback);
             });
 
             callbackPromises.push(callbackPromise);
@@ -108,11 +108,11 @@ suite('CRDPMultiplexor', () => {
 
     test('Multiplexor notification delivered to all channels', () => {
         let callbackPromises: Promise<void>[] = [];
-        let testNotification = "Test.notification";
-        let testEnable = "Test.enable";
+        let testNotification = 'Test.notification';
+        let testEnable = 'Test.enable';
 
         for (let i = 1; i < 5; i++) {
-            let channel = multiplexor.addChannel("Channel" + i);
+            let channel = multiplexor.addChannel('Channel' + i);
 
             let callbackPromise = new Promise<void>((resolve, reject) => {
                 let callback = (data: string) => {
@@ -127,7 +127,7 @@ suite('CRDPMultiplexor', () => {
                     }
                 };
 
-                channel.on("message", callback);
+                channel.on('message', callback);
             });
 
             // Enable the Test domain so we will receive notifications
@@ -144,10 +144,10 @@ suite('CRDPMultiplexor', () => {
     });
 
     test('Notifications are delayed until domain is enabled', done => {
-        let domain1Enable = "Domain1.enable";
-        let domain2Enable = "Domain2.enable";
-        let domain1Notification = "Domain1.notification";
-        let domain2Notification = "Domain2.notification";
+        let domain1Enable = 'Domain1.enable';
+        let domain2Enable = 'Domain2.enable';
+        let domain1Notification = 'Domain1.notification';
+        let domain2Notification = 'Domain2.notification';
 
         let receivedMessages = [];
         let expectedMessages = [
@@ -156,8 +156,8 @@ suite('CRDPMultiplexor', () => {
             '{"id":2,"result":{}}',
             '{"method":"Domain2.notification"}'];
 
-        let channel = multiplexor.addChannel("channel");
-        channel.on("message", (data: string) => {
+        let channel = multiplexor.addChannel('channel');
+        channel.on('message', (data: string) => {
             receivedMessages.push(data);
         });
 

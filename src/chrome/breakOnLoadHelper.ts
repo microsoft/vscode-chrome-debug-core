@@ -2,11 +2,11 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {logger} from 'vscode-debugadapter';
-import {ISetBreakpointResult, BreakOnLoadStrategy} from '../debugAdapterInterfaces';
+import { logger } from 'vscode-debugadapter';
+import { ISetBreakpointResult, BreakOnLoadStrategy } from '../debugAdapterInterfaces';
 
 import Crdp from '../../crdp/crdp';
-import {ChromeDebugAdapter} from './chromeDebugAdapter';
+import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
@@ -18,7 +18,7 @@ export interface UrlRegexAndFileSet {
 
 export class BreakOnLoadHelper {
 
-    private _instrumentationBreakpointSet: boolean = false;
+    private _instrumentationBreakpointSet = false;
 
     // Break on load: Store some mapping between the requested file names, the regex for the file, and the chrome breakpoint id to perform lookup operations efficiently
     private _stopOnEntryBreakpointIdToRequestedFileName = new Map<string, UrlRegexAndFileSet>();
@@ -138,7 +138,7 @@ export class BreakOnLoadHelper {
                         await this.removeBreakpointById(bp);
                         assert(this._stopOnEntryRegexToBreakpointId.delete(regexAndFileNames.urlRegex), `Expected to delete break-on-load information associated with regexp: ${regexAndFileNames.urlRegex}`);
                     } else {
-                        logger.log(`Stop on entry breakpoint hit but still has remaining files. Keeping: ${bp} that was hit for: ${normalizedMappedUrl} because it's still needed for: ${Array.from(regexAndFileNames.fileSet.entries()).join(", ")}`);
+                        logger.log(`Stop on entry breakpoint hit but still has remaining files. Keeping: ${bp} that was hit for: ${normalizedMappedUrl} because it's still needed for: ${Array.from(regexAndFileNames.fileSet.entries()).join(', ')}`);
                     }
                 }
             }

@@ -2,29 +2,29 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {DebugProtocol} from 'vscode-debugprotocol';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
-import {getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer} from '../mocks/transformerMocks';
-import {getMockChromeConnectionApi, IMockChromeConnectionAPI} from '../mocks/debugProtocolMocks';
+import { getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer } from '../mocks/transformerMocks';
+import { getMockChromeConnectionApi, IMockChromeConnectionAPI } from '../mocks/debugProtocolMocks';
 
-import {ISetBreakpointsResponseBody, IEvaluateResponseBody} from '../../src/debugAdapterInterfaces';
-import {ChromeConnection} from '../../src/chrome/chromeConnection';
+import { ISetBreakpointsResponseBody, IEvaluateResponseBody } from '../../src/debugAdapterInterfaces';
+import { ChromeConnection } from '../../src/chrome/chromeConnection';
 
-import {LineColTransformer} from '../../src/transformers/lineNumberTransformer';
-import {BaseSourceMapTransformer} from '../../src/transformers/baseSourceMapTransformer';
-import {UrlPathTransformer} from '../../src/transformers/urlPathTransformer';
+import { LineColTransformer } from '../../src/transformers/lineNumberTransformer';
+import { BaseSourceMapTransformer } from '../../src/transformers/baseSourceMapTransformer';
+import { UrlPathTransformer } from '../../src/transformers/urlPathTransformer';
 
 import * as mockery from 'mockery';
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import * as assert from 'assert';
-import {Mock, MockBehavior, It} from 'typemoq';
+import { Mock, MockBehavior, It } from 'typemoq';
 import Crdp from '../../crdp/crdp';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
 
 /** Not mocked - use for type only */
-import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason} from '../../src/chrome/chromeDebugAdapter';
+import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason } from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source } from 'vscode-debugadapter/lib/debugSession';
 import { StepProgressEventsEmitter } from '../../src/executionTimingsReporter';
 
@@ -471,20 +471,20 @@ suite('ChromeDebugAdapter', () => {
         test('When a page refreshes, finish sending the "new" source events, before sending the corresponding "removed" source event', async () => {
             const expectedEvents: DebugProtocol.Event[] = [
                 new InitializedEvent(),
-                new LoadedSourceEvent('new', createSource("about:blank", "about:blank", 1000)),
-                new LoadedSourceEvent('removed', createSource("about:blank", "about:blank", 1000)),
-                new LoadedSourceEvent('new', createSource("localhost:61312", "http://localhost:61312/", 1001))
+                new LoadedSourceEvent('new', createSource('about:blank', 'about:blank', 1000)),
+                new LoadedSourceEvent('removed', createSource('about:blank', 'about:blank', 1000)),
+                new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312/', 1001))
               ];
 
               const receivedEvents: DebugProtocol.Event[] = [];
               sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
 
             await chromeDebugAdapter.attach(ATTACH_ARGS);
-            emitScriptParsed('about:blank', "1");
+            emitScriptParsed('about:blank', '1');
 
             mockEventEmitter.emit('Debugger.globalObjectCleared');
             mockEventEmitter.emit('Runtime.executionContextsCleared');
-            emitScriptParsed('http://localhost:61312/', "2");
+            emitScriptParsed('http://localhost:61312/', '2');
 
             await chromeDebugAdapter.doAfterProcessingSourceEvents(() => {
                 assert.deepEqual(receivedEvents, expectedEvents);
@@ -585,22 +585,22 @@ suite('ChromeDebugAdapter', () => {
         const authoredExceptionStr = getExceptionStr(authoredPath, 12);
 
         const exceptionEvent: Crdp.Runtime.ExceptionThrownEvent = {
-            "timestamp": 1490164925297,
-            "exceptionDetails": {
-                "exceptionId": 21,
-                "text": "Uncaught",
-                "lineNumber": 5,
-                "columnNumber": 10,
-                "url": "http://localhost:9999/error.js",
-                "stackTrace": null,
-                "exception": {
-                    "type": "object",
-                    "subtype": "error",
-                    "className": "Error",
-                    "description": generatedExceptionStr,
-                    "objectId": "{\"injectedScriptId\":148,\"id\":1}"
+            'timestamp': 1490164925297,
+            'exceptionDetails': {
+                'exceptionId': 21,
+                'text': 'Uncaught',
+                'lineNumber': 5,
+                'columnNumber': 10,
+                'url': 'http://localhost:9999/error.js',
+                'stackTrace': null,
+                'exception': {
+                    'type': 'object',
+                    'subtype': 'error',
+                    'className': 'Error',
+                    'description': generatedExceptionStr,
+                    'objectId': '{"injectedScriptId":148,"id":1}'
                 },
-                "executionContextId": 148
+                'executionContextId': 148
             }
         };
 
