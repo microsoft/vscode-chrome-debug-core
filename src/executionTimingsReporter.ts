@@ -136,7 +136,7 @@ export class ExecutionTimingsReporter {
     public generateReport(): {[stepName: string]: [number] | number} {
         this.recordPreviousStepAndConfigureNewStep('AfterLastStep');
         this._subscriptionManager.removeAll(); // Remove all subscriptions so we don't get any new events
-        return Object.assign({}, { steps: this._stepsList, all: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
+        return Object.assign({}, { Steps: this._stepsList, All: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
     }
 
     public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number): void {
