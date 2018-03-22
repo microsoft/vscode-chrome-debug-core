@@ -55,6 +55,8 @@
     "watch": "gulp watch",
     "test": "mocha --recursive -u tdd ./out/test/",
     "prepare": "gulp build",
-    "tslint": "gulp tslint"
+    "tslint": "gulp tslint",
+    "patch": "npm version patch -m '%s'",
+    "minor": "npm version minor -m '%s'"
   }
 }
