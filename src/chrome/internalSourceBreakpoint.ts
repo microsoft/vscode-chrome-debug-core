@@ -16,7 +16,7 @@ export class InternalSourceBreakpoint {
         this.hitCondition = breakpoint.hitCondition;
 
         if (breakpoint.logMessage) {
-            this.condition = `console.log('${breakpoint.logMessage}')`;
+            this.condition = `console.log(${breakpoint.logMessage})`;
             if (breakpoint.condition) {
                 this.condition = `(${breakpoint.condition}) && ${this.condition}`;
             }
