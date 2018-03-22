@@ -233,12 +233,16 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         this.sendErrorResponse(response, 1014, `[${this._extensionName}] Unrecognized request: ${command}`, null, ErrorDestination.Telemetry);
     }
 
-    public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean | 'timeout'): void {
+    public reportTimingsWhileStartingUpIfNeeded(requestedContentWasDetected: boolean, reasonForNotDetected?: string): void {
         if (!this.haveTimingsWhileStartingUpBeenReported) {
             const report = this.reporter.generateReport();
-            const telemetryData = { RequestedContentWasDetected: requestedContentWasDetected.toString() };
+            const telemetryData = { RequestedContentWasDetected: requestedContentWasDetected.toString() } as {[key: string]: string};
             for (const reportProperty in report) {
                 telemetryData[reportProperty] = JSON.stringify(report[reportProperty]);
+            }
+
+            if (!requestedContentWasDetected && typeof reasonForNotDetected !== 'undefined') {
+                telemetryData.RequestedContentWasNotDetectedReason = reasonForNotDetected;
             }
 
             telemetry.reportEvent('report-start-up-timings', telemetryData);
@@ -248,15 +252,15 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
     private configureExecutionTimingsReporting(): void {
         this.reporter.subscribeTo(this.events);
-        this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, () => {
-            this.reportTimingsWhileStartingUpIfNeeded(true);
+        this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, args => {
+            this.reportTimingsWhileStartingUpIfNeeded(args.requestedContentWasDetected, args.reasonForNotDetected);
         });
 
-        setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded('timeout'), this._readyForUserTimeoutInMilliseconds);
+        setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'timeout'), this._readyForUserTimeoutInMilliseconds);
     }
 
     public shutdown(): void {
-        this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false);
+        this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'shutdown');
         super.shutdown();
     }
 }

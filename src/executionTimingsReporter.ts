@@ -41,9 +41,14 @@ export interface IStepStartedEventsEmitter {
     removeListener(event: 'milestoneReached', listener: (args: IMilestoneReachedEventArguments) => void): this;
 }
 
+export interface FinishedStartingUpEventArguments {
+    requestedContentWasDetected: boolean;
+    reasonForNotDetected: string;
+}
+
 export interface IFinishedStartingUpEventsEmitter {
-    on(event: 'finishedStartingUp', listener: () => void): this;
-    once(event: 'finishedStartingUp', listener: () => void): this;
+    on(event: 'finishedStartingUp', listener: (args: FinishedStartingUpEventArguments) => void): this;
+    once(event: 'finishedStartingUp', listener: (args: FinishedStartingUpEventArguments) => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
 }
