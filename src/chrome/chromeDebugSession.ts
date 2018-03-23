@@ -13,7 +13,7 @@ import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransform
 import { LineColTransformer } from '../transformers/lineNumberTransformer';
 
 import { IDebugAdapter } from '../debugAdapterInterfaces';
-import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, TelemetryPropertyCollector } from '../telemetry';
+import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, TelemetryPropertyCollector, ITelemetryPropertyCollector } from '../telemetry';
 import * as utils from '../utils';
 import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
 
@@ -124,9 +124,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
      * Overload dispatchRequest to the debug adapters' Promise-based methods instead of DebugSession's callback-based methods
      */
     protected dispatchRequest(request: DebugProtocol.Request): void {
-        const telemetryPropertyCollector = new TelemetryPropertyCollector();
         // We want the request to be non-blocking, so we won't await for reportTelemetry
-        this.reportTelemetry(`ClientRequest/${request.command}`, { requestType: request.type }, telemetryPropertyCollector, async (reportFailure) => {
+        this.reportTelemetry(`ClientRequest/${request.command}`, async (reportFailure, telemetryPropertyCollector) => {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
@@ -135,6 +134,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                     reportFailure('The debug adapter doesn\'t recognize this command');
                     this.sendUnknownCommandResponse(response, request.command);
                 } else {
+                    telemetryPropertyCollector.addTelemetryProperty('requestType', request.type);
                     response.body = await this._debugAdapter[request.command](request.arguments, telemetryPropertyCollector, request.seq);
                     this.sendResponse(response);
                 }
@@ -148,13 +148,14 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     }
 
     // { command: request.command, type: request.type };
-    private async reportTelemetry(eventName: string, propertiesSpecificToAction: {[property: string]: string},
-                                  telemetryPropertyCollector: TelemetryPropertyCollector,
-                                  action: (reportFailure: (failure: any) => void) => Promise<void>): Promise<void> {
+    private async reportTelemetry(eventName: string,
+                                  action: (reportFailure: (failure: any) => void, telemetryPropertyCollector: ITelemetryPropertyCollector) => Promise<void>): Promise<void> {
         const startProcessingTime = process.hrtime();
         const startTime = Date.now();
         const isSequentialRequest = eventName === 'ClientRequest/initialize' || eventName === 'ClientRequest/launch' || eventName === 'ClientRequest/attach';
-        const properties: IExecutionResultTelemetryProperties = propertiesSpecificToAction;
+        const properties: IExecutionResultTelemetryProperties = {};
+        const telemetryPropertyCollector = new TelemetryPropertyCollector();
+
         if (isSequentialRequest) {
             this.events.emitStepStarted(eventName);
         }
@@ -183,7 +184,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         };
 
         // We use the reportFailure callback because the client might exit immediately after the first failed request, so we need to send the telemetry before that, if not it might get dropped
-        await action(reportFailure);
+        await action(reportFailure, telemetryPropertyCollector);
         if (!failed) {
             properties.successful = 'true';
             sendTelemetry();
