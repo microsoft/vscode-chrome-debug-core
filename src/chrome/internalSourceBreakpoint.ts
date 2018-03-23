@@ -28,7 +28,7 @@ export class InternalSourceBreakpoint {
 
 const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
 
-function logMessageToExpression(msg) {
+function logMessageToExpression(msg: string): string {
     msg = msg.replace('%', '%%');
 
     let args: string[] = [];
