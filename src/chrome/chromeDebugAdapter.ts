@@ -944,9 +944,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const currentStack = await this.stackTrace({ threadId: undefined });
 
         if (args.path) {
-            return currentStack.stackFrames.some(frame => frame.source.path === args.path);
+            return currentStack.stackFrames.some(frame => frame.source && frame.source.path === args.path);
         } else {
-            return currentStack.stackFrames.some(frame => frame.source.sourceReference === args.sourceReference);
+            return currentStack.stackFrames.some(frame => frame.source && frame.source.sourceReference === args.sourceReference);
         }
     }
 
