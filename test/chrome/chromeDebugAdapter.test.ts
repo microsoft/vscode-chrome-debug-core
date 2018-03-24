@@ -227,7 +227,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
 
@@ -241,7 +241,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, null, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
 
@@ -254,14 +254,14 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0))
                 .then(response => {
                     breakpoints.push({ line: 321, column: 123 });
 
                     expectRemoveBreakpoint([0, 1]);
                     expectSetBreakpoint(breakpoints, FILE_NAME);
 
-                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0);
                 })
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -275,13 +275,13 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, null, 0))
                 .then(response => {
                     breakpoints.shift();
 
                     expectRemoveBreakpoint([0, 1]);
                     expectSetBreakpoint(breakpoints, FILE_NAME);
-                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, 0);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints}, null, 0);
                 })
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -295,7 +295,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0))
                 .then(response => {
                     expectRemoveBreakpoint([2, 3]);
                     mockEventEmitter.emit('Debugger.globalObjectCleared');
@@ -305,7 +305,7 @@ suite('ChromeDebugAdapter', () => {
 
                     breakpoints.push({ line: 321, column: 123 });
                     expectSetBreakpoint(breakpoints, FILE_NAME, 'afterRefreshScriptId');
-                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0);
                 })
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
@@ -330,7 +330,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed())
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0))
                 .then(response => assert.deepEqual(response, expectedResponse));
         });
 
@@ -342,7 +342,7 @@ suite('ChromeDebugAdapter', () => {
 
             return chromeDebugAdapter.attach(ATTACH_ARGS)
                 .then(() => setBp_emitScriptParsed(/*url=*/'', SCRIPT_ID))
-                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'VM' + SCRIPT_ID }, breakpoints }, 0))
+                .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'VM' + SCRIPT_ID }, breakpoints }, null, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
     });
