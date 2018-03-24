@@ -284,7 +284,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return !!this._breakOnLoadHelper;
     }
 
-    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<void> {
+    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
@@ -992,7 +992,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
-        return this.setBreakpoints(pendingBP.args, pendingBP.requestSeq, pendingBP.ids).then(response => {
+        return this.setBreakpoints(pendingBP.args, null, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this._session.sendEvent(new BreakpointEvent('changed', bp));
@@ -1156,7 +1156,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.terminateSession('Got disconnect request', args);
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
+    public setBreakpoints(args: ISetBreakpointsArgs, _: ITelemetryPropertyCollector, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         this.reportBpTelemetry(args);
         if (args.source.path) {
             args.source.path = this.displayPathToRealPath(args.source.path);

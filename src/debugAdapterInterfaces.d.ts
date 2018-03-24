@@ -180,12 +180,12 @@ export interface IDebugAdapter {
     // From DebugSession
     shutdown(): void;
 
-    initialize(args: DebugProtocol.InitializeRequestArguments, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities>;
-    launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<void>;
-    attach(args: IAttachRequestArgs, requestSeq?: number): PromiseOrNot<void>;
+    initialize(args: DebugProtocol.InitializeRequestArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<DebugProtocol.Capabilities>;
+    launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<void>;
+    attach(args: IAttachRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<void>;
     disconnect(args: DebugProtocol.DisconnectArguments): PromiseOrNot<void>;
-    setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, requestSeq?: number): PromiseOrNot<ISetBreakpointsResponseBody>;
-    setExceptionBreakpoints(args: DebugProtocol.SetExceptionBreakpointsArguments, requestSeq?: number): PromiseOrNot<void>;
+    setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<ISetBreakpointsResponseBody>;
+    setExceptionBreakpoints(args: DebugProtocol.SetExceptionBreakpointsArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<void>;
     configurationDone(): PromiseOrNot<void>;
 
     continue(): PromiseOrNot<void>;
@@ -194,12 +194,12 @@ export interface IDebugAdapter {
     stepOut(): PromiseOrNot<void>;
     pause(): PromiseOrNot<void>;
 
-    stackTrace(args: DebugProtocol.StackTraceArguments, requestSeq?: number): PromiseOrNot<IStackTraceResponseBody>;
-    scopes(args: DebugProtocol.ScopesArguments, requestSeq?: number): PromiseOrNot<IScopesResponseBody>;
-    variables(args: DebugProtocol.VariablesArguments, requestSeq?: number): PromiseOrNot<IVariablesResponseBody>;
-    source(args: DebugProtocol.SourceArguments, requestSeq?: number): PromiseOrNot<ISourceResponseBody>;
+    stackTrace(args: DebugProtocol.StackTraceArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<IStackTraceResponseBody>;
+    scopes(args: DebugProtocol.ScopesArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<IScopesResponseBody>;
+    variables(args: DebugProtocol.VariablesArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<IVariablesResponseBody>;
+    source(args: DebugProtocol.SourceArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<ISourceResponseBody>;
     threads(): PromiseOrNot<IThreadsResponseBody>;
-    evaluate(args: DebugProtocol.EvaluateArguments, requestSeq?: number): PromiseOrNot<IEvaluateResponseBody>;
+    evaluate(args: DebugProtocol.EvaluateArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): PromiseOrNot<IEvaluateResponseBody>;
 }
 
 export interface IDebugTransformer {
