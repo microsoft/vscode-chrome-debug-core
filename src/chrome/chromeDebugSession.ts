@@ -253,7 +253,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     private configureExecutionTimingsReporting(): void {
         this.reporter.subscribeTo(this.events);
         this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, args => {
-            this.reportTimingsWhileStartingUpIfNeeded(args.requestedContentWasDetected, args.reasonForNotDetected);
+            this.reportTimingsWhileStartingUpIfNeeded(args ? args.requestedContentWasDetected : true, args && args.reasonForNotDetected);
         });
 
         setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'timeout'), this._readyForUserTimeoutInMilliseconds);
