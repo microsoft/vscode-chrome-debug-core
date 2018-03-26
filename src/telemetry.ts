@@ -141,14 +141,21 @@ export class BatchTelemetryReporter {
         for (const eventName in this._eventBuckets) {
             let bucket = this._eventBuckets[eventName];
             const eventConfig = this._eventConfig[eventName];
+            let properties: {[propertyName: string]: string} = {};
             if (eventConfig) {
                 const diff = bucket.length - eventConfig.batchCap;
+                let dropped: number;
                 if (diff > 0) {
                     bucket = bucket.slice(0, eventConfig.batchCap);
                     logger.log(`Truncate ${diff} ${eventName} event entries.`);
+                    dropped = diff;
+                } else {
+                    dropped = 0;
                 }
+                properties['aggregated.dropped'] = dropped.toString();
             }
-            let properties = BatchTelemetryReporter.transfromBucketData(bucket);
+
+            Object.assign(properties, BatchTelemetryReporter.transfromBucketData(bucket));
             this._telemetryReporter.reportEvent(eventName, properties);
         }
 
