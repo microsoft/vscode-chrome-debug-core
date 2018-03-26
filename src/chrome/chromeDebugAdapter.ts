@@ -392,8 +392,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
         });
         this.chrome.Debugger.onResumed(() => this.onResumed());
+
+        const onScriptParsedEventName = 'target/notification/onScriptParsed';
+        this._batchTelemetryReporter.configureEvent(onScriptParsedEventName, {
+            batchCap: 50
+        });
         this.chrome.Debugger.onScriptParsed((params) => {
-            this.runAndMeasureProcessingTime('target/notification/onScriptParsed', () => {
+            this.runAndMeasureProcessingTime(onScriptParsedEventName, () => {
                 return this.onScriptParsed(params);
             });
         });

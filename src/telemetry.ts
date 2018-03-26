@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { OutputEvent } from 'vscode-debugadapter';
+import { OutputEvent, logger } from 'vscode-debugadapter';
 import { fillErrorDetails } from './utils';
 
 export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
@@ -97,13 +97,23 @@ export class NullTelemetryReporter implements ITelemetryReporter {
 
 export const DefaultTelemetryIntervalInMilliseconds = 10000;
 
+export interface IBatchTelemetryEventConfiguration {
+    batchCap: number;
+}
+
 export class BatchTelemetryReporter {
-    private _eventBuckets: {[eventName: string]: any};
+    private _eventConfig: {[eventName: string]: IBatchTelemetryEventConfiguration};
+    private _eventBuckets: {[eventName: string]: any[]};
     private _timer: NodeJS.Timer;
 
     public constructor(private _telemetryReporter: ITelemetryReporter, private _cadenceInMilliseconds: number = DefaultTelemetryIntervalInMilliseconds) {
+        this._eventConfig = {};
         this.reset();
         this.setup();
+    }
+
+    public configureEvent(eventName: string, config: IBatchTelemetryEventConfiguration) {
+        this._eventConfig[eventName] = config;
     }
 
     public reportEvent(name: string, data?: any): void {
@@ -129,7 +139,15 @@ export class BatchTelemetryReporter {
 
     private send(): void {
         for (const eventName in this._eventBuckets) {
-            const bucket = this._eventBuckets[eventName];
+            let bucket = this._eventBuckets[eventName];
+            const eventConfig = this._eventConfig[eventName];
+            if (eventConfig) {
+                const diff = bucket.length - eventConfig.batchCap;
+                if (diff > 0) {
+                    bucket = bucket.slice(0, eventConfig.batchCap);
+                    logger.log(`Truncate ${diff} ${eventName} event entries.`);
+                }
+            }
             let properties = BatchTelemetryReporter.transfromBucketData(bucket);
             this._telemetryReporter.reportEvent(eventName, properties);
         }
