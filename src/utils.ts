@@ -533,10 +533,6 @@ export function uppercaseFirstLetter(str: string): string {
     return str.substr(0, 1).toUpperCase() + str.substr(1);
 }
 
-export type Partial<T> = {
-    [P in keyof T]?: T[P];
-};
-
 export function getLine(msg: string, n = 0): string {
     return msg.split('\n')[n];
 }

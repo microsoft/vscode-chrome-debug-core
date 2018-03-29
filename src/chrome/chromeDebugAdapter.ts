@@ -2182,33 +2182,20 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Runtime.evaluate(args);
     }
 
-    private async waitThenDoEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+    private async waitThenDoEvaluate(expression: string, frameId?: number, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
         const waitThenEval = this._waitAfterStep.then(() => this.doEvaluate(expression, frameId, extraArgs));
         this._waitAfterStep = waitThenEval.then(() => { }, () => { }); // to Promise<void> and handle failed evals
         return waitThenEval;
     }
 
-    private async doEvaluate(expression: string, frameId?: number, extraArgs?: utils.Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+    private async doEvaluate(expression: string, frameId?: number, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
         if (typeof frameId === 'number') {
             const frame = this._frameHandles.get(frameId);
             if (!frame || !frame.callFrameId) {
                 return utils.errP(errors.evalNotAvailableMsg);
             }
 
-            const callFrameId = frame.callFrameId;
-            let args: Crdp.Debugger.EvaluateOnCallFrameRequest = {
-                callFrameId,
-                expression,
-                // silent because of an issue where node will sometimes hang when breaking on exceptions in console messages. Fixed somewhere between 8 and 8.4
-                silent: true,
-                includeCommandLineAPI: true,
-                objectGroup: 'console'
-            };
-            if (extraArgs) {
-                args = Object.assign(args, extraArgs);
-            }
-
-            return this.chrome.Debugger.evaluateOnCallFrame(args);
+            return this.evaluateOnCallFrame(expression, frame, extraArgs);
         } else {
             let args: Crdp.Runtime.EvaluateRequest = {
                 expression,
@@ -2224,6 +2211,23 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             return this.globalEvaluate(args);
         }
+    }
+
+    protected async evaluateOnCallFrame(expression: string, frame: Crdp.Debugger.CallFrame, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+        const callFrameId = frame.callFrameId;
+        let args: Crdp.Debugger.EvaluateOnCallFrameRequest = {
+            callFrameId,
+            expression,
+            // silent because of an issue where node will sometimes hang when breaking on exceptions in console messages. Fixed somewhere between 8 and 8.4
+            silent: true,
+            includeCommandLineAPI: true,
+            objectGroup: 'console'
+        };
+        if (extraArgs) {
+            args = Object.assign(args, extraArgs);
+        }
+
+        return this.chrome.Debugger.evaluateOnCallFrame(args);
     }
 
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
