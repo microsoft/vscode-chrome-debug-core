@@ -24,6 +24,7 @@ import * as utils from './utils';
 import * as telemetry from './telemetry';
 import * as variables from './chrome/variables';
 import { NullLogger } from './nullLogger';
+import * as executionTimingsReporter from './executionTimingsReporter';
 
 import Crdp from '../crdp/crdp';
 
@@ -48,6 +49,7 @@ export {
     telemetry,
     variables,
     NullLogger,
+    executionTimingsReporter,
 
     Crdp
 };
