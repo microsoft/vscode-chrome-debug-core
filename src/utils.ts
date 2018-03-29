@@ -12,6 +12,7 @@ import * as http from 'http';
 import * as https from 'https';
 
 import { IExecutionResultTelemetryProperties } from './telemetry';
+import { ErrorWithMessage } from './errors';
 
 export const enum Platform {
     Windows, OSX, Linux
@@ -584,5 +585,8 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     }
     if (e.stack) {
         properties.exceptionStack = e.stack;
+    }
+    if (e instanceof ErrorWithMessage) {
+        properties.exceptionId = e.id.toString();
     }
 }
