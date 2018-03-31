@@ -8,7 +8,7 @@ import * as os from 'os';
 
 import * as testUtils from '../testUtils';
 
-import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath } from '../../src/sourceMaps/sourceMapUtils';
+import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath, getFullSourceEntry } from '../../src/sourceMaps/sourceMapUtils';
 
 suite('SourceMapUtils', () => {
     setup(() => {
@@ -229,6 +229,22 @@ suite('SourceMapUtils', () => {
             const scriptPath = 'eval://53';
             const sourceMapPath = 'foo.min.js';
             assert.equal(resolveMapPath(scriptPath, sourceMapPath), null);
+        });
+    });
+
+    suite('getFullSourceEntry', () => {
+        test('works', () => {
+            assert.equal(getFullSourceEntry(undefined, 'foo/bar.js'), 'foo/bar.js');
+            assert.equal(getFullSourceEntry('webpack:///', 'foo/bar.js'), 'webpack:///foo/bar.js');
+            assert.equal(getFullSourceEntry('webpack:///project', 'foo/bar.js'), 'webpack:///project/foo/bar.js');
+            assert.equal(getFullSourceEntry('webpack:///project/', 'foo/bar.js'), 'webpack:///project/foo/bar.js');
+
+            assert.equal(getFullSourceEntry('file:///c:/project', 'foo/bar.js'), 'file:///c:/project/foo/bar.js');
+
+            assert.equal(getFullSourceEntry('/', 'foo/bar.js'), '/foo/bar.js');
+            assert.equal(getFullSourceEntry('/project/', 'foo/bar.js'), '/project/foo/bar.js');
+            assert.equal(getFullSourceEntry('project/', 'foo/bar.js'), 'project/foo/bar.js');
+            assert.equal(getFullSourceEntry('./project/', 'foo/bar.js'), './project/foo/bar.js');
         });
     });
 });

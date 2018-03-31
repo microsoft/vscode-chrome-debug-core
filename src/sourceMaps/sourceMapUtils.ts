@@ -129,3 +129,15 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string): string
 
     return mapPath;
 }
+
+export function getFullSourceEntry(sourceRoot: string | undefined, sourcePath: string): string {
+    if (!sourceRoot) {
+        return sourcePath;
+    }
+
+    if (!sourceRoot.endsWith('/')) {
+        sourceRoot += '/';
+    }
+
+    return sourceRoot + sourcePath;
+}
