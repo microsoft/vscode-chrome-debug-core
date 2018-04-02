@@ -585,4 +585,7 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     if (e.stack) {
         properties.exceptionStack = e.stack;
     }
+    if (e.id) {
+        properties.exceptionId = e.id.toString();
+    }
 }
