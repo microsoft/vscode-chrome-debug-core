@@ -13,33 +13,23 @@ export const runtimeNotConnectedMsg = localize('not.connected', 'not connected t
 export const noRestartFrame = localize('restartFrame.cannot', "Can't restart frame");
 
 export class ErrorWithMessage extends Error implements DebugProtocol.Message {
-    private _message: DebugProtocol.Message;
+    public id: number;
+    public format: string;
+    public variables?: { [key: string]: string; };
+    public sendTelemetry?: boolean;
+    public showUser?: boolean;
+    public url?: string;
+    public urlLabel?: string;
 
     constructor (message: DebugProtocol.Message) {
         super(message.format);
-        this._message = message;
-    }
-
-    public get id(): number {
-        return this._message.id;
-    }
-    public get format(): string {
-        return this._message.format;
-    }
-    public get variables(): { [key: string]: string; } {
-        return this._message.variables;
-    }
-    public get sendTelemetry(): boolean {
-        return this._message.sendTelemetry;
-    }
-    public get showUser(): boolean {
-        return this._message.showUser;
-    }
-    public get url(): string {
-        return this._message.url;
-    }
-    public get urlLabel(): string {
-        return this._message.urlLabel;
+        this.id = message.id;
+        this.format = message.format;
+        this.variables = message.variables;
+        this.sendTelemetry = message.sendTelemetry;
+        this.showUser = message.showUser;
+        this.url = message.url;
+        this.urlLabel = message.urlLabel;
     }
 }
 
