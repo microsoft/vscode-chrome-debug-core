@@ -75,13 +75,7 @@ export interface ISetBreakpointsArgs extends DebugProtocol.SetBreakpointsArgumen
     authoredPath?: string;
 }
 
-/*
- * The ResponseBody interfaces are copied from debugProtocol.d.ts which defines these inline in the Response interfaces.
- * They should always match those interfaces, see the original for comments.
- */
-export interface ISetBreakpointsResponseBody {
-    breakpoints: DebugProtocol.Breakpoint[];
-}
+export type ISetBreakpointsResponseBody = DebugProtocol.SetBreakpointsResponse['body'];
 
 /**
  * Internal clone of the crdp version optional fields. If a created BP is in the same location as an existing BP,
@@ -94,70 +88,39 @@ export interface ISetBreakpointResult {
     actualLocation?: Crdp.Debugger.Location;
 }
 
-export interface ISourceResponseBody {
-    content: string;
-    mimeType?: string;
-}
+export type ISourceResponseBody = DebugProtocol.SourceResponse['body'];
 
-export interface IThreadsResponseBody {
-    threads: DebugProtocol.Thread[];
-}
+export type IThreadsResponseBody = DebugProtocol.ThreadsResponse['body'];
 
-export interface IStackTraceResponseBody {
-    stackFrames: DebugProtocol.StackFrame[];
-    totalFrames?: number;
+export type IStackTraceResponseBody = DebugProtocol.StackTraceResponse['body'];
+
+export interface IInternalStackTraceResponseBody extends IStackTraceResponseBody {
+    stackFrames: IInternalStackFrame[];
 }
 
 export interface IInternalStackFrame extends DebugProtocol.StackFrame {
     isSourceMapped?: boolean;
 }
 
-export interface IInternalStackTraceResponseBody extends IStackTraceResponseBody {
-    stackFrames: IInternalStackFrame[];
-}
+export type IScopesResponseBody = DebugProtocol.ScopesResponse['body'];
 
-export interface IScopesResponseBody {
-    scopes: DebugProtocol.Scope[];
-}
+export type IVariablesResponseBody = DebugProtocol.VariablesResponse['body'];
 
-export interface IVariablesResponseBody {
-    variables: DebugProtocol.Variable[];
-}
+export type IEvaluateResponseBody = DebugProtocol.EvaluateResponse['body'];
 
-export interface IEvaluateResponseBody {
-    result: string;
-    type?: string;
-    variablesReference: number;
-    namedVariables?: number;
-    indexedVariables?: number;
-}
+export type ISetVariableResponseBody = DebugProtocol.SetVariableResponse['body'];
 
-export interface ISetVariableResponseBody {
-    value: string;
-}
+export type ICompletionsResponseBody = DebugProtocol.CompletionsResponse['body'];
 
-export interface ICompletionsResponseBody {
-    /** The possible completions for . */
-    targets: DebugProtocol.CompletionItem[];
-}
-
-export interface IGetLoadedSourcesResponseBody {
-    sources: DebugProtocol.Source[];
-}
+export type IGetLoadedSourcesResponseBody = DebugProtocol.LoadedSourcesResponse['body'];
 
 export interface IExceptionDetailsVS extends DebugProtocol.ExceptionDetails {
     /** A VS-specific property */
     formattedDescription?: string;
 }
 
-export interface IExceptionInfoResponseBody {
-    /** ID of the exception that was thrown. */
-    exceptionId: string;
-    /** Descriptive text for the exception provided by the debug adapter. */
-    description?: string;
-    /** Mode that caused the exception notification to be raised. */
-    breakMode: DebugProtocol.ExceptionBreakMode;
-    /** Detailed information about the exception. */
+type DAPExceptionInfoResponseBody = DebugProtocol.ExceptionInfoResponse['body'];
+export interface IExceptionInfoResponseBody extends DAPExceptionInfoResponseBody {
     details?: IExceptionDetailsVS;
 }
 
