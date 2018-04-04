@@ -582,7 +582,4 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     if (e.name) {
         properties.exceptionName = e.name;
     }
-    if (e.stack) {
-        properties.exceptionStack = e.stack;
-    }
 }

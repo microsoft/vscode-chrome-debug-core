@@ -14,7 +14,6 @@ export interface  IExecutionResultTelemetryProperties {
     exceptionType?: ExceptionType;
     exceptionMessage?: string;
     exceptionName?: string;
-    exceptionStack?: string;
     startTime?: string;
     timeTakenInMilliseconds?: string;
 }
