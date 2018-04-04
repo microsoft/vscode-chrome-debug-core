@@ -37,6 +37,8 @@ export interface ICommonRequestArgs {
 
     /** Private undocumented property to multiplex the CRDP connection into an additional channel */
     extraCRDPChannelPort?: number;
+
+    _suppressConsoleOutput?: boolean;
 }
 
 export interface IInitializeRequestArgs extends DebugProtocol.InitializeRequestArguments {

@@ -1062,6 +1062,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
+        if (this._launchAttachArgs._suppressConsoleOutput) {
+            return;
+        }
+
         const result = formatConsoleArguments(params);
         if (result) {
             this.logObjects(result.args, result.isError, params.stackTrace);
@@ -1101,6 +1105,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): Promise<void> {
+        if (this._launchAttachArgs._suppressConsoleOutput) {
+            return;
+        }
+
         return this._currentLogMessage = this._currentLogMessage.then(async () => {
             const formattedException = formatExceptionDetails(params.exceptionDetails);
             const exceptionStr = await this.mapFormattedException(formattedException);
