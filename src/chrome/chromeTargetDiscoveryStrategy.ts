@@ -59,8 +59,19 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
         this.logger.log(`Discovering targets via ${url}`);
+
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "Attach.RequestDebuggerTargetsInformation" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
         this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
         return utils.getURL(url).then<ITarget[]>(jsonResponse => {
+            /* __GDPR__FRAGMENT__
+               "StepNames" : {
+                  "Attach.ProcessDebuggerTargetsInformation" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+               }
+             */
             this.events.emitStepStarted('Attach.ProcessDebuggerTargetsInformation');
             try {
                 const responseArray = JSON.parse(jsonResponse);

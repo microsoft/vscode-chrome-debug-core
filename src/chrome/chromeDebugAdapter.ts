@@ -387,12 +387,22 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     protected hookConnectionEvents(): void {
         this.chrome.Debugger.onPaused((params) => {
+            /* __GDPR__
+               "target/notification/onPaused" : {
+                  "${include}": [ "${IExecutionResultTelemetryProperties}" ]
+               }
+             */
             this.runAndMeasureProcessingTime('target/notification/onPaused', () => {
                 return this.onPaused(params);
             });
         });
         this.chrome.Debugger.onResumed(() => this.onResumed());
         this.chrome.Debugger.onScriptParsed((params) => {
+            /* __GDPR__
+               "target/notification/onScriptParsed" : {
+                  "${include}": [ "${IExecutionResultTelemetryProperties}" ]
+               }
+             */
             this.runAndMeasureProcessingTime('target/notification/onScriptParsed', () => {
                 return this.onScriptParsed(params);
             });
@@ -425,6 +435,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const elapsedTime = utils.calculateElapsedTime(startTimeMark);
         properties.timeTakenInMilliseconds = elapsedTime.toString();
+
+        // Callers set GDPR annotation
         this._batchTelemetryReporter.reportEvent(notificationName, properties);
     }
 
@@ -442,6 +454,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async doAttach(port: number, targetUrl?: string, address?: string, timeout?: number, websocketUrl?: string, extraCRDPChannelPort?: number): Promise<void> {
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "Attach" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
         this.events.emitStepStarted('Attach');
         // Client is attaching - if not attached to the chrome target, create a connection and attach
         this._clientAttached = true;
@@ -452,6 +469,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 await this._chromeConnection.attach(address, port, targetUrl, timeout, extraCRDPChannelPort);
             }
 
+            /* __GDPR__FRAGMENT__
+            "StepNames" : {
+                "Attach.ConfigureDebuggingSession.Internal" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+            }
+            */
             this.events.emitStepStarted('Attach.ConfigureDebuggingSession.Internal');
 
             this._port = port;
@@ -476,6 +498,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 patterns = patterns.concat(this._launchAttachArgs.skipFileRegExps);
             }
 
+            /* __GDPR__FRAGMENT__
+               "StepNames" : {
+                  "Attach.ConfigureDebuggingSession.Target" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+               }
+             */
             this.events.emitStepStarted('Attach.ConfigureDebuggingSession.Target');
 
             // Make sure debugging domain is enabled before calling refreshBlackboxPatterns() below
