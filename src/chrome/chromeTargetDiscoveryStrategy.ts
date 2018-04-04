@@ -54,7 +54,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
-    private _getTargets(address: string, port: number): Promise<ITarget[]> {
+    private async _getTargets(address: string, port: number): Promise<ITarget[]> {
         // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
@@ -66,28 +66,26 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
            }
          */
         this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
-        return utils.getURL(url).then<ITarget[]>(jsonResponse => {
-            /* __GDPR__FRAGMENT__
-               "StepNames" : {
-                  "Attach.ProcessDebuggerTargetsInformation" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
-               }
-             */
-            this.events.emitStepStarted('Attach.ProcessDebuggerTargetsInformation');
-            try {
-                const responseArray = JSON.parse(jsonResponse);
-                if (Array.isArray(responseArray)) {
-                    return (responseArray as ITarget[])
-                        .map(target => this._fixRemoteUrl(address, port, target));
-                }
-            } catch (e) {
-                // JSON.parse can throw
-            }
+        const jsonResponse = await utils.getURL(url)
+            .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
 
-            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid: {0}', jsonResponse));
-        },
-        e => {
-            return utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message));
-        });
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "Attach.ProcessDebuggerTargetsInformation" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
+        this.events.emitStepStarted('Attach.ProcessDebuggerTargetsInformation');
+        try {
+            const responseArray = JSON.parse(jsonResponse);
+            if (Array.isArray(responseArray)) {
+                return (responseArray as ITarget[])
+                    .map(target => this._fixRemoteUrl(address, port, target));
+            } else {
+                return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
+            }
+        } catch (e) {
+            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse));
+        }
     }
 
     private _getMatchingTargets(targets: ITarget[], targetFilter?: ITargetFilter, targetUrl?: string): ITarget[] {
