@@ -1075,7 +1075,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private async logObjects(objs: Crdp.Runtime.RemoteObject[], isError = false, stackTrace?: Crdp.Runtime.StackTrace): Promise<void> {
         // This is an asynchronous method, so ensure that we handle one at a time so that they are sent out in the same order that they came in.
         this._currentLogMessage = this._currentLogMessage
-            .catch(err => logger.error(err.toString()))
             .then(async () => {
                 const category = isError ? 'stderr' : 'stdout';
 
@@ -1101,7 +1100,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 this._session.sendEvent(e);
-            });
+            })
+            .catch(err => logger.error(err.toString()));
     }
 
     protected async onExceptionThrown(params: Crdp.Runtime.ExceptionThrownEvent): Promise<void> {
@@ -1123,7 +1123,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             this._session.sendEvent(e);
-        });
+        })
+        .catch(err => logger.error(err.toString()));
     }
 
     private async mapCallFrame(frame: Crdp.Runtime.CallFrame): Promise<DebugProtocol.StackFrame> {
