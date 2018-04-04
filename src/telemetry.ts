@@ -10,8 +10,10 @@ import { fillErrorDetails } from './utils';
    "IExecutionResultTelemetryProperties" : {
         "successful" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
         "exceptionType" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
-        "exceptionMessage" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
-        "exceptionName" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "exceptionMessage" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "exceptionName" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "exceptionStack" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "exceptionId" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
         "startTime" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
         "timeTakenInMilliseconds" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" }
    }
