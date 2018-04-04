@@ -101,6 +101,12 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             properties.exceptionType = exceptionType;
 
             utils.fillErrorDetails(properties, err);
+
+            /* __GDPR__
+               "error" : {
+                    "${include}": [ "${IExecutionResultTelemetryProperties}" ]
+               }
+             */
             telemetry.reportEvent(ErrorTelemetryEventName, properties);
         };
 
@@ -157,6 +163,16 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         const telemetryPropertyCollector = new TelemetryPropertyCollector();
 
         if (isSequentialRequest) {
+            /* __GDPR__FRAGMENT__
+               "StepNames" : {
+                  "${wildcard}": [
+                     {
+                        "${prefix}": "ClientRequest/",
+                        "${classification}": { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+                     }
+                  ]
+               }
+             */
             this.events.emitStepStarted(eventName);
         }
 
@@ -171,6 +187,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                 this.events.emitRequestCompleted(eventName, startTime, timeTakenInMilliseconds);
             }
             Object.assign(properties, telemetryPropertyCollector.getProperties());
+
+            // GDPR annotations go with each individual request type
             telemetry.reportEvent(eventName, properties);
         };
 
@@ -245,6 +263,12 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                 telemetryData.RequestedContentWasNotDetectedReason = reasonForNotDetected;
             }
 
+            /* __GDPR__
+               "report-start-up-timings" : {
+                  "RequestedContentWasDetected" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                  "${include}": [ "${ReportProps}" ]
+               }
+             */
             telemetry.reportEvent('report-start-up-timings', telemetryData);
             this.haveTimingsWhileStartingUpBeenReported = true;
         }
@@ -270,5 +294,7 @@ function logVersionInfo(): void {
     logger.log(`Adapter node: ${process.version} ${process.arch}`);
     const coreVersion = require('../../../package.json').version;
     logger.log('vscode-chrome-debug-core: ' + coreVersion);
+
+    // __GDPR__COMMON__ "Versions.DebugAdapterCore" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
     telemetry.addCustomGlobalProperty( { 'Versions.DebugAdapterCore': coreVersion });
 }

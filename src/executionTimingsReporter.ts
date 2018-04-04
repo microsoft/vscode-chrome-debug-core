@@ -116,6 +116,12 @@ export class ExecutionTimingsReporter {
     private readonly _requestProperties = {} as IAllRequestProperties;
 
     private _currentStepStartTime: HighResTimer;
+
+    /* __GDPR__FRAGMENT__
+       "StepNames" : {
+          "BeforeFirstStep" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+       }
+     */
     private _currentStepName = 'BeforeFirstStep';
 
     constructor() {
@@ -139,12 +145,47 @@ export class ExecutionTimingsReporter {
     }
 
     public generateReport(): {[stepName: string]: [number] | number} {
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "AfterLastStep" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
         this.recordPreviousStepAndConfigureNewStep('AfterLastStep');
         this._subscriptionManager.removeAll(); // Remove all subscriptions so we don't get any new events
-        return Object.assign({}, { Steps: this._stepsList, All: calculateElapsedTime(this._allStartTime) }, this._requestProperties, this._eventsExecutionTimesInMilliseconds);
+
+        /* __GDPR__FRAGMENT__
+           "ReportProps" : {
+              "Steps" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+              "All" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+              "${wildcard}": [
+                 {
+                    "${prefix}": "Request.",
+                    "${classification}": { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+                 }
+              ],
+              "${include}": [ "${RequestProperties}", "${StepNames}" ]
+           }
+         */
+        return Object.assign({},
+            {
+                Steps: this._stepsList,
+                All: calculateElapsedTime(this._allStartTime)
+            },
+            this._requestProperties,
+            this._eventsExecutionTimesInMilliseconds);
     }
 
     public recordRequestCompleted(requestName: string, startTime: number, timeTakenInMilliseconds: number): void {
+        /* __GDPR__FRAGMENT__
+           "RequestProperties" : {
+              "${wildcard}": [
+                 {
+                    "${prefix}": "Request.",
+                    "${classification}": { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+                 }
+              ]
+           }
+         */
         const propertyPrefix = `Request.${requestName}.`;
         this.addElementToArrayProperty(this._requestProperties, propertyPrefix + 'startTime', startTime);
         this.addElementToArrayProperty(this._requestProperties, propertyPrefix + 'timeTakenInMilliseconds', timeTakenInMilliseconds);
@@ -165,6 +206,16 @@ export class ExecutionTimingsReporter {
         });
 
         this._subscriptionManager.on(eventEmitter, stepCompletedEventName, (args: IStepCompletedEventArguments) => {
+            /* __GDPR__FRAGMENT__
+               "StepName" : {
+                  "${wildcard}": [
+                     {
+                        "${prefix}": "WaitingAfter",
+                        "${classification}": { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+                     }
+                  ]
+               }
+             */
             this.recordTotalTimeUntilMilestone(`WaitingAfter.${args.stepName}`);
         });
 

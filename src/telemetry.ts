@@ -6,6 +6,16 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { OutputEvent } from 'vscode-debugadapter';
 import { fillErrorDetails } from './utils';
 
+/* __GDPR__FRAGMENT__
+   "IExecutionResultTelemetryProperties" : {
+        "successful" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "exceptionType" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "exceptionMessage" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "exceptionName" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "startTime" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
+        "timeTakenInMilliseconds" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" }
+   }
+ */
 export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
 export interface  IExecutionResultTelemetryProperties {
     // There is an issue on some clients and reportEvent only currently accept strings properties,

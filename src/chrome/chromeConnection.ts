@@ -123,6 +123,11 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "Attach.AttachToTargetDebuggerWebsocket" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
         this.events.emitStepStarted('Attach.AttachToTargetDebuggerWebsocket');
         this._socket = new LoggingSocket(wsUrl);
         if (extraCRDPChannelPort) {
