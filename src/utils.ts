@@ -577,13 +577,26 @@ export function calculateElapsedTime(startProcessingTime: HighResTimer): number 
     return ellapsedMilliseconds;
 }
 
+// Pattern: The pattern recognizes file paths and captures the file name and the colon at the end.
+// Next line is a sample path aligned with the regexp parts that recognize it/match it. () is for the capture group
+//                                C  :     \  foo      \  (in.js:)
+//                                C  :     \  foo\ble  \  (fi.ts:)
+const extractFileNamePattern = /[A-z]:(?:[\\/][^:]*)+[\\/]([^:]*:)/g;
+
 export function fillErrorDetails(properties: IExecutionResultTelemetryProperties, e: any): void {
     properties.exceptionMessage = e.message || e.toString();
     if (e.name) {
         properties.exceptionName = e.name;
     }
-    if (e.stack) {
-        properties.exceptionStack = e.stack;
+    if (typeof e.stack === 'string') {
+        let unsanitizedStack = e.stack;
+        try {
+            // We remove the file path, we just leave the file names
+            unsanitizedStack = unsanitizedStack.replace(extractFileNamePattern, '$1');
+        } catch (exception) {
+            // Ignore error while sanitizing the call stack
+        }
+        properties.exceptionStack = unsanitizedStack;
     }
     if (e.id) {
         properties.exceptionId = e.id.toString();
