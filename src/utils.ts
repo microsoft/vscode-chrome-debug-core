@@ -588,7 +588,7 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     if (e.name) {
         properties.exceptionName = e.name;
     }
-    if (typeof e.stack === "string") {
+    if (typeof e.stack === 'string') {
         let unsanitizedStack = e.stack;
         try {
             // We remove the file path, we just leave the file names
