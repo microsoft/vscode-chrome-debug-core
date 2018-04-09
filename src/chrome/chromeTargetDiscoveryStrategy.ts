@@ -89,6 +89,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     }
 
     private _getMatchingTargets(targets: ITarget[], targetFilter?: ITargetFilter, targetUrl?: string): ITarget[] {
+        const unfilteredTargets = targets;
         if (targetFilter) {
             // Apply the consumer-specific target filter
             targets = targets.filter(targetFilter);
@@ -100,7 +101,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             targets;
 
         if (!filteredTargets.length) {
-            throw new Error(localize('attach.noMatchingTarget', "Can't find a target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
+            throw new Error(localize('attach.noMatchingTarget', "Can't find a target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(unfilteredTargets.map(target => target.url))));
         }
 
         // If all possible targets appear to be attached to have some other devtool attached, then fail
