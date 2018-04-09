@@ -89,18 +89,17 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     }
 
     private _getMatchingTargets(targets: ITarget[], targetFilter?: ITargetFilter, targetUrl?: string): ITarget[] {
-        if (targetFilter) {
-            // Apply the consumer-specific target filter
-            targets = targets.filter(targetFilter);
-        }
-
-        // If a url was specified, try to filter to that url
-        let filteredTargets = targetUrl ?
-            chromeUtils.getMatchingTargets(targets, targetUrl) :
+        let filteredTargets = targetFilter ?
+            targets.filter(targetFilter) : // Apply the consumer-specific target filter
             targets;
 
+        // If a url was specified, try to filter to that url
+        filteredTargets = targetUrl ?
+            chromeUtils.getMatchingTargets(filteredTargets, targetUrl) :
+            filteredTargets;
+
         if (!filteredTargets.length) {
-            throw new Error(localize('attach.noMatchingTarget', "Can't find a target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
+            throw new Error(localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
         }
 
         // If all possible targets appear to be attached to have some other devtool attached, then fail
