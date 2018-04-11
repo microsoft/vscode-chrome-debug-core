@@ -207,7 +207,7 @@ export class ExecutionTimingsReporter {
 
         this._subscriptionManager.on(eventEmitter, stepCompletedEventName, (args: IStepCompletedEventArguments) => {
             /* __GDPR__FRAGMENT__
-               "StepName" : {
+               "StepNames" : {
                   "${wildcard}": [
                      {
                         "${prefix}": "WaitingAfter",
