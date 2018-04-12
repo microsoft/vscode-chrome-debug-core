@@ -21,7 +21,7 @@ export class ErrorWithMessage extends Error implements DebugProtocol.Message {
     public url?: string;
     public urlLabel?: string;
 
-    constructor (message: DebugProtocol.Message) {
+    constructor(message: DebugProtocol.Message) {
         super(message.format);
         this.id = message.id;
         this.format = message.format;

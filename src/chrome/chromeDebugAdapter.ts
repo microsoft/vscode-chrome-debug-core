@@ -162,7 +162,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
-        this.events = new StepProgressEventsEmitter([this._chromeConnection.events]);
+        this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
 
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
         this._variableHandles = new variables.VariableHandles();

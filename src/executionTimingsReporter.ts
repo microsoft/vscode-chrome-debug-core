@@ -54,7 +54,7 @@ export interface IFinishedStartingUpEventsEmitter {
 }
 
 export class StepProgressEventsEmitter extends EventEmitter implements IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter {
-    constructor(private readonly _nestedEmitters: [IStepStartedEventsEmitter] = [] as [IStepStartedEventsEmitter]) {
+    constructor(private readonly _nestedEmitters: IStepStartedEventsEmitter[] = [] as IStepStartedEventsEmitter[]) {
         super();
     }
 

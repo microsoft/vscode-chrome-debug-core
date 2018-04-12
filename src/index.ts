@@ -12,6 +12,7 @@ import * as chromeTargetDiscoveryStrategy from './chrome/chromeTargetDiscoverySt
 import * as chromeUtils from './chrome/chromeUtils';
 import * as stoppedEvent from './chrome/stoppedEvent';
 import { InternalSourceBreakpoint } from './chrome/internalSourceBreakpoint';
+import { ErrorWithMessage } from './errors';
 
 import { BasePathTransformer } from './transformers/basePathTransformer';
 import { UrlPathTransformer } from './transformers/urlPathTransformer';
@@ -39,6 +40,7 @@ export {
     stoppedEvent,
     LoadedSourceEventReason,
     InternalSourceBreakpoint,
+    ErrorWithMessage,
 
     UrlPathTransformer,
     BasePathTransformer,
