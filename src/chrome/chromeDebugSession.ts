@@ -104,7 +104,10 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
             /* __GDPR__
                "error" : {
-                    "${include}": [ "${IExecutionResultTelemetryProperties}" ]
+                    "${include}": [
+                        "${IExecutionResultTelemetryProperties}",
+                        "${DebugCommonProperties}"
+                    ]
                }
              */
             telemetry.reportEvent(ErrorTelemetryEventName, properties);
@@ -266,7 +269,10 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             /* __GDPR__
                "report-start-up-timings" : {
                   "RequestedContentWasDetected" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
-                  "${include}": [ "${ReportProps}" ]
+                  "${include}": [
+                      "${ReportProps}",
+                      "${DebugCommonProperties}"
+                    ]
                }
              */
             telemetry.reportEvent('report-start-up-timings', telemetryData);
@@ -295,6 +301,10 @@ function logVersionInfo(): void {
     const coreVersion = require('../../../package.json').version;
     logger.log('vscode-chrome-debug-core: ' + coreVersion);
 
-    // __GDPR__COMMON__ "Versions.DebugAdapterCore" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+    /* __GDPR__FRAGMENT__
+       "DebugCommonProperties" : {
+          "Versions.DebugAdapterCore" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+       }
+     */
     telemetry.addCustomGlobalProperty( { 'Versions.DebugAdapterCore': coreVersion });
 }
