@@ -18,7 +18,7 @@
     "source-map": "^0.6.1",
     "vscode-debugadapter": "^1.28.0",
     "vscode-debugprotocol": "^1.28.0",
-    "vscode-nls": "^3.2.1",
+    "vscode-nls": "^3.2.2",
     "ws": "^3.3.2"
   },
   "devDependencies": {
@@ -48,7 +48,7 @@
     "tslint-microsoft-contrib": "^5.0.3",
     "typemoq": "^0.3.3",
     "typescript": "^2.7.2",
-    "vscode-nls-dev": "^3.0.7"
+    "vscode-nls-dev": "^3.0.8"
   },
   "scripts": {
     "build": "gulp build",
