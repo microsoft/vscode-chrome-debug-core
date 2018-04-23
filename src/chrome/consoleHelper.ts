@@ -79,7 +79,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
     const firstTextArg = m.args.shift();
 
     // currentCollapsedStringArg is the accumulated text
-    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';;
+    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (currentCollapsedStringArg.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
@@ -169,4 +169,39 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');
+}
+
+export const LOGPOINT_SPECIAL_MESSAGE = '$vscode_logpoint_expr$';
+const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
+
+export function logpointExpressionToConsoleLog(msg: string): string {
+    msg = msg.replace('%', '%%');
+
+    const args: string[] = [];
+    const format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
+        const a = group.trim();
+        if (a) {
+            args.push(`(${a})`);
+            return '%O';
+        } else {
+            return '';
+        }
+    })
+        .replace('\'', '\\\'');
+
+    args.push(`'${LOGPOINT_SPECIAL_MESSAGE}'`);
+
+    const argStr = args.join(', ');
+    return `console.log('${format}', ${argStr})`;
+}
+
+export function stacktraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
+    if (m.args.length && m.args[m.args.length - 1].type === 'string' && m.args[m.args.length - 1].value === LOGPOINT_SPECIAL_MESSAGE) {
+        return {
+            ...m.stackTrace,
+            callFrames: m.stackTrace.callFrames.slice(1)
+        };
+    }
+
+    return m.stackTrace;
 }
