@@ -65,6 +65,10 @@ suite('ConsoleHelper', () => {
             doAssertForString(Runtime.makeLog(1, 2, 3), '1 2 3');
         });
 
+        test('%O text types', () => {
+            doAssertForString(Runtime.makeLog('foo %O bar %O etc %O more', 'test', 1, null, undefined, NaN), 'foo test bar 1 etc null more undefined NaN');
+        });
+
         test('string and object', () => {
             const result = ConsoleHelper.formatConsoleArguments(Runtime.makeLog('foo', '$obj', 'bar'));
             assert.equal(result.isError, false);
@@ -100,6 +104,28 @@ suite('ConsoleHelper', () => {
             const tableMessage = Runtime.makeLog('foo');
             tableMessage.type = 'table';
             assert.equal(ConsoleHelper.formatConsoleArguments(tableMessage), null);
+        });
+
+        test('%O with object', () => {
+            const result = ConsoleHelper.formatConsoleArguments(Runtime.makeLog('foo %O bar %O test', '$obj', '$obj'));
+            assert.equal(result.isError, false);
+            assert.equal(result.args.length, 5);
+            assert.equal(result.args[0].value, 'foo ');
+            assert.equal(result.args[1].type, 'object');
+            assert.equal(result.args[2].value, ' bar ');
+            assert.equal(result.args[3].type, 'object');
+            assert.equal(result.args[4].value, ' test');
+        });
+
+        test('text params recombined after object arg', () => {
+            const result = ConsoleHelper.formatConsoleArguments(Runtime.makeLog('foo', '$obj', 'bar', 'test', '$obj', 'bar2', 'test2'));
+            assert.equal(result.isError, false);
+            assert.equal(result.args.length, 5);
+            assert.equal(result.args[0].value, 'foo');
+            assert.equal(result.args[1].type, 'object');
+            assert.equal(result.args[2].value, 'bar test');
+            assert.equal(result.args[3].type, 'object');
+            assert.equal(result.args[4].value, 'bar2 test2');
         });
     });
 
