@@ -94,9 +94,11 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
         }
     };
 
+    const displayArgs = isFromLogpoint(m) ? stripLogpointIndicatorArg(m.args) : m.args;
+
     // Collapse all text parameters, formatting properly if there's a format specifier
-    for (let argIdx = 0; argIdx < m.args.length; argIdx++) {
-        const arg = m.args[argIdx];
+    for (let argIdx = 0; argIdx < displayArgs.length; argIdx++) {
+        const arg = displayArgs[argIdx];
 
         const formatSpec = formatSpecifiers.shift();
         const formatted = formatArg(formatSpec, arg);
@@ -171,7 +173,15 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
         .join('\n');
 }
 
-export const LOGPOINT_SPECIAL_MESSAGE = '$vscode_logpoint_expr$';
+export const LOGPOINT_INDICATOR_MESSAGE = '$vscode_logpoint_expr$';
+function isFromLogpoint(m: Crdp.Runtime.ConsoleAPICalledEvent): boolean {
+    return m.args.length && m.args[m.args.length - 1].type === 'string' && m.args[m.args.length - 1].value === LOGPOINT_INDICATOR_MESSAGE;
+}
+
+function stripLogpointIndicatorArg(args: Crdp.Runtime.RemoteObject[]): Crdp.Runtime.RemoteObject[] {
+    return args.slice(0, args.length - 1);
+}
+
 const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
 
 export function logpointExpressionToConsoleLog(msg: string): string {
@@ -189,14 +199,14 @@ export function logpointExpressionToConsoleLog(msg: string): string {
     })
         .replace('\'', '\\\'');
 
-    args.push(`'${LOGPOINT_SPECIAL_MESSAGE}'`);
+    args.push(`'${LOGPOINT_INDICATOR_MESSAGE}'`);
 
     const argStr = args.join(', ');
     return `console.log('${format}', ${argStr})`;
 }
 
 export function stacktraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
-    if (m.args.length && m.args[m.args.length - 1].type === 'string' && m.args[m.args.length - 1].value === LOGPOINT_SPECIAL_MESSAGE) {
+    if (isFromLogpoint(m)) {
         return {
             ...m.stackTrace,
             callFrames: m.stackTrace.callFrames.slice(1)

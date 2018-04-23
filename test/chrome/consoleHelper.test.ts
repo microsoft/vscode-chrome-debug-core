@@ -139,19 +139,19 @@ suite('ConsoleHelper', () => {
         test('simple', () => {
             assert.equal(
                 ConsoleHelper.logpointExpressionToConsoleLog('hi'),
-                `console.log('hi', '${ConsoleHelper.LOGPOINT_SPECIAL_MESSAGE}')`);
+                `console.log('hi', '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
         });
 
         test('multiple args', () => {
             assert.equal(
                 ConsoleHelper.logpointExpressionToConsoleLog('hi {test} foo {bar}'),
-                `console.log('hi %O foo %O', (test), (bar), '${ConsoleHelper.LOGPOINT_SPECIAL_MESSAGE}')`);
+                `console.log('hi %O foo %O', (test), (bar), '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
         });
 
         test('multiple expressions', () => {
             assert.equal(
                 ConsoleHelper.logpointExpressionToConsoleLog('hi {test + 1} foo {bar(a, b)}'),
-                `console.log('hi %O foo %O', (test + 1), (bar(a, b)), '${ConsoleHelper.LOGPOINT_SPECIAL_MESSAGE}')`);
+                `console.log('hi %O foo %O', (test + 1), (bar(a, b)), '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
         });
     });
 });
