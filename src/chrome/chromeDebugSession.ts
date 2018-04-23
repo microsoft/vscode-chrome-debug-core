@@ -268,7 +268,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
             /* __GDPR__
                "report-start-up-timings" : {
-                  "RequestedContentWasDetected" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                  "RequestedContentWasNotDetectedReason" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
                   "${include}": [
                       "${ReportProps}",
                       "${DebugCommonProperties}"
