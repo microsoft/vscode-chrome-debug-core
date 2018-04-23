@@ -31,12 +31,12 @@ const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
 function logMessageToExpression(msg: string): string {
     msg = msg.replace('%', '%%');
 
-    let args: string[] = [];
+    const args: string[] = [];
     let format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
         const a = group.trim();
         if (a) {
             args.push(`(${a})`);
-            return '%s';
+            return '%O';
         } else {
             return '';
         }
@@ -44,5 +44,6 @@ function logMessageToExpression(msg: string): string {
 
     format = format.replace('\'', '\\\'');
 
-    return `console.log('${format}', ${args.join(', ')})`;
+    const argStr = args.length ? `, ${args.join(', ')}` : '';
+    return `console.log('${format}'${argStr})`;
 }
