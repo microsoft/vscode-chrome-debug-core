@@ -166,16 +166,6 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         const telemetryPropertyCollector = new TelemetryPropertyCollector();
 
         if (isSequentialRequest) {
-            /* __GDPR__FRAGMENT__
-               "StepNames" : {
-                  "${wildcard}": [
-                     {
-                        "${prefix}": "ClientRequest/",
-                        "${classification}": { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
-                     }
-                  ]
-               }
-             */
             this.events.emitStepStarted(eventName);
         }
 

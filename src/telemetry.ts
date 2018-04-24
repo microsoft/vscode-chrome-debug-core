@@ -93,6 +93,14 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
         properties.successful = 'false';
         properties.exceptionType = 'firstChance';
         fillErrorDetails(properties, rejection);
+
+        /* __GDPR__
+           "error-while-adding-custom-global-property" : {
+             "${include}": [
+                 "${IExecutionResultTelemetryProperties}"
+             ]
+           }
+         */
         this._telemetryReporter.reportEvent('error-while-adding-custom-global-property', properties);
     }
 }
