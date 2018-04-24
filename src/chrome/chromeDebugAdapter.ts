@@ -217,7 +217,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._pathTransformer.clearTargetContext();
     }
 
-    /* __GDPR__ "ClientRequest/initialize" : { } */
+    /* __GDPR__
+        "ClientRequest/initialize" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public initialize(args: IInitializeRequestArgs): DebugProtocol.Capabilities {
         if (args.supportsMapURLToFilePathRequest) {
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
@@ -277,7 +284,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    /* __GDPR__ "ClientRequest/configurationDone" : { } */
+    /* __GDPR__
+        "ClientRequest/configurationDone" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public configurationDone(): Promise<void> {
         return Promise.resolve();
     }
@@ -286,7 +300,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return !!this._breakOnLoadHelper;
     }
 
-    /* __GDPR__ "ClientRequest/launch" : { } */
+    /* __GDPR__
+        "ClientRequest/launch" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
@@ -308,7 +329,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    /* __GDPR__ "ClientRequest/attach" : { } */
+    /* __GDPR__
+        "ClientRequest/attach" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async attach(args: IAttachRequestArgs): Promise<void> {
         this._attachMode = true;
         this.commonArgs(args);
@@ -673,7 +701,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
     }
 
-    /* __GDPR__ "ClientRequest/exceptionInfo" : { } */
+    /* __GDPR__
+        "ClientRequest/exceptionInfo" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async exceptionInfo(args: DebugProtocol.ExceptionInfoArguments): Promise<IExceptionInfoResponseBody> {
         if (args.threadId !== ChromeDebugAdapter.THREAD_ID) {
             throw errors.invalidThread(args.threadId);
@@ -926,13 +961,27 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return undefined;
     }
 
-    /* __GDPR__ "ClientRequest/toggleSmartStep" : { } */
+    /* __GDPR__
+        "ClientRequest/toggleSmartStep" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async toggleSmartStep(): Promise<void> {
         this._smartStepEnabled = !this._smartStepEnabled;
         this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
-    /* __GDPR__ "ClientRequest/toggleSkipFileStatus" : { } */
+    /* __GDPR__
+        "ClientRequest/toggleSkipFileStatus" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
         if (args.path) {
             args.path = utils.fileUrlToPath(args.path);
@@ -1026,7 +1075,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }).catch(() => this.warnNoSkipFiles());
     }
 
-    /* __GDPR__ "ClientRequest/loadedSources" : { } */
+    /* __GDPR__
+        "ClientRequest/loadedSources" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async loadedSources(args: DebugProtocol.LoadedSourcesArguments): Promise<IGetLoadedSourcesResponseBody> {
         const sources = await Promise.all(Array.from(this._scriptsByUrl.values())
             .map(script => this.scriptToSource(script)));
@@ -1204,13 +1260,27 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    /* __GDPR__ "ClientRequest/disconnect" : { } */
+    /* __GDPR__
+        "ClientRequest/disconnect" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public disconnect(args: DebugProtocol.DisconnectArguments): void {
         this.shutdown();
         this.terminateSession('Got disconnect request', args);
     }
 
-    /* __GDPR__ "ClientRequest/setBreakpoints" : { } */
+    /* __GDPR__
+        "ClientRequest/setBreakpoints" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public setBreakpoints(args: ISetBreakpointsArgs, _: ITelemetryPropertyCollector, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
         this.reportBpTelemetry(args);
         if (args.source.path) {
@@ -1545,7 +1615,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    /* __GDPR__ "ClientRequest/setExceptionBreakpoints" : { } */
+    /* __GDPR__
+        "ClientRequest/setExceptionBreakpoints" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public setExceptionBreakpoints(args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<void> {
         let state: 'all' | 'uncaught' | 'none';
         if (args.filters.indexOf('all') >= 0) {
@@ -1566,7 +1643,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    /* __GDPR__ "ClientRequest/continue" : { } */
+    /* __GDPR__
+        "ClientRequest/continue" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     /**
      * internal -> suppress telemetry
      */
@@ -1587,7 +1671,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/next" : { } */
+    /* __GDPR__
+        "ClientRequest/next" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public next(): Promise<void> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -1606,7 +1697,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/stepIn" : { } */
+    /* __GDPR__
+        "ClientRequest/stepIn" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public stepIn(userInitiated = true): Promise<void> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -1628,7 +1726,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/stepOut" : { } */
+    /* __GDPR__
+        "ClientRequest/stepOut" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public stepOut(): Promise<void> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -1647,21 +1752,42 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/stepBack" : { } */
+    /* __GDPR__
+        "ClientRequest/stepBack" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public stepBack(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack()
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/reverseContinue" : { } */
+    /* __GDPR__
+        "ClientRequest/reverseContinue" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public reverseContinue(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse()
             .then(() => { /* make void */ },
                 e => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
-    /* __GDPR__ "ClientRequest/pause" : { } */
+    /* __GDPR__
+        "ClientRequest/pause" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public pause(): Promise<void> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -1678,7 +1804,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .then(() => { });
     }
 
-    /* __GDPR__ "ClientRequest/stackTrace" : { } */
+    /* __GDPR__
+        "ClientRequest/stackTrace" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
         if (!this._currentPauseNotification) {
             return Promise.reject(errors.noCallStackAvailable());
@@ -1889,7 +2022,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._sourceHandles.create({ scriptId });
     }
 
-    /* __GDPR__ "ClientRequest/scopes" : { } */
+    /* __GDPR__
+        "ClientRequest/scopes" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
         const currentFrame = this._frameHandles.get(args.frameId);
         if (!currentFrame || !currentFrame.location || !currentFrame.callFrameId) {
@@ -1955,7 +2095,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._currentPauseNotification.callFrames.findIndex(frame => frame.callFrameId === currentFrame.callFrameId);
     }
 
-    /* __GDPR__ "ClientRequest/variables" : { } */
+    /* __GDPR__
+        "ClientRequest/variables" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -2112,7 +2259,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         error => Promise.reject(errors.errorFromEvaluate(error.message)));
     }
 
-    /* __GDPR__ "ClientRequest/source" : { } */
+    /* __GDPR__
+        "ClientRequest/source" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public source(args: DebugProtocol.SourceArguments): Promise<ISourceResponseBody> {
         let scriptId: Crdp.Runtime.ScriptId;
         if (args.sourceReference) {
@@ -2158,7 +2312,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    /* __GDPR__ "ClientRequest/threads" : { } */
+    /* __GDPR__
+        "ClientRequest/threads" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public threads(): IThreadsResponseBody {
         return {
             threads: [
@@ -2174,7 +2335,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return 'Thread ' + ChromeDebugAdapter.THREAD_ID;
     }
 
-    /* __GDPR__ "ClientRequest/evaluate" : { } */
+    /* __GDPR__
+        "ClientRequest/evaluate" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async evaluate(args: DebugProtocol.EvaluateArguments): Promise<IEvaluateResponseBody> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
@@ -2320,7 +2488,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Debugger.evaluateOnCallFrame(args);
     }
 
-    /* __GDPR__ "ClientRequest/setVariable" : { } */
+    /* __GDPR__
+        "ClientRequest/setVariable" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
         const handle = this._variableHandles.get(args.variablesReference);
         if (!handle) {
@@ -2468,7 +2643,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    /* __GDPR__ "ClientRequest/restartFrame" : { } */
+    /* __GDPR__
+        "ClientRequest/restartFrame" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async restartFrame(args: DebugProtocol.RestartFrameArguments): Promise<void> {
         const callFrame = this._frameHandles.get(args.frameId);
         if (!callFrame || !callFrame.callFrameId) {
@@ -2480,7 +2662,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Debugger.stepInto({ });
     }
 
-    /* __GDPR__ "ClientRequest/completions" : { } */
+    /* __GDPR__
+        "ClientRequest/completions" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
     public async completions(args: DebugProtocol.CompletionsArguments): Promise<ICompletionsResponseBody> {
         const text = args.text;
         const column = args.column;
