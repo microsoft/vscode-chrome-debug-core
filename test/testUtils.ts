@@ -128,6 +128,10 @@ export function registerMockGetURL(utilsRelativePath: string, url: string, conte
         mockery.registerMock(utilsRelativePath, utilsMock.object);
     }
 
+    // Need to register with and without options
+    utilsMock
+        .setup(x => x.getURL(It.isValue(url), It.isAny()))
+        .returns(() => isError ? Promise.reject(contents) : Promise.resolve(contents));
     utilsMock
         .setup(x => x.getURL(It.isValue(url)))
         .returns(() => isError ? Promise.reject(contents) : Promise.resolve(contents));
