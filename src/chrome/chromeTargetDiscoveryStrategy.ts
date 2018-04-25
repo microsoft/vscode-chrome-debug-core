@@ -67,7 +67,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
            }
          */
         this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
-        const jsonResponse = await utils.getURL(url)
+        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
             .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
 
         /* __GDPR__FRAGMENT__
@@ -114,7 +114,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
 
     private _fixRemoteUrl(remoteAddress: string, remotePort: number, target: ITarget): ITarget {
         if (target.webSocketDebuggerUrl) {
-            const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/(.*:\d+)\/?/);
+            const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/([^/]+)\/?/);
             if (addressMatch) {
                 const replaceAddress = `${remoteAddress}:${remotePort}`;
                 target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(addressMatch[1], replaceAddress);

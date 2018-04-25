@@ -226,11 +226,15 @@ export function errP(msg: string|Error): Promise<never> {
 /**
  * Helper function to GET the contents of a url
  */
-export function getURL(aUrl: string): Promise<string> {
+export function getURL(aUrl: string, options: https.RequestOptions = {}): Promise<string> {
     return new Promise((resolve, reject) => {
         const parsedUrl = url.parse(aUrl);
         const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
-        const options = Object.assign({ rejectUnauthorized: false }, parsedUrl) as https.RequestOptions;
+        options = <https.RequestOptions>{
+            rejectUnauthorized: false,
+            ...parsedUrl,
+            ...options
+        };
 
         get(options, response => {
             let responseData = '';

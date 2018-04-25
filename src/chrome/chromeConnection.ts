@@ -129,7 +129,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
            }
          */
         this.events.emitStepStarted('Attach.AttachToTargetDebuggerWebsocket');
-        this._socket = new LoggingSocket(wsUrl);
+        this._socket = new LoggingSocket(wsUrl, undefined, { headers: { Host: 'localhost' }});
         if (extraCRDPChannelPort) {
             this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);
             new WebSocketToLikeSocketProxy(extraCRDPChannelPort, this._crdpSocketMultiplexor.addChannel('extraCRDPEndpoint')).start();
