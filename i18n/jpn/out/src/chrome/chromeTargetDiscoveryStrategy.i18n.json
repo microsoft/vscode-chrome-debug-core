@@ -7,6 +7,7 @@
 	"attach.responseButNoTargets": "ターゲット アプリケーションからの応答がありましたが、ターゲット ページが見つかりません",
 	"attach.cannotConnect": "ターゲットに接続できません: {0}",
 	"attach.invalidResponseArray": "ターゲットからの応答が正しくないようです: {0}",
+	"attach.invalidResponse": "ターゲットからの応答が正しくないようです。エラー: {0}。応答: {1} ",
 	"attach.noMatchingTarget": "一致する有効なターゲットが見つかりません: [0]。利用可能なページ: [1]",
 	"attach.devToolsAttached": "Chrome DevTools がこのターゲットにアタッチされている可能性があるため、アタッチできません: {0}"
 }
