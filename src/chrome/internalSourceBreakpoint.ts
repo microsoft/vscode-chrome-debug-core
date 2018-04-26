@@ -2,9 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import Crdp from '../../crdp/crdp';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 export class InternalSourceBreakpoint {
+    static readonly LOGPOINT_URL = 'vscode.logpoint.js';
+
     readonly line: number;
     readonly column?: number;
     readonly condition?: string;
@@ -26,6 +29,21 @@ export class InternalSourceBreakpoint {
     }
 }
 
+function isLogpointMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): boolean {
+    return m.stackTrace && m.stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
+}
+
+export function stackTraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
+    if (isLogpointMessage(m)) {
+        return {
+            ...m.stackTrace,
+            callFrames: m.stackTrace.callFrames.slice(1)
+        };
+    }
+
+    return m.stackTrace;
+}
+
 const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
 
 function logMessageToExpression(msg: string): string {
@@ -45,5 +63,5 @@ function logMessageToExpression(msg: string): string {
     format = format.replace('\'', '\\\'');
 
     const argStr = args.length ? `, ${args.join(', ')}` : '';
-    return `console.log('${format}'${argStr})`;
+    return `console.log('${format}'${argStr});\n//# sourceURL=${InternalSourceBreakpoint.LOGPOINT_URL}`;
 }

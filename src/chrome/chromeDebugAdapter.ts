@@ -18,7 +18,7 @@ import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropNam
 import * as variables from './variables';
 import { formatConsoleArguments, formatExceptionDetails } from './consoleHelper';
 import { StoppedEvent2, ReasonType } from './stoppedEvent';
-import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
+import { InternalSourceBreakpoint, stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -1134,14 +1134,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.sendEvent(new BreakpointEvent('changed', bp));
     }
 
-    protected onConsoleAPICalled(params: Crdp.Runtime.ConsoleAPICalledEvent): void {
+    protected onConsoleAPICalled(event: Crdp.Runtime.ConsoleAPICalledEvent): void {
         if (this._launchAttachArgs._suppressConsoleOutput) {
             return;
         }
 
-        const result = formatConsoleArguments(params);
+        const result = formatConsoleArguments(event);
+        const stack = stackTraceWithoutLogpointFrame(event);
         if (result) {
-            this.logObjects(result.args, result.isError, params.stackTrace);
+            this.logObjects(result.args, result.isError, stack);
         }
     }
 
