@@ -134,26 +134,6 @@ suite('ConsoleHelper', () => {
             doAssertForString(Runtime.makeAssert('Fail %s 123', 456), 'Assertion failed: Fail %s 123 456\n    at myFn (/script/a.js:5:1)', true);
         });
     });
-
-    suite('logpoints', () => {
-        test('simple', () => {
-            assert.equal(
-                ConsoleHelper.logpointExpressionToConsoleLog('hi'),
-                `console.log('hi', '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
-        });
-
-        test('multiple args', () => {
-            assert.equal(
-                ConsoleHelper.logpointExpressionToConsoleLog('hi {test} foo {bar}'),
-                `console.log('hi %O foo %O', (test), (bar), '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
-        });
-
-        test('multiple expressions', () => {
-            assert.equal(
-                ConsoleHelper.logpointExpressionToConsoleLog('hi {test + 1} foo {bar(a, b)}'),
-                `console.log('hi %O foo %O', (test + 1), (bar(a, b)), '${ConsoleHelper.LOGPOINT_INDICATOR_MESSAGE}')`);
-        });
-    });
 });
 
 /**

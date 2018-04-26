@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { logpointExpressionToConsoleLog } from './consoleHelper';
 
 export class InternalSourceBreakpoint {
     readonly line: number;
@@ -17,7 +16,7 @@ export class InternalSourceBreakpoint {
         this.hitCondition = breakpoint.hitCondition;
 
         if (breakpoint.logMessage) {
-            this.condition = logpointExpressionToConsoleLog(breakpoint.logMessage);
+            this.condition = logMessageToExpression(breakpoint.logMessage);
             if (breakpoint.condition) {
                 this.condition = `(${breakpoint.condition}) && ${this.condition}`;
             }
@@ -25,4 +24,26 @@ export class InternalSourceBreakpoint {
             this.condition = breakpoint.condition;
         }
     }
+}
+
+const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
+
+function logMessageToExpression(msg: string): string {
+    msg = msg.replace('%', '%%');
+
+    const args: string[] = [];
+    let format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
+        const a = group.trim();
+        if (a) {
+            args.push(`(${a})`);
+            return '%O';
+        } else {
+            return '';
+        }
+    });
+
+    format = format.replace('\'', '\\\'');
+
+    const argStr = args.length ? `, ${args.join(', ')}` : '';
+    return `console.log('${format}'${argStr})`;
 }

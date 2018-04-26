@@ -79,7 +79,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
     const firstTextArg = m.args.shift();
 
     // currentCollapsedStringArg is the accumulated text
-    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
+    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';;
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (currentCollapsedStringArg.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
@@ -94,11 +94,9 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
         }
     };
 
-    const displayArgs = isFromLogpoint(m) ? stripLogpointIndicatorArg(m.args) : m.args;
-
     // Collapse all text parameters, formatting properly if there's a format specifier
-    for (let argIdx = 0; argIdx < displayArgs.length; argIdx++) {
-        const arg = displayArgs[argIdx];
+    for (let argIdx = 0; argIdx < m.args.length; argIdx++) {
+        const arg = m.args[argIdx];
 
         const formatSpec = formatSpecifiers.shift();
         const formatted = formatArg(formatSpec, arg);
@@ -171,47 +169,4 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');
-}
-
-export const LOGPOINT_INDICATOR_MESSAGE = '$vscode_logpoint_expr$';
-function isFromLogpoint(m: Crdp.Runtime.ConsoleAPICalledEvent): boolean {
-    return m.args.length && m.args[m.args.length - 1].type === 'string' && m.args[m.args.length - 1].value === LOGPOINT_INDICATOR_MESSAGE;
-}
-
-function stripLogpointIndicatorArg(args: Crdp.Runtime.RemoteObject[]): Crdp.Runtime.RemoteObject[] {
-    return args.slice(0, args.length - 1);
-}
-
-const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
-
-export function logpointExpressionToConsoleLog(msg: string): string {
-    msg = msg.replace('%', '%%');
-
-    const args: string[] = [];
-    const format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
-        const a = group.trim();
-        if (a) {
-            args.push(`(${a})`);
-            return '%O';
-        } else {
-            return '';
-        }
-    })
-        .replace('\'', '\\\'');
-
-    args.push(`'${LOGPOINT_INDICATOR_MESSAGE}'`);
-
-    const argStr = args.join(', ');
-    return `console.log('${format}', ${argStr})`;
-}
-
-export function stacktraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
-    if (isFromLogpoint(m)) {
-        return {
-            ...m.stackTrace,
-            callFrames: m.stackTrace.callFrames.slice(1)
-        };
-    }
-
-    return m.stackTrace;
 }
