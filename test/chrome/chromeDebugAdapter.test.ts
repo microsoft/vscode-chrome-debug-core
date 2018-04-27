@@ -297,11 +297,11 @@ suite('ChromeDebugAdapter', () => {
                 .then(() => setBp_emitScriptParsed())
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: FILE_NAME }, breakpoints }, null, 0))
                 .then(response => {
-                    expectRemoveBreakpoint([2, 3]);
+                    expectRemoveBreakpoint([0, 1]);
                     mockEventEmitter.emit('Debugger.globalObjectCleared');
                     mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId: 'afterRefreshScriptId', url: FILE_NAME });
-                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 2, location: { scriptId: 'afterRefreshScriptId' } });
-                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 3, location: { scriptId: 'afterRefreshScriptId' } });
+                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 0, location: { scriptId: 'afterRefreshScriptId' } });
+                    mockEventEmitter.emit('Debugger.breakpointResolved', <Crdp.Debugger.BreakpointResolvedEvent>{ breakpointId: BP_ID + 1, location: { scriptId: 'afterRefreshScriptId' } });
 
                     breakpoints.push({ line: 321, column: 123 });
                     expectSetBreakpoint(breakpoints, FILE_NAME, 'afterRefreshScriptId');

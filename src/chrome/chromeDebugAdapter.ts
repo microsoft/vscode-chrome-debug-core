@@ -1101,8 +1101,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     protected onBreakpointResolved(params: Crdp.Debugger.BreakpointResolvedEvent): void {
         const script = this._scriptsById.get(params.location.scriptId);
-        if (!script) {
-            // Breakpoint resolved for a script we don't know about
+        const breakpointId = this._breakpointIdHandles.lookup(params.breakpointId);
+        if (!script || !breakpointId) {
+            // Breakpoint resolved for a script we don't know about or a breakpoint we don't know about
             return;
         }
 
@@ -1118,7 +1119,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._committedBreakpointsByUrl.set(script.url, committedBps);
 
         const bp = <DebugProtocol.Breakpoint>{
-            id: this._breakpointIdHandles.lookup(params.breakpointId),
+            id: breakpointId,
             verified: true,
             line: params.location.lineNumber,
             column: params.location.columnNumber

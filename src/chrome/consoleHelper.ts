@@ -79,7 +79,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
     const firstTextArg = m.args.shift();
 
     // currentCollapsedStringArg is the accumulated text
-    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';;
+    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (currentCollapsedStringArg.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
