@@ -4,16 +4,16 @@
 /* tslint:disable:typedef */
 
 import { EventEmitter } from 'events';
-import { Mock } from 'typemoq';
+import { Mock, IMock } from 'typemoq';
 import Crdp from '../../crdp/crdp';
 
 export interface IMockChromeConnectionAPI {
     apiObjects: Crdp.CrdpClient;
 
-    Console: Mock<Crdp.ConsoleClient>;
-    Debugger: Mock<Crdp.DebuggerClient>;
-    Runtime: Mock<Crdp.RuntimeClient>;
-    Inspector: Mock<Crdp.InspectorClient>;
+    Console: IMock<Crdp.ConsoleClient>;
+    Debugger: IMock<Crdp.DebuggerClient>;
+    Runtime: IMock<Crdp.RuntimeClient>;
+    Inspector: IMock<Crdp.InspectorClient>;
 
     mockEventEmitter: EventEmitter;
 }

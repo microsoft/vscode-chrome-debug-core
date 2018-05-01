@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 
 import * as assert from 'assert';
 import * as mockery from 'mockery';
-import { Mock, MockBehavior, It } from 'typemoq';
+import { Mock, MockBehavior, It, IMock, Times } from 'typemoq';
 
 import { ISetBreakpointsResponseBody,
     ILaunchRequestArgs, ISetBreakpointsArgs } from '../../src/debugAdapterInterfaces';
@@ -50,7 +50,7 @@ const RUNTIME_BPS2 = () => <DebugProtocol.SourceBreakpoint[]>[
 import {BaseSourceMapTransformer as _BaseSourceMapTransformer } from '../../src/transformers/baseSourceMapTransformer';
 
 suite('BaseSourceMapTransformer', () => {
-    let utilsMock: Mock<typeof utils>;
+    let utilsMock: IMock<typeof utils>;
 
     setup(() => {
         testUtils.setupUnhandledRejectionListener();
@@ -99,18 +99,21 @@ suite('BaseSourceMapTransformer', () => {
             return args;
         }
 
-        function createMergedSourcesMock(args: ISetBreakpointsArgs, args2: ISetBreakpointsArgs): Mock<SourceMaps> {
+        function createMergedSourcesMock(args: ISetBreakpointsArgs, args2: ISetBreakpointsArgs): IMock<SourceMaps> {
             const mock = Mock.ofType(SourceMaps, MockBehavior.Strict);
             mockery.registerMock('../sourceMaps/sourceMaps', { SourceMaps: function(): any { return mock.object; } });
             mock
                 .setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(AUTHORED_PATH)))
-                .returns(() => RUNTIME_PATH).verifiable();
+                .returns(() => RUNTIME_PATH)
+                .verifiable(Times.atLeastOnce());
             mock
                 .setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(AUTHORED_PATH2)))
-                .returns(() => RUNTIME_PATH).verifiable();
+                .returns(() => RUNTIME_PATH)
+                .verifiable(Times.atLeastOnce());
             mock
                 .setup(x => x.allMappedSources(It.isValue(RUNTIME_PATH)))
-                .returns(() => [AUTHORED_PATH, AUTHORED_PATH2]).verifiable();
+                .returns(() => [AUTHORED_PATH, AUTHORED_PATH2])
+                .verifiable(Times.atLeastOnce());
             args.breakpoints.forEach((bp, i) => {
                 mock
                     .setup(x => x.mapToGenerated(It.isValue(AUTHORED_PATH), It.isValue(bp.line), It.isValue(bp.column || 0)))

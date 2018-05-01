@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IInternalStackTraceResponseBody, IInternalStackFrame } from '../src/debugAdapterInterfaces';
 import * as utils from '../src/utils';
 
-import { Mock, It, MockBehavior } from 'typemoq';
+import { Mock, It, MockBehavior, IMock } from 'typemoq';
 import * as path from 'path';
 import * as mockery from 'mockery';
 import * as fs from 'fs';
@@ -121,7 +121,7 @@ export function registerMockReadFile(...entries: { absPath: string; data: string
  * Mock utils.getURL to return the specified contents.
  * Note that if you call this twice, the second call will overwrite the first.
  */
-export function registerMockGetURL(utilsRelativePath: string, url: string, contents: string, utilsMock?: Mock<typeof utils>, isError = false): void {
+export function registerMockGetURL(utilsRelativePath: string, url: string, contents: string, utilsMock?: IMock<typeof utils>, isError = false): void {
     if (!utilsMock) {
         utilsMock = Mock.ofInstance(utils);
         utilsMock.callBase = true;
@@ -140,7 +140,7 @@ export function registerMockGetURL(utilsRelativePath: string, url: string, conte
         .returns(() => true);
 }
 
-export function registerMockGetURLFail(utilsRelativePath: string, url: string, failContents?: string, utilsMock?: Mock<typeof utils>): void {
+export function registerMockGetURLFail(utilsRelativePath: string, url: string, failContents?: string, utilsMock?: IMock<typeof utils>): void {
     return registerMockGetURL(utilsRelativePath, url, failContents, utilsMock, /*isError=*/true);
 }
 

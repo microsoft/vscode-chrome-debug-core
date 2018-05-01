@@ -17,7 +17,7 @@ import { UrlPathTransformer } from '../../src/transformers/urlPathTransformer';
 import * as mockery from 'mockery';
 import { EventEmitter } from 'events';
 import * as assert from 'assert';
-import { Mock, MockBehavior, It } from 'typemoq';
+import { Mock, MockBehavior, It, IMock, Times } from 'typemoq';
 import Crdp from '../../crdp/crdp';
 
 import * as testUtils from '../testUtils';
@@ -26,7 +26,6 @@ import * as utils from '../../src/utils';
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason } from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source } from 'vscode-debugadapter/lib/debugSession';
-import { StepProgressEventsEmitter } from '../../src/executionTimingsReporter';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -35,11 +34,11 @@ suite('ChromeDebugAdapter', () => {
     const ATTACH_ARGS = { port: ATTACH_SUCCESS_PORT };
     const THREAD_ID = 1;
 
-    let mockChromeConnection: Mock<ChromeConnection>;
+    let mockChromeConnection: IMock<ChromeConnection>;
     let mockEventEmitter: EventEmitter;
-    let mockLineNumberTransformer: Mock<LineColTransformer>;
-    let mockSourceMapTransformer: Mock<BaseSourceMapTransformer>;
-    let mockPathTransformer: Mock<UrlPathTransformer>;
+    let mockLineNumberTransformer: IMock<LineColTransformer>;
+    let mockSourceMapTransformer: IMock<BaseSourceMapTransformer>;
+    let mockPathTransformer: IMock<UrlPathTransformer>;
     let mockChrome: IMockChromeConnectionAPI;
 
     let chromeDebugAdapter: _ChromeDebugAdapter;
@@ -55,27 +54,30 @@ suite('ChromeDebugAdapter', () => {
         mockChromeConnection = Mock.ofType(ChromeConnection, MockBehavior.Strict);
         mockChromeConnection
             .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_SUCCESS_PORT), It.isValue(undefined), It.isValue(undefined), It.isValue(undefined)))
-            .returns(() => Promise.resolve());
-        mockChromeConnection
-            .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined), It.isValue(undefined)))
-            .returns(() => utils.errP('Testing attach failed'));
+            .returns(() => Promise.resolve())
+            .verifiable(Times.atLeast(0));
         mockChromeConnection
             .setup(x => x.isAttached)
-            .returns(() => false);
+            .returns(() => false)
+            .verifiable(Times.atLeast(0));
         mockChromeConnection
-            .setup(x => x.onClose(It.isAny()));
+            .setup(x => x.onClose(It.isAny()))
+            .verifiable(Times.atLeast(0));
         mockChromeConnection
             .setup(x => x.events)
-            .returns(() => new StepProgressEventsEmitter());
+            .returns(() => null)
+            .verifiable(Times.atLeast(0));
 
         mockChrome = getMockChromeConnectionApi();
         mockEventEmitter = mockChrome.mockEventEmitter;
         mockChromeConnection
             .setup(x => x.api)
-            .returns(() => mockChrome.apiObjects);
+            .returns(() => mockChrome.apiObjects)
+            .verifiable(Times.atLeast(0));
         mockChromeConnection
             .setup(x => x.run())
-            .returns(() => Promise.resolve());
+            .returns(() => Promise.resolve())
+            .verifiable(Times.atLeast(0));
 
         mockLineNumberTransformer = getMockLineNumberTransformer();
         mockSourceMapTransformer = getMockSourceMapTransformer();
@@ -155,6 +157,10 @@ suite('ChromeDebugAdapter', () => {
                 done(new Error('Not expecting any event in this scenario: ' + event.event));
             };
 
+            mockChromeConnection
+                .setup(x => x.attach(It.isValue(undefined), It.isValue(ATTACH_FAIL_PORT), It.isValue(undefined), It.isValue(undefined), It.isValue(undefined)))
+                .returns(() => utils.errP('Testing attach failed'));
+
             chromeDebugAdapter.attach({ port: ATTACH_FAIL_PORT }).then(
                 () => done(new Error('Expecting promise to be rejected')),
                 e => { done(); /* Expecting promise to be rejected */ });
@@ -175,13 +181,13 @@ suite('ChromeDebugAdapter', () => {
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(location => Promise.resolve(
                             <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID + i, locations: [{ scriptId, lineNumber, columnNumber }] }))
-                        .verifiable();
+                        .verifiable(Times.atLeastOnce());
                 } else {
                     mockChrome.Debugger
                         .setup(x => x.setBreakpoint(It.isValue({ location: { lineNumber, columnNumber, scriptId }, condition })))
                         .returns(location => Promise.resolve(
                             <Crdp.Debugger.SetBreakpointResponse>{ breakpointId: BP_ID + i, actualLocation: { scriptId, lineNumber, columnNumber } }))
-                        .verifiable();
+                        .verifiable(Times.atLeastOnce());
                 }
             });
         }
@@ -191,7 +197,7 @@ suite('ChromeDebugAdapter', () => {
                 mockChrome.Debugger
                     .setup(x => x.removeBreakpoint(It.isValue({ breakpointId: BP_ID + i })))
                     .returns(() => Promise.resolve())
-                    .verifiable();
+                    .verifiable(Times.atLeastOnce());
             });
         }
 

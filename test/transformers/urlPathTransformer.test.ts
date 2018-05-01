@@ -13,7 +13,7 @@ import * as chromeUtils from '../../src/chrome/chromeUtils';
 // https://github.com/florinn/typemoq/issues/4
 // const typemoq: ITypeMoqStatic = require('typemoq');
 
-import { Mock, MockBehavior, It } from 'typemoq';
+import { Mock, MockBehavior, It, IMock, Times } from 'typemoq';
 
 const MODULE_UNDER_TEST = '../../src/transformers/urlPathTransformer';
 function createTransformer(): _UrlPathTransformer {
@@ -24,7 +24,7 @@ suite('UrlPathTransformer', () => {
     const TARGET_URL = 'http://mysite.com/scripts/script1.js';
     const CLIENT_PATH = testUtils.pathResolve('/projects/mysite/scripts/script1.js');
 
-    let chromeUtilsMock: Mock<typeof chromeUtils>;
+    let chromeUtilsMock: IMock<typeof chromeUtils>;
     let transformer: _UrlPathTransformer;
 
     setup(() => {
@@ -131,7 +131,8 @@ suite('UrlPathTransformer', () => {
         test('modifies the source path and clears sourceReference when the file can be mapped', async () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
-                .returns(() => CLIENT_PATH).verifiable();
+                .returns(() => CLIENT_PATH)
+                .verifiable(Times.atLeastOnce());
 
             const response = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LOCATIONS, [1, 2, 3]);
             const expectedResponse = testUtils.getStackTraceResponseBody(CLIENT_PATH, RUNTIME_LOCATIONS);
@@ -143,7 +144,8 @@ suite('UrlPathTransformer', () => {
         test(`doesn't modify the source path or clear the sourceReference when the file can't be mapped`, () => {
             chromeUtilsMock
                 .setup(x => x.targetUrlToClientPath(It.isValue(undefined), It.isValue(TARGET_URL)))
-                .returns(() => '').verifiable();
+                .returns(() => '')
+                .verifiable(Times.atLeastOnce());
 
             const response = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LOCATIONS, [1, 2, 3]);
             const expectedResponse = testUtils.getStackTraceResponseBody(TARGET_URL, RUNTIME_LOCATIONS, [1, 2, 3]);

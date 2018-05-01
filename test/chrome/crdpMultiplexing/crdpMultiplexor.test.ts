@@ -4,7 +4,7 @@
 
 import { CRDPMultiplexor } from '../../../src/chrome/crdpMultiplexing/crdpMultiplexor';
 import { LikeSocket } from 'noice-json-rpc';
-import { Mock, Times, It } from 'typemoq';
+import { Mock, Times, It, IMock } from 'typemoq';
 import * as Assert from 'assert';
 
 class StubSocket implements LikeSocket {
@@ -19,7 +19,7 @@ class StubSocket implements LikeSocket {
 suite('CRDPMultiplexor', () => {
 
     let multiplexor: CRDPMultiplexor;
-    let webSocketMock: Mock<StubSocket>;
+    let webSocketMock: IMock<StubSocket>;
     let socketMessageCallbacks: Function[];
 
     setup(() => {

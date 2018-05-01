@@ -2,17 +2,17 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { Mock, It } from 'typemoq';
+import { Mock, It, IMock } from 'typemoq';
 
 import { LineColTransformer } from '../../src/transformers/lineNumberTransformer';
 import { BaseSourceMapTransformer } from '../../src/transformers/baseSourceMapTransformer';
 import { UrlPathTransformer } from '../../src/transformers/urlPathTransformer';
 
-export function getMockLineNumberTransformer(): Mock<LineColTransformer> {
+export function getMockLineNumberTransformer(): IMock<LineColTransformer> {
     return Mock.ofType(LineColTransformer);
 }
 
-export function getMockSourceMapTransformer(): Mock<BaseSourceMapTransformer> {
+export function getMockSourceMapTransformer(): IMock<BaseSourceMapTransformer> {
     const mock = Mock.ofType(BaseSourceMapTransformer);
     mock.setup(m => m.setBreakpoints(It.isAny(), It.isAny()))
         .returns(() => true);
@@ -26,7 +26,7 @@ export function getMockSourceMapTransformer(): Mock<BaseSourceMapTransformer> {
     return mock;
 }
 
-export function getMockPathTransformer(): Mock<UrlPathTransformer> {
+export function getMockPathTransformer(): IMock<UrlPathTransformer> {
     const mock = Mock.ofType(UrlPathTransformer);
     mock.setup(m => m.setBreakpoints(It.isAny()))
         .returns(() => true);
