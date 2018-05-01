@@ -11,11 +11,11 @@ import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { SourceMap } from './sourceMap';
-import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
+import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 
 export class SourceMapFactory {
     constructor(
-        private _webRoot?: string,
+        private _pathMapping?: IPathMapping,
         private _sourceMapPathOverrides?: ISourceMapPathOverrides,
         private _enableSourceMapCaching?: boolean) {
     }
@@ -26,8 +26,8 @@ export class SourceMapFactory {
      */
     getMapForGeneratedPath(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
-        if (this._webRoot) {
-            msg += ` and webRoot: ${this._webRoot}`;
+        if (this._pathMapping) {
+            msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
         }
 
         logger.log(msg);
@@ -47,7 +47,7 @@ export class SourceMapFactory {
             if (contents) {
                 try {
                     // Throws for invalid JSON
-                    return new SourceMap(pathToGenerated, contents, this._webRoot, this._sourceMapPathOverrides);
+                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides);
                 } catch (e) {
                     logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                     return null;

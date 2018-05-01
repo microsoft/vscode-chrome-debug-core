@@ -65,7 +65,7 @@ export class BaseSourceMapTransformer {
 
     protected init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
         if (args.sourceMaps) {
-            this._sourceMaps = new SourceMaps(args.webRoot, args.sourceMapPathOverrides, this._enableSourceMapCaching);
+            this._sourceMaps = new SourceMaps(args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
             this._authoredPathsToMappedBPs = new Map<string, DebugProtocol.SourceBreakpoint[]>();

@@ -17,9 +17,9 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
         super();
     }
 
-    protected async targetUrlToClientPath(webRoot: string, scriptUrl: string): Promise<string> {
+    protected async targetUrlToClientPath(scriptUrl: string): Promise<string> {
         // First try the default UrlPathTransformer transformation
-        return super.targetUrlToClientPath(webRoot, scriptUrl).then(filePath => {
+        return super.targetUrlToClientPath(scriptUrl).then(filePath => {
                 // If it returns a valid non empty file path then that should be a valid result, so we use that
                 // If it's an eval script we won't be able to map it, so we also return that
                 return (filePath || ChromeUtils.isEvalScript(scriptUrl))

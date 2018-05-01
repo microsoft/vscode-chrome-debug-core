@@ -18,6 +18,7 @@ import { ISourceMapPathOverrides } from '../../src/debugAdapterInterfaces';
 suite('SourceMap', () => {
     const GENERATED_PATH = testUtils.pathResolve('/project/src/app.js');
     const WEBROOT = testUtils.pathResolve('/project');
+    const PATH_MAPPING = { '/': WEBROOT };
     const SOURCEROOT = '/src/';
 
     const SOURCES = [
@@ -47,7 +48,7 @@ suite('SourceMap', () => {
         test('does not crash when sourceRoot is undefined', () => {
             // Rare and possibly invalid, but I saw it
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, undefined);
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(sm);
         });
     });
@@ -56,14 +57,14 @@ suite('SourceMap', () => {
         test('relative sources are made absolute', () => {
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
         test('sources with absolute paths are used as-is', () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
@@ -71,14 +72,14 @@ suite('SourceMap', () => {
             const fileSources = ABSOLUTE_SOURCES.map(source => 'file:///' + source);
             const sourceMapJSON = getMockSourceMapJSON(fileSources, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
         test('sourceMapPathOverrides are respected', () => {
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT, <ISourceMapPathOverrides>{ '/src/*': testUtils.pathResolve('/project/client/*') });
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING, <ISourceMapPathOverrides>{ '/src/*': testUtils.pathResolve('/project/client/*') });
             const expectedSources = SOURCES.map(sourcePath => path.join(testUtils.pathResolve('/project/client'), sourcePath));
             assert.deepEqual(sm.authoredSources, expectedSources);
         });
@@ -88,14 +89,14 @@ suite('SourceMap', () => {
         test('returns true for a source that it contains', () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(sm.doesOriginateFrom(ABSOLUTE_SOURCES[0]));
         });
 
         test('returns false for a source that it does not contain', () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, WEBROOT);
+            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(!sm.doesOriginateFrom('c:\\fake\\file.js'));
         });
     });
@@ -104,7 +105,7 @@ suite('SourceMap', () => {
         let sm: SourceMap;
 
         setup(() => {
-            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, WEBROOT);
+            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
         });
 
         function getExpectedResult(line: number, column: number, source = ABSOLUTE_SOURCES[0]): MozSourceMap.MappedPosition {
@@ -203,7 +204,7 @@ suite('SourceMap', () => {
         let sm: SourceMap;
 
         setup(() => {
-            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, WEBROOT);
+            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
         });
 
         function getExpectedResult(line: number, column: number): MozSourceMap.Position {

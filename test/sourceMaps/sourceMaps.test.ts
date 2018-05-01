@@ -18,8 +18,9 @@ suite('SourceMaps', () => {
     const AUTHORED_PATH = path.resolve(DIRNAME, 'testData/source1.ts');
     const ALL_SOURCES = [AUTHORED_PATH, path.resolve(DIRNAME, 'testData/source2.ts')];
     const WEBROOT = 'http://localhost';
+    const PATH_MAPPING = { '/': WEBROOT };
     const SOURCEMAP_URL = 'app.js.map';
-    const sourceMaps = new SourceMaps(WEBROOT);
+    const sourceMaps = new SourceMaps(PATH_MAPPING);
 
     setup((done) => {
         testUtils.setupUnhandledRejectionListener();

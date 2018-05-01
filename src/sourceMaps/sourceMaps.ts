@@ -4,7 +4,7 @@
 
 import { SourceMap, MappedPosition, ISourcePathDetails } from './sourceMap';
 import { SourceMapFactory } from './sourceMapFactory';
-import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
+import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -13,8 +13,8 @@ export class SourceMaps {
 
     private _sourceMapFactory: SourceMapFactory;
 
-    public constructor(webRoot?: string, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
-        this._sourceMapFactory = new SourceMapFactory(webRoot, sourceMapPathOverrides, enableSourceMapCaching);
+    public constructor(pathMapping?: IPathMapping, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
+        this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
     /**
