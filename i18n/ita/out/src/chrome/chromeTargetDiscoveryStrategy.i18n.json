@@ -7,5 +7,7 @@
 	"attach.responseButNoTargets": "È stata ottenuta una risposta dall'app di destinazione, ma non sono state trovate pagine di destinazione",
 	"attach.cannotConnect": "Impossibile connettersi alla destinazione: {0}",
 	"attach.invalidResponseArray": "La risposta dalla destinazione sembra non valida: {0}",
+	"attach.invalidResponse": "La risposta dalla destinazione sembra non valida. Errore: {0}. Risposta: {1}",
+	"attach.noMatchingTarget": "Non è possibile trovare una destinazione valida corrispondente a {0}. Pagine disponibili: {1}",
 	"attach.devToolsAttached": "Impossibile collegarsi a questo target che può avere i DevTools di Chrome collegati: {0}"
 }

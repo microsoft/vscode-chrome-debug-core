@@ -8,5 +8,6 @@
 	"attach.cannotConnect": "No se puede conectar con el objetivo: {0}",
 	"attach.invalidResponseArray": "La respuesta del objetivo aparenta no ser válida: {0}",
 	"attach.invalidResponse": "La respuesta del destino parece ser inválida. Error: {0}. Respuesta: {1} ",
+	"attach.noMatchingTarget": "No se puede encontrar un destino válido que coincida con: {0}. páginas disponibles: {1}",
 	"attach.devToolsAttached": "No se puede adjuntar a este objetivo que podría tener Chrome DevTools adjuntos: {0}"
 }

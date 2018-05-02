@@ -7,5 +7,7 @@
 	"attach.responseButNoTargets": "Hedef uygulamadan cevap alındı, fakat hiçbir hedef sayfa bulunamadı",
 	"attach.cannotConnect": "Hedefe bağlanılamıyor: {0}",
 	"attach.invalidResponseArray": "Hedeften alınan cevap geçersiz görünüyor: {0}",
+	"attach.invalidResponse": "Hedeften alınan cevap geçersiz görünüyor. Hata: {0}. Cevap: {1}",
+	"attach.noMatchingTarget": "{0} ile eşleşen geçerli bir hedef bulunamıyor. Mevcut sayfalar: {1}",
 	"attach.devToolsAttached": "Chrome DevTools'un bağlanmış olabileceği bu hedefe bağlanamadı: {0}"
 }

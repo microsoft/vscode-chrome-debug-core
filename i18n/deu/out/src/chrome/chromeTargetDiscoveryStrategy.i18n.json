@@ -7,5 +7,7 @@
 	"attach.responseButNoTargets": "Es wurde eine Antwort von der Ziel-App empfangen, es wurden jedoch keine Zielseiten gefunden.",
 	"attach.cannotConnect": "Es kann keine Verbindung mit dem Ziel hergestellt werden: {0}. ",
 	"attach.invalidResponseArray": "Die Antwort vom Ziel ist anscheinend ungültig: {0}.",
+	"attach.invalidResponse": "Die Antwort vom Ziel ist scheint ungültig zu sein. Fehler: {0}. Antwort: {1}",
+	"attach.noMatchingTarget": "Es wurde kein Ziel gefunden, das mit {0} übereinstimmt. Verfügbare Seiten: {1}",
 	"attach.devToolsAttached": "Das Anfügen an dieses Ziel ist nicht möglich. An das Ziel wurden möglicherweise Chrome-DevTools angefügt: {0}."
 }
