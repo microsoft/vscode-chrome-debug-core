@@ -43,7 +43,7 @@ export class SourceMap {
             // is not always needed.
             this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
                 const originalSource = this._originalSources[i];
-                const originalPath = this._originalSourceRoot ? path.join(this._originalSourceRoot, originalSource) : originalSource;
+                const originalPath = this._originalSourceRoot ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource) : originalSource;
                 return <ISourcePathDetails>{
                     inferredPath,
                     originalPath,
