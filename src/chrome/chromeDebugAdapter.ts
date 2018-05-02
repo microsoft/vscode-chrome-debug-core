@@ -61,7 +61,7 @@ export interface IPendingBreakpoint {
     args: ISetBreakpointsArgs;
     ids: number[];
     requestSeq: number;
-    bpsSet: boolean;
+    setWithPath: string;
 }
 
 interface IHitConditionBreakpoint {
@@ -816,7 +816,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const resolvePendingBPs = async (source: string) => {
                 source = source && this.fixPathCasing(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source)) || this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source, true));
-                if (pendingBP && !pendingBP.bpsSet) {
+                if (pendingBP && (!pendingBP.setWithPath || pendingBP.setWithPath === source)) {
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
                 }
@@ -834,7 +834,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     }
                 }
 
-                if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).bpsSet) {
+                if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).setWithPath === mappedUrl) {
                     // If the pathTransformer had no effect, and we attempted to set the BPs with that path earlier, then assume that they are about
                     // to be resolved in this loaded script, and remove the pendingBP.
                     this._pendingBreakpointsByUrl.delete(mappedUrl);
@@ -1342,17 +1342,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
                             const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, body.breakpoints, localize('bp.fail.unbound', 'Breakpoints set but not yet bound'), areAllSet);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoints set but not yet bound'), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
                         return body;
                     });
                 } else {
-                    return Promise.resolve(this.unverifiedBpResponse(args, requestSeq, localize('bp.fail.noscript', "Can't find script for breakpoint request")));
+                    return Promise.resolve(this.unverifiedBpResponse(args, requestSeq, undefined, localize('bp.fail.noscript', "Can't find script for breakpoint request")));
                 }
             },
-            e => this.unverifiedBpResponse(args, requestSeq, e.message));
+            e => this.unverifiedBpResponse(args, requestSeq, undefined, e.message));
     }
 
     private reportBpTelemetry(args: ISetBreakpointsArgs): void {
@@ -1398,7 +1398,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return `${unboundBreakpointUniquePrefix}${this._nextUnboundBreakpointId++}`;
     }
 
-    private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, message?: string, bpsSet = false): ISetBreakpointsResponseBody {
+    private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, message?: string, bpsSet = false): ISetBreakpointsResponseBody {
         const breakpoints = args.breakpoints.map(bp => {
             return <DebugProtocol.Breakpoint>{
                 verified: false,
@@ -1409,10 +1409,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             };
         });
 
-        return this.unverifiedBpResponseForBreakpoints(args, requestSeq, breakpoints, message, bpsSet);
+        return this.unverifiedBpResponseForBreakpoints(args, requestSeq, targetScriptUrl, breakpoints, message, bpsSet);
     }
 
-    private unverifiedBpResponseForBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, breakpoints: DebugProtocol.Breakpoint[], defaultMessage?: string, bpsSet = false): ISetBreakpointsResponseBody {
+    private unverifiedBpResponseForBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, breakpoints: DebugProtocol.Breakpoint[], defaultMessage?: string, bpsSet = false): ISetBreakpointsResponseBody {
         breakpoints.forEach(bp => {
             if (!bp.message) {
                 bp.message = defaultMessage;
@@ -1421,9 +1421,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.source.path) {
             const ids = breakpoints.map(bp => bp.id);
+
+            // setWithPath: record whether we attempted to set the breakpoint, and if so, with which path.
+            // We can use this to tell when the script is loaded whether we guessed correctly, and predict whether the BP will bind.
             this._pendingBreakpointsByUrl.set(
                 this.fixPathCasing(args.source.path),
-                { args, ids, requestSeq, bpsSet });
+                { args, ids, requestSeq, setWithPath: targetScriptUrl });
         }
 
         return { breakpoints };
