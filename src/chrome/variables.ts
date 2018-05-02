@@ -6,7 +6,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { Handles } from 'vscode-debugadapter';
 
 import { ChromeDebugAdapter, VariableContext } from './chromeDebugAdapter';
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import * as utils from '../utils';
 
 export interface IVariableContainer {

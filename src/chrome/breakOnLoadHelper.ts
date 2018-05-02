@@ -5,7 +5,7 @@
 import { logger } from 'vscode-debugadapter';
 import { ISetBreakpointResult, BreakOnLoadStrategy } from '../debugAdapterInterfaces';
 
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';

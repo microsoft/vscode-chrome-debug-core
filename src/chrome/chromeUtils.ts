@@ -4,7 +4,7 @@
 
 import * as url from 'url';
 import * as path from 'path';
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 
 import * as utils from '../utils';
 import { ITarget } from './chromeConnection';

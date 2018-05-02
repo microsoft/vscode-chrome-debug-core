@@ -18,7 +18,7 @@ import * as mockery from 'mockery';
 import { EventEmitter } from 'events';
 import * as assert from 'assert';
 import { Mock, MockBehavior, It, IMock, Times } from 'typemoq';
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';

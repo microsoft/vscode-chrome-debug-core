@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as assert from 'assert';
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 
 import * as Variables from '../../src/chrome/variables';
 

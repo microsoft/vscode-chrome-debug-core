@@ -5,7 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StoppedEvent } from 'vscode-debugadapter';
 
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
