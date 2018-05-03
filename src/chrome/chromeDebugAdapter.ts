@@ -2140,9 +2140,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 } else {
                     return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
                 }
-            },
-            error => {
-                logger.error('Error evaluating getter - ' + error.toString());
+            }).catch(error => {
+                logger.error(`Error evaluating getter for '${propDesc.name}' - ${error.toString()}`);
                 return { name: propDesc.name, value: error.toString(), variablesReference: 0 };
             });
         } else if (propDesc.set) {
@@ -2541,19 +2540,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
     }
 
-    public remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
+    public async remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
         name = name || '""';
 
         if (object) {
             if (object.type === 'object') {
                 return this.createObjectVariable(name, object, parentEvaluateName, context);
             } else if (object.type === 'function') {
-                return Promise.resolve(this.createFunctionVariable(name, object, context, parentEvaluateName));
+                return this.createFunctionVariable(name, object, context, parentEvaluateName);
             } else {
-                return Promise.resolve(this.createPrimitiveVariable(name, object, parentEvaluateName, stringify));
+                return this.createPrimitiveVariable(name, object, parentEvaluateName, stringify);
             }
         } else {
-            return Promise.resolve(this.createPrimitiveVariableWithValue(name, '', parentEvaluateName));
+            return this.createPrimitiveVariableWithValue(name, '', parentEvaluateName);
         }
     }
 
