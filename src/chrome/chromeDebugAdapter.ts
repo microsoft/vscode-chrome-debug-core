@@ -1294,9 +1294,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Deep copy the args that we are going to modify, and keep the original values in originalArgs
                 const originalArgs = args;
                 args = JSON.parse(JSON.stringify(args));
-                this._lineColTransformer.setBreakpoints(args);
-                this._sourceMapTransformer.setBreakpoints(args, requestSeq);
-                this._pathTransformer.setBreakpoints(args);
+                args = this._lineColTransformer.setBreakpoints(args);
+                args = this._sourceMapTransformer.setBreakpoints(args, requestSeq);
+                args = this._pathTransformer.setBreakpoints(args);
 
                 // Get the target url of the script
                 let targetScriptUrl: string;

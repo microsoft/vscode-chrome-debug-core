@@ -171,7 +171,7 @@ export interface IDebugTransformer {
     initialize?(args: DebugProtocol.InitializeRequestArguments, requestSeq?: number): PromiseOrNot<void>;
     launch?(args: ILaunchRequestArgs, requestSeq?: number): PromiseOrNot<void>;
     attach?(args: IAttachRequestArgs, requestSeq?: number): PromiseOrNot<void>;
-    setBreakpoints?(args: DebugProtocol.SetBreakpointsArguments, requestSeq?: number): PromiseOrNot<void>;
+    setBreakpoints?(args: DebugProtocol.SetBreakpointsArguments, requestSeq?: number): PromiseOrNot<DebugProtocol.SetBreakpointsArguments>;
     setExceptionBreakpoints?(args: DebugProtocol.SetExceptionBreakpointsArguments, requestSeq?: number): PromiseOrNot<void>;
 
     stackTrace?(args: DebugProtocol.StackTraceArguments, requestSeq?: number): PromiseOrNot<void>;

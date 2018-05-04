@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer } from '../mocks/transformerMocks';
 import { getMockChromeConnectionApi, IMockChromeConnectionAPI } from '../mocks/debugProtocolMocks';
 
-import { ISetBreakpointsResponseBody, IEvaluateResponseBody } from '../../src/debugAdapterInterfaces';
+import { ISetBreakpointsResponseBody, IEvaluateResponseBody, ISetBreakpointsArgs } from '../../src/debugAdapterInterfaces';
 import { ChromeConnection } from '../../src/chrome/chromeConnection';
 
 import { LineColTransformer } from '../../src/transformers/lineNumberTransformer';
@@ -25,7 +25,7 @@ import * as utils from '../../src/utils';
 
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason } from '../../src/chrome/chromeDebugAdapter';
-import { InitializedEvent, LoadedSourceEvent, Source } from 'vscode-debugadapter/lib/debugSession';
+import { InitializedEvent, LoadedSourceEvent, Source, BreakpointEvent } from 'vscode-debugadapter/lib/debugSession';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -118,9 +118,18 @@ suite('ChromeDebugAdapter', () => {
         mockChrome.Debugger.verifyAll();
     });
 
-    function emitScriptParsed(url, scriptId): void {
-        mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), It.isValue(undefined)))
-            .returns(() => Promise.resolve([]));
+    function emitScriptParsed(url: string, scriptId: string, sources: string[] = []): void {
+        mockPathTransformer.setup(m => m.scriptParsed(It.isValue(url)))
+            .returns(() => Promise.resolve(url));
+        mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), It.isValue(undefined)))
+            .returns(() => Promise.resolve(sources));
+        mockSourceMapTransformer.setup(m => m.getGeneratedPathFromAuthoredPath(It.isAnyString()))
+            .returns(authoredPath => {
+                const returnedUrl = url || `VM${scriptId}`;
+                return (!sources.length || sources.indexOf(authoredPath) >= 0) ?
+                    Promise.resolve(returnedUrl) :
+                    Promise.resolve('');
+            });
 
         mockEventEmitter.emit('Debugger.scriptParsed', <Crdp.Debugger.ScriptParsedEvent>{ scriptId, url });
     }
@@ -148,7 +157,7 @@ suite('ChromeDebugAdapter', () => {
             };
 
             chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
-                emitScriptParsed('http://localhost', 4);
+                emitScriptParsed('http://localhost', '4');
             });
         });
 
@@ -171,22 +180,29 @@ suite('ChromeDebugAdapter', () => {
         const BP_ID = 'bpId';
         const FILE_NAME = 'file:///a.js';
         const SCRIPT_ID = '1';
-        function expectSetBreakpoint(breakpoints: DebugProtocol.SourceBreakpoint[], url?: string, scriptId = SCRIPT_ID): void {
+        function expectSetBreakpoint(breakpoints: DebugProtocol.SourceBreakpoint[], url?: string, scriptId = SCRIPT_ID, success = true): void {
             breakpoints.forEach((bp, i) => {
                 const { line: lineNumber, column: columnNumber, condition } = bp;
+                const location = { scriptId, lineNumber, columnNumber };
 
                 if (url) {
                     const urlRegex = utils.pathToRegex(url, true);
                     mockChrome.Debugger
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
-                        .returns(location => Promise.resolve(
-                            <Crdp.Debugger.SetBreakpointByUrlResponse>{ breakpointId: BP_ID + i, locations: [{ scriptId, lineNumber, columnNumber }] }))
+                        .returns(() => Promise.resolve(
+                            <Crdp.Debugger.SetBreakpointByUrlResponse>{
+                                breakpointId: BP_ID + i,
+                                locations: success ? [location] : []
+                            }))
                         .verifiable(Times.atLeastOnce());
                 } else {
                     mockChrome.Debugger
                         .setup(x => x.setBreakpoint(It.isValue({ location: { lineNumber, columnNumber, scriptId }, condition })))
-                        .returns(location => Promise.resolve(
-                            <Crdp.Debugger.SetBreakpointResponse>{ breakpointId: BP_ID + i, actualLocation: { scriptId, lineNumber, columnNumber } }))
+                        .returns(() => Promise.resolve(
+                            <Crdp.Debugger.SetBreakpointResponse>{
+                                breakpointId: BP_ID + i,
+                                actualLocation: success ? location : null
+                            }))
                         .verifiable(Times.atLeastOnce());
                 }
             });
@@ -201,28 +217,44 @@ suite('ChromeDebugAdapter', () => {
             });
         }
 
-        function makeExpectedResponse(breakpoints: DebugProtocol.SourceBreakpoint[]): ISetBreakpointsResponseBody {
-            const resultBps = breakpoints.map((bp, i) => ({
-                line: bp.line,
-                column: bp.column || 0,
-                verified: true
-            }));
+        function makeExpectedResponse(breakpoints: DebugProtocol.SourceBreakpoint[], verified = true): ISetBreakpointsResponseBody {
+            const resultBps = breakpoints.map((bp, i) => {
+                return verified ?
+                    {
+                        line: bp.line,
+                        column: bp.column || 0,
+                        verified
+                    } :
+                    {
+                        verified
+                    };
+            });
 
             return { breakpoints: resultBps };
         }
 
-        function assertExpectedResponse(response: ISetBreakpointsResponseBody, breakpoints: DebugProtocol.SourceBreakpoint[]): void {
+        function assertExpectedResponse(response: ISetBreakpointsResponseBody, breakpoints: DebugProtocol.SourceBreakpoint[], verified = true): void {
             // Assert that each bp has some id, then remove, because we don't know or care what it is
+            response = JSON.parse(JSON.stringify(response));
             response.breakpoints.forEach(bp => {
                 assert(typeof bp.id === 'number');
                 delete bp.id;
+
+                // Remove a message, we'll check errors based on 'verified'
+                delete bp.message;
+
+                if (!verified) {
+                    // Column and line are sometimes not set on unverified breakpoints, we don't care here
+                    delete bp.column;
+                    delete bp.line;
+                }
             });
 
-            assert.deepEqual(response, makeExpectedResponse(breakpoints));
+            assert.deepEqual(response, makeExpectedResponse(breakpoints, verified));
         }
 
-        function setBp_emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID): void {
-            emitScriptParsed(url, scriptId);
+        function setBp_emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID, sources: string[] = []): void {
+            emitScriptParsed(url, scriptId, sources);
         }
 
         test('When setting one breakpoint, returns the correct result', () => {
@@ -350,6 +382,92 @@ suite('ChromeDebugAdapter', () => {
                 .then(() => setBp_emitScriptParsed(/*url=*/'', SCRIPT_ID))
                 .then(() => chromeDebugAdapter.setBreakpoints({ source: { path: 'VM' + SCRIPT_ID }, breakpoints }, null, 0))
                 .then(response => assertExpectedResponse(response, breakpoints));
+        });
+
+        function setBp_emitScriptParsedWithSourcemaps(generatedScriptPath: string, authoredSourcePath: string): void {
+            mockSourceMapTransformer.setup(m => m.mapToAuthored(It.isAnyString(), It.isAnyNumber(), It.isAnyNumber()))
+                .returns(somePath => Promise.resolve(somePath));
+
+            mockSourceMapTransformer.setup(m => m.allSources(It.isAnyString()))
+                .returns(() => Promise.resolve([]));
+
+            mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
+                .returns(() => Promise.resolve(generatedScriptPath));
+
+            mockSourceMapTransformer.setup(x => x.setBreakpoints(It.isAny(), It.isAnyNumber()))
+                .returns((args: ISetBreakpointsArgs) => {
+                    args.source.path = generatedScriptPath;
+                    return args;
+                });
+
+            setBp_emitScriptParsed(generatedScriptPath, undefined, [authoredSourcePath]);
+        }
+
+        function expectBreakpointEvent(bpId: number): Promise<void> {
+            return new Promise((resolve, reject) => {
+                sendEventHandler = e => {
+                    try {
+                        if (e.event === 'breakpoint') {
+                            const bpEvent = <BreakpointEvent>e;
+                            assert.equal(bpEvent.body.reason, 'changed');
+                            assert(bpEvent.body.breakpoint.verified);
+                            assert.equal((<any>bpEvent.body.breakpoint).id, bpId);
+                            resolve();
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+            });
+        }
+
+        test('breakpoints in an unknown .ts script are resolved when the script is loaded', async () => {
+            const breakpoints: DebugProtocol.SourceBreakpoint[] = [
+                { line: 5, column: 6 }
+            ];
+
+            const authoredSourcePath = '/project/foo.ts';
+            const generatedScriptPath = '/project/foo.js';
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
+                .returns(() => Promise.resolve(undefined));
+
+            const response = await chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath }, breakpoints }, null, 0);
+            await assertExpectedResponse(response, breakpoints, false);
+            const bpId = response.breakpoints[0].id;
+
+            mockSourceMapTransformer.reset();
+
+            expectSetBreakpoint(breakpoints, generatedScriptPath);
+            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, authoredSourcePath);
+            await expectBreakpointEvent(bpId);
+        });
+
+        test('breakpoints in an unknown sourcemapped .js script are resolved when the script is loaded', async () => {
+            const breakpoints: DebugProtocol.SourceBreakpoint[] = [
+                { line: 5, column: 6 }
+            ];
+
+            const authoredSourcePath = '/project/foo.js';
+            const generatedScriptPath = '/project/_foo.js';
+
+            // Simulate what node2 does - override validateBreakpointsPath for any .js script even if it isn't loaded
+            mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
+                .returns(() => Promise.resolve(authoredSourcePath));
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+
+            expectSetBreakpoint(breakpoints, authoredSourcePath, undefined, false);
+            const response = await chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath }, breakpoints }, null, 0);
+            await assertExpectedResponse(response, breakpoints, false);
+            const bpId = response.breakpoints[0].id;
+
+            mockSourceMapTransformer.reset();
+
+            expectSetBreakpoint(breakpoints, generatedScriptPath);
+            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, authoredSourcePath);
+            await expectBreakpointEvent(bpId);
         });
     });
 

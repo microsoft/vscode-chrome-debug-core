@@ -80,9 +80,9 @@ export class BaseSourceMapTransformer {
      * Apply sourcemapping to the setBreakpoints request path/lines.
      * Returns true if completed successfully, and setBreakpoint should continue.
      */
-    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): void {
+    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): ISetBreakpointsArgs {
         if (!this._sourceMaps) {
-            return;
+            return args;
         }
 
         const originalBPs = JSON.parse(JSON.stringify(args.breakpoints));
@@ -149,7 +149,7 @@ export class BaseSourceMapTransformer {
             generatedPath: args.source.path
         });
 
-        return;
+        return args;
     }
 
     /**

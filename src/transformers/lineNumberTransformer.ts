@@ -16,11 +16,13 @@ export class LineColTransformer implements IDebugTransformer  {
     constructor(private _session: ChromeDebugSession) {
     }
 
-    public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): void {
+    public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): DebugProtocol.SetBreakpointsArguments {
         args.breakpoints.forEach(bp => this.convertClientLocationToDebugger(bp));
         if (!this.columnBreakpointsEnabled) {
             args.breakpoints.forEach(bp => bp.column = undefined);
         }
+
+        return args;
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
