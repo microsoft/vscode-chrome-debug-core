@@ -18,7 +18,6 @@
     "include": [
         "src/**/*.ts",
         "test/**/*.ts",
-        "crdp/**/*.ts",
         "node_modules/@types/**/*.ts"
     ]
 }

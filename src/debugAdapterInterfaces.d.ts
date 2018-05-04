@@ -7,7 +7,7 @@
  */
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import Crdp from '../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import { ITelemetryPropertyCollector } from './telemetry';
 
 export type ISourceMapPathOverrides = { [pattern: string]: string };
@@ -133,7 +133,7 @@ export interface TimeTravelClient {
     reverse(): Promise<any>;
 }
 
-export interface TimeTravelRuntime extends Crdp.CrdpClient {
+export interface TimeTravelRuntime extends Crdp.ProtocolApi {
     TimeTravel: TimeTravelClient;
 }
 

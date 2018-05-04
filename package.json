@@ -13,8 +13,9 @@
   "main": "./out/src/index",
   "dependencies": {
     "@types/source-map": "^0.1.27",
+    "devtools-protocol": "0.0.547074",
     "glob": "^7.0.6",
-    "noice-json-rpc": "1.1.2",
+    "noice-json-rpc": "^1.2.0",
     "source-map": "^0.6.1",
     "vscode-debugadapter": "^1.28.0",
     "vscode-debugprotocol": "^1.28.0",
@@ -28,7 +29,6 @@
     "@types/mockery": "^1.4.29",
     "@types/node": "^6.0.40",
     "@types/ws": "0.0.32",
-    "chrome-remote-debug-protocol": "git://github.com/roblourens/chrome-remote-debug-protocol.git",
     "del": "^2.2.2",
     "event-stream": "^3.3.4",
     "gulp": "^3.9.1",

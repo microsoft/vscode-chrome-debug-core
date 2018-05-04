@@ -27,7 +27,7 @@ import * as variables from './chrome/variables';
 import { NullLogger } from './nullLogger';
 import * as executionTimingsReporter from './executionTimingsReporter';
 
-import Crdp from '../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 
 export {
     chromeConnection,

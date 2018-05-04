@@ -1,7 +1,6 @@
 .github/
 .vscode/
 src/
-crdp/
 test/
 out/test
 typings/

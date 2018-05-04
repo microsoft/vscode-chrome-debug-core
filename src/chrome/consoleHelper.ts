@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import * as variables from './variables';
 
 export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {

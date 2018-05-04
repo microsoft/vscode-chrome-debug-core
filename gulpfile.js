@@ -14,7 +14,6 @@ const merge = require('merge2');
 const debug = require('gulp-debug');
 const del = require('del');
 const plumber = require('gulp-plumber');
-const crdp = require('chrome-remote-debug-protocol');
 const nls = require('vscode-nls-dev');
 const es = require('event-stream');
 const runSequence = require('run-sequence');
@@ -46,7 +45,6 @@ const sources = tsconfig.include;
 
 const libs = [
     'src',
-    'crdp'
 ].map(libFolder => libFolder + '/**/*.d.ts');
 
 const lintSources = [
@@ -164,9 +162,4 @@ gulp.task('test', test);
 
 gulp.task('watch-build-test', ['dev-build', 'dev-build-test'], () => {
     return gulp.watch(sources, ['dev-build', 'dev-build-test']);
-});
-
-gulp.task('regenerate-crdp', cb => {
-    crdp.downloadAndGenerate(path.join(__dirname, 'crdp/crdp.d.ts'))
-        .then(cb);
 });

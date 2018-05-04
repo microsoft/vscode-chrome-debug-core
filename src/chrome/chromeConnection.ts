@@ -13,7 +13,7 @@ import { ChromeTargetDiscovery } from './chromeTargetDiscoveryStrategy';
 
 import { Client, LikeSocket } from 'noice-json-rpc';
 
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 
 import { CRDPMultiplexor } from './crdpMultiplexing/crdpMultiplexor';
 import { WebSocketToLikeSocketProxy } from './crdpMultiplexing/webSocketToLikeSocketProxy';
@@ -106,7 +106,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
 
     public get isAttached(): boolean { return !!this._client; }
 
-    public get api(): Crdp.CrdpClient {
+    public get api(): Crdp.ProtocolApi {
         return this._client && this._client.api();
     }
 

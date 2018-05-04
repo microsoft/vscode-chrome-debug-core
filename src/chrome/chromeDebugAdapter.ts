@@ -13,7 +13,7 @@ import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakp
 import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
 import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
-import Crdp from '../../crdp/crdp';
+import { Protocol as Crdp } from 'devtools-protocol';
 import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer } from './variables';
 import * as variables from './variables';
 import { formatConsoleArguments, formatExceptionDetails } from './consoleHelper';
@@ -73,7 +73,7 @@ export type VariableContext = 'variables' | 'watch' | 'repl' | 'hover';
 
 export type CrdpScript = Crdp.Debugger.ScriptParsedEvent;
 
-export type CrdpDomain = keyof Crdp.CrdpClient;
+export type CrdpDomain = string;
 
 export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
 
@@ -178,7 +178,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.clearTargetContext();
     }
 
-    public get chrome(): Crdp.CrdpClient {
+    public get chrome(): Crdp.ProtocolApi {
         return this._chromeConnection.api;
     }
 
@@ -421,7 +421,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Hook up all connection events
      */
     protected hookConnectionEvents(): void {
-        this.chrome.Debugger.onPaused((params) => {
+        this.chrome.Debugger.on('paused', params => {
             /* __GDPR__
                "target/notification/onPaused" : {
                   "${include}": [
@@ -434,8 +434,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 return this.onPaused(params);
             });
         });
-        this.chrome.Debugger.onResumed(() => this.onResumed());
-        this.chrome.Debugger.onScriptParsed((params) => {
+        this.chrome.Debugger.on('resumed', () => this.onResumed());
+        this.chrome.Debugger.on('scriptParsed', params => {
             /* __GDPR__
                "target/notification/onScriptParsed" : {
                   "${include}": [
@@ -448,12 +448,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 return this.onScriptParsed(params);
             });
         });
-        this.chrome.Debugger.onBreakpointResolved(params => this.onBreakpointResolved(params));
-
-        this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
-        this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
-        this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
-        this.chrome.Runtime.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
+        this.chrome.Debugger.on('breakpointResolved', params => this.onBreakpointResolved(params));
+        this.chrome.Console.on('messageAdded', params => this.onMessageAdded(params));
+        this.chrome.Runtime.on('consoleAPICalled', params => this.onConsoleAPICalled(params));
+        this.chrome.Runtime.on('exceptionThrown', params => this.onExceptionThrown(params));
+        this.chrome.Runtime.on('executionContextsCleared', () => this.onExecutionContextsCleared());
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
