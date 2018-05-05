@@ -2125,30 +2125,34 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             });
     }
 
-    public propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
+    public async propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
         if (propDesc.get) {
             // Getter
             const grabGetterValue = 'function remoteFunction(propName) { return this[propName]; }';
-            return this.chrome.Runtime.callFunctionOn({
-                objectId: owningObjectId,
-                functionDeclaration: grabGetterValue,
-                arguments: [{ value: propDesc.name }]
-            }).then(response => {
-                if (response.exceptionDetails) {
-                    // Not an error, getter could be `get foo() { throw new Error('bar'); }`
-                    const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
-                    logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
-                    return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
-                } else {
-                    return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
-                }
-            }).catch(error => {
+
+            let response: Crdp.Runtime.CallFunctionOnResponse;
+            try {
+                response = await this.chrome.Runtime.callFunctionOn({
+                    objectId: owningObjectId,
+                    functionDeclaration: grabGetterValue,
+                    arguments: [{ value: propDesc.name }]
+                });
+            } catch (error) {
                 logger.error(`Error evaluating getter for '${propDesc.name}' - ${error.toString()}`);
                 return { name: propDesc.name, value: error.toString(), variablesReference: 0 };
-            });
+            }
+
+            if (response.exceptionDetails) {
+                // Not an error, getter could be `get foo() { throw new Error('bar'); }`
+                const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
+                logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
+                return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
+            } else {
+                return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
+            }
         } else if (propDesc.set) {
             // setter without a getter, unlikely
-            return Promise.resolve({ name: propDesc.name, value: 'setter', variablesReference: 0 });
+            return { name: propDesc.name, value: 'setter', variablesReference: 0 };
         } else {
             // Non getter/setter
             return this.internalPropertyDescriptorToVariable(propDesc, parentEvaluateName);

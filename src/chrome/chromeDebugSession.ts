@@ -113,11 +113,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             telemetry.reportEvent(ErrorTelemetryEventName, properties);
         };
 
-        // While using the debug adapter in a debug server, we create several connections. To prevent accumulating listeners we remove existing listeners before adding new ones
-        process.removeAllListeners('uncaughtException');
-        process.removeAllListeners('unhandledRejection');
-
-        process.on('uncaughtException', (err: any) => {
+        process.addListener('uncaughtException', (err: any) => {
             reportErrorTelemetry(err, 'uncaughtException');
 
             logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
@@ -284,6 +280,9 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     }
 
     public shutdown(): void {
+        process.removeAllListeners('uncaughtException');
+        process.removeAllListeners('unhandledRejection');
+
         this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'shutdown');
         super.shutdown();
     }
