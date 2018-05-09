@@ -96,11 +96,11 @@ function doBuild(buildNls, failOnError) {
         });
 }
 
-gulp.task('build', () => {
+gulp.task('build', ['clean'], () => {
     return doBuild(true, true);
 });
 
-gulp.task('dev-build', () => {
+gulp.task('dev-build', ['clean'], () => {
     return doBuild(false, false);
 });
 
