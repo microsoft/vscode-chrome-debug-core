@@ -24,7 +24,7 @@ import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
 
 /** Not mocked - use for type only */
-import {ChromeDebugAdapter as _ChromeDebugAdapter, LoadedSourceEventReason } from '../../src/chrome/chromeDebugAdapter';
+import {ChromeDebugAdapter as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source, BreakpointEvent } from 'vscode-debugadapter/lib/debugSession';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
@@ -559,17 +559,29 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
-        // This is needed for Edge debug adapter, please keep the signature and logic of sendLoadedSourceEvent() method intact.
-        test('tests that sendLoadedSourceEvent can accept an additional paramter to override the `reason` parameter', () => {
-            const loadedSourceEventReason: LoadedSourceEventReason = 'changed';
+        // This is needed for Edge debug adapter, please keep the logic of sendLoadedSourceEvent()
+        test('tests that sendLoadedSourceEvent will set the `reason` parameter based on our internal view of the events we sent to the client', () => {
+            let eventIndex = 0;
             sendEventHandler = (event) => {
-                assert.equal('loadedSource', event.event);
-                assert.notEqual(null, event.body);
-                assert.equal(loadedSourceEventReason, event.body.reason);
+                switch (eventIndex) {
+                    case 0:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('new', event.body.reason);
+                        break;
+                    case 1:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('changed', event.body.reason);
+                        break;
+                    default:
+                        throw new RangeError('Unexpected event index');
+                }
+                ++eventIndex;
             };
 
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(() => {
-                return (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+            return chromeDebugAdapter.attach(ATTACH_ARGS).then(async () => {
+                await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
                     scriptId: 1,
                     url: '',
                     startLine: 0,
@@ -578,7 +590,17 @@ suite('ChromeDebugAdapter', () => {
                     endColumn: 0,
                     executionContextId: 0,
                     hash: ''
-                }, loadedSourceEventReason);
+                });
+                await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                });
             });
         });
 

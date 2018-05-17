@@ -156,6 +156,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public readonly events: StepProgressEventsEmitter;
 
+    private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -603,8 +605,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.clearTargetContext();
         return this.doAfterProcessingSourceEvents(async () => { // This will not execute until all the on-flight 'new' source events have been processed
             for (let scriptedParseEvent of cachedScriptParsedEvents) {
-                const scriptEvent = await this.scriptToLoadedSourceEvent('removed', scriptedParseEvent);
-                this._session.sendEvent(scriptEvent);
+                this.sendLoadedSourceEvent(scriptedParseEvent, 'removed');
             }
         });
     }
@@ -856,7 +857,28 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
+        switch (loadedSourceEventReason) {
+            case 'new':
+            case 'changed':
+                if (this._loadedSourcesByScriptId.get(script.scriptId)) {
+                    loadedSourceEventReason = 'changed';
+                } else {
+                    loadedSourceEventReason = 'new';
+                }
+                this._loadedSourcesByScriptId.set(script.scriptId, script);
+                break;
+            case 'removed':
+                if (!this._loadedSourcesByScriptId.delete(script.scriptId)) {
+                    telemetry.reportEvent('LoadedSourceEventError', { issue: 'Tried to remove non-existent script', scriptId: script.scriptId });
+                    return;
+                }
+                break;
+            default:
+                telemetry.reportEvent('LoadedSourceEventError', { issue: 'Unknown reason', reason: loadedSourceEventReason });
+        }
+
         const scriptEvent = await this.scriptToLoadedSourceEvent(loadedSourceEventReason, script);
+
         this._session.sendEvent(scriptEvent);
     }
 
