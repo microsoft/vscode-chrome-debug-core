@@ -857,6 +857,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
+        // This is a workaround for an edge bug, see https://github.com/Microsoft/vscode-chrome-debug-core/pull/329
         switch (loadedSourceEventReason) {
             case 'new':
             case 'changed':

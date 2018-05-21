@@ -560,7 +560,7 @@ suite('ChromeDebugAdapter', () => {
         });
 
         // This is needed for Edge debug adapter, please keep the logic of sendLoadedSourceEvent()
-        test('tests that sendLoadedSourceEvent will set the `reason` parameter based on our internal view of the events we sent to the client', () => {
+        test('tests that sendLoadedSourceEvent will set the `reason` parameter based on our internal view of the events we sent to the client', async () => {
             let eventIndex = 0;
             sendEventHandler = (event) => {
                 switch (eventIndex) {
@@ -580,27 +580,26 @@ suite('ChromeDebugAdapter', () => {
                 ++eventIndex;
             };
 
-            return chromeDebugAdapter.attach(ATTACH_ARGS).then(async () => {
-                await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
-                    scriptId: 1,
-                    url: '',
-                    startLine: 0,
-                    startColumn: 0,
-                    endLine: 0,
-                    endColumn: 0,
-                    executionContextId: 0,
-                    hash: ''
-                });
-                await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
-                    scriptId: 1,
-                    url: '',
-                    startLine: 0,
-                    startColumn: 0,
-                    endLine: 0,
-                    endColumn: 0,
-                    executionContextId: 0,
-                    hash: ''
-                });
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                scriptId: 1,
+                url: '',
+                startLine: 0,
+                startColumn: 0,
+                endLine: 0,
+                endColumn: 0,
+                executionContextId: 0,
+                hash: ''
+            });
+            await (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                scriptId: 1,
+                url: '',
+                startLine: 0,
+                startColumn: 0,
+                endLine: 0,
+                endColumn: 0,
+                executionContextId: 0,
+                hash: ''
             });
         });
 
