@@ -13,6 +13,10 @@ import * as https from 'https';
 
 import { IExecutionResultTelemetryProperties } from './telemetry';
 
+export interface IStringDictionary<T> {
+    [name: string]: T;
+}
+
 export const enum Platform {
     Windows, OSX, Linux
 }

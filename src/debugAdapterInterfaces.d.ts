@@ -9,8 +9,10 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { ITelemetryPropertyCollector } from './telemetry';
+import { IStringDictionary } from './utils';
 
-export type ISourceMapPathOverrides = { [pattern: string]: string };
+export type ISourceMapPathOverrides = IStringDictionary<string>;
+export type IPathMapping = IStringDictionary<string>;
 
 export type BreakOnLoadStrategy = 'regex' | 'instrument' | 'off';
 
@@ -19,10 +21,9 @@ export { ITelemetryPropertyCollector } from './telemetry';
  * Properties valid for both Launch and Attach
  */
 export interface ICommonRequestArgs {
-    webRoot?: string;
     remoteRoot?: string;
     localRoot?: string;
-    pathMapping?: {[url: string]: string};
+    pathMapping?: IPathMapping;
     outDir?: string;
     outFiles?: string[];
     sourceMaps?: boolean;

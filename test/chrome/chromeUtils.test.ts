@@ -44,17 +44,18 @@ suite('ChromeUtils', () => {
         const TEST_TARGET_LOCAL_URL = 'file:///' + TEST_CLIENT_PATH;
         const TEST_TARGET_HTTP_URL = 'http://site.com/page/scripts/a.js';
         const TEST_WEB_ROOT = 'c:\\site';
+        const PATH_MAPPING = { '/': TEST_WEB_ROOT };
 
         test('an empty string is returned for a missing url', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('', ''), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath2('', PATH_MAPPING), '');
         });
 
-        test('an empty string is returned when the webRoot is missing', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(null, TEST_TARGET_HTTP_URL), '');
+        test('an empty string is returned when the pathMapping is missing', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPath2(TEST_TARGET_HTTP_URL, null), '');
         });
 
         test('a url without a path returns an empty string', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, 'http://site.com'), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath2('http://site.com', PATH_MAPPING), '');
         });
 
         test('it searches the disk for a path that exists, built from the url', () => {
@@ -62,7 +63,7 @@ suite('ChromeUtils', () => {
                 if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');
             };
             mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, TEST_TARGET_HTTP_URL), TEST_CLIENT_PATH);
+            assert.equal(getChromeUtils().targetUrlToClientPath2(TEST_TARGET_HTTP_URL, PATH_MAPPING), TEST_CLIENT_PATH);
         });
 
         test(`returns an empty string when it can't resolve a url`, () => {
@@ -70,23 +71,23 @@ suite('ChromeUtils', () => {
                 throw new Error('Not found');
             };
             mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, TEST_TARGET_HTTP_URL), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath2(TEST_TARGET_HTTP_URL, PATH_MAPPING), '');
         });
 
         test('file:/// urls are returned canonicalized', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('', TEST_TARGET_LOCAL_URL), TEST_CLIENT_PATH);
+            assert.equal(getChromeUtils().targetUrlToClientPath2(TEST_TARGET_LOCAL_URL, PATH_MAPPING), TEST_CLIENT_PATH);
         });
 
         test('uri encodings are fixed for file:/// paths', () => {
             const clientPath = 'c:\\project\\path with spaces\\script.js';
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, 'file:///' + encodeURI(clientPath)), clientPath);
+            assert.equal(getChromeUtils().targetUrlToClientPath2('file:///' + encodeURI(clientPath), PATH_MAPPING), clientPath);
         });
 
         test('uri encodings are fixed in URLs', () => {
             const pathSegment = 'path with spaces\\script.js';
             const url = 'http:\\' + encodeURIComponent(pathSegment);
 
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_WEB_ROOT, url), path.join(TEST_WEB_ROOT, pathSegment));
+            assert.equal(getChromeUtils().targetUrlToClientPath2(url, PATH_MAPPING), path.join(TEST_WEB_ROOT, pathSegment));
         });
     });
 
@@ -97,28 +98,27 @@ suite('ChromeUtils', () => {
 
         const ROOT_MAPPING = { '/': TEST_WEB_ROOT };
         const PAGE_MAPPING = { '/page/': TEST_WEB_ROOT };
-        const PARTIAL_PAGE_MAPPING = { '/page': TEST_WEB_ROOT, 'page': TEST_WEB_ROOT};
+        const PARTIAL_PAGE_MAPPING = { '/page': TEST_WEB_ROOT };
         const FILE_MAPPING = { '/page.js': TEST_CLIENT_PATH };
-        const RELATIVE_FILE_MAPPING = { 'page.js': TEST_CLIENT_PATH};
 
         test('an empty string is returned for a missing url', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('', { }), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath('', { }), '');
         });
 
         test('an empty string is returned for file: URLs', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('file:///Users/foo/bar.js', { }), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath('file:///Users/foo/bar.js', { }), '');
         });
 
         test('an empty string is returned for non-URLs', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('foo.js', { }), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath('foo.js', { }), '');
         });
 
         test('a url without a path returns an empty string', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings('http://site.com', { }), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com', { }), '');
         });
 
         test(`returns an empty string when it can't resolve a url`, () => {
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, { '/foo': '/bar' }), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, { '/foo': '/bar' }), '');
         });
 
         test('decodes uri-encoded characters', () => {
@@ -127,7 +127,7 @@ suite('ChromeUtils', () => {
             const url = 'http://localhost/' + escapedSegment + '/script.js';
 
             assert.equal(
-                getChromeUtils().targetUrlToClientPathByPathMappings(url, ROOT_MAPPING),
+                getChromeUtils().targetUrlToClientPath(url, ROOT_MAPPING),
                 path.join(TEST_WEB_ROOT, segmentWithSpaces, 'script.js'));
         });
 
@@ -137,50 +137,44 @@ suite('ChromeUtils', () => {
             const url = 'http://localhost/' + escapedSegment + '/script.js';
 
             assert.equal(
-                getChromeUtils().targetUrlToClientPathByPathMappings(url, { '/path%20with%20spaces/': TEST_WEB_ROOT }),
+                getChromeUtils().targetUrlToClientPath(url, { '/path%20with%20spaces/': TEST_WEB_ROOT }),
                 path.join(TEST_WEB_ROOT, 'script.js'));
         });
 
         test('resolves webroot-style mapping', () => {
             assert.equal(
-                getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, PAGE_MAPPING),
+                getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PAGE_MAPPING),
                 TEST_CLIENT_PATH);
         });
 
         test('resolves webroot-style mapping without trailing slash', () => {
             assert.equal(
-                getChromeUtils().targetUrlToClientPathByPathMappings(TEST_TARGET_HTTP_URL, PARTIAL_PAGE_MAPPING),
+                getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PARTIAL_PAGE_MAPPING),
                 TEST_CLIENT_PATH);
         });
 
         test('resolves pathMapping for a particular file', () => {
             assert.equal(
-                getChromeUtils().targetUrlToClientPathByPathMappings('http://site.com/page.js', FILE_MAPPING),
+                getChromeUtils().targetUrlToClientPath('http://site.com/page.js', FILE_MAPPING),
                 TEST_CLIENT_PATH);
         });
 
         test('return an empty string for url that has partially matching directory', () => {
             const url = 'http://site.com/page-alike/scripts/a.js';
 
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, PARTIAL_PAGE_MAPPING), '');
+            assert.equal(getChromeUtils().targetUrlToClientPath(url, PARTIAL_PAGE_MAPPING), '');
         });
 
         test('return an empty string for file matching pathMapped directory', () => {
             const url = 'http://site.com/page.js';
 
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, PARTIAL_PAGE_MAPPING), '');
-        });
-
-        test('resolves pathMapping for a particular relative file', () => {
-            const url = 'http://site.com/page.js';
-
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, RELATIVE_FILE_MAPPING), TEST_CLIENT_PATH);
+            assert.equal(getChromeUtils().targetUrlToClientPath(url, PARTIAL_PAGE_MAPPING), '');
         });
 
         test('matches longer patterns first', () => {
             const url = 'http://localhost/foo/bar';
 
-            assert.equal(getChromeUtils().targetUrlToClientPathByPathMappings(url, {
+            assert.equal(getChromeUtils().targetUrlToClientPath(url, {
                 '/': 'C:\\a',
                 'foo': 'C:\\b'
             }), 'C:\\b\\bar');

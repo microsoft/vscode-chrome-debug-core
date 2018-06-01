@@ -30,52 +30,53 @@ suite('SourceMapUtils', () => {
         const GEN_URL = 'http://localhost:8080/code/script.js';
         const ABS_SOURCEROOT = testUtils.pathResolve('/project/src');
         const WEBROOT = testUtils.pathResolve('/project/webroot');
+        const PATH_MAPPING = { '/': WEBROOT };
 
         test('handles file:/// sourceRoot', () => {
             assert.equal(
-                getComputedSourceRoot('file:///' + ABS_SOURCEROOT, GEN_PATH, WEBROOT),
+                getComputedSourceRoot('file:///' + ABS_SOURCEROOT, GEN_PATH, PATH_MAPPING),
                 ABS_SOURCEROOT);
         });
 
         test('handles /src style sourceRoot', () => {
             assert.equal(
-                getComputedSourceRoot('/src', GEN_PATH, WEBROOT),
+                getComputedSourceRoot('/src', GEN_PATH, PATH_MAPPING),
                 testUtils.pathResolve('/project/webroot/src'));
         });
 
         test('handles ../../src style sourceRoot', () => {
             assert.equal(
-                getComputedSourceRoot('../../src', GEN_PATH, WEBROOT),
+                getComputedSourceRoot('../../src', GEN_PATH, PATH_MAPPING),
                 ABS_SOURCEROOT);
         });
 
         test('handles src style sourceRoot', () => {
             assert.equal(
-                getComputedSourceRoot('src', GEN_PATH, WEBROOT),
+                getComputedSourceRoot('src', GEN_PATH, PATH_MAPPING),
                 testUtils.pathResolve('/project/webroot/code/src'));
         });
 
         test('handles runtime script not on disk', () => {
             assert.equal(
-                getComputedSourceRoot('../src', GEN_URL, WEBROOT),
+                getComputedSourceRoot('../src', GEN_URL, PATH_MAPPING),
                 testUtils.pathResolve('/project/webroot/src'));
         });
 
         test('when no sourceRoot specified and runtime script is on disk, uses the runtime script dirname', () => {
             assert.equal(
-                getComputedSourceRoot('', GEN_PATH, WEBROOT),
+                getComputedSourceRoot('', GEN_PATH, PATH_MAPPING),
                 testUtils.pathResolve('/project/webroot/code'));
         });
 
         test('when no sourceRoot specified and runtime script is not on disk, uses the runtime script dirname', () => {
             assert.equal(
-                getComputedSourceRoot('', GEN_URL, WEBROOT),
+                getComputedSourceRoot('', GEN_URL, PATH_MAPPING),
                 testUtils.pathResolve('/project/webroot/code'));
         });
 
         test('no crash on debugadapter:// urls', () => {
             assert.equal(
-                getComputedSourceRoot('', 'eval://123', WEBROOT),
+                getComputedSourceRoot('', 'eval://123', PATH_MAPPING),
                 testUtils.pathResolve(WEBROOT));
         });
     });

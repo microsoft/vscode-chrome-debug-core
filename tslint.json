@@ -60,7 +60,7 @@
     "no-var-requires": true,
     "object-literal-sort-keys": false,
     "one-line": [
-      true,
+      false,
       "check-open-brace",
       "check-catch",
       "check-else",

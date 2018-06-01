@@ -4,10 +4,11 @@
 
 import * as path from 'path';
 import * as url from 'url';
-
-import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ISourceMapPathOverrides } from '../debugAdapterInterfaces';
+
+import * as chromeUtils from '../chrome/chromeUtils';
+import * as utils from '../utils';
+import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 
 /**
  * Resolves a relative path in terms of another file
@@ -17,9 +18,9 @@ export function resolveRelativeToFile(absPath: string, relPath: string): string 
 }
 
 /**
- * Determine the absolute path to the sourceRoot.
+ * Determine an absolute path for the sourceRoot.
  */
-export function getComputedSourceRoot(sourceRoot: string, generatedPath: string, webRoot = ''): string {
+export function getComputedSourceRoot(sourceRoot: string, generatedPath: string, pathMapping: IPathMapping = {}): string {
     let absSourceRoot: string;
     if (sourceRoot) {
         if (sourceRoot.startsWith('file:///')) {
@@ -28,16 +29,16 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         } else if (sourceRoot.startsWith('/')) {
             // sourceRoot is like "/src", would be like http://localhost/src, resolve to a local path under webRoot
             // note that C:/src (or /src as an absolute local path) is not a valid sourceroot
-            absSourceRoot = path.join(webRoot, sourceRoot);
-        } else {
+            absSourceRoot = chromeUtils.targetUrlPathToClientPath(sourceRoot, pathMapping);
+        } else if (path.isAbsolute(generatedPath)) {
             // sourceRoot is like "src" or "../src", relative to the script
-            if (path.isAbsolute(generatedPath)) {
-                absSourceRoot = resolveRelativeToFile(generatedPath, sourceRoot);
-            } else {
-                // generatedPath is a URL so runtime script is not on disk, resolve the sourceRoot location on disk
-                const genDirname = path.dirname(url.parse(generatedPath).pathname);
-                absSourceRoot = path.join(webRoot, genDirname, sourceRoot);
-            }
+            absSourceRoot = resolveRelativeToFile(generatedPath, sourceRoot);
+        } else {
+            // generatedPath is a URL so runtime script is not on disk, resolve the sourceRoot location on disk.
+            const generatedUrlPath = url.parse(generatedPath).pathname;
+            const mappedPath = chromeUtils.targetUrlPathToClientPath(generatedUrlPath, pathMapping);
+            const mappedDirname = path.dirname(mappedPath);
+            absSourceRoot = path.join(mappedDirname, sourceRoot);
         }
 
         logger.log(`SourceMap: resolved sourceRoot ${sourceRoot} -> ${absSourceRoot}`);
@@ -45,10 +46,11 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         absSourceRoot = path.dirname(generatedPath);
         logger.log(`SourceMap: no sourceRoot specified, using script dirname: ${absSourceRoot}`);
     } else {
-        // runtime script is not on disk, resolve the sourceRoot location on disk
-        const urlPath = url.parse(generatedPath).pathname;
-        const scriptPathDirname = urlPath ? path.dirname(urlPath) : ''; // could be debugadapter://123, no other info.
-        absSourceRoot = path.join(webRoot, scriptPathDirname);
+        // No sourceRoot and runtime script is not on disk, resolve the sourceRoot location on disk
+        const urlPathname = url.parse(generatedPath).pathname || '/placeholder.js';  // could be debugadapter://123, no other info.
+        const mappedPath = chromeUtils.targetUrlPathToClientPath(urlPathname, pathMapping);
+        const scriptPathDirname = mappedPath ? path.dirname(mappedPath) : '';
+        absSourceRoot = scriptPathDirname;
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
     }
 
