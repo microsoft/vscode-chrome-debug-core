@@ -91,11 +91,6 @@ export class LineColTransformer implements IDebugTransformer  {
     }
 
     public convertClientColumnToDebugger(column: number): number {
-        // Workaround for https://github.com/Microsoft/vscode/issues/46784
-        if (column === 0) {
-            column = 1;
-        }
-
         return (<any>this._session).convertClientColumnToDebugger(column);
     }
 
