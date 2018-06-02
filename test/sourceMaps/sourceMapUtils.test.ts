@@ -189,47 +189,53 @@ suite('SourceMapUtils', () => {
     suite('resolveMapPath', () => {
         test('works for a relative local path', () => {
             const scriptPath = testUtils.pathResolve('/project/app.js');
-            assert.equal(resolveMapPath(scriptPath, 'app.js.map'), scriptPath + '.map');
-            assert.equal(resolveMapPath(scriptPath, './app.js.map'), scriptPath + '.map');
+            assert.equal(resolveMapPath(scriptPath, 'app.js.map', {}), scriptPath + '.map');
+            assert.equal(resolveMapPath(scriptPath, './app.js.map', {}), scriptPath + '.map');
         });
 
         test('works for a web relative path', () => {
             const scriptUrl = 'http://localhost:8080/project/app.js';
-            assert.equal(resolveMapPath(scriptUrl, 'app.js.map'), scriptUrl + '.map');
-            assert.equal(resolveMapPath(scriptUrl, './app.js.map'), scriptUrl + '.map');
+            assert.equal(resolveMapPath(scriptUrl, 'app.js.map', {}), scriptUrl + '.map');
+            assert.equal(resolveMapPath(scriptUrl, './app.js.map', {}), scriptUrl + '.map');
         });
 
         test('works for a full url with local script', () => {
             const urlMap = 'http://localhost/app.js.map';
             const scriptUrl = testUtils.pathResolve('/project/app.js');
-            assert.equal(resolveMapPath(scriptUrl, urlMap), urlMap);
+            assert.equal(resolveMapPath(scriptUrl, urlMap, {}), urlMap);
         });
 
         test('works for a full url with url script', () => {
             const urlMap = 'http://localhost/app.js.map';
             const scriptUrl = 'http://localhost:8080/project/app.js';
-            assert.equal(resolveMapPath(scriptUrl, urlMap), urlMap);
+            assert.equal(resolveMapPath(scriptUrl, urlMap, {}), urlMap);
         });
 
         test('works for a /path', () => {
             const slashPath = '/maps/app.js.map';
             const scriptUrl = 'http://localhost:8080/project/app.js';
-            assert.equal(resolveMapPath(scriptUrl, slashPath), 'http://localhost:8080/maps/app.js.map');
+            assert.equal(resolveMapPath(scriptUrl, slashPath, {}), 'http://localhost:8080/maps/app.js.map');
+        });
+
+        test('applies pathMappings for /path and local path', () => {
+            const slashPath = '/maps/app.js.map';
+            const scriptUrl = '/foo/bar/project/app.js';
+            assert.equal(resolveMapPath(scriptUrl, slashPath, { '/' : '/foo/bar' }), '/foo/bar/maps/app.js.map');
         });
 
         test('works for a file:/// url', () => {
             const winFileUrl = 'file:///c:/project/app.js.map';
             const notWinFileUrl = 'file:///project/app.js.map';
             const scriptUrl = 'http://localhost:8080/project/app.js';
-            assert.equal(resolveMapPath(scriptUrl, winFileUrl), winFileUrl);
-            assert.equal(resolveMapPath(scriptUrl, notWinFileUrl), notWinFileUrl);
+            assert.equal(resolveMapPath(scriptUrl, winFileUrl, {}), winFileUrl);
+            assert.equal(resolveMapPath(scriptUrl, notWinFileUrl, {}), notWinFileUrl);
         });
 
         // https://github.com/Microsoft/vscode-chrome-debug/issues/268
         test('works for an eval script', () => {
             const scriptPath = 'eval://53';
             const sourceMapPath = 'foo.min.js';
-            assert.equal(resolveMapPath(scriptPath, sourceMapPath), null);
+            assert.equal(resolveMapPath(scriptPath, sourceMapPath, {}), null);
         });
     });
 

@@ -11,7 +11,10 @@ import * as utils from '../utils';
 import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
 
-export function targetUrlPathToClientPath(scriptUrlPath: string, pathMapping: IPathMapping): string {
+/**
+ * Takes the path component of a target url (starting with '/') and applies pathMapping
+ */
+export function applyPathMappingsToTargetUrlPath(scriptUrlPath: string, pathMapping: IPathMapping): string {
     if (!pathMapping) {
         return '';
     }
@@ -55,14 +58,14 @@ function pathMappingPatternMatchesPath(pattern: string, scriptPath: string): boo
     return scriptPath.startsWith(pattern);
 }
 
-export function targetUrlToClientPath(scriptUrl: string, pathMapping: IPathMapping): string {
+export function applyPathMappingsToTargetUrl(scriptUrl: string, pathMapping: IPathMapping): string {
     const parsedUrl = url.parse(scriptUrl);
     if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
         // Skip file: URLs and paths, and invalid things
         return '';
     }
 
-    return targetUrlPathToClientPath(parsedUrl.pathname, pathMapping);
+    return applyPathMappingsToTargetUrlPath(parsedUrl.pathname, pathMapping);
 }
 
 function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): string {
@@ -80,7 +83,7 @@ function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): 
  * http://localhost/scripts/code.js => d:/app/scripts/code.js
  * file:///d:/scripts/code.js => d:/scripts/code.js
  */
-export function targetUrlToClientPath2(aUrl: string, pathMapping: IPathMapping): string {
+export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): string {
     if (!aUrl) {
         return '';
     }
@@ -102,7 +105,7 @@ export function targetUrlToClientPath2(aUrl: string, pathMapping: IPathMapping):
     const pathParts = pathName.split(/[\/\\]/);
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
-        const clientPath = targetUrlPathToClientPath(joinedPath, pathMapping);
+        const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
         if (utils.existsSync(clientPath)) {
             return utils.canonicalizeUrl(clientPath);
         }

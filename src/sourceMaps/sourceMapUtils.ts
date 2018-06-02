@@ -29,14 +29,14 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         } else if (sourceRoot.startsWith('/')) {
             // sourceRoot is like "/src", would be like http://localhost/src, resolve to a local path under webRoot
             // note that C:/src (or /src as an absolute local path) is not a valid sourceroot
-            absSourceRoot = chromeUtils.targetUrlPathToClientPath(sourceRoot, pathMapping);
+            absSourceRoot = chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping);
         } else if (path.isAbsolute(generatedPath)) {
             // sourceRoot is like "src" or "../src", relative to the script
             absSourceRoot = resolveRelativeToFile(generatedPath, sourceRoot);
         } else {
             // generatedPath is a URL so runtime script is not on disk, resolve the sourceRoot location on disk.
             const generatedUrlPath = url.parse(generatedPath).pathname;
-            const mappedPath = chromeUtils.targetUrlPathToClientPath(generatedUrlPath, pathMapping);
+            const mappedPath = chromeUtils.applyPathMappingsToTargetUrlPath(generatedUrlPath, pathMapping);
             const mappedDirname = path.dirname(mappedPath);
             absSourceRoot = path.join(mappedDirname, sourceRoot);
         }
@@ -48,7 +48,7 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
     } else {
         // No sourceRoot and runtime script is not on disk, resolve the sourceRoot location on disk
         const urlPathname = url.parse(generatedPath).pathname || '/placeholder.js';  // could be debugadapter://123, no other info.
-        const mappedPath = chromeUtils.targetUrlPathToClientPath(urlPathname, pathMapping);
+        const mappedPath = chromeUtils.applyPathMappingsToTargetUrlPath(urlPathname, pathMapping);
         const scriptPathDirname = mappedPath ? path.dirname(mappedPath) : '';
         absSourceRoot = scriptPathDirname;
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
@@ -110,7 +110,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
     return sourcePath;
 }
 
-export function resolveMapPath(pathToGenerated: string, mapPath: string): string {
+export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMapping: IPathMapping): string {
     if (!utils.isURL(mapPath)) {
         if (utils.isURL(pathToGenerated)) {
             const scriptUrl = url.parse(pathToGenerated);
@@ -122,6 +122,8 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string): string
             // runtime script is not on disk, map won't be either, resolve a URL for the map relative to the script
             const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptPath), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
+        } else if (mapPath.startsWith('/')) {
+            mapPath = chromeUtils.applyPathMappingsToTargetUrlPath(mapPath, pathMapping);
         } else if (path.isAbsolute(pathToGenerated)) {
             // mapPath needs to be resolved to an absolute path or a URL
             // runtime script is on disk, so map should be too

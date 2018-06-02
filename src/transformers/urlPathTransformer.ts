@@ -117,6 +117,6 @@ export class UrlPathTransformer extends BasePathTransformer {
      * Overridable for VS to ask Client to resolve path
      */
     protected async targetUrlToClientPath(scriptUrl: string): Promise<string> {
-        return Promise.resolve(ChromeUtils.targetUrlToClientPath2(scriptUrl, this._pathMapping));
+        return Promise.resolve(ChromeUtils.targetUrlToClientPath(scriptUrl, this._pathMapping));
     }
 }

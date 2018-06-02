@@ -84,7 +84,7 @@ export class SourceMapFactory {
      * Resolves a sourcemap's path and loads the data
      */
     private getSourceMapContent(pathToGenerated: string, mapPath: string): Promise<string> {
-        mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPath);
+        mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPath, this._pathMapping);
         if (!mapPath) {
             return Promise.resolve(null);
         }
