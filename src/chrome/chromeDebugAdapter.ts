@@ -2712,20 +2712,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             expression = prefix.substr(0, dot);
         }
 
-        if (expression) {
-            logger.verbose(`Completions: Returning for expression '${expression}'`);
-            const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
-            const response = await this.waitThenDoEvaluate(getCompletionsFn, args.frameId, { returnByValue: true });
-            if (response.exceptionDetails) {
-                return { targets: [] };
-            } else {
-                return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
-            }
-        } else {
+        if (typeof args.frameId === 'number' && !expression) {
             logger.verbose(`Completions: Returning global completions`);
 
             // If no expression was passed, we must be getting global completions at a breakpoint
-            if (typeof args.frameId !== 'number' || !this._frameHandles.get(args.frameId)) {
+            if (!this._frameHandles.get(args.frameId)) {
                 return Promise.reject(errors.stackFrameNotValid());
             }
 
@@ -2743,6 +2734,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                         variableArrs.map(variableArr => variableArr.map(variable => variable.name)));
                     return { targets };
                 });
+        } else {
+            expression = expression || 'this';
+
+            logger.verbose(`Completions: Returning for expression '${expression}'`);
+            const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
+            const response = await this.waitThenDoEvaluate(getCompletionsFn, args.frameId, { returnByValue: true });
+            if (response.exceptionDetails) {
+                return { targets: [] };
+            } else {
+                return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
+            }
         }
     }
 
