@@ -890,8 +890,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // Figure out skip/noskip transitions within script
             let inLibRange = parentIsSkipped;
-            const allSources = await this.sourceMapTransformer.allSources(mappedUrl);
-            for (let s of allSources) {
+            for (let s of sources) {
                 let isSkippedFile = this.shouldSkipSource(s);
                 if (typeof isSkippedFile !== 'boolean') {
                     // Inherit the parent's status
@@ -915,6 +914,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (libPositions.length || toggling) {
                 if (parentIsSkipped) {
                     libPositions.splice(0, 0, { lineNumber: 0, columnNumber: 0});
+                }
+
+                if (libPositions[0].lineNumber !== 0 || libPositions[0].columnNumber !== 0) {
+                    // The list of blackboxed ranges must start with 0,0 for some reason.
+                    // https://github.com/Microsoft/vscode-chrome-debug/issues/667
+                    libPositions[0] = {
+                        lineNumber: 0,
+                        columnNumber: 0
+                    };
                 }
 
                 await this.chrome.Debugger.setBlackboxedRanges({
