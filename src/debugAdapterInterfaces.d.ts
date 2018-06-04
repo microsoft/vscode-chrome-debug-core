@@ -39,6 +39,9 @@ export interface ICommonRequestArgs {
     /** Private undocumented property to multiplex the CRDP connection into an additional channel */
     extraCRDPChannelPort?: number;
 
+    /** Private undocumented property for enabling break on load */
+    breakOnLoadStrategy?: BreakOnLoadStrategy;
+
     _suppressConsoleOutput?: boolean;
 }
 
@@ -55,9 +58,6 @@ export interface IRestartRequestArgs {
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
     __restart?: IRestartRequestArgs;
-
-    /** Private undocumented property for enabling break on load */
-    breakOnLoadStrategy?: BreakOnLoadStrategy;
 }
 
 export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ICommonRequestArgs {

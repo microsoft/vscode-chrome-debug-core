@@ -10,6 +10,7 @@ import { logger } from 'vscode-debugadapter';
 import * as utils from '../utils';
 import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
+import { pathToRegex } from '../utils';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -293,10 +294,9 @@ export function isEvalScript(scriptPath: string): boolean {
 /* Constructs the regex for files to enable break on load
 For example, for a file index.js the regex will match urls containing index.js, index.ts, abc/index.ts, index.bin.js etc
 It won't match index100.js, indexabc.ts etc */
-export function getUrlRegexForBreakOnLoad(url: string): string {
+export function getUrlRegexForBreakOnLoad(url: string, caseSensitivePaths: boolean): string {
     const fileNameWithoutFullPath = path.parse(url).base;
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
-    const escapedFileName = fileNameWithoutExtension.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
+    const escapedFileName = pathToRegex(fileNameWithoutExtension, caseSensitivePaths);
     return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
 }

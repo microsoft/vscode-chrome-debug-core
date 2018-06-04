@@ -315,10 +315,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
 
-        if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
-            this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
-        }
-
         if (!args.__restart) {
             /* __GDPR__
                "debugStarted" : {
@@ -384,6 +380,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
 
         this._smartStepEnabled = this._launchAttachArgs.smartStep;
+
+        if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
+            this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
+        }
     }
 
     public shutdown(): void {
@@ -1503,7 +1503,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
                 if (this.breakOnLoadActive) {
-                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
+                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints, this._caseSensitivePaths);
                 }
             }
         }

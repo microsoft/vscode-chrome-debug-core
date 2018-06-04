@@ -165,14 +165,14 @@ export class BreakOnLoadHelper {
      * Adds a stopOnEntry breakpoint for the given script url
      * Only used when using regex approach for break on load
      */
-    private async addStopOnEntryBreakpoint(url: string): Promise<ISetBreakpointResult[]> {
+    private async addStopOnEntryBreakpoint(url: string, caseSensitivePaths: boolean): Promise<ISetBreakpointResult[]> {
         let responsePs: ISetBreakpointResult[];
         // Check if file already has a stop on entry breakpoint
         if (!this._stopOnEntryRequestedFileNameToBreakpointId.has(url)) {
 
             // Generate regex we need for the file
             const normalizedUrl = this._chromeDebugAdapter.fixPathCasing(url);
-            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl);
+            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl, caseSensitivePaths);
 
             // Check if we already have a breakpoint for this regexp since two different files like script.ts and script.js may have the same regexp
             let breakpointId: string;
@@ -220,10 +220,10 @@ export class BreakOnLoadHelper {
      * Handles the AddBreakpoints request when break on load is active
      * Takes the action based on the strategy
      */
-    public async handleAddBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
+    public async handleAddBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[], caseSensitivePaths: boolean): Promise<ISetBreakpointResult[]> {
         // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
         if (this._breakOnLoadStrategy === 'regex') {
-        await this.addStopOnEntryBreakpoint(url);
+        await this.addStopOnEntryBreakpoint(url, caseSensitivePaths);
         } else if (this._breakOnLoadStrategy === 'instrument') {
             // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
             if (!this.instrumentationBreakpointSet) {
