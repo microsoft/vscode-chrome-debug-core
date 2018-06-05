@@ -219,8 +219,8 @@ suite('SourceMapUtils', () => {
 
         test('applies pathMappings for /path and local path', () => {
             const slashPath = '/maps/app.js.map';
-            const scriptUrl = '/foo/bar/project/app.js';
-            assert.equal(resolveMapPath(scriptUrl, slashPath, { '/' : '/foo/bar' }), '/foo/bar/maps/app.js.map');
+            const scriptUrl = testUtils.pathResolve('/foo/bar/project/app.js');
+            assert.equal(resolveMapPath(scriptUrl, slashPath, { '/' : testUtils.pathResolve('/foo/bar') }), testUtils.pathResolve('/foo/bar/maps/app.js.map'));
         });
 
         test('works for a file:/// url', () => {

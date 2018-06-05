@@ -80,7 +80,8 @@ suite('SourceMapFactory', () => {
         });
 
         test('handles an absolute path to the sourcemap', () => {
-            const absMapPath = testUtils.pathResolve('/files/app.js.map');
+            // Can't be an absolute local path - just a /path from webroot
+            const absMapPath = '/files/app.js.map';
             testUtils.registerMockReadFile({ absPath: testUtils.pathResolve('/project/app/files/app.js.map'), data: FILEDATA});
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, PATHMAPPING);
 
@@ -113,7 +114,7 @@ suite('SourceMapFactory', () => {
         });
 
         test('looks for a map file next to the script', () => {
-            const badMapPath = testUtils.pathResolve('/files/app.js.map');
+            const badMapPath = '/files/app.js.map';
             testUtils.registerMockReadFile(
                 { absPath: testUtils.pathResolve('/project/app/files/app.js.map'), data: null},
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
