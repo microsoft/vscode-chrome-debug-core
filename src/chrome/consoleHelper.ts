@@ -56,6 +56,9 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
         case 'trace':
             args = [{ type: 'string', value: 'console.trace()\n' + stackTraceToString(m.stackTrace) }];
             break;
+        case 'clear':
+            args = [{ type: 'string', value: '\u001b[2J' }];
+            break;
         default:
             // Some types we have to ignore
             return null;
