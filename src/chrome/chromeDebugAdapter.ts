@@ -1047,7 +1047,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         logger.log(`Setting the skip file status for: ${aPath} to ${newStatus}`);
         this._skipFileStatuses.set(aPath, newStatus);
 
-        const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
+        const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath) || generatedPath;
         const script = this.getScriptByUrl(targetPath);
 
         await this.resolveSkipFiles(script, generatedPath, sources, /*toggling=*/true);
