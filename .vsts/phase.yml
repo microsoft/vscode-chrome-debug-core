@@ -1,0 +1,34 @@
+parameters:
+  name: ''
+  queueName: ''
+
+phases:
+- phase: ${{ parameters.name }}
+  queue:
+    name: ${{ parameters.queueName }}
+    demands:
+    - npm
+    - node.js
+  steps:
+  - task: Npm@1
+    displayName: npm install
+    inputs:
+      verbose: false
+
+  - task: Gulp@0
+    displayName: gulp build
+    inputs:
+      targets: build
+      publishJUnitResults: true
+
+  - task: Npm@1
+    displayName: npm test
+    inputs:
+      command: custom
+      verbose: false
+      customCommand: test
+
+  - task: Gulp@0
+    displayName: gulp tslint
+    inputs:
+      targets: tslint
