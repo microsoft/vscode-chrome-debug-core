@@ -30,7 +30,7 @@ export class InternalSourceBreakpoint {
 }
 
 function isLogpointMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): boolean {
-    return m.stackTrace && m.stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
+    return m.stackTrace && m.stackTrace.callFrames.length > 0 && m.stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
 }
 
 export function stackTraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
