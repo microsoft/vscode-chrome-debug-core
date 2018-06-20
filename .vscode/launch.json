@@ -21,7 +21,7 @@
             "request": "launch",
             "protocol": "inspector",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": [ "--no-timeouts", "${workspaceFolder}/out/**/*.js", "--ui", "tdd",  "--grep", "fs.access" ],
+            "args": [ "--no-timeouts", "${workspaceFolder}/out/**/*.js", "--ui", "tdd",  "--grep", "<tests to grep for>" ],
             "cwd": "${workspaceFolder}",
             "smartStep": true,
             "skipFiles": [
