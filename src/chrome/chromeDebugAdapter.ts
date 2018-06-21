@@ -1327,7 +1327,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 const originalArgs = args;
                 args = JSON.parse(JSON.stringify(args));
                 args = this._lineColTransformer.setBreakpoints(args);
-                args = this._sourceMapTransformer.setBreakpoints(args, requestSeq);
+                const sourceMapTransformerResponse = this._sourceMapTransformer.setBreakpoints(args, requestSeq, ids);
+                if (sourceMapTransformerResponse && sourceMapTransformerResponse.args) {
+                    args = sourceMapTransformerResponse.args;
+                }
+                if (sourceMapTransformerResponse && sourceMapTransformerResponse.ids) {
+                    ids = sourceMapTransformerResponse.ids;
+                }
                 args = this._pathTransformer.setBreakpoints(args);
 
                 // Get the target url of the script

@@ -40,6 +40,7 @@ export class BaseSourceMapTransformer {
     private _requestSeqToSetBreakpointsArgs: Map<number, ISavedSetBreakpointsArgs>;
     private _allRuntimeScriptPaths: Set<string>;
     private _authoredPathsToMappedBPs: Map<string, DebugProtocol.SourceBreakpoint[]>;
+    private _authoredPathsToClientBreakpointIds: Map<string, number[]>;
 
     protected _preLoad = Promise.resolve();
     private _processingNewSourceMap: Promise<any> = Promise.resolve();
@@ -69,6 +70,7 @@ export class BaseSourceMapTransformer {
             this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
             this._authoredPathsToMappedBPs = new Map<string, DebugProtocol.SourceBreakpoint[]>();
+            this._authoredPathsToClientBreakpointIds = new Map<string, number[]>();
         }
     }
 
@@ -80,9 +82,9 @@ export class BaseSourceMapTransformer {
      * Apply sourcemapping to the setBreakpoints request path/lines.
      * Returns true if completed successfully, and setBreakpoint should continue.
      */
-    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number): ISetBreakpointsArgs {
+    public setBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, ids?: number[]): { args: ISetBreakpointsArgs, ids: number[] } {
         if (!this._sourceMaps) {
-            return args;
+            return { args, ids };
         }
 
         const originalBPs = JSON.parse(JSON.stringify(args.breakpoints));
@@ -120,6 +122,11 @@ export class BaseSourceMapTransformer {
 
                 this._authoredPathsToMappedBPs.set(argsPath, args.breakpoints);
 
+                // Store the client breakpoint Ids for the mapped BPs as well
+                if (ids) {
+                    this._authoredPathsToClientBreakpointIds.set(argsPath, ids);
+                }
+
                 // Include BPs from other files that map to the same file. Ensure the current file's breakpoints go first
                 this._sourceMaps.allMappedSources(mappedPath).forEach(sourcePath => {
                     if (sourcePath === argsPath) {
@@ -130,6 +137,13 @@ export class BaseSourceMapTransformer {
                     if (sourceBPs) {
                         // Don't modify the cached array
                         args.breakpoints = args.breakpoints.concat(sourceBPs);
+
+                        // We need to assign the client IDs we generated for the mapped breakpoints becuase the runtime IDs may change
+                        // So make sure we concat the client ids to the ids array so that they get mapped to the respective breakpoints later
+                        const clientBreakpointIds = this._authoredPathsToClientBreakpointIds.get(sourcePath);
+                        if (ids) {
+                            ids = ids.concat(clientBreakpointIds);
+                        }
                     }
                 });
             } else if (this.isRuntimeScript(argsPath)) {
@@ -149,7 +163,7 @@ export class BaseSourceMapTransformer {
             generatedPath: args.source.path
         });
 
-        return args;
+        return { args, ids };
     }
 
     /**
