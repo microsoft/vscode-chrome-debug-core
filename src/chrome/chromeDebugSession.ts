@@ -117,8 +117,6 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             reportErrorTelemetry(err, 'uncaughtException');
 
             logger.error(`******** Unhandled error in debug adapter: ${safeGetErrDetails(err)}`);
-
-            throw err;
         });
 
         process.addListener('unhandledRejection', (err: Error|DebugProtocol.Message) => {
