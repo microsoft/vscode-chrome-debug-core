@@ -22,6 +22,7 @@ import { Protocol as Crdp } from 'devtools-protocol';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
+import * as fs from 'fs';
 
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
@@ -601,6 +602,78 @@ suite('ChromeDebugAdapter', () => {
                 executionContextId: 0,
                 hash: ''
             });
+        });
+
+        // This is needed for Edge debug adapter, please keep the logic of sendLoadedSourceEvent()
+        test('tests that sendLoadedSourceEvent will set the `reason` parameter based on our internal view of the events we sent to the client even if fs.access takes unexpected times while blocking async', async () => {
+            let eventIndex = 0;
+            sendEventHandler = (event) => {
+                switch (eventIndex) {
+                    case 0:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('new', event.body.reason);
+                        break;
+                    case 1:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('changed', event.body.reason);
+                        break;
+                    default:
+                        throw new RangeError('Unexpected event index');
+                }
+                ++eventIndex;
+            };
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+
+            const originalFSAccess = fs.access;
+            let callIndex = 0;
+            let callbackForFirstEvent = null;
+
+            /* Mock fs.access so the first call will block until the second call is finished */
+            (fs as any).access = (path, callback) => {
+                if (callIndex === 0) {
+                    callbackForFirstEvent = callback;
+                    console.log("Blocking first fs.access until second call is finished");
+                    ++callIndex;
+                } else {
+                    callback();
+
+                    if (callbackForFirstEvent !== null) {
+                        console.log("Second call when thorugh. Unblocking first call");
+                        setTimeout(callbackForFirstEvent, 50);
+                        callbackForFirstEvent = null;
+                    }
+                }
+            };
+
+            try {
+                const firstEvent = (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                });
+                const secondEvent =  (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                });
+
+                await Promise.all([firstEvent, secondEvent]);
+            } finally {
+                (fs as any).access = originalFSAccess;
+            }
         });
 
         function createSource(name: string, path?: string, sourceReference?: number, origin?: string): Source {

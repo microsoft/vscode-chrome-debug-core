@@ -857,6 +857,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
+        const source = await this.scriptToSource(script);
+
         // This is a workaround for an edge bug, see https://github.com/Microsoft/vscode-chrome-debug-core/pull/329
         switch (loadedSourceEventReason) {
             case 'new':
@@ -878,7 +880,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 telemetry.reportEvent('LoadedSourceEventError', { issue: 'Unknown reason', reason: loadedSourceEventReason });
         }
 
-        const scriptEvent = await this.scriptToLoadedSourceEvent(loadedSourceEventReason, script);
+        const scriptEvent = new LoadedSourceEvent(loadedSourceEventReason, source as any);
 
         this._session.sendEvent(scriptEvent);
     }
@@ -1942,11 +1944,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             url: frame.url,
             functionName: frame.functionName
         };
-    }
-
-    private async scriptToLoadedSourceEvent(reason: LoadedSourceEventReason, script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
-        const source = await this.scriptToSource(script);
-        return new LoadedSourceEvent(reason, source as any);
     }
 
     private async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent): Promise<DebugProtocol.Source> {
