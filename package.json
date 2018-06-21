@@ -40,7 +40,7 @@
     "gulp-typescript": "^4.0.1",
     "gulp-util": "^3.0.7",
     "merge2": "^1.0.2",
-    "mocha": "^3.0.2",
+    "mocha": "^5.2.0",
     "mockery": "^1.7.0",
     "run-sequence": "^1.2.2",
     "tslint": "^5.9.1",
@@ -53,7 +53,7 @@
   "scripts": {
     "build": "gulp build",
     "watch": "gulp watch",
-    "test": "mocha --recursive -u tdd ./out/test/",
+    "test": "mocha --exit --recursive -u tdd ./out/test/",
     "prepare": "gulp build",
     "tslint": "gulp tslint",
     "patch": "npm version patch -m '%s'",
