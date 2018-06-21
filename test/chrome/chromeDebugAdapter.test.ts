@@ -635,13 +635,13 @@ suite('ChromeDebugAdapter', () => {
             (fs as any).access = (path, callback) => {
                 if (callIndex === 0) {
                     callbackForFirstEvent = callback;
-                    console.log("Blocking first fs.access until second call is finished");
+                    console.log('Blocking first fs.access until second call is finished');
                     ++callIndex;
                 } else {
                     callback();
 
                     if (callbackForFirstEvent !== null) {
-                        console.log("Second call when thorugh. Unblocking first call");
+                        console.log('Second call when thorugh. Unblocking first call');
                         setTimeout(callbackForFirstEvent, 50);
                         callbackForFirstEvent = null;
                     }
