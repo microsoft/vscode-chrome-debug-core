@@ -10,6 +10,12 @@ phases:
     - npm
     - node.js
   steps:
+  - task: NodeTool@0
+    displayName: Use Node 8.x
+    inputs:
+      versionSpec: 8.x
+      checkLatest: true
+
   - task: Npm@1
     displayName: npm install
     inputs:
