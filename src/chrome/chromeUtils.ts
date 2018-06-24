@@ -102,7 +102,9 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
     }
 
     // Dealing with the path portion of either a url or an absolute path to remote file.
-    const pathParts = pathName.split(/[\/\\]/);
+    const pathParts = pathName
+        .replace(/^\//, '') // Strip leading /
+        .split(/[\/\\]/);
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
         const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
