@@ -4,6 +4,8 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
+import { logger } from 'vscode-debugadapter';
+
 import { getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer } from '../mocks/transformerMocks';
 import { getMockChromeConnectionApi, IMockChromeConnectionAPI } from '../mocks/debugProtocolMocks';
 
@@ -109,11 +111,14 @@ suite('ChromeDebugAdapter', () => {
         /* tslint:enable */
     }
 
-    teardown(() => {
+    teardown(async () => {
         sendEventHandler = undefined;
         testUtils.removeUnhandledRejectionListener();
         mockery.deregisterAll();
         mockery.disable();
+
+        // To avoid warnings about leaking event listeners
+        await logger.dispose();
 
         mockChromeConnection.verifyAll();
         mockChrome.Debugger.verifyAll();
