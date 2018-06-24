@@ -6,7 +6,7 @@
 import { logger } from 'vscode-debugadapter';
 
 import * as chromeConnection from './chrome/chromeConnection';
-import { ChromeDebugAdapter, LoadedSourceEventReason } from './chrome/chromeDebugAdapter';
+import { ChromeDebugAdapter, LoadedSourceEventReason, IOnPausedResult } from './chrome/chromeDebugAdapter';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from './chrome/chromeDebugSession';
 import * as chromeTargetDiscoveryStrategy from './chrome/chromeTargetDiscoveryStrategy';
 import * as chromeUtils from './chrome/chromeUtils';
@@ -33,6 +33,7 @@ export {
     chromeConnection,
     ChromeDebugAdapter,
     ChromeDebugSession,
+    IOnPausedResult,
     IChromeDebugSessionOpts,
     chromeTargetDiscoveryStrategy,
     chromeUtils,

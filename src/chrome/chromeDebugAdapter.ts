@@ -82,6 +82,10 @@ export interface BreakpointSetResult {
     breakpoint: DebugProtocol.Breakpoint;
 }
 
+export interface IOnPausedResult {
+    didPause: boolean;
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -432,8 +436,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     ]
                }
              */
-            this.runAndMeasureProcessingTime('target/notification/onPaused', () => {
-                return this.onPaused(params);
+            this.runAndMeasureProcessingTime('target/notification/onPaused', async () => {
+                await this.onPaused(params);
             });
         });
         this.chrome.Debugger.on('resumed', () => this.onResumed());
@@ -610,10 +614,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
+    protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<IOnPausedResult> {
         if (notification.asyncCallStackTraceId) {
             await this.chrome.Debugger.pauseOnAsyncCall({ parentStackTraceId: notification.asyncCallStackTraceId });
-            return this.chrome.Debugger.resume();
+            await this.chrome.Debugger.resume();
+            return { didPause: false };
         }
 
         this._variableHandles.onPaused();
@@ -631,14 +636,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     .catch(e => {
                         logger.error('Failed to resume due to exception: ' + e.message);
                     });
-                return;
+                return { didPause: false };
             }
         }
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
         let reason: ReasonType;
-        let smartStepP = Promise.resolve(false);
+        let shouldSmartStep = false;
         if (notification.reason === 'exception') {
             reason = 'exception';
             this._exception = notification.data;
@@ -649,7 +654,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (this._promiseRejectExceptionFilterEnabled && !this._pauseOnPromiseRejections) {
                 this.chrome.Debugger.resume()
                     .catch(e => { /* ignore failures */ });
-                return;
+                return { didPause: false };
             }
 
             this._exception = notification.data;
@@ -666,39 +671,40 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
                         this.chrome.Debugger.resume()
                             .catch(e => { /* ignore failures */ });
-                        return;
+                        return { didPause: false };
                     }
                 }
             }
         } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
-            smartStepP = this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
+            shouldSmartStep = await this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
         } else {
             reason = 'debugger_statement';
         }
 
         this._expectingStopReason = undefined;
 
-        await smartStepP.then(should => {
-            if (should) {
-                this._smartStepCount++;
-                return this.stepIn(false);
-            } else {
-                if (this._smartStepCount > 0) {
-                    logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
-                    this._smartStepCount = 0;
-                }
-
-                // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
-                // Also with a timeout just to ensure things keep moving
-                const sendStoppedEvent = () => {
-                    return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, this._exception));
-                };
-                return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
-                    .then(sendStoppedEvent, sendStoppedEvent);
+        if (shouldSmartStep) {
+            this._smartStepCount++;
+            await this.stepIn(false);
+            return { didPause: false };
+        } else {
+            if (this._smartStepCount > 0) {
+                logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
+                this._smartStepCount = 0;
             }
-        }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
+
+            // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
+            // Also with a timeout just to ensure things keep moving
+            const sendStoppedEvent = () => {
+                return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, this._exception));
+            };
+            await utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
+                .then(sendStoppedEvent, sendStoppedEvent);
+
+            return { didPause: true };
+        }
     }
 
     /* __GDPR__
