@@ -9,7 +9,7 @@
   },
   "bugs": "https://github.com/microsoft/vscode-chrome-debug-core/issues",
   "license": "SEE LICENSE IN LICENSE.txt",
-  "typings": "./lib/src/index",
+  "typings": "./lib/src/index.d.ts",
   "main": "./out/src/index",
   "dependencies": {
     "@types/source-map": "^0.1.27",
