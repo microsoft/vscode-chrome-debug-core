@@ -69,6 +69,10 @@ suite('ConsoleHelper', () => {
             doAssertForString(Runtime.makeLog('foo %O bar %O etc %O more', 'test', 1, null, undefined, NaN), 'foo test bar 1 etc null more undefined NaN');
         });
 
+        test('empty strings', () => {
+            doAssertForString(Runtime.makeLog(''), '');
+        });
+
         test('string and object', () => {
             const result = ConsoleHelper.formatConsoleArguments(Runtime.makeLog('foo', '$obj', 'bar'));
             assert.equal(result.isError, false);

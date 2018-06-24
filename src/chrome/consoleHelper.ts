@@ -94,7 +94,7 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
 
     const processedArgs: Crdp.Runtime.RemoteObject[] = [];
     const pushStringArg = (strArg: string) => {
-        if (strArg) {
+        if (typeof strArg === 'string') {
             processedArgs.push({ type: 'string', value: strArg });
         }
     };
@@ -105,6 +105,8 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
 
         const formatSpec = formatSpecifiers.shift();
         const formatted = formatArg(formatSpec, arg);
+
+        currentCollapsedStringArg = currentCollapsedStringArg || '';
 
         if (typeof formatted === 'string') {
             if (formatSpec) {
@@ -117,12 +119,15 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
             // `formatted` is an object - split currentCollapsedStringArg around the current formatSpec and add the object
             const curSpecIdx = currentCollapsedStringArg.indexOf('%' + formatSpec);
             const processedPart = currentCollapsedStringArg.slice(0, curSpecIdx);
-            pushStringArg(processedPart);
+            if (processedPart) {
+                pushStringArg(processedPart);
+            }
+
             currentCollapsedStringArg = currentCollapsedStringArg.slice(curSpecIdx + 2);
             processedArgs.push(formatted);
         } else {
             pushStringArg(currentCollapsedStringArg);
-            currentCollapsedStringArg = '';
+            currentCollapsedStringArg = null;
             processedArgs.push(formatted);
         }
     }
