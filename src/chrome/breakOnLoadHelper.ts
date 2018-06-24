@@ -69,15 +69,22 @@ export class BreakOnLoadHelper {
                 let shouldContinue = await this.handleStopOnEntryBreakpointAndContinue(notification);
                 return shouldContinue;
             }
-        } else if (notification.reason === 'EventListener' && notification.data.eventName === 'instrumentation:scriptFirstStatement' ) {
+        } else if (this.isInstrumentationPause(notification)) {
             // This is fired when Chrome stops on the first line of a script when using the setInstrumentationBreakpoint API
-
             const pausedScriptId = notification.callFrames[0].location.scriptId;
+
             // Now we wait for all the pending breakpoints to be resolved and then continue
             await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
             return true;
         }
+
         return false;
+    }
+
+    private isInstrumentationPause(notification: Crdp.Debugger.PausedEvent): boolean {
+        return (notification.reason === 'EventListener' && notification.data.eventName === 'instrumentation:scriptFirstStatement') ||
+            (notification.reason === 'ambiguous' && Array.isArray(notification.data.reasons) &&
+                notification.data.reasons.every(r => r.reason === 'EventListener' && r.auxData.eventName === 'instrumentation:scriptFirstStatement'));
     }
 
     /**
