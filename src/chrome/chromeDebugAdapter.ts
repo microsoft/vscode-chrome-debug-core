@@ -1380,7 +1380,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
                             const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoints set but not yet bound'), areAllSet);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoint set but not yet bound'), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
