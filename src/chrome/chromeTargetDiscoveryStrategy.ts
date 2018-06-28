@@ -25,6 +25,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     }
 
     async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
+
         const targets = await this.getAllTargets(address, port, targetFilter, targetUrl);
         if (targets.length > 1) {
             this.logger.log('Warning: Found more than one valid target page. Attaching to the first one. Available pages: ' + JSON.stringify(targets.map(target => target.url)));
@@ -55,7 +56,31 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
+    private async _getVersionData(address: string, port: number): Promise<void> {
+
+        const url = `http://${address}:${port}/json/version`;
+        this.logger.log(`Getting browser and debug protocol version via ${url}`);
+
+        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
+            .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
+
+        try {
+            const response = JSON.parse(jsonResponse);
+            this.logger.log(`Got browser version: ${response.Browser}`);
+            this.logger.log(`Got debug protocol version: ${response['Protocol-Version']}`);
+
+            this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
+
+        } catch (e) {
+            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse));
+        }
+    }
+
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
+
+        // Get the browser and the protocol version
+        await this._getVersionData(address, port);
+
         // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
