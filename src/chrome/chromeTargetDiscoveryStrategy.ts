@@ -55,7 +55,32 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
+    private async _getVersionData(address: string, port: number): Promise<void> {
+
+        const url = `http://${address}:${port}/json/version`;
+        this.logger.log(`Getting browser and debug protocol version via ${url}`);
+
+        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
+            .catch(e => this.logger.log(`There was an error connecting to ${url} : ${e.message}`));
+
+        try {
+            if (jsonResponse) {
+                const response = JSON.parse(jsonResponse);
+                this.logger.log(`Got browser version: ${response.Browser}`);
+                this.logger.log(`Got debug protocol version: ${response['Protocol-Version']}`);
+
+                this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
+            }
+        } catch (e) {
+            this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);
+        }
+    }
+
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
+
+        // Get the browser and the protocol version
+        this._getVersionData(address, port);
+
         // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
         // Chrome and Node alias /json to /json/list so this should work too
         const url = `http://${address}:${port}/json/list`;
