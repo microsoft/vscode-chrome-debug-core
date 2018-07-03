@@ -294,7 +294,8 @@ export class BaseSourceMapTransformer {
     }
 
     private mapScopeLocations(pathToGenerated: string, scope: DebugProtocol.Scope): void {
-        if (typeof scope.line !== 'number') {
+        // The runtime can return invalid scope locations. Just skip those scopes. https://github.com/Microsoft/vscode-chrome-debug-core/issues/333
+        if (typeof scope.line !== 'number' || scope.line < 0 || scope.endLine < 0 || scope.column < 0 || scope.endColumn < 0) {
             return;
         }
 
