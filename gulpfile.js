@@ -110,8 +110,7 @@ gulp.task('clean', () => {
 
 gulp.task('watch', ['clean'], () => {
     log('Watching build sources...');
-    return gulp.watch(sources, ['_dev-build']);
-    return runSequence('_dev-build', () => gulp.watch(watchedSources, ['_dev-build']));
+    return runSequence('_dev-build', () => gulp.watch(sources, ['_dev-build']));
 });
 
 gulp.task('default', ['build']);
