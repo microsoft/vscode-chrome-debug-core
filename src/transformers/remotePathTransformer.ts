@@ -6,9 +6,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { UrlPathTransformer } from '../transformers/urlPathTransformer';
-import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
+import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import * as errors from '../errors';
+import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
 
 /**
@@ -53,15 +53,6 @@ export class RemotePathTransformer extends UrlPathTransformer {
         }
 
         return localRootP;
-    }
-
-    public setBreakpoints(args: ISetBreakpointsArgs): ISetBreakpointsArgs {
-        args = super.setBreakpoints(args);
-        if (args.source.path) {
-            args.source.path = this.getTargetPathFromClientPath(args.source.path) || args.source.path;
-        }
-
-        return args;
     }
 
     public async scriptParsed(scriptPath: string): Promise<string> {
