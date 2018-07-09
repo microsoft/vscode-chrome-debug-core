@@ -45,58 +45,58 @@ suite('SourceMap', () => {
     });
 
     suite('constructor', () => {
-        test('does not crash when sourceRoot is undefined', () => {
+        test('does not crash when sourceRoot is undefined', async () => {
             // Rare and possibly invalid, but I saw it
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, undefined);
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(sm);
         });
     });
 
     suite('.sources', () => {
-        test('relative sources are made absolute', () => {
+        test('relative sources are made absolute', async () => {
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
-        test('sources with absolute paths are used as-is', () => {
+        test('sources with absolute paths are used as-is', async () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
-        test('file:/// sources are exposed as absolute paths', () => {
+        test('file:/// sources are exposed as absolute paths', async () => {
             const fileSources = ABSOLUTE_SOURCES.map(source => 'file:///' + source);
             const sourceMapJSON = getMockSourceMapJSON(fileSources, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert.deepEqual(sm.authoredSources, ABSOLUTE_SOURCES);
         });
 
-        test('sourceMapPathOverrides are respected', () => {
+        test('sourceMapPathOverrides are respected', async () => {
             const sourceMapJSON = getMockSourceMapJSON(SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING, <ISourceMapPathOverrides>{ '/src/*': testUtils.pathResolve('/project/client/*') });
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING, <ISourceMapPathOverrides>{ '/src/*': testUtils.pathResolve('/project/client/*') });
             const expectedSources = SOURCES.map(sourcePath => path.join(testUtils.pathResolve('/project/client'), sourcePath));
             assert.deepEqual(sm.authoredSources, expectedSources);
         });
     });
 
     suite('doesOriginateFrom', () => {
-        test('returns true for a source that it contains', () => {
+        test('returns true for a source that it contains', async () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(sm.doesOriginateFrom(ABSOLUTE_SOURCES[0]));
         });
 
-        test('returns false for a source that it does not contain', () => {
+        test('returns false for a source that it does not contain', async () => {
             const sourceMapJSON = getMockSourceMapJSON(ABSOLUTE_SOURCES, SOURCEROOT);
 
-            const sm = new SourceMap(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
+            const sm = await SourceMap.create(GENERATED_PATH, sourceMapJSON, PATH_MAPPING);
             assert(!sm.doesOriginateFrom('c:\\fake\\file.js'));
         });
     });
@@ -104,8 +104,8 @@ suite('SourceMap', () => {
     suite('originalPositionFor', () => {
         let sm: SourceMap;
 
-        setup(() => {
-            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
+        setup(async () => {
+            sm = await SourceMap.create(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
         });
 
         function getExpectedResult(line: number, column: number, source = ABSOLUTE_SOURCES[0]): MozSourceMap.MappedPosition {
@@ -203,8 +203,8 @@ suite('SourceMap', () => {
     suite('generatedPositionFor', () => {
         let sm: SourceMap;
 
-        setup(() => {
-            sm = new SourceMap(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
+        setup(async () => {
+            sm = await SourceMap.create(GENERATED_PATH, SOURCEMAP_MAPPINGS_JSON, PATH_MAPPING);
         });
 
         function getExpectedResult(line: number, column: number): MozSourceMap.Position {
@@ -297,7 +297,7 @@ suite('SourceMap', () => {
         test('returns the last mapping when there is no matching mapping', () => {
             assert.deepEqual(
                 sm.generatedPositionFor(ABSOLUTE_SOURCES[0], /*line=*/1000, /*column=*/0),
-                getExpectedResult(/*line=*/17, /*column=*/1));
+                getExpectedResult(/*line=*/17, /*column=*/5));
         });
     });
 });

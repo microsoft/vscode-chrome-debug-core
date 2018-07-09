@@ -25,7 +25,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
+    async getMapForGeneratedPath(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (this._pathMapping) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
@@ -35,28 +35,26 @@ export class SourceMapFactory {
 
         // For an inlined sourcemap, mapPath is a data URI containing a blob of base64 encoded data, starting
         // with a tag like "data:application/json;charset:utf-8;base64,". The data should start after the last comma.
-        let sourceMapContentsP: Promise<string>;
+        let sourceMapContents: string;
         if (mapPath.indexOf('data:application/json') >= 0) {
             // Sourcemap is inlined
             logger.log(`SourceMaps.getMapForGeneratedPath: Using inlined sourcemap in ${pathToGenerated}`);
-            sourceMapContentsP = Promise.resolve(this.getInlineSourceMapContents(mapPath));
+            sourceMapContents = this.getInlineSourceMapContents(mapPath);
         } else {
-            sourceMapContentsP = this.getSourceMapContent(pathToGenerated, mapPath);
+            sourceMapContents = await this.getSourceMapContent(pathToGenerated, mapPath);
         }
 
-        return sourceMapContentsP.then(contents => {
-            if (contents) {
-                try {
-                    // Throws for invalid JSON
-                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides);
-                } catch (e) {
-                    logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
-                    return null;
-                }
-            } else {
+        if (sourceMapContents) {
+            try {
+                // Throws for invalid JSON
+                return SourceMap.create(pathToGenerated, sourceMapContents, this._pathMapping, this._sourceMapPathOverrides);
+            } catch (e) {
+                logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                 return null;
             }
-        });
+        } else {
+            return null;
+        }
     }
 
     /**

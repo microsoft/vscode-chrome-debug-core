@@ -41,13 +41,15 @@ suite('SourceMapFactory', () => {
      */
     function setExpectedConstructorArgs(generatedPath: string, json: string, pathMapping: IPathMapping = undefined): void {
         const expectedArgs = [generatedPath, json, pathMapping, undefined]; // arguments doesn't have the default param
-        function mockSourceMapConstructor(): void {
+        function mockSourceMapConstructor(): any {
             assert.deepEqual(
                 Array.prototype.slice.call(arguments),
                 expectedArgs);
+
+            return {};
         }
 
-        mockery.registerMock('./sourceMap', { SourceMap: mockSourceMapConstructor });
+        mockery.registerMock('./sourceMap', { SourceMap: { create: mockSourceMapConstructor } });
         const smfConstructor: typeof _SourceMapFactory = require(MODULE_UNDER_TEST).SourceMapFactory;
         sourceMapFactory = new smfConstructor(pathMapping);
     }
