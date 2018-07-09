@@ -69,6 +69,12 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                 this.logger.log(`Got browser version: ${response.Browser}`);
                 this.logger.log(`Got debug protocol version: ${response['Protocol-Version']}`);
 
+                /* __GDPR__
+                   "targetDebugProtocolVersion" : {
+                       "debugProtocolVersion" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                       "${include}": [ "${DebugCommonProperties}" ]
+                   }
+                 */
                 this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
             }
         } catch (e) {
