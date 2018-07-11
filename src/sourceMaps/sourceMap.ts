@@ -2,12 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import { SourceMapConsumer, MappedPosition } from 'source-map';
 import * as path from 'path';
-import { MappedPosition, SourceMapConsumer } from 'source-map';
+
+import * as sourceMapUtils from './sourceMapUtils';
+import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
-import * as utils from '../utils';
-import * as sourceMapUtils from './sourceMapUtils';
 
 export type MappedPosition = MappedPosition;
 
@@ -43,11 +44,10 @@ export class SourceMap {
             this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
                 const originalSource = this._originalSources[i];
                 const originalPath = this._originalSourceRoot ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource) : originalSource;
-
                 return <ISourcePathDetails>{
                     inferredPath,
                     originalPath,
-                    startPosition: this.firstGeneratedPositionFor(inferredPath, 0, 0)
+                    startPosition: this.generatedPositionFor(inferredPath, 0, 0)
                 };
             }).sort((a, b) => {
                 // https://github.com/Microsoft/vscode-chrome-debug/issues/353
@@ -216,13 +216,13 @@ export class SourceMap {
             line,
             column,
             source,
-            bias: SourceMapConsumer.LEAST_UPPER_BOUND
+            bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
         };
 
         let position = this._smc.generatedPositionFor(lookupArgs);
         if (position.line === null) {
             // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
-            lookupArgs.bias = SourceMapConsumer.GREATEST_LOWER_BOUND;
+            lookupArgs.bias = (<any>SourceMapConsumer).GREATEST_LOWER_BOUND;
             position = this._smc.generatedPositionFor(lookupArgs);
         }
 
@@ -235,34 +235,6 @@ export class SourceMap {
                 source: this._generatedPath
             };
         }
-    }
-
-    public firstGeneratedPositionFor(source: string, line: number, column: number): MappedPosition {
-        const allPositions = this.allGeneratedPositionsFor(source, line, column);
-        return allPositions[0];
-    }
-
-    public allGeneratedPositionsFor(source: string, line: number, column: number): MappedPosition[] {
-        // source-map lib uses 1-indexed lines.
-        line++;
-
-        // sources in the sourcemap have been forced to file:///
-        // Convert to lowerCase so search is case insensitive
-        source = utils.pathToFileURL(source.toLowerCase(), true);
-
-        const lookupArgs = {
-            line,
-            column,
-            source
-        };
-
-        const positions = this._smc.allGeneratedPositionsFor(lookupArgs) || [];
-
-        return positions.map(pos => ({
-            line: pos.line - 1, // Back to 0-indexed lines
-            column: pos.column,
-            source: this._generatedPath
-        }));
     }
 
     public sourceContentFor(authoredSourcePath: string): string {
