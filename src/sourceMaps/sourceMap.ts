@@ -70,19 +70,11 @@ export class SourceMap {
         return this._allSourcePathDetails;
     }
 
-    private constructor() { }
-
-    public static async create(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>): Promise<SourceMap> {
-        const sm = new SourceMap();
-        await sm.init(generatedPath, json, pathMapping, sourceMapPathOverrides);
-        return sm;
-    }
-
     /**
      * generatedPath: an absolute local path or a URL
      * json: sourcemap contents as string
      */
-    private async init(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>): Promise<void> {
+    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>) {
         this._generatedPath = generatedPath;
 
         const sm = JSON.parse(json);
@@ -139,7 +131,7 @@ export class SourceMap {
             return utils.pathToFileURL(lowerCaseSourceAbsPath, true);
         });
 
-        this._smc = await new SourceMapConsumer(sm);
+        this._smc = new SourceMapConsumer(sm);
     }
 
     /*
