@@ -154,6 +154,12 @@ suite('Utils', () => {
         test('strips trailing slash', () => {
             testCanUrl('http://site.com/', 'http://site.com');
         });
+
+        test('paths with different cases get canonicalized to the same string', () => {
+            const Utils = getUtils();
+            assert.equal(Utils.canonicalizeUrl("c:\\Users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"),
+                Utils.canonicalizeUrl("c:\\users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"));
+        });
     });
 
     suite('fileUrlToPath()', () => {
