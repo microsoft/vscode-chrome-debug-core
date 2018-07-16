@@ -87,18 +87,20 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         // Get the browser and the protocol version
         this._getVersionData(address, port);
 
-        // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
-        // Chrome and Node alias /json to /json/list so this should work too
-        const url = `http://${address}:${port}/json/list`;
-        this.logger.log(`Discovering targets via ${url}`);
-
         /* __GDPR__FRAGMENT__
            "StepNames" : {
               "Attach.RequestDebuggerTargetsInformation" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
            }
          */
         this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
-        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
+
+        const checkDiscoveryEndpoint = (url: string) => {
+            this.logger.log(`Discovering targets via ${url}`);
+            return utils.getURL(url, { headers: { Host: 'localhost' } });
+        };
+
+        const jsonResponse = await checkDiscoveryEndpoint(`http://${address}:${port}/json/list`)
+            .catch(() => checkDiscoveryEndpoint(`http://${address}:${port}/json`))
             .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
 
         /* __GDPR__FRAGMENT__
