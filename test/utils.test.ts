@@ -155,10 +155,15 @@ suite('Utils', () => {
             testCanUrl('http://site.com/', 'http://site.com');
         });
 
-        test('paths with different cases get canonicalized to the same string', () => {
+        test('paths with different cases get canonicalized to the same string when case insensitive', () => {
             const Utils = getUtils();
-            assert.equal(Utils.canonicalizeUrl("c:\\Users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"),
-                Utils.canonicalizeUrl("c:\\users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"));
+            try {
+                Utils.setCaseSensitivePaths(false);
+                assert.equal(Utils.canonicalizeUrl("c:\\Users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"),
+                    Utils.canonicalizeUrl("c:\\users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"));
+            } finally {
+                Utils.setCaseSensitivePaths(true);
+            }
         });
     });
 
@@ -293,7 +298,7 @@ suite('Utils', () => {
 
     suite('pathToRegex - case sensitive', () => {
         function testPathToRegex(aPath: string, expectedRegex: string): void {
-            assert.equal(getUtils().pathToRegex(aPath, true), expectedRegex);
+            assert.equal(getUtils().pathToRegex(aPath), expectedRegex);
         }
 
         test('works for a simple posix path', () => {
@@ -319,7 +324,13 @@ suite('Utils', () => {
 
     suite('pathToRegex - case insensitive', () => {
         function testPathToRegex(aPath: string, expectedRegex: string): void {
-            assert.equal(getUtils().pathToRegex(aPath, false), expectedRegex);
+            const utils = getUtils();
+            try {
+                utils.setCaseSensitivePaths(false);
+                assert.equal(utils.pathToRegex(aPath), expectedRegex);
+            } finally {
+                utils.setCaseSensitivePaths(true);
+            }
         }
 
         test('works for a simple posix path', () => {

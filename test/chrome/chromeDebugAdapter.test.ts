@@ -192,7 +192,7 @@ suite('ChromeDebugAdapter', () => {
                 const location = { scriptId, lineNumber, columnNumber };
 
                 if (url) {
-                    const urlRegex = utils.pathToRegex(url, true);
+                    const urlRegex = utils.pathToRegex(url);
                     mockChrome.Debugger
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(() => Promise.resolve(
@@ -365,7 +365,7 @@ suite('ChromeDebugAdapter', () => {
             const expectedResponse: ISetBreakpointsResponseBody = {
                 breakpoints: [{ line: location.lineNumber, column: location.columnNumber, verified: true, id: 1000 }]};
 
-            const expectedRegex = utils.pathToRegex(FILE_NAME, true);
+            const expectedRegex = utils.pathToRegex(FILE_NAME);
             mockChrome.Debugger
                 .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex: expectedRegex, lineNumber: breakpoints[0].line, columnNumber: breakpoints[0].column, condition: undefined })))
                 .returns(() => Promise.resolve(
@@ -696,7 +696,7 @@ suite('ChromeDebugAdapter', () => {
                 new InitializedEvent(),
                 new LoadedSourceEvent('new', createSource('about:blank', 'about:blank', 1000)),
                 new LoadedSourceEvent('removed', createSource('about:blank', 'about:blank', 1000)),
-                new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312/', 1001))
+                new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312', 1001))
               ];
 
               const receivedEvents: DebugProtocol.Event[] = [];
