@@ -266,6 +266,14 @@ export function isURL(urlOrPath: string): boolean {
     return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
 }
 
+export function isAbsolute(_path: string): boolean {
+    return _path.startsWith('/') || isAbsolute_win(_path);
+}
+
+export function isAbsolute_win(_path: string): boolean {
+    return /^[a-zA-Z]\:[\\\/]/.test(_path);
+}
+
 /**
  * Strip a string from the left side of a string
  */

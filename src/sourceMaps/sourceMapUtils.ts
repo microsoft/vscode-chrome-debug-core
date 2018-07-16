@@ -26,10 +26,14 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
         if (sourceRoot.startsWith('file:///')) {
             // sourceRoot points to a local path like "file:///c:/project/src", make it an absolute path
             absSourceRoot = utils.canonicalizeUrl(sourceRoot);
-        } else if (sourceRoot.startsWith('/')) {
-            // sourceRoot is like "/src", would be like http://localhost/src, resolve to a local path under webRoot
-            // note that C:/src (or /src as an absolute local path) is not a valid sourceroot
-            absSourceRoot = chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping);
+        } else if (utils.isAbsolute(sourceRoot)) {
+            // sourceRoot is like "/src", should be like http://localhost/src, resolve to a local path using pathMaping.
+            // If path mappings do not apply (e.g. node), assume that sourceRoot is actually a local absolute path.
+            // Technically not valid but it's easy to end up with paths like this.
+            absSourceRoot = chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping) || sourceRoot;
+
+            // If no pathMapping (node), use sourceRoot as is.
+            // But we also should handle an absolute sourceRoot for chrome? Does CDT handle that? No it does not, it interprets it as "localhost/full path here"
         } else if (path.isAbsolute(generatedPath)) {
             // sourceRoot is like "src" or "../src", relative to the script
             absSourceRoot = resolveRelativeToFile(generatedPath, sourceRoot);
@@ -120,10 +124,13 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMap
             }
 
             // runtime script is not on disk, map won't be either, resolve a URL for the map relative to the script
-            const mapUrlPathSegment = mapPath.startsWith('/') ? mapPath : path.posix.join(path.dirname(scriptPath), mapPath);
+            // handle c:/ here too
+            const mapUrlPathSegment = utils.isAbsolute(mapPath) ?
+                mapPath :
+                path.posix.join(path.dirname(scriptPath), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
-        } else if (mapPath.startsWith('/')) {
-            mapPath = chromeUtils.applyPathMappingsToTargetUrlPath(mapPath, pathMapping);
+        } else if (utils.isAbsolute(mapPath)) {
+            mapPath = chromeUtils.applyPathMappingsToTargetUrlPath(mapPath, pathMapping) || mapPath;
         } else if (path.isAbsolute(pathToGenerated)) {
             // mapPath needs to be resolved to an absolute path or a URL
             // runtime script is on disk, so map should be too

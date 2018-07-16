@@ -44,6 +44,18 @@ suite('SourceMapUtils', () => {
                 testUtils.pathResolve('/project/webroot/src'));
         });
 
+        test('handles /src style without matching pathMapping', () => {
+            assert.equal(
+                getComputedSourceRoot('/foo/bar', GEN_PATH, { }),
+                testUtils.pathResolve('/foo/bar'));
+        });
+
+        test('handles c:/src style without matching pathMapping', () => {
+            assert.equal(
+                getComputedSourceRoot('c:\\foo\\bar', GEN_PATH, { }),
+                'c:\\foo\\bar');
+        });
+
         test('handles ../../src style sourceRoot', () => {
             assert.equal(
                 getComputedSourceRoot('../../src', GEN_PATH, PATH_MAPPING),
@@ -221,6 +233,18 @@ suite('SourceMapUtils', () => {
             const slashPath = '/maps/app.js.map';
             const scriptUrl = testUtils.pathResolve('/foo/bar/project/app.js');
             assert.equal(resolveMapPath(scriptUrl, slashPath, { '/' : testUtils.pathResolve('/foo/bar') }), testUtils.pathResolve('/foo/bar/maps/app.js.map'));
+        });
+
+        test('works for /local path without valid pathMapping', () => {
+            const slashPath = '/maps/app.js.map';
+            const scriptUrl = testUtils.pathResolve('/foo/bar/project/app.js');
+            assert.equal(resolveMapPath(scriptUrl, slashPath, { }), '/maps/app.js.map');
+        });
+
+        test('works for c:/local path without valid pathMapping', () => {
+            const slashPath = 'c:/maps/app.js.map';
+            const scriptUrl = testUtils.pathResolve('/foo/bar/project/app.js');
+            assert.equal(resolveMapPath(scriptUrl, slashPath, { }), 'c:/maps/app.js.map');
         });
 
         test('works for a file:/// url', () => {

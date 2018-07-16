@@ -430,4 +430,28 @@ suite('Utils', () => {
             });
         });
     });
+
+    suite('isAbsolute_win', () => {
+        test('true for windows-style absolute paths', () => {
+            [
+                'c:/foo/bar/blah.js',
+                'c:/',
+                'z:/foo',
+                'z:\\',
+                'z:\\foo',
+            ].forEach(testPath => assert(getUtils().isAbsolute_win(testPath)))
+        });
+
+        test('false for everything else', () => {
+            [
+                'c :/foo/bar/blah.js',
+                'c:',
+                'ö:/foo',
+                '/foo/bar',
+                'foo/bar',
+                '',
+                'file:///foo/bar/blah.js',
+            ].forEach(testPath => assert.equal(getUtils().isAbsolute_win(testPath), false))
+        });
+    });
 });
