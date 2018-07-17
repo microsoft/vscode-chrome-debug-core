@@ -439,7 +439,7 @@ suite('Utils', () => {
                 'z:/foo',
                 'z:\\',
                 'z:\\foo',
-            ].forEach(testPath => assert(getUtils().isAbsolute_win(testPath)))
+            ].forEach(testPath => assert(getUtils().isAbsolute_win(testPath)));
         });
 
         test('false for everything else', () => {
@@ -451,7 +451,7 @@ suite('Utils', () => {
                 'foo/bar',
                 '',
                 'file:///foo/bar/blah.js',
-            ].forEach(testPath => assert.equal(getUtils().isAbsolute_win(testPath), false))
+            ].forEach(testPath => assert.equal(getUtils().isAbsolute_win(testPath), false));
         });
     });
 });
