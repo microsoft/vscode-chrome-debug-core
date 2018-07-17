@@ -13,13 +13,13 @@
   "main": "./out/src/index",
   "dependencies": {
     "@types/source-map": "^0.1.27",
-    "devtools-protocol": "0.0.547074",
+    "devtools-protocol": "0.0.574367",
     "glob": "^7.0.6",
     "noice-json-rpc": "^1.2.0",
     "source-map": "^0.6.1",
-    "vscode-debugadapter": "^1.30.0-pre.2",
-    "vscode-debugprotocol": "^1.30.0-pre.2",
-    "vscode-nls": "^3.2.2",
+    "vscode-debugadapter": "^1.31.0-pre.0",
+    "vscode-debugprotocol": "^1.31.0-pre.0",
+    "vscode-nls": "^3.2.4",
     "ws": "^3.3.2"
   },
   "devDependencies": {
