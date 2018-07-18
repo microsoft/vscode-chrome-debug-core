@@ -140,7 +140,7 @@ function normalizeIfFSIsCaseInsensitive(urlOrPath: string): string {
         : urlOrPath;
 }
 
-export function isFilePath(candidate: string): boolean {
+function isFilePath(candidate: string): boolean {
     return !!candidate.match(/[A-z]:[\\\/][^\\\/]/);
 }
 
