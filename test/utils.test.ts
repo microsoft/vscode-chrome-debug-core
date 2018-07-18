@@ -159,8 +159,8 @@ suite('Utils', () => {
             const Utils = getUtils();
             try {
                 Utils.setCaseSensitivePaths(false);
-                assert.equal(Utils.canonicalizeUrl("c:\\Users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"),
-                    Utils.canonicalizeUrl("c:\\users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js"));
+                assert.equal(Utils.canonicalizeUrl('c:\\Users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js'),
+                    Utils.canonicalizeUrl('c:\\users\\username\\source\\repos\\WebApplication77\\WebApplication77\\Scripts\\bootstrap.js'));
             } finally {
                 Utils.setCaseSensitivePaths(true);
             }

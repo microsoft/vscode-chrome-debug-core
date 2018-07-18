@@ -103,7 +103,7 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDe
     return tryUntilTimeout();
 }
 
-var caseSensitivePaths: boolean = true;
+let caseSensitivePaths = true;
 export function setCaseSensitivePaths(useCaseSensitivePaths: boolean) {
     caseSensitivePaths = useCaseSensitivePaths;
 }
@@ -135,12 +135,12 @@ export function canonicalizeUrl(urlOrPath: string): string {
 }
 
 function normalizeIfFSIsCaseInsensitive(urlOrPath: string): string {
-    return isFilePath(urlOrPath)
+    return isWindowsFilePath(urlOrPath)
         ? urlOrPath.toLowerCase()
         : urlOrPath;
 }
 
-function isFilePath(candidate: string): boolean {
+function isWindowsFilePath(candidate: string): boolean {
     return !!candidate.match(/[A-z]:[\\\/][^\\\/]/);
 }
 
