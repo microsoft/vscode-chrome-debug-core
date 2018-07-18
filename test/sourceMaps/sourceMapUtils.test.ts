@@ -47,7 +47,7 @@ suite('SourceMapUtils', () => {
         test('handles /src style without matching pathMapping', () => {
             assert.equal(
                 getComputedSourceRoot('/foo/bar', GEN_PATH, { }),
-                testUtils.pathResolve('/foo/bar'));
+                '/foo/bar');
         });
 
         test('handles c:/src style without matching pathMapping', () => {
