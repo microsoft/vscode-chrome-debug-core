@@ -62,9 +62,19 @@ suite('SourceMapFactory', () => {
         const PATHMAPPING = { '/': testUtils.pathResolve('/project/app') };
         const FILEDATA = 'data';
 
-        test('resolves inlined sourcemap', () => {
+        test('resolves inlined base64-encoded sourcemap', () => {
             const sourceMapData = JSON.stringify({ sources: [ 'a.ts', 'b.ts' ]});
             const encodedData = 'data:application/json;base64,' + new Buffer(sourceMapData).toString('base64');
+            setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
+
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
+                assert(sourceMap);
+            });
+        });
+
+        test('resolves inlined URI-encoded sourcemap', () => {
+            const sourceMapData = JSON.stringify({ sources: [ 'a.ts', 'b.ts' ]});
+            const encodedData = 'data:application/json,' + encodeURI(sourceMapData);
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
 
             return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {

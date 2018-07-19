@@ -63,16 +63,22 @@ export class SourceMapFactory {
      * Parses sourcemap contents from inlined base64-encoded data
      */
     private getInlineSourceMapContents(sourceMapData: string): string {
-        const lastCommaPos = sourceMapData.lastIndexOf(',');
-        if (lastCommaPos < 0) {
+        const firstCommaPos = sourceMapData.indexOf(',');
+        if (firstCommaPos < 0) {
             logger.log(`SourceMaps.getInlineSourceMapContents: Inline sourcemap is malformed. Starts with: ${sourceMapData.substr(0, 200)}`);
             return null;
         }
+        const header = sourceMapData.substr(0, firstCommaPos);
+        const data = sourceMapData.substr(firstCommaPos + 1);
 
-        const data = sourceMapData.substr(lastCommaPos + 1);
         try {
-            const buffer = new Buffer(data, 'base64');
-            return buffer.toString();
+            if (header.indexOf(';base64') !== -1) {
+                const buffer = new Buffer(data, 'base64');
+                return buffer.toString();
+            } else {
+                // URI encoded.
+                return decodeURI(data);
+            }
         } catch (e) {
             logger.error(`SourceMaps.getInlineSourceMapContents: exception while processing data uri (${e.stack})`);
         }
