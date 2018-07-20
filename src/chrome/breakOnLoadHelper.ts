@@ -10,6 +10,7 @@ import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
+import { utils } from '..';
 
 export interface UrlRegexAndFileSet {
     urlRegex: string;
@@ -135,7 +136,7 @@ export class BreakOnLoadHelper {
                 notification.hitBreakpoints = [bp];
                 allStopOnEntryBreakpoints = false;
             } else {
-                const normalizedMappedUrl = this._chromeDebugAdapter.fixPathCasing(mappedUrl);
+                const normalizedMappedUrl = utils.canonicalizeUrl(mappedUrl);
                 if (regexAndFileNames.fileSet.has(normalizedMappedUrl)) {
                     regexAndFileNames.fileSet.delete(normalizedMappedUrl);
                     assert(this._stopOnEntryRequestedFileNameToBreakpointId.delete(normalizedMappedUrl), `Expected to delete break-on-load information associated with url: ${normalizedMappedUrl}`);
@@ -178,7 +179,7 @@ export class BreakOnLoadHelper {
         if (!this._stopOnEntryRequestedFileNameToBreakpointId.has(url)) {
 
             // Generate regex we need for the file
-            const normalizedUrl = this._chromeDebugAdapter.fixPathCasing(url);
+            const normalizedUrl = utils.canonicalizeUrl(url);
             const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl);
 
             // Check if we already have a breakpoint for this regexp since two different files like script.ts and script.js may have the same regexp

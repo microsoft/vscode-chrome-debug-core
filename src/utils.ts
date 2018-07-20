@@ -103,6 +103,11 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDe
     return tryUntilTimeout();
 }
 
+let caseSensitivePaths = true;
+export function setCaseSensitivePaths(useCaseSensitivePaths: boolean) {
+    caseSensitivePaths = useCaseSensitivePaths;
+}
+
 /**
  * Modify a url/path either from the client or the target to a common format for comparing.
  * The client can handle urls in this format too.
@@ -122,8 +127,21 @@ export function canonicalizeUrl(urlOrPath: string): string {
 
     urlOrPath = stripTrailingSlash(urlOrPath);
     urlOrPath = fixDriveLetterAndSlashes(urlOrPath);
+    if (!caseSensitivePaths) {
+        urlOrPath = normalizeIfFSIsCaseInsensitive(urlOrPath);
+    }
 
     return urlOrPath;
+}
+
+function normalizeIfFSIsCaseInsensitive(urlOrPath: string): string {
+    return isWindowsFilePath(urlOrPath)
+        ? urlOrPath.toLowerCase()
+        : urlOrPath;
+}
+
+function isWindowsFilePath(candidate: string): boolean {
+    return !!candidate.match(/[A-z]:[\\\/][^\\\/]/);
 }
 
 export function isFileUrl(candidate: string): boolean {
@@ -457,7 +475,7 @@ export class ReverseHandles<T> extends Handles<T> {
 /**
  * Return a regex for the given path to set a breakpoint on
  */
-export function pathToRegex(aPath: string, caseSensitive: boolean): string {
+export function pathToRegex(aPath: string): string {
     const fileUrlPrefix = 'file:///';
     let isFileUrl = aPath.startsWith(fileUrlPrefix);
     if (isFileUrl) {
@@ -470,7 +488,7 @@ export function pathToRegex(aPath: string, caseSensitive: boolean): string {
 
     // If we should resolve paths in a case-sensitive way, we still need to set the BP for either an
     // upper or lowercased drive letter
-    if (caseSensitive) {
+    if (caseSensitivePaths) {
         if (aPath.match(/^[a-zA-Z]:/)) {
             const driveLetter = aPath.charAt(0);
             const u = driveLetter.toUpperCase();

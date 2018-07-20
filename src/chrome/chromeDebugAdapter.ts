@@ -129,7 +129,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _port: number;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
-    private _caseSensitivePaths = true;
 
     private _currentStep = Promise.resolve();
     private _currentLogMessage = Promise.resolve();
@@ -236,7 +235,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
-        this._caseSensitivePaths = args.clientID !== 'visualstudio';
+        utils.setCaseSensitivePaths(args.clientID !== 'visualstudio');
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
@@ -315,6 +314,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
+        for (const urlToMap in Object.keys(args.pathMapping)) {
+            args.pathMapping[urlToMap] = utils.canonicalizeUrl(args.pathMapping[urlToMap]);
+        }
+
         this.commonArgs(args);
         this._sourceMapTransformer.launch(args);
         this._pathTransformer.launch(args);
@@ -822,14 +825,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             this._scriptsById.set(script.scriptId, script);
-            this._scriptsByUrl.set(this.fixPathCasing(script.url), script);
+            this._scriptsByUrl.set(utils.canonicalizeUrl(script.url), script);
 
             const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
 
             const resolvePendingBPs = async (source: string) => {
-                source = source && this.fixPathCasing(source);
+                source = source && utils.canonicalizeUrl(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source)) || this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source, true));
-                if (pendingBP && (!pendingBP.setWithPath || this.fixPathCasing(pendingBP.setWithPath) === source)) {
+                if (pendingBP && (!pendingBP.setWithPath || utils.canonicalizeUrl(pendingBP.setWithPath) === source)) {
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
                 }
@@ -1108,7 +1111,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
 
         if (!somethingChanged) {
-            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath, this._caseSensitivePaths), 'i'));
+            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath), 'i'));
         }
 
         this.refreshBlackboxPatterns();
@@ -1476,7 +1479,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // setWithPath: record whether we attempted to set the breakpoint, and if so, with which path.
             // We can use this to tell when the script is loaded whether we guessed correctly, and predict whether the BP will bind.
             this._pendingBreakpointsByUrl.set(
-                this.fixPathCasing(args.source.path),
+                utils.canonicalizeUrl(args.source.path),
                 { args, ids, requestSeq, setWithPath: targetScriptUrl });
         }
 
@@ -1518,7 +1521,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // If script has been parsed, script object won't be undefined and we would have the mapping file on the disk and we can directly set breakpoint using that
             if (!this.breakOnLoadActive || script) {
-                const urlRegex = utils.pathToRegex(url, this._caseSensitivePaths);
+                const urlRegex = utils.pathToRegex(url);
                 responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                     return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
                 });
@@ -1969,7 +1972,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
-        const properlyCasedScriptUrl = this.fixPathCasing(script.url);
+        const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(script.url);
@@ -2866,11 +2869,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
-        url = this.fixPathCasing(url);
+        url = utils.canonicalizeUrl(url);
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
-    }
-
-    public fixPathCasing(str: string): string {
-        return str && (this._caseSensitivePaths ? str : str.toLowerCase());
     }
 }
