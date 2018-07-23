@@ -314,8 +314,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
-        for (const urlToMap in Object.keys(args.pathMapping)) {
-            args.pathMapping[urlToMap] = utils.canonicalizeUrl(args.pathMapping[urlToMap]);
+        if (args.pathMapping) {
+            for (const urlToMap in Object.keys(args.pathMapping)) {
+                args.pathMapping[urlToMap] = utils.canonicalizeUrl(args.pathMapping[urlToMap]);
+            }
         }
 
         this.commonArgs(args);
