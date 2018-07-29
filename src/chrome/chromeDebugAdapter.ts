@@ -801,11 +801,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else {
             const newValue = promiseDefer<void>();
             this._scriptIdToBreakpointsAreResolvedDefer.set(scriptId, newValue);
+            const dispose = () => this._scriptIdToBreakpointsAreResolvedDefer.delete(scriptId);
+            newValue.promise.then(dispose, dispose);
+
             return newValue;
         }
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        // The stack trace and hash can be large and the DA doesn't need it.
+        delete script.stackTrace;
+        delete script.hash;
+
         const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
         try {
             this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
