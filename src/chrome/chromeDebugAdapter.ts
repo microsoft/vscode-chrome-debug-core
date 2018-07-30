@@ -801,9 +801,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else {
             const newValue = promiseDefer<void>();
             this._scriptIdToBreakpointsAreResolvedDefer.set(scriptId, newValue);
-            const dispose = () => this._scriptIdToBreakpointsAreResolvedDefer.delete(scriptId);
-            newValue.promise.then(dispose, dispose);
-
             return newValue;
         }
     }
