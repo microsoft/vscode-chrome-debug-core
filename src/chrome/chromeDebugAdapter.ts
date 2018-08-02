@@ -844,7 +844,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     logger.log(`OnScriptParsed.resolvePendingBPs: Resolving pending breakpoints: ${JSON.stringify(pendingBP)}`);
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
-                } else {
+                } else if (source) {
                     const sourceFileName = path.basename(source).toLowerCase();
                     if (Array.from(this._pendingBreakpointsByUrl.keys()).find(key => key.toLowerCase().indexOf(sourceFileName) > -1)) {
                         logger.log(`OnScriptParsed.resolvePendingBPs: The following pending breakpoints won't be resolved: ${JSON.stringify(pendingBP)} pendingBreakpointsByUrl = ${JSON.stringify([...this._pendingBreakpointsByUrl])} source = ${source}`);
