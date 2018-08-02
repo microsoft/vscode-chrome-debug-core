@@ -76,6 +76,7 @@ export class BreakOnLoadHelper {
 
             // Now we wait for all the pending breakpoints to be resolved and then continue
             await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
+            logger.log('BreakOnLoadHelper: Finished waiting for breakpoints to get resolved.');
             return true;
         }
 
