@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as os from 'os';
-import * as url from 'url';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
@@ -111,8 +110,9 @@ export class SourceMapFactory {
     private loadSourceMapContents(mapPathOrURL: string): Promise<string> {
         let contentsP: Promise<string>;
         if (utils.isURL(mapPathOrURL) && !utils.isFileUrl(mapPathOrURL)) {
+            logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
             contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(e => {
-                logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap`);
+                logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
                 return null;
             });
         } else {
@@ -134,12 +134,6 @@ export class SourceMapFactory {
     }
 
     private async downloadSourceMapContents(sourceMapUri: string): Promise<string> {
-        if (url.parse(sourceMapUri).hostname === 'localhost') {
-            sourceMapUri = sourceMapUri.replace('localhost', '127.0.0.1');
-        }
-
-        logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${sourceMapUri}`);
-
         // use sha256 to ensure the hash value can be used in filenames
         let cachedSourcemapPath: string;
         if (this._enableSourceMapCaching) {
