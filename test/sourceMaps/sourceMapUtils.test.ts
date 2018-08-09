@@ -12,6 +12,7 @@ import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath, get
 
 /** sourceMapUtils without mocks - use for type only */
 import * as _SourceMapUtils from '../../src/sourceMaps/sourceMapUtils';
+import { utils } from '../../src';
 const MODULE_UNDER_TEST = '../../src/sourceMaps/sourceMapUtils';
 
 suite('SourceMapUtils', () => {
@@ -110,16 +111,17 @@ suite('SourceMapUtils', () => {
 
         test('Adds ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1', () => {
             mockery.resetCache();
+            const tsFileCanonicalized = utils.canonicalizeUrl(testUtils.pathResolve('/project/ClientApp/src/app/counter/counter.component.ts'));
             mockery.registerMock('fs', { statSync: (path: string) => {
-                if (path.toLowerCase() === testUtils.pathResolve('/project/ClientApp/src/app/counter/counter.component.ts').toLowerCase()) {
+                if (utils.canonicalizeUrl(path) === tsFileCanonicalized) {
                     return true;
                 }
                 throw new Error(`File doesn't exist: ${path}`);
             }});
 
             assert.deepEqual(
-                getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true),
-                testUtils.pathResolve('/project/ClientApp/src/app/counter/counter.component.ts'));
+                utils.canonicalizeUrl(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true)),
+                utils.canonicalizeUrl(testUtils.pathResolve('/project/ClientApp/src/app/counter/counter.component.ts')));
         });
 
         test('Does not add ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1 when the original method finds a file', () => {
@@ -129,8 +131,8 @@ suite('SourceMapUtils', () => {
             }});
 
             assert.deepEqual(
-                getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true),
-                testUtils.pathResolve('/project/webRoot/src/app/counter/counter.component.ts'));
+                utils.canonicalizeUrl(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true)),
+                utils.canonicalizeUrl(testUtils.pathResolve('/project/webRoot/src/app/counter/counter.component.ts')));
         });
 
         test('works using the laptop emoji', () => {
