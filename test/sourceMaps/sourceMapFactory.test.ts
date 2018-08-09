@@ -39,8 +39,8 @@ suite('SourceMapFactory', () => {
      * Should take the same args as the SourceMap constructor, but you can't enforce that with TS.
      * Mocks need to be registered before calling this.
      */
-    function setExpectedConstructorArgs(generatedPath: string, json: string, pathMapping: IPathMapping = undefined): void {
-        const expectedArgs = [generatedPath, json, pathMapping, undefined]; // arguments doesn't have the default param
+    function setExpectedConstructorArgs(generatedPath: string, json: string, pathMapping: IPathMapping = undefined, isVSClient = false): void {
+        const expectedArgs = [generatedPath, json, pathMapping, undefined, isVSClient]; // arguments doesn't have the default param
         function mockSourceMapConstructor(): void {
             assert.deepEqual(
                 Array.prototype.slice.call(arguments),

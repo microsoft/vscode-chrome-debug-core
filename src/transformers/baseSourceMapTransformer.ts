@@ -47,6 +47,8 @@ export class BaseSourceMapTransformer {
 
     public caseSensitivePaths: boolean;
 
+    protected _isVSClient = false;
+
     constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>, enableSourceMapCaching?: boolean) {
         this._sourceHandles = sourceHandles;
         this._enableSourceMapCaching = enableSourceMapCaching;
@@ -54,6 +56,10 @@ export class BaseSourceMapTransformer {
 
     public get sourceMaps(): SourceMaps {
         return this._sourceMaps;
+    }
+
+    public set isVSClient(newValue: boolean) {
+        this._isVSClient = newValue;
     }
 
     public launch(args: ILaunchRequestArgs): void {
@@ -261,7 +267,7 @@ export class BaseSourceMapTransformer {
             if (!sourceMapURL) return null;
 
             // Load the sourcemap for this new script and log its sources
-            const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL);
+            const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL, this._isVSClient);
             this._processingNewSourceMap = Promise.all([this._processingNewSourceMap, processNewSourceMapP]);
             await processNewSourceMapP;
 

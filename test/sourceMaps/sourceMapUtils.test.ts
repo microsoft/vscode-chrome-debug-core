@@ -10,7 +10,15 @@ import * as testUtils from '../testUtils';
 
 import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath, getFullSourceEntry } from '../../src/sourceMaps/sourceMapUtils';
 
+/** sourceMapUtils without mocks - use for type only */
+import * as _SourceMapUtils from '../../src/sourceMaps/sourceMapUtils';
+const MODULE_UNDER_TEST = '../../src/sourceMaps/sourceMapUtils';
+
 suite('SourceMapUtils', () => {
+    function getSourceMapUtils(): typeof _SourceMapUtils {
+        return require(MODULE_UNDER_TEST);
+    }
+
     setup(() => {
         testUtils.setupUnhandledRejectionListener();
 
@@ -98,6 +106,31 @@ suite('SourceMapUtils', () => {
             assert.deepEqual(
                 applySourceMapPathOverrides('webpack:///src/app.js', { 'webpack:///*': testUtils.pathResolve('/project/*') }),
                 testUtils.pathResolve('/project/src/app.js'));
+        });
+
+        test('Adds ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1', () => {
+            mockery.resetCache();
+            mockery.registerMock('fs', { statSync: (path: string) => {
+                if (path === "c:\\project\\ClientApp\\src\\app\\counter\\counter.component.ts") {
+                    return true;
+                }
+                throw new Error(`File doesn't exist: ${path}`);
+            }});
+
+            assert.deepEqual(
+                getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true),
+                testUtils.pathResolve('/project/ClientApp/src/app/counter/counter.component.ts'));
+        });
+
+        test('Does not add ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1 when the original method finds a file', () => {
+            mockery.resetCache();
+            mockery.registerMock('fs', { statSync: (path: string) => {
+                return true;
+            }});
+
+            assert.deepEqual(
+                getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve('/project/webRoot/*') }, true),
+                testUtils.pathResolve('/project/webRoot/src/app/counter/counter.component.ts'));
         });
 
         test('works using the laptop emoji', () => {

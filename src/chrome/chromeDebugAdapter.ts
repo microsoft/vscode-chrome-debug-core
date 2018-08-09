@@ -161,6 +161,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
 
+    private _isVSClient: boolean;
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -235,7 +237,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
-        utils.setCaseSensitivePaths(args.clientID !== 'visualstudio');
+        this._isVSClient = args.clientID === 'visualstudio';
+        utils.setCaseSensitivePaths(!this._isVSClient);
+        this._sourceMapTransformer.isVSClient = this._isVSClient;
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
