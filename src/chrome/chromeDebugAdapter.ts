@@ -33,6 +33,7 @@ import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransform
 import { EagerSourceMapTransformer } from '../transformers/eagerSourceMapTransformer';
 import { FallbackToClientPathTransformer } from '../transformers/fallbackToClientPathTransformer';
 import { BreakOnLoadHelper } from './breakOnLoadHelper';
+import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 
 import * as path from 'path';
 
@@ -1336,6 +1337,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public disconnect(args: DebugProtocol.DisconnectArguments): void {
+        telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
         this.shutdown();
         this.terminateSession('Got disconnect request', args);
     }
