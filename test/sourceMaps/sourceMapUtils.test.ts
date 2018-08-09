@@ -111,7 +111,7 @@ suite('SourceMapUtils', () => {
         });
 
         function normalized(filePath: string) {
-            return utils.canonicalizeUrl(path.join(filePath.toLowerCase()));
+            return utils.canonicalizeUrl(path.join(filePath.toLowerCase())).replace(new RegExp(/\\/g), '/');
         }
 
         const projectFolder = testUtils.pathResolve('/project');
