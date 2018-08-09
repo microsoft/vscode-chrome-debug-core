@@ -24,7 +24,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient: boolean = false): Promise<SourceMap> {
+    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (this._pathMapping) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;

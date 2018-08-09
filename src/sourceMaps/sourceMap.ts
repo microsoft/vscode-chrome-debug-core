@@ -74,7 +74,7 @@ export class SourceMap {
      * generatedPath: an absolute local path or a URL
      * json: sourcemap contents as string
      */
-    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient: boolean = false) {
+    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient = false) {
         this._generatedPath = generatedPath;
 
         const sm = JSON.parse(json);

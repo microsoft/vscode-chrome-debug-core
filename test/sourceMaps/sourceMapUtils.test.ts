@@ -111,7 +111,7 @@ suite('SourceMapUtils', () => {
         test('Adds ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1', () => {
             mockery.resetCache();
             mockery.registerMock('fs', { statSync: (path: string) => {
-                if (path === "c:\\project\\ClientApp\\src\\app\\counter\\counter.component.ts") {
+                if (path === 'c:\\project\\ClientApp\\src\\app\\counter\\counter.component.ts') {
                     return true;
                 }
                 throw new Error(`File doesn't exist: ${path}`);
