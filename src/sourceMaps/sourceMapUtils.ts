@@ -64,11 +64,16 @@ export function getComputedSourceRoot(sourceRoot: string, generatedPath: string,
     return absSourceRoot;
 }
 
+let aspNetFallbackCount = 0;
+export function getAspNetFallbackCount(): number {
+    return aspNetFallbackCount;
+}
+
 /**
  * Applies a set of path pattern mappings to the given path. See tests for examples.
  * Returns something validated to be an absolute path.
  */
-export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOverrides: ISourceMapPathOverrides): string {
+export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOverrides: ISourceMapPathOverrides, isVSClient = false): string {
     const forwardSlashSourcePath = sourcePath.replace(/\\/g, '/');
 
     // Sort the overrides by length, large to small
@@ -107,6 +112,15 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         const wildcardValue = overridePatternMatches[1];
         let mappedPath = rightPattern.replace(/\*/g, wildcardValue);
         mappedPath = path.join(mappedPath); // Fix any ..
+        if (isVSClient && leftPattern === 'webpack:///./*' && !utils.existsSync(mappedPath)) {
+            // This is a workaround for a bug in ASP.NET debugging in VisualStudio because the wwwroot is not properly configured
+            const pathFixingASPNETBug = path.join(rightPattern.replace(/\*/g, path.join('../ClientApp', wildcardValue)));
+            if (utils.existsSync(pathFixingASPNETBug)) {
+                ++aspNetFallbackCount;
+                mappedPath = pathFixingASPNETBug;
+            }
+        }
+
         logger.log(`SourceMap: mapping ${sourcePath} => ${mappedPath}, via sourceMapPathOverrides entry - ${entryStr}`);
         return mappedPath;
     }

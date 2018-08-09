@@ -5,12 +5,22 @@
 import * as assert from 'assert';
 import * as mockery from 'mockery';
 import * as os from 'os';
+import * as path from 'path';
 
 import * as testUtils from '../testUtils';
 
 import { getComputedSourceRoot, applySourceMapPathOverrides, resolveMapPath, getFullSourceEntry } from '../../src/sourceMaps/sourceMapUtils';
 
+/** sourceMapUtils without mocks - use for type only */
+import * as _SourceMapUtils from '../../src/sourceMaps/sourceMapUtils';
+import { utils } from '../../src';
+const MODULE_UNDER_TEST = '../../src/sourceMaps/sourceMapUtils';
+
 suite('SourceMapUtils', () => {
+    function getSourceMapUtils(): typeof _SourceMapUtils {
+        return require(MODULE_UNDER_TEST);
+    }
+
     setup(() => {
         testUtils.setupUnhandledRejectionListener();
 
@@ -98,6 +108,38 @@ suite('SourceMapUtils', () => {
             assert.deepEqual(
                 applySourceMapPathOverrides('webpack:///src/app.js', { 'webpack:///*': testUtils.pathResolve('/project/*') }),
                 testUtils.pathResolve('/project/src/app.js'));
+        });
+
+        function normalized(filePath: string) {
+            return utils.canonicalizeUrl(path.join(filePath.toLowerCase())).replace(new RegExp(/\\/g), '/');
+        }
+
+        const projectFolder = testUtils.pathResolve('/project');
+
+        test('Adds ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1', () => {
+            mockery.resetCache();
+            const tsFileCanonicalized = normalized(`${projectFolder}/ClientApp/src/app/counter/counter.component.ts`);
+            mockery.registerMock('fs', { statSync: (path: string) => {
+                if (normalized(path) === tsFileCanonicalized) {
+                    return true;
+                }
+                throw new Error(`File doesn't exist: ${path}`);
+            }});
+
+            assert.deepEqual(
+                normalized(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve(`${projectFolder}/webRoot/*`) }, true)),
+                normalized(`${projectFolder}/ClientApp/src/app/counter/counter.component.ts`));
+        });
+
+        test('Does not add ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1 when the original method finds a file', () => {
+            mockery.resetCache();
+            mockery.registerMock('fs', { statSync: (path: string) => {
+                return true;
+            }});
+
+            assert.deepEqual(
+                normalized(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve(`${projectFolder}/webRoot/*`) }, true)),
+                normalized(`${projectFolder}/webRoot/src/app/counter/counter.component.ts`));
         });
 
         test('works using the laptop emoji', () => {

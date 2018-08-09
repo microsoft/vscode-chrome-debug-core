@@ -24,7 +24,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
+    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (this._pathMapping) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
@@ -47,7 +47,7 @@ export class SourceMapFactory {
             if (contents) {
                 try {
                     // Throws for invalid JSON
-                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides);
+                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides, isVSClient);
                 } catch (e) {
                     logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                     return null;

@@ -74,7 +74,7 @@ export class SourceMap {
      * generatedPath: an absolute local path or a URL
      * json: sourcemap contents as string
      */
-    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>) {
+    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient = false) {
         this._generatedPath = generatedPath;
 
         const sm = JSON.parse(json);
@@ -103,7 +103,7 @@ export class SourceMap {
         this._sources = sm.sources.map(sourcePath => {
             if (sourceMapPathOverrides) {
                 const fullSourceEntry = sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, sourcePath);
-                const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides);
+                const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides, isVSClient);
                 if (fullSourceEntry !== mappedFullSourceEntry) {
                     return utils.canonicalizeUrl(mappedFullSourceEntry);
                 }

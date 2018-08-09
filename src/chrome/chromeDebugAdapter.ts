@@ -33,6 +33,7 @@ import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransform
 import { EagerSourceMapTransformer } from '../transformers/eagerSourceMapTransformer';
 import { FallbackToClientPathTransformer } from '../transformers/fallbackToClientPathTransformer';
 import { BreakOnLoadHelper } from './breakOnLoadHelper';
+import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 
 import * as path from 'path';
 
@@ -161,6 +162,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
 
+    private _isVSClient: boolean;
+
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -235,7 +238,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
-        utils.setCaseSensitivePaths(args.clientID !== 'visualstudio');
+        this._isVSClient = args.clientID === 'visualstudio';
+        utils.setCaseSensitivePaths(!this._isVSClient);
+        this._sourceMapTransformer.isVSClient = this._isVSClient;
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
@@ -1332,6 +1337,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public disconnect(args: DebugProtocol.DisconnectArguments): void {
+        telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
         this.shutdown();
         this.terminateSession('Got disconnect request', args);
     }
