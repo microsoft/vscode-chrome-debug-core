@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as os from 'os';
+import * as url from 'url';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
@@ -134,6 +135,19 @@ export class SourceMapFactory {
     }
 
     private async downloadSourceMapContents(sourceMapUri: string): Promise<string> {
+        try {
+            return await this._downloadSourceMapContents(sourceMapUri);
+        } catch (e) {
+            if (url.parse(sourceMapUri).hostname === 'localhost') {
+                logger.log(`Sourcemaps.downloadSourceMapContents: downlading from 127.0.0.1 instead of localhost`);
+                return this._downloadSourceMapContents(sourceMapUri.replace('localhost', '127.0.0.1'));
+            }
+
+            throw e;
+        }
+    }
+
+    private async _downloadSourceMapContents(sourceMapUri: string): Promise<string> {
         // use sha256 to ensure the hash value can be used in filenames
         let cachedSourcemapPath: string;
         if (this._enableSourceMapCaching) {
