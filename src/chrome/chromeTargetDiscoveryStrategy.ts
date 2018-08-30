@@ -14,6 +14,18 @@ import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnec
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
+export class ProtocolSchema {
+    public static unknownVersion(): ProtocolSchema {
+        return new ProtocolSchema(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
+    }
+
+    constructor(private _major: number, private _minor: number) {}
+
+    public isAtLeastVersion(major: number, minor: number): boolean {
+        return major > this._major || (major === this._major && minor >= this._minor);
+    }
+}
+
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObservableEvents<IStepStartedEventsEmitter> {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
@@ -55,7 +67,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
-    private async _getVersionData(address: string, port: number): Promise<void> {
+    private async _getVersionData(address: string, port: number): Promise<ProtocolSchema> {
 
         const url = `http://${address}:${port}/json/version`;
         this.logger.log(`Getting browser and debug protocol version via ${url}`);
@@ -66,8 +78,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         try {
             if (jsonResponse) {
                 const response = JSON.parse(jsonResponse);
+                const versionString = response['Protocol-Version'] as string;
                 this.logger.log(`Got browser version: ${response.Browser}`);
-                this.logger.log(`Got debug protocol version: ${response['Protocol-Version']}`);
+                this.logger.log(`Got debug protocol version: ${versionString}`);
 
                 /* __GDPR__
                    "targetDebugProtocolVersion" : {
@@ -76,16 +89,21 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                    }
                  */
                 this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
+                const majorAndMinor = versionString.split('.');
+                const major = parseInt(majorAndMinor[0], 10);
+                const minor = parseInt(majorAndMinor[1], 10);
+                return new ProtocolSchema(major, minor);
             }
         } catch (e) {
             this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);
         }
+        return ProtocolSchema.unknownVersion();
     }
 
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
 
         // Get the browser and the protocol version
-        this._getVersionData(address, port);
+        const version = this._getVersionData(address, port);
 
         /* __GDPR__FRAGMENT__
            "StepNames" : {
@@ -113,7 +131,11 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             const responseArray = JSON.parse(jsonResponse);
             if (Array.isArray(responseArray)) {
                 return (responseArray as ITarget[])
-                    .map(target => this._fixRemoteUrl(address, port, target));
+                    .map(target => {
+                        this._fixRemoteUrl(address, port, target);
+                        target.version = version;
+                        return target;
+                    });
             } else {
                 return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
             }
