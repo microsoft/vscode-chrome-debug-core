@@ -30,7 +30,6 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
     public readonly events = new StepProgressEventsEmitter();
-    _version: Promise<ProtocolSchema>;
 
     constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter) {
         this.logger = _logger;
@@ -104,7 +103,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
 
         // Get the browser and the protocol version
-        this._version = this._getVersionData(address, port);
+        const version = this._getVersionData(address, port);
 
         /* __GDPR__FRAGMENT__
            "StepNames" : {
@@ -132,7 +131,11 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             const responseArray = JSON.parse(jsonResponse);
             if (Array.isArray(responseArray)) {
                 return (responseArray as ITarget[])
-                    .map(target => this._fixRemoteUrl(address, port, target));
+                    .map(target => {
+                        this._fixRemoteUrl(address, port, target);
+                        target.version = version;
+                        return target;
+                    });
             } else {
                 return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
             }
@@ -174,9 +177,5 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         }
 
         return target;
-    }
-
-    public get version(): Promise<ProtocolSchema> {
-        return this._version;
     }
 }

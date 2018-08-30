@@ -27,12 +27,11 @@ export interface ITarget {
     type: string;
     url?: string;
     webSocketDebuggerUrl: string;
+    version: Promise<ProtocolSchema>;
 }
 
 export type ITargetFilter = (target: ITarget) => boolean;
 export interface ITargetDiscoveryStrategy {
-    version: Promise<ProtocolSchema>;
-
     getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget>;
     getAllTargets(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]>;
 }
@@ -178,6 +177,6 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public get version(): Promise<ProtocolSchema> {
-        return this._targetDiscoveryStrategy.version;
+        return this._attachedTarget.version;
     }
 }
