@@ -16,7 +16,7 @@ const localize = nls.loadMessageBundle();
 
 export class ProtocolSchema {
     public static unknownVersion(): ProtocolSchema {
-        return new this(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
+        return new ProtocolSchema(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
     }
 
     constructor(private _major: number, private _minor: number) {}
