@@ -15,7 +15,7 @@ import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
 export class ProtocolSchema {
-    public static unkownVersion(): any {
+    public static unknownVersion(): ProtocolSchema {
         return new this(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
     }
 
@@ -98,7 +98,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         } catch (e) {
             this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);
         }
-        return ProtocolSchema.unkownVersion();
+        return ProtocolSchema.unknownVersion();
     }
 
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
