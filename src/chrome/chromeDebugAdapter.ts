@@ -471,6 +471,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.on('consoleAPICalled', params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.on('exceptionThrown', params => this.onExceptionThrown(params));
         this.chrome.Runtime.on('executionContextsCleared', () => this.onExecutionContextsCleared());
+        this.chrome.Log.on('entryAdded', params => this.onLogEntryAdded(params));
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
@@ -507,7 +508,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
             utils.toVoidP(this.chrome.Debugger.enable()),
             this.chrome.Runtime.enable(),
-            this._chromeConnection.run()
+            this.chrome.Log.enable(),
+            this._chromeConnection.run(),
         ];
     }
 
@@ -1207,8 +1209,42 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        const result = formatConsoleArguments(event);
-        const stack = stackTraceWithoutLogpointFrame(event);
+        const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
+        const stack = stackTraceWithoutLogpointFrame(event.stackTrace);
+        if (result) {
+            this.logObjects(result.args, result.isError, stack);
+        }
+    }
+
+    private onLogEntryAdded(event: Crdp.Log.EntryAddedEvent): void {
+        // The Debug Console doesn't give the user a way to filter by level, just ignore 'verbose' logs
+        if (event.entry.level === 'verbose') {
+            return;
+        }
+
+        const args = event.entry.args || [];
+
+        let text = event.entry.text || '';
+        if (event.entry.url && !event.entry.stackTrace) {
+            if (text) {
+                text += ' ';
+            }
+
+            text += `[${event.entry.url}]`;
+        }
+
+        if (text) {
+            args.unshift({
+                type: 'string',
+                value: text
+            });
+        }
+
+        const type = event.entry.level === 'error' ? 'error' :
+            event.entry.level === 'warning' ? 'warning' :
+            'log';
+        const result = formatConsoleArguments(type, args, event.entry.stackTrace);
+        const stack = event.entry.stackTrace;
         if (result) {
             this.logObjects(result.args, result.isError, stack);
         }

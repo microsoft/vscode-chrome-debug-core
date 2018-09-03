@@ -29,19 +29,19 @@ export class InternalSourceBreakpoint {
     }
 }
 
-function isLogpointMessage(m: Crdp.Runtime.ConsoleAPICalledEvent): boolean {
-    return m.stackTrace && m.stackTrace.callFrames.length > 0 && m.stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
+function isLogpointStack(stackTrace: Crdp.Runtime.StackTrace | null): boolean {
+    return stackTrace && stackTrace.callFrames.length > 0 && stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
 }
 
-export function stackTraceWithoutLogpointFrame(m: Crdp.Runtime.ConsoleAPICalledEvent): Crdp.Runtime.StackTrace {
-    if (isLogpointMessage(m)) {
+export function stackTraceWithoutLogpointFrame(stackTrace: Crdp.Runtime.StackTrace): Crdp.Runtime.StackTrace {
+    if (isLogpointStack(stackTrace)) {
         return {
-            ...m.stackTrace,
-            callFrames: m.stackTrace.callFrames.slice(1)
+            ...stackTrace,
+            callFrames: stackTrace.callFrames.slice(1)
         };
     }
 
-    return m.stackTrace;
+    return stackTrace;
 }
 
 const LOGMESSAGE_VARIABLE_REGEXP = /{(.*?)}/g;
