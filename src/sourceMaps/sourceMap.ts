@@ -100,7 +100,7 @@ export class SourceMap {
         // sm.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
         // resolve them to file:/// urls, using computedSourceRoot, to be simpler and unambiguous, since
         // it needs to look them up later in exactly the same format.
-        this._sources = sm.sources.map(sourcePath => {
+        this._sources = sm.sources.map((sourcePath: string) => {
             if (sourceMapPathOverrides) {
                 const fullSourceEntry = sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, sourcePath);
                 const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides, isVSClient);
@@ -159,7 +159,7 @@ export class SourceMap {
      * Finds the nearest source location for the given location in the generated file.
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
-    public authoredPositionFor(line: number, column: number): MappedPosition {
+    public authoredPositionFor(line: number, column: number): MappedPosition | null {
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -196,7 +196,7 @@ export class SourceMap {
      * Finds the nearest location in the generated file for the given source location.
      * Will return a mapping on the next line, if there is no subsequent mapping on the expected line.
      */
-    public generatedPositionFor(source: string, line: number, column: number): MappedPosition {
+    public generatedPositionFor(source: string, line: number, column: number): MappedPosition | null {
         // source-map lib uses 1-indexed lines.
         line++;
 

@@ -112,13 +112,13 @@ export class SourceMapFactory {
         let contentsP: Promise<string>;
         if (utils.isURL(mapPathOrURL) && !utils.isFileUrl(mapPathOrURL)) {
             logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
-            contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(e => {
+            contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(_e => {
                 logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
                 return null;
             });
         } else {
             mapPathOrURL = utils.canonicalizeUrl(mapPathOrURL);
-            contentsP = new Promise((resolve, reject) => {
+            contentsP = new Promise((resolve) => {
                 logger.log(`SourceMaps.loadSourceMapContents: Reading local sourcemap file from ${mapPathOrURL}`);
                 fs.readFile(mapPathOrURL, (err, data) => {
                     if (err) {

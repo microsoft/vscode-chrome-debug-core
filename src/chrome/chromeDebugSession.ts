@@ -4,9 +4,8 @@
 
 import * as os from 'os';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { LoggingDebugSession, ErrorDestination, Response, logger } from 'vscode-debugadapter';
+import { LoggingDebugSession, ErrorDestination, Response, logger, DebugSession } from 'vscode-debugadapter';
 
-import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import { ITargetFilter, ChromeConnection, IChromeError } from './chromeConnection';
 import { BasePathTransformer } from '../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
@@ -16,15 +15,32 @@ import { IDebugAdapter } from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, TelemetryPropertyCollector, ITelemetryPropertyCollector } from '../telemetry';
 import * as utils from '../utils';
 import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
+import { ChromeDebugAdapter } from './client/chromeDebugAdapter/chromeDebugAdapterV2';
+import { AvailableCommands, CommandText } from './client/requests';
+import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
-    logFilePath?: string; // obsolete, vscode log dir should be used
+    enableSourceMapCaching: boolean;
+
+    extensibilityPoints: IExtensibilityPoints;
 
     // Override services
     chromeConnection?: typeof ChromeConnection;
     pathTransformer?: { new(): BasePathTransformer };
-    sourceMapTransformer?: { new(sourceHandles: any): BaseSourceMapTransformer };
+    sourceMapTransformer?: { new(enableSourcemapCaching?: boolean): BaseSourceMapTransformer };
+    lineColTransformer?: { new(session: any): LineColTransformer };
+}
+
+export interface INewChromeDebugAdapterOpts {
+    targetFilter?: ITargetFilter;
+    logFilePath?: string; // obsolete, vscode log dir should be used
+    enableSourceMapCaching?: boolean;
+
+    // Override services
+    chromeConnection?: typeof ChromeConnection;
+    pathTransformer?: BasePathTransformer;
+    sourceMapTransformer: BaseSourceMapTransformer;
     lineColTransformer?: { new(session: any): LineColTransformer };
 }
 
@@ -65,17 +81,17 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
      * DebugSession.run with the result. Alternatively they could subclass ChromeDebugSession and pass
      * their options to the super constructor, but I think this is easier to follow.
      */
-    public static getSession(opts: IChromeDebugSessionOpts): typeof ChromeDebugSession {
+    public static getSession(opts: IChromeDebugSessionOpts): typeof DebugSession {
         // class expression!
         return class extends ChromeDebugSession {
             constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean) {
-                super(debuggerLinesAndColumnsStartAt1, isServer, opts);
+                super(!!debuggerLinesAndColumnsStartAt1, !!isServer, opts);
             }
         };
     }
 
-    public constructor(obsolete_debuggerLinesAndColumnsStartAt1?: boolean, obsolete_isServer?: boolean, opts?: IChromeDebugSessionOpts) {
-        super(opts.logFilePath, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
+    public constructor(obsolete_debuggerLinesAndColumnsStartAt1: boolean, obsolete_isServer: boolean, opts: IChromeDebugSessionOpts) {
+        super(undefined, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
@@ -83,7 +99,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         this.events = new StepProgressEventsEmitter([this._debugAdapter.events]);
         this.configureExecutionTimingsReporting();
 
-        const safeGetErrDetails = err => {
+        const safeGetErrDetails = (err: any) => {
             let errMsg;
             try {
                 errMsg = (err && (<Error>err).stack) ? (<Error>err).stack : JSON.stringify(err);
@@ -94,7 +110,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             return errMsg;
         };
 
-        const reportErrorTelemetry = (err, exceptionType: ExceptionType)  => {
+        const reportErrorTelemetry = (err: any, exceptionType: ExceptionType)  => {
             let properties: IExecutionResultTelemetryProperties = {};
             properties.successful = 'false';
             properties.exceptionType = exceptionType;
@@ -129,9 +145,12 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     /**
      * Overload dispatchRequest to the debug adapters' Promise-based methods instead of DebugSession's callback-based methods
      */
-    protected dispatchRequest(request: DebugProtocol.Request): void {
+    public dispatchRequest(request: DebugProtocol.Request): Promise<void> {
+        if (AvailableCommands.has(request.command)) {
+            const command = request.command as CommandText;
+
         // We want the request to be non-blocking, so we won't await for reportTelemetry
-        this.reportTelemetry(`ClientRequest/${request.command}`, async (reportFailure, telemetryPropertyCollector) => {
+        return this.reportTelemetry(`ClientRequest/${request.command}`, async (reportFailure, telemetryPropertyCollector) => {
             const response: DebugProtocol.Response = new Response(request);
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
@@ -141,7 +160,12 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                     this.sendUnknownCommandResponse(response, request.command);
                 } else {
                     telemetryPropertyCollector.addTelemetryProperty('requestType', request.type);
-                    response.body = await this._debugAdapter[request.command](request.arguments, telemetryPropertyCollector, request.seq);
+                    const requestHandler = (this._debugAdapter as any) [command] as Function;
+                    if (requestHandler instanceof Function) {
+                        response.body = await requestHandler.call(this._debugAdapter, request.arguments, telemetryPropertyCollector, request.seq);
+                    } else {
+                        throw new Error(`Couldn't find a handler for request ${command}`);
+                    }
                     this.sendResponse(response);
                 }
             } catch (e) {
@@ -151,6 +175,9 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                 this.failedRequest(request.command, response, e);
             }
         });
+        } else {
+            throw new Error(`The client requested ${request.command} which is not a recognized command`);
+        }
     }
 
     // { command: request.command, type: request.type };
@@ -182,7 +209,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             telemetry.reportEvent(eventName, properties);
         };
 
-        const reportFailure = e => {
+        const reportFailure = (e: any) => {
             failed = true;
             properties.successful = 'false';
             properties.exceptionType = 'firstChance';
@@ -303,6 +330,25 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         }
     }
 
+    public convertClientLineToDebugger(line: number): number {
+        // LineColTransformer uses this protected method from the session
+        return super.convertClientLineToDebugger(line);
+    }
+
+    public convertClientColumnToDebugger(column: number): number {
+        // LineColTransformer uses this protected method from the session
+        return super.convertClientColumnToDebugger(column);
+    }
+
+    public convertDebuggerLineToClient(line: number): number {
+        // LineColTransformer uses this protected method from the session
+        return super.convertDebuggerLineToClient(line);
+    }
+
+    public convertDebuggerColumnToClient(column: number): number {
+        // LineColTransformer uses this protected method from the session
+        return super.convertDebuggerColumnToClient(column);
+    }
 }
 
 function logVersionInfo(): void {

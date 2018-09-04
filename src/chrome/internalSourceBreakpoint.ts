@@ -2,8 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { Protocol as Crdp } from 'devtools-protocol';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { IScript } from './internal/scripts/script';
+import { CodeFlowStackTrace } from './internal/stackTraces/stackTrace';
+import { parseResourceIdentifier } from './internal/sources/resourceIdentifier';
 
 export class InternalSourceBreakpoint {
     static readonly LOGPOINT_URL = 'vscode.logpoint.js';
@@ -29,15 +31,15 @@ export class InternalSourceBreakpoint {
     }
 }
 
-function isLogpointStack(stackTrace: Crdp.Runtime.StackTrace | null): boolean {
-    return stackTrace && stackTrace.callFrames.length > 0 && stackTrace.callFrames[0].url === InternalSourceBreakpoint.LOGPOINT_URL;
+function isLogpointStack(stackTrace: CodeFlowStackTrace<IScript> | null): boolean {
+    return stackTrace && stackTrace.codeFlowFrames.length > 0 && stackTrace.codeFlowFrames[0].script.runtimeSource.identifier.isEquivalent(parseResourceIdentifier(InternalSourceBreakpoint.LOGPOINT_URL));
 }
 
-export function stackTraceWithoutLogpointFrame(stackTrace: Crdp.Runtime.StackTrace): Crdp.Runtime.StackTrace {
+export function stackTraceWithoutLogpointFrame(stackTrace: CodeFlowStackTrace<IScript>): CodeFlowStackTrace<IScript> {
     if (isLogpointStack(stackTrace)) {
         return {
             ...stackTrace,
-            callFrames: stackTrace.callFrames.slice(1)
+            codeFlowFrames: stackTrace.codeFlowFrames.slice(1)
         };
     }
 
@@ -50,7 +52,7 @@ function logMessageToExpression(msg: string): string {
     msg = msg.replace('%', '%%');
 
     const args: string[] = [];
-    let format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (match, group) => {
+    let format = msg.replace(LOGMESSAGE_VARIABLE_REGEXP, (_match, group) => {
         const a = group.trim();
         if (a) {
             args.push(`(${a})`);

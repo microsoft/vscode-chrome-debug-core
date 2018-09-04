@@ -25,7 +25,7 @@ import * as utils from '../../src/utils';
 import * as fs from 'fs';
 
 /** Not mocked - use for type only */
-import {ChromeDebugAdapter as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
+import {ChromeDebugLogic as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source, BreakpointEvent } from 'vscode-debugadapter/lib/debugSession';
 import { Version, TargetVersions } from '../../src';
 

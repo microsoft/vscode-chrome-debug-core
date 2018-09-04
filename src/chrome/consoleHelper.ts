@@ -5,8 +5,11 @@
 import { Protocol as Crdp } from 'devtools-protocol';
 import * as Color from 'color';
 import * as variables from './variables';
+import { ExceptionDetails } from './target/events';
+import { IScript } from './internal/scripts/script';
+import { CodeFlowStackTrace } from './internal/stackTraces/stackTrace';
 
-export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
+export function formatExceptionDetails(e: ExceptionDetails): string {
     if (!e.exception) {
         return `${e.text || 'Uncaught Error'}\n${stackTraceToString(e.stackTrace)}`;
     }
@@ -17,7 +20,7 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
 
 export const clearConsoleCode = '\u001b[2J';
 
-export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent['type'], args: Crdp.Runtime.RemoteObject[], stackTrace?: Crdp.Runtime.StackTrace): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
+export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent['type'], args: Crdp.Runtime.RemoteObject[], stackTrace?: CodeFlowStackTrace<IScript>): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
     switch (type) {
         case 'log':
         case 'debug':
@@ -50,7 +53,7 @@ export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent[
                 startMsg += ': ' + formattedGroupParams.shift().value;
             }
 
-            args = [{ type: 'string', value: startMsg}, ...formattedGroupParams];
+            args = [{ type: 'string', value: startMsg }, ...formattedGroupParams];
             break;
         case 'endGroup':
             args = [{ type: 'string', value: '‹End group›' }];
@@ -206,15 +209,15 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
     }
 }
 
-function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
+function stackTraceToString(stackTrace: CodeFlowStackTrace<IScript>): string {
     if (!stackTrace) {
         return '';
     }
 
-    return stackTrace.callFrames
+    return stackTrace.codeFlowFrames
         .map(frame => {
-            const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');
-            const fileName = frame.url ? frame.url : 'eval';
+            const fnName = frame.name;
+            const fileName = frame.script.developmentSource.identifier.textRepresentation;
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');

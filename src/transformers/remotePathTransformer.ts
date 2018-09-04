@@ -6,13 +6,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
+import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs } from '../debugAdapterInterfaces';
 import * as errors from '../errors';
 import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
 import * as nls from 'vscode-nls';
 
 const localize = nls.loadMessageBundle();
+import { IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 
 /**
  * Converts a local path from Code to a path on the target.
@@ -62,61 +63,57 @@ export class RemotePathTransformer extends UrlPathTransformer {
         return localRootP;
     }
 
-    public async scriptParsed(scriptPath: string): Promise<string> {
+    public async scriptParsed(scriptPath: IResourceIdentifier): Promise<IResourceIdentifier> {
         scriptPath = await super.scriptParsed(scriptPath);
         scriptPath = this.getClientPathFromTargetPath(scriptPath) || scriptPath;
 
         return scriptPath;
     }
 
-    public async stackTraceResponse(response: IStackTraceResponseBody): Promise<void> {
-        await Promise.all(response.stackFrames.map(stackFrame => this.fixSource(stackFrame.source)));
-    }
-
     public async fixSource(source: DebugProtocol.Source): Promise<void> {
         await super.fixSource(source);
 
-        const remotePath = source && source.path;
-        if (remotePath) {
+        if (source && source.path) {
+            const remotePath = parseResourceIdentifier(source && source.path);
             const localPath = this.getClientPathFromTargetPath(remotePath) || remotePath;
-            if (utils.existsSync(localPath)) {
-                source.path = localPath;
+            if (utils.existsSync(localPath.canonicalized)) {
+                source.path = localPath.canonicalized;
                 source.sourceReference = undefined;
                 source.origin = undefined;
             }
         }
     }
 
-    private shouldMapPaths(remotePath: string): boolean {
+    private shouldMapPaths(remotePath: IResourceIdentifier): boolean {
         // Map paths only if localRoot/remoteRoot are set, and the remote path is absolute on some system
-        return !!this._localRoot && !!this._remoteRoot && (path.posix.isAbsolute(remotePath) || path.win32.isAbsolute(remotePath));
+        return !!this._localRoot && !!this._remoteRoot && (path.posix.isAbsolute(remotePath.canonicalized) || path.win32.isAbsolute(remotePath.canonicalized));
     }
 
-    public getClientPathFromTargetPath(remotePath: string): string {
+    public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier {
         remotePath = super.getClientPathFromTargetPath(remotePath) || remotePath;
 
         // Map as non-file-uri because remoteRoot won't expect a file uri
-        remotePath = utils.fileUrlToPath(remotePath);
-        if (!this.shouldMapPaths(remotePath)) return '';
+        remotePath = parseResourceIdentifier(utils.fileUrlToPath(remotePath.canonicalized));
+        if (!this.shouldMapPaths(remotePath)) return parseResourceIdentifier('');
 
-        const relPath = relative(this._remoteRoot, remotePath);
+        const relPath = relative(this._remoteRoot, remotePath.canonicalized);
         let localPath = join(this._localRoot, relPath);
 
         localPath = utils.fixDriveLetterAndSlashes(localPath);
         logger.log(`Mapped remoteToLocal: ${remotePath} -> ${localPath}`);
-        return localPath;
+        return parseResourceIdentifier(localPath);
     }
 
-    public getTargetPathFromClientPath(localPath: string): string {
+    public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
         localPath = super.getTargetPathFromClientPath(localPath) || localPath;
         if (!this.shouldMapPaths(localPath)) return localPath;
 
-        const relPath = relative(this._localRoot, localPath);
+        const relPath = relative(this._localRoot, localPath.canonicalized);
         let remotePath = join(this._remoteRoot, relPath);
 
         remotePath = utils.fixDriveLetterAndSlashes(remotePath, /*uppercaseDriveLetter=*/true);
         logger.log(`Mapped localToRemote: ${localPath} -> ${remotePath}`);
-        return remotePath;
+        return parseResourceIdentifier(remotePath);
     }
 }
 

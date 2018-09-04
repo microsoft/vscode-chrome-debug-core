@@ -8,7 +8,7 @@ import { LikeSocket } from 'noice-json-rpc';
 
 export class WebSocketToLikeSocketProxy {
     private _server: WebSocket.Server;
-    private _currentlyOpenedWebSocket: WebSocket = null;
+    private _currentlyOpenedWebSocket: WebSocket | null = null;
 
     constructor(private _port: number, private _socket: LikeSocket) { }
 
@@ -48,7 +48,7 @@ export class WebSocketToLikeSocketProxy {
                 this._currentlyOpenedWebSocket = null;
             });
 
-            this._socket.on('message', data => {
+            this._socket.on('message', (data: string) => {
                 logger.log(`CRDP Proxy - Target to Client: ${data}`);
                 openedWebSocket.send(data);
             });

@@ -6,18 +6,25 @@
         "sourceMap": true,
         "outDir": "out",
         "declaration": true,
-
+        "types": ["reflect-metadata"],
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "noUnusedLocals": true,
         "noImplicitThis": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
-        "lib": [
-            "es2015"
-        ]
+        "noUnusedParameters": true,
+        "strictFunctionTypes": true,
+        "noImplicitAny": true,
+
+        "strictNullChecks": false,
+        "strictPropertyInitialization": false,
+
+        "lib": ["es6", "dom"]
     },
     "include": [
         "src/**/*.ts",
-        "test/**/*.ts",
+        "test-DoNot-/**/*.ts",
         "node_modules/@types/**/*.ts"
     ]
 }

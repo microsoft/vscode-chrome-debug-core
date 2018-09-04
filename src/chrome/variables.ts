@@ -5,30 +5,32 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Handles } from 'vscode-debugadapter';
 
-import { ChromeDebugAdapter, VariableContext } from './chromeDebugAdapter';
+import { ChromeDebugLogic, VariableContext } from './chromeDebugAdapter';
 import { Protocol as Crdp } from 'devtools-protocol';
 import * as utils from '../utils';
+import { ScriptOrSource } from './internal/locations/location';
+import { ICallFrame } from './internal/stackTraces/callFrame';
 
 export interface IVariableContainer {
-    expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
-    setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string>;
+    expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
+    setValue(adapter: ChromeDebugLogic, name: string, value: string): Promise<string>;
 }
 
 export abstract class BaseVariableContainer implements IVariableContainer {
     constructor(protected objectId: string, protected evaluateName?: string) {
     }
 
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         return adapter.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
     }
 
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+    public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
         return utils.errP('setValue not supported by this variable type');
     }
 }
 
 export class PropertyContainer extends BaseVariableContainer {
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+    public setValue(adapter: ChromeDebugLogic, name: string, value: string): Promise<string> {
         return adapter.setPropertyValue(this.objectId, name, value);
     }
 }
@@ -38,7 +40,7 @@ export class LoggedObjects extends BaseVariableContainer {
         super(undefined);
     }
 
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(adapter: ChromeDebugLogic, _filter?: string, _start?: number, _count?: number): Promise<DebugProtocol.Variable[]> {
         return Promise.all(this.args.map((arg, i) => adapter.remoteObjectToVariable('' + i, arg, undefined, /*stringify=*/false, 'repl')));
     }
 }
@@ -46,10 +48,10 @@ export class LoggedObjects extends BaseVariableContainer {
 export class ScopeContainer extends BaseVariableContainer {
     private _thisObj: Crdp.Runtime.RemoteObject;
     private _returnValue: Crdp.Runtime.RemoteObject;
-    private _frameId: string;
+    private _frameId: ICallFrame<ScriptOrSource>;
     private _origScopeIndex: number;
 
-    public constructor(frameId: string, origScopeIndex: number, objectId: string, thisObj?: Crdp.Runtime.RemoteObject, returnValue?: Crdp.Runtime.RemoteObject) {
+    public constructor(frameId: ICallFrame<ScriptOrSource>, origScopeIndex: number, objectId: string, thisObj?: Crdp.Runtime.RemoteObject, returnValue?: Crdp.Runtime.RemoteObject) {
         super(objectId, '');
         this._thisObj = thisObj;
         this._returnValue = returnValue;
@@ -60,10 +62,10 @@ export class ScopeContainer extends BaseVariableContainer {
     /**
      * Call super then insert the 'this' object if needed
      */
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(adapter: ChromeDebugLogic, _filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         // No filtering in scopes right now
         return super.expand(adapter, 'all', start, count).then(variables => {
-            if (this._thisObj) {
+            if (this._thisObj && !variables.find(v => v.name === 'this')) {
                 // If this is a scope that should have the 'this', prop, insert it at the top of the list
                 return this.insertRemoteObject(adapter, variables, 'this', this._thisObj);
             }
@@ -78,11 +80,11 @@ export class ScopeContainer extends BaseVariableContainer {
         });
     }
 
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+    public setValue(adapter: ChromeDebugLogic, name: string, value: string): Promise<string> {
         return adapter.setVariableValue(this._frameId, this._origScopeIndex, name, value);
     }
 
-    private insertRemoteObject(adapter: ChromeDebugAdapter, variables: DebugProtocol.Variable[], name: string, obj: Crdp.Runtime.RemoteObject): Promise<DebugProtocol.Variable[]> {
+    private insertRemoteObject(adapter: ChromeDebugLogic, variables: DebugProtocol.Variable[], name: string, obj: Crdp.Runtime.RemoteObject): Promise<DebugProtocol.Variable[]> {
         return adapter.remoteObjectToVariable(name, obj).then(variable => {
             variables.unshift(variable);
             return variables;
@@ -93,7 +95,7 @@ export class ScopeContainer extends BaseVariableContainer {
 export class ExceptionContainer extends PropertyContainer {
     protected _exception: Crdp.Runtime.RemoteObject;
 
-    protected constructor(objectId: string, exception: Crdp.Runtime.RemoteObject) {
+    protected constructor(_objectId: string, exception: Crdp.Runtime.RemoteObject) {
         super(exception.objectId, undefined);
         this._exception = exception;
     }
@@ -119,7 +121,7 @@ export class ExceptionValueContainer extends ExceptionContainer {
     /**
      * Make up a fake 'Exception' property to hold the thrown value, displayed under the Exception Scope
      */
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(adapter: ChromeDebugLogic, _filter?: string, _start?: number, _count?: number): Promise<DebugProtocol.Variable[]> {
         const excValuePropDescriptor: Crdp.Runtime.PropertyDescriptor = <any>{ name: 'Exception', value: this._exception };
         return adapter.propertyDescriptorToVariable(excValuePropDescriptor)
             .then(variable => [variable]);
@@ -143,7 +145,7 @@ function getArrayPreview(object: Crdp.Runtime.RemoteObject, context?: string): s
 
         // Take the first 3 props, and parse the indexes
         const propsWithIdx = indexedProps.slice(0, numProps)
-            .map((prop, i) => {
+            .map((prop, _i) => {
                 return {
                     idx: parseInt(prop.name, 10),
                     value: propertyPreviewToString(prop)
@@ -275,7 +277,7 @@ export function getRemoteObjectPreview_primitive(object: Crdp.Runtime.RemoteObje
     }
 }
 
-export function getRemoteObjectPreview_function(object: Crdp.Runtime.RemoteObject, context?: string): string {
+export function getRemoteObjectPreview_function(object: Crdp.Runtime.RemoteObject, _context?: string): string {
     const firstBraceIdx = object.description.indexOf('{');
     if (firstBraceIdx >= 0) {
         return object.description.substring(0, firstBraceIdx) + '{ … }';

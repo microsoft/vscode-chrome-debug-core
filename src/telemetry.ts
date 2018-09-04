@@ -106,7 +106,7 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
 }
 
 export class NullTelemetryReporter implements ITelemetryReporter {
-    reportEvent(name: string, data?: any): void {
+    reportEvent(_name: string, _data?: any): void {
         // no-op
     }
 
@@ -181,23 +181,25 @@ export class BatchTelemetryReporter {
      */
     private static transfromBucketData(bucketForEventType: any[]): {[groupedPropertyValue: string]: string} {
         const allPropertyNamesInTheBucket = BatchTelemetryReporter.collectPropertyNamesFromAllEvents(bucketForEventType);
-        let properties = {};
+        let propertiesAsArray: {[groupedPropertyValue: string]: string[]} = {};
 
         // Create a holder for all potential property names.
         for (const key of allPropertyNamesInTheBucket) {
-            properties[`aggregated.${key}`] = [];
+            propertiesAsArray[`aggregated.${key}`] = [];
         }
 
         // Run through all the events in the bucket, collect the values for each property name.
         for (const event of bucketForEventType) {
             for (const propertyName of allPropertyNamesInTheBucket) {
-                properties[`aggregated.${propertyName}`].push(event[propertyName] === undefined ? null : event[propertyName]);
+                propertiesAsArray[`aggregated.${propertyName}`].push(event[propertyName] === undefined ? null : event[propertyName]);
             }
         }
 
+        let properties: {[groupedPropertyValue: string]: string} = {};
+
         // Serialize each array as the final aggregated property value.
         for (const propertyName of allPropertyNamesInTheBucket) {
-            properties[`aggregated.${propertyName}`] = JSON.stringify(properties[`aggregated.${propertyName}`]);
+            properties[`aggregated.${propertyName}`] = JSON.stringify(propertiesAsArray[`aggregated.${propertyName}`]);
         }
 
         return properties;
@@ -220,7 +222,7 @@ export class BatchTelemetryReporter {
      * will return ['p1', 'p2', 'p3']
      */
     private static collectPropertyNamesFromAllEvents(bucket: any[]): string[] {
-        let propertyNamesSet = {};
+        let propertyNamesSet: {[property: string]: boolean} = {};
         for (const entry of bucket) {
             for (const key of Object.keys(entry)) {
                 propertyNamesSet[key] = true;

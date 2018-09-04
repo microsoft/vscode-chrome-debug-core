@@ -4,8 +4,9 @@
 import { logger } from 'vscode-debugadapter';
 
 import { UrlPathTransformer } from './urlPathTransformer';
-import { ChromeDebugSession } from '../chrome/chromeDebugSession';
 import * as ChromeUtils from '../chrome/chromeUtils';
+import { ISession } from '../chrome/client/session';
+import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 
 /**
  * Converts a local path from Code to a path on the target. Uses the UrlPathTransforme logic and fallbacks to asking the client if neccesary
@@ -13,11 +14,11 @@ import * as ChromeUtils from '../chrome/chromeUtils';
 export class FallbackToClientPathTransformer extends UrlPathTransformer {
     private static ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT = 500;
 
-    constructor(private _session: ChromeDebugSession) {
+    constructor(private _session: ISession) {
         super();
     }
 
-    protected async targetUrlToClientPath(scriptUrl: string): Promise<string> {
+    protected async targetUrlToClientPath(scriptUrl: IResourceIdentifier): Promise<IResourceIdentifier> {
         // First try the default UrlPathTransformer transformation
         return super.targetUrlToClientPath(scriptUrl).then(filePath => {
                 // If it returns a valid non empty file path then that should be a valid result, so we use that
@@ -32,8 +33,8 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
         });
     }
 
-    private async requestClientToMapURLToFilePath(url: string): Promise<string> {
-        return new Promise<string>((resolve, reject) => {
+    private async requestClientToMapURLToFilePath(url: IResourceIdentifier): Promise<IResourceIdentifier> {
+        return new Promise<IResourceIdentifier>((resolve, reject) => {
             this._session.sendRequest('mapURLToFilePath', {url: url}, FallbackToClientPathTransformer.ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT, response => {
                 if (response.success) {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${response.body.filePath}"`);

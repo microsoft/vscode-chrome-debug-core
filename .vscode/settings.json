@@ -4,8 +4,13 @@
     "files.exclude": {
         ".git": true,
         "bin": true,
-        "node_modules": false,
-        "ThirdPartyNotices.txt": true
+        "node_modules": true,
+        "out": true,
+        "lib": true,
+        "i18n": true,
+        ".github": true,
+        ".vsts": true,
+        "ThirdPartyNotices.txt": true,
     },
     "search.exclude": {
         ".git": true,
