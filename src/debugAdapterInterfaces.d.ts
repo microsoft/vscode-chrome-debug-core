@@ -10,6 +10,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { ITelemetryPropertyCollector } from './telemetry';
 import { IStringDictionary } from './utils';
+import { ITargetFilter } from './chrome/chromeConnection';
 
 export type ISourceMapPathOverrides = IStringDictionary<string>;
 export type IPathMapping = IStringDictionary<string>;
@@ -35,6 +36,7 @@ export interface ICommonRequestArgs {
     skipFileRegExps?: string[]; // a supplemental array of library code regex patterns
     timeout?: number;
     showAsyncStacks?: boolean;
+    targetFilter?: ITargetFilter;
 
     /** Private undocumented property to multiplex the CRDP connection into an additional channel */
     extraCRDPChannelPort?: number;
