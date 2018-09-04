@@ -74,13 +74,13 @@ export class StepProgressEventsEmitter extends EventEmitter implements IStepStar
         this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as IRequestCompletedEventArguments);
     }
 
-    public on(event: string, listener: Function): this {
+    public on(event: string, listener: (...args: any[]) => void): this {
         super.on(event, listener);
         this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.on(event as any, listener as any));
         return this;
     }
 
-    public removeListener(event: string, listener: Function): this {
+    public removeListener(event: string, listener: (...args: any[]) => void): this {
         super.removeListener(event, listener);
         this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.removeListener(event as any, listener as any));
         return this;
@@ -88,9 +88,9 @@ export class StepProgressEventsEmitter extends EventEmitter implements IStepStar
 }
 
 class SubscriptionManager {
-    private _removeSubscriptionActions = [] as [() => void];
+    private _removeSubscriptionActions = [] as (() => void)[];
 
-    public on(eventEmitter: EventEmitter, event: string | symbol, listener: Function): void {
+    public on(eventEmitter: EventEmitter, event: string | symbol, listener: (...args: any[]) => void): void {
         eventEmitter.on(event, listener);
         this._removeSubscriptionActions.push(() => eventEmitter.removeListener(event, listener));
     }
@@ -100,7 +100,7 @@ class SubscriptionManager {
             removeSubscriptionAction();
         }
 
-        this._removeSubscriptionActions = [] as [() => void];
+        this._removeSubscriptionActions = [] as (() => void)[];
     }
 }
 
@@ -111,7 +111,7 @@ export interface IAllRequestProperties {
 export class ExecutionTimingsReporter {
     private readonly _allStartTime: HighResTimer;
     private readonly _eventsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
-    private readonly _stepsList = [] as [string];
+    private readonly _stepsList = [] as string[];
     private readonly _subscriptionManager = new SubscriptionManager();
     private readonly _requestProperties = {} as IAllRequestProperties;
 

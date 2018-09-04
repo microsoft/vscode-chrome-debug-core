@@ -40,7 +40,7 @@ export class WebSocketToLikeSocketProxy {
 
             openedWebSocket.on('message', data => {
                 logger.log(`CRDP Proxy - Client to Target: ${data}`);
-                this._socket.send(data);
+                this._socket.send(data.toString());
             });
 
             openedWebSocket.on('close', () => {

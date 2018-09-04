@@ -57,7 +57,7 @@ function getInspectorStubs(mockEventEmitter) {
 
 function getLogStubs(mockEventEmitter) {
     return {
-        enable() { },
+        enable() { return Promise.resolve(); },
         on(eventName, handler) { mockEventEmitter.on(`Log.${eventName}`, handler); }
     };
 }

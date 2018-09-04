@@ -40,7 +40,7 @@ export interface ITargetDiscoveryStrategy {
  * A subclass of WebSocket that logs all traffic
  */
 class LoggingSocket extends WebSocket {
-    constructor(address: string, protocols?: string | string[], options?: WebSocket.IClientOptions) {
+    constructor(address: string, protocols?: string | string[], options?: WebSocket.ClientOptions) {
         super(address, protocols, options);
 
         this.on('error', e => {
@@ -54,7 +54,7 @@ class LoggingSocket extends WebSocket {
         this.on('message', msgStr => {
             let msgObj: any;
             try {
-                msgObj = JSON.parse(msgStr);
+                msgObj = JSON.parse(msgStr.toString());
             } catch (e) {
                 logger.error(`Invalid JSON from target: (${e.message}): ${msgStr}`);
                 return;
