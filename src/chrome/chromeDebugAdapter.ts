@@ -508,7 +508,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
             utils.toVoidP(this.chrome.Debugger.enable()),
             this.chrome.Runtime.enable(),
-            this.chrome.Log.enable(),
+            this.chrome.Log.enable()
+                .catch(e => { }), // Not supported by all runtimes
             this._chromeConnection.run(),
         ];
     }
