@@ -16,7 +16,7 @@ import * as ChromeUtils from './chromeUtils';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer } from './variables';
 import * as variables from './variables';
-import { formatConsoleArguments, formatExceptionDetails } from './consoleHelper';
+import { formatConsoleArguments, formatExceptionDetails, clearConsoleCode } from './consoleHelper';
 import { StoppedEvent2, ReasonType } from './stoppedEvent';
 import { InternalSourceBreakpoint, stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 
@@ -1259,12 +1259,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Shortcut the common log case to reduce unnecessary back and forth
                 let e: DebugProtocol.OutputEvent;
                 if (objs.length === 1 && objs[0].type === 'string') {
-                    let msg = objs[0].value;
+                    let msg: string = objs[0].value;
                     if (isError) {
                         msg = await this.mapFormattedException(msg);
                     }
 
-                    e = new OutputEvent(msg + '\n', category);
+                    if (!msg.endsWith(clearConsoleCode)) {
+                        // If this string will clear the console, don't append a \n
+                        msg += '\n';
+                    }
+
+                    e = new OutputEvent(msg, category);
                 } else {
                     e = new OutputEvent('output', category);
                     e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');

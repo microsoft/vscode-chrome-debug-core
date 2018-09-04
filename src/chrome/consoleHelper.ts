@@ -14,6 +14,8 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
         (`Error: ${variables.getRemoteObjectPreview(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
 }
 
+export const clearConsoleCode = '\u001b[2J';
+
 export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent['type'], args: Crdp.Runtime.RemoteObject[], stackTrace?: Crdp.Runtime.StackTrace): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
     switch (type) {
         case 'log':
@@ -55,11 +57,9 @@ export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent[
         case 'trace':
             args = [{ type: 'string', value: 'console.trace()\n' + stackTraceToString(stackTrace) }];
             break;
-        // case 'clear':
-        // Microsoft/vscode-debugadapter-node#185
-        // Needs https://github.com/Microsoft/vscode/issues/51245 and https://github.com/Microsoft/vscode/issues/51246
-        //     args = [{ type: 'string', value: '\u001b[2J' }];
-        //     break;
+        case 'clear':
+            args = [{ type: 'string', value: clearConsoleCode }];
+            break;
         default:
             // Some types we have to ignore
             return null;
