@@ -179,7 +179,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             });
         });
 
-        test('ProtocolSchema return if the version is at least', function () {
+        test('ProtocolSchema return if the version is at least', () => {
             const schema0dot1 = new ProtocolSchema(0, 1);
             assert.ok(schema0dot1.isAtLeastVersion(0, 0));
             assert.ok(schema0dot1.isAtLeastVersion(0, 1));
@@ -203,6 +203,6 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             assert.ok(schema1dot0.isAtLeastVersion(1, 0));
             assert.ok(!schema1dot0.isAtLeastVersion(1, 1));
             assert.ok(!schema1dot0.isAtLeastVersion(1, 2));
-        })
+        });
     });
 });
