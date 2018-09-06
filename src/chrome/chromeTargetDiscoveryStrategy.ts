@@ -22,7 +22,7 @@ export class ProtocolSchema {
     constructor(private _major: number, private _minor: number) {}
 
     public isAtLeastVersion(major: number, minor: number): boolean {
-        return major > this._major || (major === this._major && minor >= this._minor);
+        return this._major > major || (this._major === major && this._minor >= minor);
     }
 }
 
