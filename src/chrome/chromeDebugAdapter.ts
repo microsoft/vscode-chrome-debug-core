@@ -400,6 +400,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
 
         this._smartStepEnabled = this._launchAttachArgs.smartStep;
+
+        // Use hasOwnProperty to explicitly permit setting a falsy targetFilter.
+        if (args.hasOwnProperty('targetFilter')) {
+            this._chromeConnection.setTargetFilter(args.targetFilter);
+        }
     }
 
     public shutdown(): void {

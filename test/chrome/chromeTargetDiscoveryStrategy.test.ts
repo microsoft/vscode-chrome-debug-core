@@ -143,6 +143,44 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             });
         });
 
+        test('combines filters with a sensible precedence', () => {
+            const targets = [
+                // Skipped for missing `webSocketDebuggerUrl`.
+                {
+                    url: 'http://localhost/foo',
+                    type: 'page',
+                },
+                // Skipped for violation of target filter.
+                {
+                    url: 'http://127.0.0.1/bar',
+                    type: 'webview',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                },
+                // Skipped for violation of URL filter.
+                {
+                    url: 'http://localhost-bad/bat',
+                    type: 'page',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                },
+                // Matches:
+                {
+                    url: 'http://localhost/bat',
+                    type: 'page',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                }];
+            registerTargetListContents(JSON.stringify(targets));
+
+            return getChromeTargetDiscoveryStrategy().getTarget(
+                TARGET_ADDRESS,
+                TARGET_PORT,
+                (target) => target.type === 'page',
+                'http://localhost/*',
+            ).then(target => {
+                delete target.version;
+                assert.deepEqual(target, targets[3]);
+            });
+        });
+
         test('modifies webSocketDebuggerUrl when target and web socket address differ', () => {
             const targets = [
                 {

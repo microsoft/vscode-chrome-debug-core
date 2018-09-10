@@ -115,6 +115,10 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         return this._attachedTarget;
     }
 
+    public setTargetFilter(targetFilter?: ITargetFilter) {
+        this._targetFilter = targetFilter;
+    }
+
     /**
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
