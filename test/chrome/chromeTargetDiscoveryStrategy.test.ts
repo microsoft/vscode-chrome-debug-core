@@ -10,7 +10,7 @@ import { ITargetDiscoveryStrategy } from '../../src/chrome/chromeConnection';
 
 import { NullLogger } from '../../src/nullLogger';
 import { NullTelemetryReporter } from '../../src/telemetry';
-import { ProtocolSchema } from '../../src';
+import { Version } from '../../src';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {
@@ -218,7 +218,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
         });
 
         test('ProtocolSchema return if the version is at least', () => {
-            const schema0dot1 = new ProtocolSchema(0, 1);
+            const schema0dot1 = new Version(0, 1);
             assert.ok(schema0dot1.isAtLeastVersion(0, 0));
             assert.ok(schema0dot1.isAtLeastVersion(0, 1));
             assert.ok(!schema0dot1.isAtLeastVersion(0, 2));
@@ -226,7 +226,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             assert.ok(!schema0dot1.isAtLeastVersion(1, 1));
             assert.ok(!schema0dot1.isAtLeastVersion(1, 2));
 
-            const schema0dot2 = new ProtocolSchema(0, 2);
+            const schema0dot2 = new Version(0, 2);
             assert.ok(schema0dot2.isAtLeastVersion(0, 0));
             assert.ok(schema0dot2.isAtLeastVersion(0, 1));
             assert.ok(schema0dot2.isAtLeastVersion(0, 2));
@@ -234,7 +234,7 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             assert.ok(!schema0dot2.isAtLeastVersion(1, 1));
             assert.ok(!schema0dot2.isAtLeastVersion(1, 2));
 
-            const schema1dot0 = new ProtocolSchema(1, 0);
+            const schema1dot0 = new Version(1, 0);
             assert.ok(schema1dot0.isAtLeastVersion(0, 0));
             assert.ok(schema1dot0.isAtLeastVersion(0, 1));
             assert.ok(schema1dot0.isAtLeastVersion(0, 2));

@@ -10,7 +10,7 @@ import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
-import { utils } from '..';
+import { utils, Version } from '..';
 
 export interface UrlRegexAndFileSet {
     urlRegex: string;
@@ -18,6 +18,11 @@ export interface UrlRegexAndFileSet {
 }
 
 export class BreakOnLoadHelper {
+    private _doesDOMInstrumentationRecieveExtraEvent = false;
+
+    public async setBrowserVersion(version: Version): Promise<void> {
+        this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
+    }
 
     private _instrumentationBreakpointSet = false;
 
@@ -77,7 +82,8 @@ export class BreakOnLoadHelper {
             // Now we wait for all the pending breakpoints to be resolved and then continue
             await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
             logger.log('BreakOnLoadHelper: Finished waiting for breakpoints to get resolved.');
-            return true;
+            let shouldContinue = this._doesDOMInstrumentationRecieveExtraEvent || await this.handleStopOnEntryBreakpointAndContinue(notification);
+            return shouldContinue;
         }
 
         return false;

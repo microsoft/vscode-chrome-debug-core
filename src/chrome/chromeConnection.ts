@@ -9,7 +9,7 @@ import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ChromeTargetDiscovery, ProtocolSchema } from './chromeTargetDiscoveryStrategy';
+import { ChromeTargetDiscovery, TargetVersions } from './chromeTargetDiscoveryStrategy';
 
 import { Client, LikeSocket } from 'noice-json-rpc';
 
@@ -27,7 +27,7 @@ export interface ITarget {
     type: string;
     url?: string;
     webSocketDebuggerUrl: string;
-    version: Promise<ProtocolSchema>;
+    version: Promise<TargetVersions>;
 }
 
 export type ITargetFilter = (target: ITarget) => boolean;
@@ -169,7 +169,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             this.api.Runtime.runIfWaitingForDebugger(),
             (<any>this.api.Runtime).run()
         ])
-        .then(() => { }, e => { });
+        .then(() => { }, () => { });
     }
 
     public close(): void {
@@ -180,7 +180,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         this._socket.on('close', handler);
     }
 
-    public get version(): Promise<ProtocolSchema> {
+    public get version(): Promise<TargetVersions> {
         return this._attachedTarget.version;
     }
 }

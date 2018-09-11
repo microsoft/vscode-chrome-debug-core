@@ -28,7 +28,7 @@ import { NullLogger } from './nullLogger';
 import * as executionTimingsReporter from './executionTimingsReporter';
 
 import { Protocol as Crdp } from 'devtools-protocol';
-import { ProtocolSchema } from './chrome/chromeTargetDiscoveryStrategy';
+import { Version } from './chrome/chromeTargetDiscoveryStrategy';
 
 export {
     chromeConnection,
@@ -55,7 +55,7 @@ export {
     NullLogger,
     executionTimingsReporter,
 
-    ProtocolSchema,
+    Version,
 
     Crdp
 };
