@@ -59,6 +59,8 @@ export class BreakOnLoadHelper {
     }
 
     public async setBrowserVersion(version: Version): Promise<void> {
+        // On version 69 Chrome stopped sending an extra event for DOM Instrumentation: See https://bugs.chromium.org/p/chromium/issues/detail?id=882909
+        // On Chrome 68 we were relying on that event to make Break on load work on breakpoints on the first line of a file. On Chrome 69 we need an alternative way to make it work.
         this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
     }
 
