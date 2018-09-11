@@ -20,10 +20,6 @@ export interface UrlRegexAndFileSet {
 export class BreakOnLoadHelper {
     private _doesDOMInstrumentationRecieveExtraEvent = false;
 
-    public async setBrowserVersion(version: Version): Promise<void> {
-        this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
-    }
-
     private _instrumentationBreakpointSet = false;
 
     // Break on load: Store some mapping between the requested file names, the regex for the file, and the chrome breakpoint id to perform lookup operations efficiently
@@ -60,6 +56,10 @@ export class BreakOnLoadHelper {
 
     private getScriptUrlFromId(scriptId: string): string {
         return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
+    }
+
+    public async setBrowserVersion(version: Version): Promise<void> {
+        this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
     }
 
     /**

@@ -90,7 +90,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             if (jsonResponse) {
                 const response = JSON.parse(jsonResponse);
                 const protocolVersionString = response['Protocol-Version'] as string;
-                const browserWithPrefixVersionString = response['Browser'] as string;
+                const browserWithPrefixVersionString = response.Browser as string;
                 this.logger.log(`Got browser version: ${browserWithPrefixVersionString }`);
                 this.logger.log(`Got debug protocol version: ${protocolVersionString}`);
 
