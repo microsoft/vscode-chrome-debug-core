@@ -10,7 +10,7 @@ import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
-import { utils } from '..';
+import { utils, Version } from '..';
 
 export interface UrlRegexAndFileSet {
     urlRegex: string;
@@ -18,6 +18,7 @@ export interface UrlRegexAndFileSet {
 }
 
 export class BreakOnLoadHelper {
+    private _doesDOMInstrumentationRecieveExtraEvent = false;
 
     private _instrumentationBreakpointSet = false;
 
@@ -57,6 +58,12 @@ export class BreakOnLoadHelper {
         return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
     }
 
+    public async setBrowserVersion(version: Version): Promise<void> {
+        // On version 69 Chrome stopped sending an extra event for DOM Instrumentation: See https://bugs.chromium.org/p/chromium/issues/detail?id=882909
+        // On Chrome 68 we were relying on that event to make Break on load work on breakpoints on the first line of a file. On Chrome 69 we need an alternative way to make it work.
+        this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
+    }
+
     /**
      * Handles the onpaused event.
      * Checks if the event is caused by a stopOnEntry breakpoint of using the regex approach, or the paused event due to the Chrome's instrument approach
@@ -77,7 +84,8 @@ export class BreakOnLoadHelper {
             // Now we wait for all the pending breakpoints to be resolved and then continue
             await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
             logger.log('BreakOnLoadHelper: Finished waiting for breakpoints to get resolved.');
-            return true;
+            let shouldContinue = this._doesDOMInstrumentationRecieveExtraEvent || await this.handleStopOnEntryBreakpointAndContinue(notification);
+            return shouldContinue;
         }
 
         return false;

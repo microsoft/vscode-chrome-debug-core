@@ -586,6 +586,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } catch (e) {
                 // Not supported by older runtimes, ignore it.
             }
+
+            if (this._breakOnLoadHelper) {
+                this._breakOnLoadHelper.setBrowserVersion((await this._chromeConnection.version).browser);
+            }
         }
     }
 

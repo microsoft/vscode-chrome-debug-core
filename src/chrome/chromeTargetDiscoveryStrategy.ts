@@ -14,9 +14,16 @@ import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnec
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
-export class ProtocolSchema {
-    public static unknownVersion(): ProtocolSchema {
-        return new ProtocolSchema(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
+export class Version {
+    static parse(versionString: string): Version {
+        const majorAndMinor = versionString.split('.');
+        const major = parseInt(majorAndMinor[0], 10);
+        const minor = parseInt(majorAndMinor[1], 10);
+        return new Version(major, minor);
+    }
+
+    public static unknownVersion(): Version {
+        return new Version(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
     }
 
     constructor(private _major: number, private _minor: number) {}
@@ -24,6 +31,10 @@ export class ProtocolSchema {
     public isAtLeastVersion(major: number, minor: number): boolean {
         return this._major > major || (this._major === major && this._minor >= minor);
     }
+}
+
+export class TargetVersions {
+    constructor(public readonly protocol: Version, public readonly browser: Version) {}
 }
 
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObservableEvents<IStepStartedEventsEmitter> {
@@ -67,7 +78,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
-    private async _getVersionData(address: string, port: number): Promise<ProtocolSchema> {
+    private async _getVersionData(address: string, port: number): Promise<TargetVersions> {
 
         const url = `http://${address}:${port}/json/version`;
         this.logger.log(`Getting browser and debug protocol version via ${url}`);
@@ -78,9 +89,10 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         try {
             if (jsonResponse) {
                 const response = JSON.parse(jsonResponse);
-                const versionString = response['Protocol-Version'] as string;
-                this.logger.log(`Got browser version: ${response.Browser}`);
-                this.logger.log(`Got debug protocol version: ${versionString}`);
+                const protocolVersionString = response['Protocol-Version'] as string;
+                const browserWithPrefixVersionString = response.Browser as string;
+                this.logger.log(`Got browser version: ${browserWithPrefixVersionString }`);
+                this.logger.log(`Got debug protocol version: ${protocolVersionString}`);
 
                 /* __GDPR__
                    "targetDebugProtocolVersion" : {
@@ -88,16 +100,21 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                        "${include}": [ "${DebugCommonProperties}" ]
                    }
                  */
+
+                const chromePrefix = 'Chrome/';
+                let browserVersion = Version.unknownVersion();
+                if (browserWithPrefixVersionString.startsWith(chromePrefix)) {
+                    const browserVersionString = browserWithPrefixVersionString.substr(chromePrefix.length);
+                    browserVersion = Version.parse(browserVersionString);
+                }
+
                 this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
-                const majorAndMinor = versionString.split('.');
-                const major = parseInt(majorAndMinor[0], 10);
-                const minor = parseInt(majorAndMinor[1], 10);
-                return new ProtocolSchema(major, minor);
+                return new TargetVersions(Version.parse(protocolVersionString), browserVersion);
             }
         } catch (e) {
             this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);
         }
-        return ProtocolSchema.unknownVersion();
+        return new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
     }
 
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
