@@ -147,7 +147,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
 
-    private _breakOnLoadHelper: BreakOnLoadHelper | null;
+    protected _breakOnLoadHelper: BreakOnLoadHelper | null;
 
     // Queue to synchronize new source loaded and source removed events so that 'remove' script events
     // won't be send before the corresponding 'new' event has been sent
