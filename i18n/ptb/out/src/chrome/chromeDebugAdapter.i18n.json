@@ -8,6 +8,7 @@
 	"exceptions.uncaught": "Exceções não capturadas",
 	"exceptions.promise_rejects": "Rejeições de Promessas",
 	"setBPTimedOut": "Tempo de pontos de interrupção expirou",
+	"bp.fail.unbound": "Colocar Breakpoint, mas ainda não tenha aderido",
 	"bp.fail.noscript": "Não foi possível encontrar o script para requisição do ponto de interrupção",
 	"validateBP.sourcemapFail": "Ponto de interrupção ignorado porque o código gerado não foi encontrado (problema de mapa de fontes?).",
 	"validateBP.notFound": "Ponto de interrupção ignorado porque o caminho de destino não foi encontrado",
