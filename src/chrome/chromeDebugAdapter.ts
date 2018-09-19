@@ -329,7 +329,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         this._sourceMapTransformer.launch(args);
-        this._pathTransformer.launch(args);
+        await this._pathTransformer.launch(args);
 
         if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
             this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
@@ -359,7 +359,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._attachMode = true;
         this.commonArgs(args);
         this._sourceMapTransformer.attach(args);
-        this._pathTransformer.attach(args);
+        await this._pathTransformer.attach(args);
 
         if (!args.port) {
             args.port = 9229;

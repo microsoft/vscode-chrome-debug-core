@@ -10,6 +10,9 @@ import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs, IStackTrace
 import * as errors from '../errors';
 import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
+import * as nls from 'vscode-nls';
+
+const localize = nls.loadMessageBundle();
 
 /**
  * Converts a local path from Code to a path on the target.
@@ -29,6 +32,10 @@ export class RemotePathTransformer extends UrlPathTransformer {
     }
 
     private async init(args: ICommonRequestArgs): Promise<void> {
+        if ((args.localRoot && !args.remoteRoot) || (args.remoteRoot && !args.localRoot)) {
+            throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
+        }
+
         // Maybe validate that it's absolute, for either windows or unix
         this._remoteRoot = args.remoteRoot;
 
