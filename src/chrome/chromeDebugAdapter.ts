@@ -2487,9 +2487,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Convert to a Variable object then just copy the relevant fields off
         const variable = await this.remoteObjectToVariable(args.expression, evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
-        if (evalResponse.exceptionDetails) {
+        if (evalResponse.exceptionDetails || !variable.value) {
             let resultValue = variable.value;
-            if (resultValue && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
+            if (resultValue === "" || resultValue && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl' ) {
                 resultValue = errors.evalNotAvailableMsg;
             }
 
