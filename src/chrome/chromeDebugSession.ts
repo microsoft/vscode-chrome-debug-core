@@ -284,6 +284,26 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'shutdown');
         super.shutdown();
     }
+
+    public sendResponse(response: DebugProtocol.Response): void {
+        const originalLogVerbose = logger.verbose;
+        try {
+            logger.verbose = textToLog => {
+                if (response && response.command === 'source' && response.body && response.body.content) {
+                    const clonedResponse = Object.assign({}, response);
+                    clonedResponse.body = Object.assign({}, response.body);
+                    clonedResponse.body.content = '<removed script source for logs>';
+                    return originalLogVerbose.call(logger, `To client: ${JSON.stringify(clonedResponse)}`);
+                } else {
+                    return originalLogVerbose.call(logger, textToLog);
+                }
+            };
+            super.sendResponse(response);
+        } finally {
+            logger.verbose = originalLogVerbose;
+        }
+    }
+
 }
 
 function logVersionInfo(): void {

@@ -62,7 +62,13 @@ class LoggingSocket extends WebSocket {
 
             if (msgObj && !(msgObj.method && msgObj.method.startsWith('Network.'))) {
                 // Not really the right place to examine the content of the message, but don't log annoying Network activity notifications.
-                logger.verbose('← From target: ' + msgStr);
+                if ((msgObj.result && msgObj.result.scriptSource)) {
+                    // If this message contains the source of a script, we log everything but the source
+                    msgObj.result.scriptSource = '<removed script source for logs>';
+                    logger.verbose('← From target: ' + JSON.stringify(msgObj));
+                } else {
+                    logger.verbose('← From target: ' + msgStr);
+                }
             }
         });
     }
