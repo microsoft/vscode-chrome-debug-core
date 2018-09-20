@@ -189,12 +189,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     public get version(): Promise<TargetVersions> {
         return this._attachedTarget.version
             .then(version => {
-                if (version === undefined) {
-                    return new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
-                }
-                let protocolVersion: Version = (version.protocol === undefined) ? Version.unknownVersion() : version.protocol;
-                let browserVersion: Version = (version.browser === undefined) ? Version.unknownVersion() : version.browser;
-                return new TargetVersions(protocolVersion, browserVersion);
+                return (version) ? version : new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
             });
     }
 }
