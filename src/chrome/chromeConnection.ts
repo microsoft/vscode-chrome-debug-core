@@ -9,7 +9,7 @@ import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ChromeTargetDiscovery, TargetVersions } from './chromeTargetDiscoveryStrategy';
+import { ChromeTargetDiscovery, TargetVersions, Version } from './chromeTargetDiscoveryStrategy';
 
 import { Client, LikeSocket } from 'noice-json-rpc';
 
@@ -187,6 +187,9 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public get version(): Promise<TargetVersions> {
-        return this._attachedTarget.version;
+        return this._attachedTarget.version
+            .then(version => {
+                return (version) ? version : new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
+            });
     }
 }
