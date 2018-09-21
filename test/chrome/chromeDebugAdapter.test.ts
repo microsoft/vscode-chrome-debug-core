@@ -697,10 +697,10 @@ suite('ChromeDebugAdapter', () => {
                 new LoadedSourceEvent('new', createSource('about:blank', 'about:blank', 1000)),
                 new LoadedSourceEvent('removed', createSource('about:blank', 'about:blank', 1000)),
                 new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312', 1001))
-              ];
+            ];
 
-              const receivedEvents: DebugProtocol.Event[] = [];
-              sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
+            const receivedEvents: DebugProtocol.Event[] = [];
+            sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
 
             await chromeDebugAdapter.attach(ATTACH_ARGS);
             emitScriptParsed('about:blank', '1');
