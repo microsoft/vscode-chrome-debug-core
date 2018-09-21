@@ -164,7 +164,7 @@ export class SourceMapFactory {
         }
 
         const responseText = await utils.getURL(sourceMapUri);
-        if (cachedSourcemapPath) {
+        if (cachedSourcemapPath && this._enableSourceMapCaching) {
             logger.log(`Sourcemaps.downloadSourceMapContents: Caching sourcemap file at ${cachedSourcemapPath}`);
             await utils.writeFileP(cachedSourcemapPath, responseText);
         }

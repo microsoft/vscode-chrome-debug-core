@@ -37,6 +37,7 @@ export interface ICommonRequestArgs {
     timeout?: number;
     showAsyncStacks?: boolean;
     targetFilter?: ITargetFilter;
+    enableSourceMapCaching?: boolean;
 
     /** Private undocumented property to multiplex the CRDP connection into an additional channel */
     extraCRDPChannelPort?: number;

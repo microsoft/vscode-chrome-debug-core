@@ -20,12 +20,11 @@ import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents,
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
     logFilePath?: string; // obsolete, vscode log dir should be used
-    enableSourceMapCaching?: boolean;
 
     // Override services
     chromeConnection?: typeof ChromeConnection;
     pathTransformer?: { new(): BasePathTransformer };
-    sourceMapTransformer?: { new(sourceHandles: any, enableSourcemapCaching?: boolean): BaseSourceMapTransformer };
+    sourceMapTransformer?: { new(sourceHandles: any): BaseSourceMapTransformer };
     lineColTransformer?: { new(session: any): LineColTransformer };
 }
 

@@ -49,9 +49,8 @@ export class BaseSourceMapTransformer {
 
     protected _isVSClient = false;
 
-    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>, enableSourceMapCaching?: boolean) {
+    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>) {
         this._sourceHandles = sourceHandles;
-        this._enableSourceMapCaching = enableSourceMapCaching;
     }
 
     public get sourceMaps(): SourceMaps {
@@ -72,6 +71,7 @@ export class BaseSourceMapTransformer {
 
     protected init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
         if (args.sourceMaps) {
+            this._enableSourceMapCaching = args.enableSourceMapCaching;
             this._sourceMaps = new SourceMaps(args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();

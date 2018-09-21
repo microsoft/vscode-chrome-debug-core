@@ -164,7 +164,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _isVSClient: boolean;
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
@@ -180,7 +180,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
 
         this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
-        this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles, enableSourceMapCaching);
+        this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles);
         this._pathTransformer = new (pathTransformer || RemotePathTransformer)();
 
         this.clearTargetContext();
