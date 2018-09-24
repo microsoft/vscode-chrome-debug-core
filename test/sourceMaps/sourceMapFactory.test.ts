@@ -39,8 +39,8 @@ suite('SourceMapFactory', () => {
      * Should take the same args as the SourceMap constructor, but you can't enforce that with TS.
      * Mocks need to be registered before calling this.
      */
-    function setExpectedConstructorArgs(generatedPath: string, json: string, pathMapping: IPathMapping = undefined): void {
-        const expectedArgs = [generatedPath, json, pathMapping, undefined]; // arguments doesn't have the default param
+    function setExpectedConstructorArgs(generatedPath: string, json: string, pathMapping: IPathMapping = undefined, isVSClient = false): void {
+        const expectedArgs = [generatedPath, json, pathMapping, undefined, isVSClient]; // arguments doesn't have the default param
         function mockSourceMapConstructor(): void {
             assert.deepEqual(
                 Array.prototype.slice.call(arguments),
@@ -62,9 +62,19 @@ suite('SourceMapFactory', () => {
         const PATHMAPPING = { '/': testUtils.pathResolve('/project/app') };
         const FILEDATA = 'data';
 
-        test('resolves inlined sourcemap', () => {
+        test('resolves inlined base64-encoded sourcemap', () => {
             const sourceMapData = JSON.stringify({ sources: [ 'a.ts', 'b.ts' ]});
             const encodedData = 'data:application/json;base64,' + new Buffer(sourceMapData).toString('base64');
+            setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
+
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
+                assert(sourceMap);
+            });
+        });
+
+        test('resolves inlined URI-encoded sourcemap', () => {
+            const sourceMapData = JSON.stringify({ sources: [ 'a.ts', 'b.ts' ]});
+            const encodedData = 'data:application/json,' + encodeURI(sourceMapData);
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
 
             return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
@@ -80,7 +90,8 @@ suite('SourceMapFactory', () => {
         });
 
         test('handles an absolute path to the sourcemap', () => {
-            const absMapPath = testUtils.pathResolve('/files/app.js.map');
+            // Can't be an absolute local path - just a /path from webroot
+            const absMapPath = '/files/app.js.map';
             testUtils.registerMockReadFile({ absPath: testUtils.pathResolve('/project/app/files/app.js.map'), data: FILEDATA});
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, PATHMAPPING);
 
@@ -113,7 +124,7 @@ suite('SourceMapFactory', () => {
         });
 
         test('looks for a map file next to the script', () => {
-            const badMapPath = testUtils.pathResolve('/files/app.js.map');
+            const badMapPath = '/files/app.js.map';
             testUtils.registerMockReadFile(
                 { absPath: testUtils.pathResolve('/project/app/files/app.js.map'), data: null},
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });

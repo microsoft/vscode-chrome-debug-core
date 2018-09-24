@@ -2,33 +2,40 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as path from 'path';
 import * as fs from 'fs';
-
-import { BasePathTransformer } from './basePathTransformer';
-
+import * as path from 'path';
 import { logger } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import * as utils from '../utils';
+import { IAttachRequestArgs, ICommonRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import * as errors from '../errors';
-import { ISetBreakpointsArgs, ICommonRequestArgs, IAttachRequestArgs, ILaunchRequestArgs, IStackTraceResponseBody } from '../debugAdapterInterfaces';
+import { UrlPathTransformer } from '../transformers/urlPathTransformer';
+import * as utils from '../utils';
+import * as nls from 'vscode-nls';
+
+const localize = nls.loadMessageBundle();
 
 /**
  * Converts a local path from Code to a path on the target.
  */
-export class RemotePathTransformer extends BasePathTransformer {
+export class RemotePathTransformer extends UrlPathTransformer {
     private _localRoot: string;
     private _remoteRoot: string;
 
-    public launch(args: ILaunchRequestArgs): Promise<void> {
+    public async launch(args: ILaunchRequestArgs): Promise<void> {
+        await super.launch(args);
         return this.init(args);
     }
 
-    public attach(args: IAttachRequestArgs): Promise<void> {
+    public async attach(args: IAttachRequestArgs): Promise<void> {
+        await super.attach(args);
         return this.init(args);
     }
 
-    private init(args: ICommonRequestArgs): Promise<void> {
+    private async init(args: ICommonRequestArgs): Promise<void> {
+        if ((args.localRoot && !args.remoteRoot) || (args.remoteRoot && !args.localRoot)) {
+            throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
+        }
+
         // Maybe validate that it's absolute, for either windows or unix
         this._remoteRoot = args.remoteRoot;
 
@@ -55,17 +62,11 @@ export class RemotePathTransformer extends BasePathTransformer {
         return localRootP;
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs): ISetBreakpointsArgs {
-        if (args.source.path) {
-            args.source.path = this.getTargetPathFromClientPath(args.source.path);
-        }
+    public async scriptParsed(scriptPath: string): Promise<string> {
+        scriptPath = await super.scriptParsed(scriptPath);
+        scriptPath = this.getClientPathFromTargetPath(scriptPath) || scriptPath;
 
-        return super.setBreakpoints(args);
-    }
-
-    public scriptParsed(scriptPath: string): Promise<string> {
-        scriptPath = this.getClientPathFromTargetPath(scriptPath);
-        return super.scriptParsed(scriptPath);
+        return scriptPath;
     }
 
     public async stackTraceResponse(response: IStackTraceResponseBody): Promise<void> {
@@ -73,9 +74,11 @@ export class RemotePathTransformer extends BasePathTransformer {
     }
 
     public async fixSource(source: DebugProtocol.Source): Promise<void> {
+        await super.fixSource(source);
+
         const remotePath = source && source.path;
         if (remotePath) {
-            const localPath = this.getClientPathFromTargetPath(remotePath);
+            const localPath = this.getClientPathFromTargetPath(remotePath) || remotePath;
             if (utils.existsSync(localPath)) {
                 source.path = localPath;
                 source.sourceReference = undefined;
@@ -90,7 +93,8 @@ export class RemotePathTransformer extends BasePathTransformer {
     }
 
     public getClientPathFromTargetPath(remotePath: string): string {
-        if (!this.shouldMapPaths(remotePath)) return remotePath;
+        remotePath = super.getClientPathFromTargetPath(remotePath) || remotePath;
+        if (!this.shouldMapPaths(remotePath)) return '';
 
         const relPath = relative(this._remoteRoot, remotePath);
         let localPath = join(this._localRoot, relPath);
@@ -101,6 +105,7 @@ export class RemotePathTransformer extends BasePathTransformer {
     }
 
     public getTargetPathFromClientPath(localPath: string): string {
+        localPath = super.getTargetPathFromClientPath(localPath) || localPath;
         if (!this.shouldMapPaths(localPath)) return localPath;
 
         const relPath = relative(this._localRoot, localPath);

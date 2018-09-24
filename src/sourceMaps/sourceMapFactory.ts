@@ -25,7 +25,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string): Promise<SourceMap> {
+    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (this._pathMapping) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
@@ -48,7 +48,7 @@ export class SourceMapFactory {
             if (contents) {
                 try {
                     // Throws for invalid JSON
-                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides);
+                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides, isVSClient);
                 } catch (e) {
                     logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                     return null;
@@ -63,16 +63,22 @@ export class SourceMapFactory {
      * Parses sourcemap contents from inlined base64-encoded data
      */
     private getInlineSourceMapContents(sourceMapData: string): string {
-        const lastCommaPos = sourceMapData.lastIndexOf(',');
-        if (lastCommaPos < 0) {
+        const firstCommaPos = sourceMapData.indexOf(',');
+        if (firstCommaPos < 0) {
             logger.log(`SourceMaps.getInlineSourceMapContents: Inline sourcemap is malformed. Starts with: ${sourceMapData.substr(0, 200)}`);
             return null;
         }
+        const header = sourceMapData.substr(0, firstCommaPos);
+        const data = sourceMapData.substr(firstCommaPos + 1);
 
-        const data = sourceMapData.substr(lastCommaPos + 1);
         try {
-            const buffer = new Buffer(data, 'base64');
-            return buffer.toString();
+            if (header.indexOf(';base64') !== -1) {
+                const buffer = new Buffer(data, 'base64');
+                return buffer.toString();
+            } else {
+                // URI encoded.
+                return decodeURI(data);
+            }
         } catch (e) {
             logger.error(`SourceMaps.getInlineSourceMapContents: exception while processing data uri (${e.stack})`);
         }
@@ -105,8 +111,9 @@ export class SourceMapFactory {
     private loadSourceMapContents(mapPathOrURL: string): Promise<string> {
         let contentsP: Promise<string>;
         if (utils.isURL(mapPathOrURL) && !utils.isFileUrl(mapPathOrURL)) {
+            logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
             contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(e => {
-                logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap`);
+                logger.log(`SourceMaps.loadSourceMapContents: Could not download sourcemap from ${mapPathOrURL}`);
                 return null;
             });
         } else {
@@ -128,12 +135,19 @@ export class SourceMapFactory {
     }
 
     private async downloadSourceMapContents(sourceMapUri: string): Promise<string> {
-        if (url.parse(sourceMapUri).hostname === 'localhost') {
-            sourceMapUri = sourceMapUri.replace('localhost', '127.0.0.1');
+        try {
+            return await this._downloadSourceMapContents(sourceMapUri);
+        } catch (e) {
+            if (url.parse(sourceMapUri).hostname === 'localhost') {
+                logger.log(`Sourcemaps.downloadSourceMapContents: downlading from 127.0.0.1 instead of localhost`);
+                return this._downloadSourceMapContents(sourceMapUri.replace('localhost', '127.0.0.1'));
+            }
+
+            throw e;
         }
+    }
 
-        logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${sourceMapUri}`);
-
+    private async _downloadSourceMapContents(sourceMapUri: string): Promise<string> {
         // use sha256 to ensure the hash value can be used in filenames
         let cachedSourcemapPath: string;
         if (this._enableSourceMapCaching) {
@@ -150,7 +164,7 @@ export class SourceMapFactory {
         }
 
         const responseText = await utils.getURL(sourceMapUri);
-        if (cachedSourcemapPath) {
+        if (cachedSourcemapPath && this._enableSourceMapCaching) {
             logger.log(`Sourcemaps.downloadSourceMapContents: Caching sourcemap file at ${cachedSourcemapPath}`);
             await utils.writeFileP(cachedSourcemapPath, responseText);
         }

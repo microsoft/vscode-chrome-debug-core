@@ -14,9 +14,10 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
         (`Error: ${variables.getRemoteObjectPreview(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
 }
 
-export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
-    let args: Crdp.Runtime.RemoteObject[];
-    switch (m.type) {
+export const clearConsoleCode = '\u001b[2J';
+
+export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent['type'], args: Crdp.Runtime.RemoteObject[], stackTrace?: Crdp.Runtime.StackTrace): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
+    switch (type) {
         case 'log':
         case 'debug':
         case 'info':
@@ -25,25 +26,25 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
         case 'dir':
         case 'timeEnd':
         case 'count':
-            args = resolveParams(m);
+            args = resolveParams(args);
             break;
         case 'assert':
-            const formattedParams = m.args.length ?
+            const formattedParams = args.length ?
                 // 'assert' doesn't support format specifiers
-                resolveParams(m, /*skipFormatSpecifiers=*/true) :
+                resolveParams(args, /*skipFormatSpecifiers=*/true) :
                 [];
 
             const assertMsg = (formattedParams[0] && formattedParams[0].type === 'string') ?
                 formattedParams.shift().value :
                 '';
-            let outputText = `Assertion failed: ${assertMsg}\n` + stackTraceToString(m.stackTrace);
+            let outputText = `Assertion failed: ${assertMsg}\n` + stackTraceToString(stackTrace);
 
             args = [{ type: 'string', value: outputText }, ...formattedParams];
             break;
         case 'startGroup':
         case 'startGroupCollapsed':
             let startMsg = '‹Start group›';
-            const formattedGroupParams = resolveParams(m);
+            const formattedGroupParams = resolveParams(args);
             if (formattedGroupParams.length && formattedGroupParams[0].type === 'string') {
                 startMsg += ': ' + formattedGroupParams.shift().value;
             }
@@ -54,29 +55,32 @@ export function formatConsoleArguments(m: Crdp.Runtime.ConsoleAPICalledEvent): {
             args = [{ type: 'string', value: '‹End group›' }];
             break;
         case 'trace':
-            args = [{ type: 'string', value: 'console.trace()\n' + stackTraceToString(m.stackTrace) }];
+            args = [{ type: 'string', value: 'console.trace()\n' + stackTraceToString(stackTrace) }];
+            break;
+        case 'clear':
+            args = [{ type: 'string', value: clearConsoleCode }];
             break;
         default:
             // Some types we have to ignore
             return null;
     }
 
-    const isError = m.type === 'assert' || m.type === 'error';
+    const isError = type === 'assert' || type === 'error';
     return { args, isError };
 }
 
 /**
  * Collapse non-object arguments, and apply format specifiers (%s, %d, etc). Return a reduced a formatted list of RemoteObjects.
  */
-function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifiers?: boolean): Crdp.Runtime.RemoteObject[] {
-    if (!m.args.length || m.args[0].objectId) {
+function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?: boolean): Crdp.Runtime.RemoteObject[] {
+    if (!args.length || args[0].objectId) {
         // If the first arg is not text, nothing is going to happen here
-        return m.args;
+        return args;
     }
 
     // Find all %s, %i, etc in the first argument, which is always the main text. Strip %
     let formatSpecifiers: string[];
-    const firstTextArg = m.args.shift();
+    const firstTextArg = args.shift();
 
     // currentCollapsedStringArg is the accumulated text
     let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
@@ -89,17 +93,19 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
 
     const processedArgs: Crdp.Runtime.RemoteObject[] = [];
     const pushStringArg = (strArg: string) => {
-        if (strArg) {
+        if (typeof strArg === 'string') {
             processedArgs.push({ type: 'string', value: strArg });
         }
     };
 
     // Collapse all text parameters, formatting properly if there's a format specifier
-    for (let argIdx = 0; argIdx < m.args.length; argIdx++) {
-        const arg = m.args[argIdx];
+    for (let argIdx = 0; argIdx < args.length; argIdx++) {
+        const arg = args[argIdx];
 
         const formatSpec = formatSpecifiers.shift();
         const formatted = formatArg(formatSpec, arg);
+
+        currentCollapsedStringArg = currentCollapsedStringArg || '';
 
         if (typeof formatted === 'string') {
             if (formatSpec) {
@@ -112,12 +118,15 @@ function resolveParams(m: Crdp.Runtime.ConsoleAPICalledEvent, skipFormatSpecifie
             // `formatted` is an object - split currentCollapsedStringArg around the current formatSpec and add the object
             const curSpecIdx = currentCollapsedStringArg.indexOf('%' + formatSpec);
             const processedPart = currentCollapsedStringArg.slice(0, curSpecIdx);
-            pushStringArg(processedPart);
+            if (processedPart) {
+                pushStringArg(processedPart);
+            }
+
             currentCollapsedStringArg = currentCollapsedStringArg.slice(curSpecIdx + 2);
             processedArgs.push(formatted);
         } else {
             pushStringArg(currentCollapsedStringArg);
-            currentCollapsedStringArg = '';
+            currentCollapsedStringArg = null;
             processedArgs.push(formatted);
         }
     }

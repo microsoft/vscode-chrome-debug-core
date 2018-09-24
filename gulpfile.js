@@ -100,7 +100,7 @@ gulp.task('build', ['clean'], () => {
     return doBuild(true, true);
 });
 
-gulp.task('dev-build', ['clean'], () => {
+gulp.task('_dev-build', () => {
     return doBuild(false, false);
 });
 
@@ -108,9 +108,9 @@ gulp.task('clean', () => {
     return del(['out', 'lib']);
 });
 
-gulp.task('watch', ['dev-build'], () => {
+gulp.task('watch', ['clean'], () => {
     log('Watching build sources...');
-    return gulp.watch(sources, ['dev-build']);
+    return runSequence('_dev-build', () => gulp.watch(sources, ['_dev-build']));
 });
 
 gulp.task('default', ['build']);

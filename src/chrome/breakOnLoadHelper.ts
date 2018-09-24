@@ -10,6 +10,7 @@ import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import * as ChromeUtils from './chromeUtils';
 import * as assert from 'assert';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
+import { utils, Version } from '..';
 
 export interface UrlRegexAndFileSet {
     urlRegex: string;
@@ -17,6 +18,7 @@ export interface UrlRegexAndFileSet {
 }
 
 export class BreakOnLoadHelper {
+    private _doesDOMInstrumentationRecieveExtraEvent = false;
 
     private _instrumentationBreakpointSet = false;
 
@@ -56,6 +58,12 @@ export class BreakOnLoadHelper {
         return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
     }
 
+    public async setBrowserVersion(version: Version): Promise<void> {
+        // On version 69 Chrome stopped sending an extra event for DOM Instrumentation: See https://bugs.chromium.org/p/chromium/issues/detail?id=882909
+        // On Chrome 68 we were relying on that event to make Break on load work on breakpoints on the first line of a file. On Chrome 69 we need an alternative way to make it work.
+        this._doesDOMInstrumentationRecieveExtraEvent = !version.isAtLeastVersion(69, 0);
+    }
+
     /**
      * Handles the onpaused event.
      * Checks if the event is caused by a stopOnEntry breakpoint of using the regex approach, or the paused event due to the Chrome's instrument approach
@@ -69,15 +77,24 @@ export class BreakOnLoadHelper {
                 let shouldContinue = await this.handleStopOnEntryBreakpointAndContinue(notification);
                 return shouldContinue;
             }
-        } else if (notification.reason === 'EventListener' && notification.data.eventName === 'instrumentation:scriptFirstStatement' ) {
+        } else if (this.isInstrumentationPause(notification)) {
             // This is fired when Chrome stops on the first line of a script when using the setInstrumentationBreakpoint API
-
             const pausedScriptId = notification.callFrames[0].location.scriptId;
+
             // Now we wait for all the pending breakpoints to be resolved and then continue
             await this._chromeDebugAdapter.getBreakpointsResolvedDefer(pausedScriptId).promise;
-            return true;
+            logger.log('BreakOnLoadHelper: Finished waiting for breakpoints to get resolved.');
+            let shouldContinue = this._doesDOMInstrumentationRecieveExtraEvent || await this.handleStopOnEntryBreakpointAndContinue(notification);
+            return shouldContinue;
         }
+
         return false;
+    }
+
+    private isInstrumentationPause(notification: Crdp.Debugger.PausedEvent): boolean {
+        return (notification.reason === 'EventListener' && notification.data.eventName === 'instrumentation:scriptFirstStatement') ||
+            (notification.reason === 'ambiguous' && Array.isArray(notification.data.reasons) &&
+                notification.data.reasons.every(r => r.reason === 'EventListener' && r.auxData.eventName === 'instrumentation:scriptFirstStatement'));
     }
 
     /**
@@ -128,7 +145,7 @@ export class BreakOnLoadHelper {
                 notification.hitBreakpoints = [bp];
                 allStopOnEntryBreakpoints = false;
             } else {
-                const normalizedMappedUrl = this._chromeDebugAdapter.fixPathCasing(mappedUrl);
+                const normalizedMappedUrl = utils.canonicalizeUrl(mappedUrl);
                 if (regexAndFileNames.fileSet.has(normalizedMappedUrl)) {
                     regexAndFileNames.fileSet.delete(normalizedMappedUrl);
                     assert(this._stopOnEntryRequestedFileNameToBreakpointId.delete(normalizedMappedUrl), `Expected to delete break-on-load information associated with url: ${normalizedMappedUrl}`);
@@ -165,14 +182,14 @@ export class BreakOnLoadHelper {
      * Adds a stopOnEntry breakpoint for the given script url
      * Only used when using regex approach for break on load
      */
-    private async addStopOnEntryBreakpoint(url: string, caseSensitivePaths: boolean): Promise<ISetBreakpointResult[]> {
+    private async addStopOnEntryBreakpoint(url: string): Promise<ISetBreakpointResult[]> {
         let responsePs: ISetBreakpointResult[];
         // Check if file already has a stop on entry breakpoint
         if (!this._stopOnEntryRequestedFileNameToBreakpointId.has(url)) {
 
             // Generate regex we need for the file
-            const normalizedUrl = this._chromeDebugAdapter.fixPathCasing(url);
-            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl, caseSensitivePaths);
+            const normalizedUrl = utils.canonicalizeUrl(url);
+            const urlRegex = ChromeUtils.getUrlRegexForBreakOnLoad(normalizedUrl);
 
             // Check if we already have a breakpoint for this regexp since two different files like script.ts and script.js may have the same regexp
             let breakpointId: string;
@@ -220,10 +237,10 @@ export class BreakOnLoadHelper {
      * Handles the AddBreakpoints request when break on load is active
      * Takes the action based on the strategy
      */
-    public async handleAddBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[], caseSensitivePaths: boolean): Promise<ISetBreakpointResult[]> {
+    public async handleAddBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
         // If the strategy is set to regex, we try to match the file where user put the breakpoint through a regex and tell Chrome to put a stop on entry breakpoint there
         if (this._breakOnLoadStrategy === 'regex') {
-        await this.addStopOnEntryBreakpoint(url, caseSensitivePaths);
+        await this.addStopOnEntryBreakpoint(url);
         } else if (this._breakOnLoadStrategy === 'instrument') {
             // Else if strategy is to use Chrome's experimental instrumentation API, we stop on all the scripts at the first statement before execution
             if (!this.instrumentationBreakpointSet) {

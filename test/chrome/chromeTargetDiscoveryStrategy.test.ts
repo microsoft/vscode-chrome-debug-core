@@ -10,6 +10,7 @@ import { ITargetDiscoveryStrategy } from '../../src/chrome/chromeConnection';
 
 import { NullLogger } from '../../src/nullLogger';
 import { NullTelemetryReporter } from '../../src/telemetry';
+import { Version } from '../../src';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {
@@ -142,6 +143,44 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             });
         });
 
+        test('combines filters with a sensible precedence', () => {
+            const targets = [
+                // Skipped for missing `webSocketDebuggerUrl`.
+                {
+                    url: 'http://localhost/foo',
+                    type: 'page',
+                },
+                // Skipped for violation of target filter.
+                {
+                    url: 'http://127.0.0.1/bar',
+                    type: 'webview',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                },
+                // Skipped for violation of URL filter.
+                {
+                    url: 'http://localhost-bad/bat',
+                    type: 'page',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                },
+                // Matches:
+                {
+                    url: 'http://localhost/bat',
+                    type: 'page',
+                    webSocketDebuggerUrl: `ws://${TARGET_ADDRESS}:${TARGET_PORT}`,
+                }];
+            registerTargetListContents(JSON.stringify(targets));
+
+            return getChromeTargetDiscoveryStrategy().getTarget(
+                TARGET_ADDRESS,
+                TARGET_PORT,
+                (target) => target.type === 'page',
+                'http://localhost/*',
+            ).then(target => {
+                delete target.version;
+                assert.deepEqual(target, targets[3]);
+            });
+        });
+
         test('modifies webSocketDebuggerUrl when target and web socket address differ', () => {
             const targets = [
                 {
@@ -176,6 +215,32 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             return getChromeTargetDiscoveryStrategy().getTarget(TARGET_ADDRESS, TARGET_PORT).then(target => {
                 assert.deepEqual(target.webSocketDebuggerUrl, expectedWebSockerDebuggerUrl);
             });
+        });
+
+        test('ProtocolSchema return if the version is at least', () => {
+            const schema0dot1 = new Version(0, 1);
+            assert.ok(schema0dot1.isAtLeastVersion(0, 0));
+            assert.ok(schema0dot1.isAtLeastVersion(0, 1));
+            assert.ok(!schema0dot1.isAtLeastVersion(0, 2));
+            assert.ok(!schema0dot1.isAtLeastVersion(1, 0));
+            assert.ok(!schema0dot1.isAtLeastVersion(1, 1));
+            assert.ok(!schema0dot1.isAtLeastVersion(1, 2));
+
+            const schema0dot2 = new Version(0, 2);
+            assert.ok(schema0dot2.isAtLeastVersion(0, 0));
+            assert.ok(schema0dot2.isAtLeastVersion(0, 1));
+            assert.ok(schema0dot2.isAtLeastVersion(0, 2));
+            assert.ok(!schema0dot2.isAtLeastVersion(1, 0));
+            assert.ok(!schema0dot2.isAtLeastVersion(1, 1));
+            assert.ok(!schema0dot2.isAtLeastVersion(1, 2));
+
+            const schema1dot0 = new Version(1, 0);
+            assert.ok(schema1dot0.isAtLeastVersion(0, 0));
+            assert.ok(schema1dot0.isAtLeastVersion(0, 1));
+            assert.ok(schema1dot0.isAtLeastVersion(0, 2));
+            assert.ok(schema1dot0.isAtLeastVersion(1, 0));
+            assert.ok(!schema1dot0.isAtLeastVersion(1, 1));
+            assert.ok(!schema1dot0.isAtLeastVersion(1, 2));
         });
     });
 });

@@ -9,7 +9,7 @@ import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ChromeTargetDiscovery } from './chromeTargetDiscoveryStrategy';
+import { ChromeTargetDiscovery, TargetVersions, Version } from './chromeTargetDiscoveryStrategy';
 
 import { Client, LikeSocket } from 'noice-json-rpc';
 
@@ -27,6 +27,7 @@ export interface ITarget {
     type: string;
     url?: string;
     webSocketDebuggerUrl: string;
+    version: Promise<TargetVersions>;
 }
 
 export type ITargetFilter = (target: ITarget) => boolean;
@@ -39,7 +40,7 @@ export interface ITargetDiscoveryStrategy {
  * A subclass of WebSocket that logs all traffic
  */
 class LoggingSocket extends WebSocket {
-    constructor(address: string, protocols?: string | string[], options?: WebSocket.IClientOptions) {
+    constructor(address: string, protocols?: string | string[], options?: WebSocket.ClientOptions) {
         super(address, protocols, options);
 
         this.on('error', e => {
@@ -53,7 +54,7 @@ class LoggingSocket extends WebSocket {
         this.on('message', msgStr => {
             let msgObj: any;
             try {
-                msgObj = JSON.parse(msgStr);
+                msgObj = JSON.parse(msgStr.toString());
             } catch (e) {
                 logger.error(`Invalid JSON from target: (${e.message}): ${msgStr}`);
                 return;
@@ -61,7 +62,13 @@ class LoggingSocket extends WebSocket {
 
             if (msgObj && !(msgObj.method && msgObj.method.startsWith('Network.'))) {
                 // Not really the right place to examine the content of the message, but don't log annoying Network activity notifications.
-                logger.verbose('← From target: ' + msgStr);
+                if ((msgObj.result && msgObj.result.scriptSource)) {
+                    // If this message contains the source of a script, we log everything but the source
+                    msgObj.result.scriptSource = '<removed script source for logs>';
+                    logger.verbose('← From target: ' + JSON.stringify(msgObj));
+                } else {
+                    logger.verbose('← From target: ' + msgStr);
+                }
             }
         });
     }
@@ -114,6 +121,10 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         return this._attachedTarget;
     }
 
+    public setTargetFilter(targetFilter?: ITargetFilter) {
+        this._targetFilter = targetFilter;
+    }
+
     /**
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
@@ -164,7 +175,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             this.api.Runtime.runIfWaitingForDebugger(),
             (<any>this.api.Runtime).run()
         ])
-        .then(() => { }, e => { });
+        .then(() => { }, () => { });
     }
 
     public close(): void {
@@ -173,5 +184,12 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
 
     public onClose(handler: () => void): void {
         this._socket.on('close', handler);
+    }
+
+    public get version(): Promise<TargetVersions> {
+        return this._attachedTarget.version
+            .then(version => {
+                return (version) ? version : new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
+            });
     }
 }

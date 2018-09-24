@@ -14,6 +14,7 @@ export interface IMockChromeConnectionAPI {
     Debugger: IMock<Crdp.DebuggerApi>;
     Runtime: IMock<Crdp.RuntimeApi>;
     Inspector: IMock<Crdp.InspectorApi>;
+    Log: IMock<Crdp.LogApi>;
 
     mockEventEmitter: EventEmitter;
 }
@@ -54,35 +55,46 @@ function getInspectorStubs(mockEventEmitter) {
     };
 }
 
+function getLogStubs(mockEventEmitter) {
+    return {
+        enable() { return Promise.resolve(); },
+        on(eventName, handler) { mockEventEmitter.on(`Log.${eventName}`, handler); }
+    };
+}
+
 export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
     const mockEventEmitter = new EventEmitter();
 
-    let mockConsole = Mock.ofInstance<Crdp.ConsoleApi>(<any>getConsoleStubs(mockEventEmitter));
+    const mockConsole = Mock.ofInstance<Crdp.ConsoleApi>(<any>getConsoleStubs(mockEventEmitter));
     mockConsole.callBase = true;
     mockConsole
         .setup(x => x.enable())
         .returns(() => Promise.resolve());
 
-    let mockDebugger = Mock.ofInstance<Crdp.DebuggerApi>(<any>getDebuggerStubs(mockEventEmitter));
+    const mockDebugger = Mock.ofInstance<Crdp.DebuggerApi>(<any>getDebuggerStubs(mockEventEmitter));
     mockDebugger.callBase = true;
     mockDebugger
         .setup(x => x.enable())
         .returns(() => Promise.resolve(null));
 
-    let mockRuntime = Mock.ofInstance<Crdp.RuntimeApi>(<any>getRuntimeStubs(mockEventEmitter));
+    const mockRuntime = Mock.ofInstance<Crdp.RuntimeApi>(<any>getRuntimeStubs(mockEventEmitter));
     mockRuntime.callBase = true;
     mockRuntime
         .setup(x => x.enable())
         .returns(() => Promise.resolve());
 
-    let mockInspector = Mock.ofInstance<Crdp.InspectorApi>(<any>getInspectorStubs(mockEventEmitter));
+    const mockInspector = Mock.ofInstance<Crdp.InspectorApi>(<any>getInspectorStubs(mockEventEmitter));
     mockInspector.callBase = true;
+
+    const mockLog = Mock.ofInstance<Crdp.LogApi>(<any>getLogStubs(mockEventEmitter));
+    mockLog.callBase = true;
 
     const chromeConnectionAPI: Crdp.ProtocolApi = <any>{
         Console: mockConsole.object,
         Debugger: mockDebugger.object,
         Runtime: mockRuntime.object,
-        Inspector: mockInspector.object
+        Inspector: mockInspector.object,
+        Log: mockLog.object
     };
 
     return {
@@ -92,6 +104,7 @@ export function getMockChromeConnectionApi(): IMockChromeConnectionAPI {
         Debugger: mockDebugger,
         Runtime: mockRuntime,
         Inspector: mockInspector,
+        Log: mockLog,
 
         mockEventEmitter
     };

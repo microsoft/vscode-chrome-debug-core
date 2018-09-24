@@ -16,7 +16,7 @@ import * as ChromeUtils from './chromeUtils';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer } from './variables';
 import * as variables from './variables';
-import { formatConsoleArguments, formatExceptionDetails } from './consoleHelper';
+import { formatConsoleArguments, formatExceptionDetails, clearConsoleCode } from './consoleHelper';
 import { StoppedEvent2, ReasonType } from './stoppedEvent';
 import { InternalSourceBreakpoint, stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 
@@ -33,6 +33,7 @@ import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransform
 import { EagerSourceMapTransformer } from '../transformers/eagerSourceMapTransformer';
 import { FallbackToClientPathTransformer } from '../transformers/fallbackToClientPathTransformer';
 import { BreakOnLoadHelper } from './breakOnLoadHelper';
+import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 
 import * as path from 'path';
 
@@ -82,6 +83,10 @@ export interface BreakpointSetResult {
     breakpoint: DebugProtocol.Breakpoint;
 }
 
+export interface IOnPausedResult {
+    didPause: boolean;
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -125,7 +130,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _port: number;
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = new Map<string, boolean>();
-    private _caseSensitivePaths = true;
 
     private _currentStep = Promise.resolve();
     private _currentLogMessage = Promise.resolve();
@@ -143,7 +147,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
 
-    private _breakOnLoadHelper: BreakOnLoadHelper | null;
+    protected _breakOnLoadHelper: BreakOnLoadHelper | null;
 
     // Queue to synchronize new source loaded and source removed events so that 'remove' script events
     // won't be send before the corresponding 'new' event has been sent
@@ -158,7 +162,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, enableSourceMapCaching }: IChromeDebugAdapterOpts,
+    private _isVSClient: boolean;
+
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
@@ -174,7 +180,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
 
         this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
-        this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles, enableSourceMapCaching);
+        this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles);
         this._pathTransformer = new (pathTransformer || RemotePathTransformer)();
 
         this.clearTargetContext();
@@ -232,7 +238,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
-        this._caseSensitivePaths = args.clientID !== 'visualstudio';
+        this._isVSClient = args.clientID === 'visualstudio';
+        utils.setCaseSensitivePaths(!this._isVSClient);
+        this._sourceMapTransformer.isVSClient = this._isVSClient;
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
@@ -282,7 +290,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsExceptionInfoRequest: true,
             supportsDelayedStackTraceLoading: true,
             supportsValueFormattingOptions: true,
-            supportsEvaluateForHovers: true
+            supportsEvaluateForHovers: true,
+            supportsLoadedSourcesRequest: true
         };
     }
 
@@ -312,8 +321,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     */
     public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<void> {
         this.commonArgs(args);
+
+        if (args.pathMapping) {
+            for (const urlToMap in args.pathMapping) {
+                args.pathMapping[urlToMap] = utils.canonicalizeUrl(args.pathMapping[urlToMap]);
+            }
+        }
+
         this._sourceMapTransformer.launch(args);
-        this._pathTransformer.launch(args);
+        await this._pathTransformer.launch(args);
 
         if (!args.__restart) {
             /* __GDPR__
@@ -339,7 +355,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._attachMode = true;
         this.commonArgs(args);
         this._sourceMapTransformer.attach(args);
-        this._pathTransformer.attach(args);
+        await this._pathTransformer.attach(args);
 
         if (!args.port) {
             args.port = 9229;
@@ -383,6 +399,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
             this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
+        }
+
+        // Use hasOwnProperty to explicitly permit setting a falsy targetFilter.
+        if (args.hasOwnProperty('targetFilter')) {
+            this._chromeConnection.setTargetFilter(args.targetFilter);
         }
     }
 
@@ -432,8 +453,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     ]
                }
              */
-            this.runAndMeasureProcessingTime('target/notification/onPaused', () => {
-                return this.onPaused(params);
+            this.runAndMeasureProcessingTime('target/notification/onPaused', async () => {
+                await this.onPaused(params);
             });
         });
         this.chrome.Debugger.on('resumed', () => this.onResumed());
@@ -455,6 +476,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.on('consoleAPICalled', params => this.onConsoleAPICalled(params));
         this.chrome.Runtime.on('exceptionThrown', params => this.onExceptionThrown(params));
         this.chrome.Runtime.on('executionContextsCleared', () => this.onExecutionContextsCleared());
+        this.chrome.Log.on('entryAdded', params => this.onLogEntryAdded(params));
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
@@ -491,7 +513,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
             utils.toVoidP(this.chrome.Debugger.enable()),
             this.chrome.Runtime.enable(),
-            this._chromeConnection.run()
+            this.chrome.Log.enable()
+                .catch(e => { }), // Not supported by all runtimes
+            this._chromeConnection.run(),
         ];
     }
 
@@ -562,6 +586,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } catch (e) {
                 // Not supported by older runtimes, ignore it.
             }
+
+            if (this._breakOnLoadHelper) {
+                this._breakOnLoadHelper.setBrowserVersion((await this._chromeConnection.version).browser);
+            }
         }
     }
 
@@ -610,10 +638,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<void> {
+    protected async onPaused(notification: Crdp.Debugger.PausedEvent, expectingStopReason = this._expectingStopReason): Promise<IOnPausedResult> {
         if (notification.asyncCallStackTraceId) {
             await this.chrome.Debugger.pauseOnAsyncCall({ parentStackTraceId: notification.asyncCallStackTraceId });
-            return this.chrome.Debugger.resume();
+            await this.chrome.Debugger.resume();
+            return { didPause: false };
         }
 
         this._variableHandles.onPaused();
@@ -631,14 +660,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     .catch(e => {
                         logger.error('Failed to resume due to exception: ' + e.message);
                     });
-                return;
+                return { didPause: false };
             }
         }
 
         // We can tell when we've broken on an exception. Otherwise if hitBreakpoints is set, assume we hit a
         // breakpoint. If not set, assume it was a step. We can't tell the difference between step and 'break on anything'.
         let reason: ReasonType;
-        let smartStepP = Promise.resolve(false);
+        let shouldSmartStep = false;
         if (notification.reason === 'exception') {
             reason = 'exception';
             this._exception = notification.data;
@@ -649,7 +678,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (this._promiseRejectExceptionFilterEnabled && !this._pauseOnPromiseRejections) {
                 this.chrome.Debugger.resume()
                     .catch(e => { /* ignore failures */ });
-                return;
+                return { didPause: false };
             }
 
             this._exception = notification.data;
@@ -666,39 +695,40 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
                         this.chrome.Debugger.resume()
                             .catch(e => { /* ignore failures */ });
-                        return;
+                        return { didPause: false };
                     }
                 }
             }
         } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
-            smartStepP = this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
+            shouldSmartStep = await this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
         } else {
             reason = 'debugger_statement';
         }
 
         this._expectingStopReason = undefined;
 
-        await smartStepP.then(should => {
-            if (should) {
-                this._smartStepCount++;
-                return this.stepIn(false);
-            } else {
-                if (this._smartStepCount > 0) {
-                    logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
-                    this._smartStepCount = 0;
-                }
-
-                // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
-                // Also with a timeout just to ensure things keep moving
-                const sendStoppedEvent = () => {
-                    return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, this._exception));
-                };
-                return utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
-                    .then(sendStoppedEvent, sendStoppedEvent);
+        if (shouldSmartStep) {
+            this._smartStepCount++;
+            await this.stepIn(false);
+            return { didPause: false };
+        } else {
+            if (this._smartStepCount > 0) {
+                logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);
+                this._smartStepCount = 0;
             }
-        }).catch(err => logger.error('Problem while smart stepping: ' + (err && err.stack) ? err.stack : err));
+
+            // Enforce that the stopped event is not fired until we've sent the response to the step that induced it.
+            // Also with a timeout just to ensure things keep moving
+            const sendStoppedEvent = () => {
+                return this._session.sendEvent(new StoppedEvent2(reason, /*threadId=*/ChromeDebugAdapter.THREAD_ID, this._exception));
+            };
+            await utils.promiseTimeout(this._currentStep, /*timeoutMs=*/300)
+                .then(sendStoppedEvent, sendStoppedEvent);
+
+            return { didPause: true };
+        }
     }
 
     /* __GDPR__
@@ -741,8 +771,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const stackFrame = this.callFrameToStackFrame(frame);
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
         const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
+        if (mapping) {
+            return false;
+        }
 
-        return !mapping;
+        if ((await this.sourceMapTransformer.allSources(clientPath)).length) {
+            return true;
+        }
+
+        return false;
     }
 
     protected onResumed(): void {
@@ -787,6 +824,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async onScriptParsed(script: Crdp.Debugger.ScriptParsedEvent): Promise<void> {
+        // The stack trace and hash can be large and the DA doesn't need it.
+        delete script.stackTrace;
+        delete script.hash;
+
         const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
         try {
             this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
@@ -809,16 +850,22 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             this._scriptsById.set(script.scriptId, script);
-            this._scriptsByUrl.set(this.fixPathCasing(script.url), script);
+            this._scriptsByUrl.set(utils.canonicalizeUrl(script.url), script);
 
             const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
 
             const resolvePendingBPs = async (source: string) => {
-                source = source && this.fixPathCasing(source);
-                const pendingBP = this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source)) || this._pendingBreakpointsByUrl.get(utils.fixDriveLetter(source, true));
-                if (pendingBP && (!pendingBP.setWithPath || this.fixPathCasing(pendingBP.setWithPath) === source)) {
+                source = source && utils.canonicalizeUrl(source);
+                const pendingBP = this._pendingBreakpointsByUrl.get(source);
+                if (pendingBP && (!pendingBP.setWithPath || utils.canonicalizeUrl(pendingBP.setWithPath) === source)) {
+                    logger.log(`OnScriptParsed.resolvePendingBPs: Resolving pending breakpoints: ${JSON.stringify(pendingBP)}`);
                     await this.resolvePendingBreakpoint(pendingBP);
                     this._pendingBreakpointsByUrl.delete(source);
+                } else if (source) {
+                    const sourceFileName = path.basename(source).toLowerCase();
+                    if (Array.from(this._pendingBreakpointsByUrl.keys()).find(key => key.toLowerCase().indexOf(sourceFileName) > -1)) {
+                        logger.log(`OnScriptParsed.resolvePendingBPs: The following pending breakpoints won't be resolved: ${JSON.stringify(pendingBP)} pendingBreakpointsByUrl = ${JSON.stringify([...this._pendingBreakpointsByUrl])} source = ${source}`);
+                    }
                 }
             };
 
@@ -857,6 +904,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
+        const source = await this.scriptToSource(script);
+
         // This is a workaround for an edge bug, see https://github.com/Microsoft/vscode-chrome-debug-core/pull/329
         switch (loadedSourceEventReason) {
             case 'new':
@@ -878,7 +927,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 telemetry.reportEvent('LoadedSourceEventError', { issue: 'Unknown reason', reason: loadedSourceEventReason });
         }
 
-        const scriptEvent = await this.scriptToLoadedSourceEvent(loadedSourceEventReason, script);
+        const scriptEvent = new LoadedSourceEvent(loadedSourceEventReason, source as any);
 
         this._session.sendEvent(scriptEvent);
     }
@@ -1047,7 +1096,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         logger.log(`Setting the skip file status for: ${aPath} to ${newStatus}`);
         this._skipFileStatuses.set(aPath, newStatus);
 
-        const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath);
+        const targetPath = this._pathTransformer.getTargetPathFromClientPath(generatedPath) || generatedPath;
         const script = this.getScriptByUrl(targetPath);
 
         await this.resolveSkipFiles(script, generatedPath, sources, /*toggling=*/true);
@@ -1093,7 +1142,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
 
         if (!somethingChanged) {
-            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath, this._caseSensitivePaths), 'i'));
+            this._blackboxedRegexes.push(new RegExp(utils.pathToRegex(skipPath), 'i'));
         }
 
         this.refreshBlackboxPatterns();
@@ -1170,8 +1219,42 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        const result = formatConsoleArguments(event);
-        const stack = stackTraceWithoutLogpointFrame(event);
+        const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
+        const stack = stackTraceWithoutLogpointFrame(event.stackTrace);
+        if (result) {
+            this.logObjects(result.args, result.isError, stack);
+        }
+    }
+
+    private onLogEntryAdded(event: Crdp.Log.EntryAddedEvent): void {
+        // The Debug Console doesn't give the user a way to filter by level, just ignore 'verbose' logs
+        if (event.entry.level === 'verbose') {
+            return;
+        }
+
+        const args = event.entry.args || [];
+
+        let text = event.entry.text || '';
+        if (event.entry.url && !event.entry.stackTrace) {
+            if (text) {
+                text += ' ';
+            }
+
+            text += `[${event.entry.url}]`;
+        }
+
+        if (text) {
+            args.unshift({
+                type: 'string',
+                value: text
+            });
+        }
+
+        const type = event.entry.level === 'error' ? 'error' :
+            event.entry.level === 'warning' ? 'warning' :
+            'log';
+        const result = formatConsoleArguments(type, args, event.entry.stackTrace);
+        const stack = event.entry.stackTrace;
         if (result) {
             this.logObjects(result.args, result.isError, stack);
         }
@@ -1186,12 +1269,17 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 // Shortcut the common log case to reduce unnecessary back and forth
                 let e: DebugProtocol.OutputEvent;
                 if (objs.length === 1 && objs[0].type === 'string') {
-                    let msg = objs[0].value;
+                    let msg: string = objs[0].value;
                     if (isError) {
                         msg = await this.mapFormattedException(msg);
                     }
 
-                    e = new OutputEvent(msg + '\n', category);
+                    if (!msg.endsWith(clearConsoleCode)) {
+                        // If this string will clear the console, don't append a \n
+                        msg += '\n';
+                    }
+
+                    e = new OutputEvent(msg, category);
                 } else {
                     e = new OutputEvent('output', category);
                     e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
@@ -1300,6 +1388,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public disconnect(args: DebugProtocol.DisconnectArguments): void {
+        telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
         this.shutdown();
         this.terminateSession('Got disconnect request', args);
     }
@@ -1325,7 +1414,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 const originalArgs = args;
                 args = JSON.parse(JSON.stringify(args));
                 args = this._lineColTransformer.setBreakpoints(args);
-                args = this._sourceMapTransformer.setBreakpoints(args, requestSeq);
+                const sourceMapTransformerResponse = this._sourceMapTransformer.setBreakpoints(args, requestSeq, ids);
+                if (sourceMapTransformerResponse && sourceMapTransformerResponse.args) {
+                    args = sourceMapTransformerResponse.args;
+                }
+                if (sourceMapTransformerResponse && sourceMapTransformerResponse.ids) {
+                    ids = sourceMapTransformerResponse.ids;
+                }
                 args = this._pathTransformer.setBreakpoints(args);
 
                 // Get the target url of the script
@@ -1372,7 +1467,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                             // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
                             const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoints set but not yet bound'), areAllSet);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoint set but not yet bound'), areAllSet);
                         }
                         this._sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this._lineColTransformer.setBreakpointsResponse(body);
@@ -1455,7 +1550,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // setWithPath: record whether we attempted to set the breakpoint, and if so, with which path.
             // We can use this to tell when the script is loaded whether we guessed correctly, and predict whether the BP will bind.
             this._pendingBreakpointsByUrl.set(
-                this.fixPathCasing(args.source.path),
+                utils.canonicalizeUrl(args.source.path),
                 { args, ids, requestSeq, setWithPath: targetScriptUrl });
         }
 
@@ -1497,13 +1592,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             // If script has been parsed, script object won't be undefined and we would have the mapping file on the disk and we can directly set breakpoint using that
             if (!this.breakOnLoadActive || script) {
-                const urlRegex = utils.pathToRegex(url, this._caseSensitivePaths);
+                const urlRegex = utils.pathToRegex(url);
                 responsePs = breakpoints.map(({ line, column = 0, condition }, i) => {
                     return this.addOneBreakpointByUrl(script && script.scriptId, urlRegex, line, column, condition);
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
                 if (this.breakOnLoadActive) {
-                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints, this._caseSensitivePaths);
+                    return await this._breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
                 }
             }
         }
@@ -1944,16 +2039,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private async scriptToLoadedSourceEvent(reason: LoadedSourceEventReason, script: Crdp.Debugger.ScriptParsedEvent): Promise<LoadedSourceEvent> {
-        const source = await this.scriptToSource(script);
-        return new LoadedSourceEvent(reason, source as any);
-    }
-
     private async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const origin = this.getReadonlyOrigin(script.url);
 
-        const properlyCasedScriptUrl = this.fixPathCasing(script.url);
+        const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(script.url);
@@ -2396,7 +2486,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const evalResponse = await this.waitThenDoEvaluate(args.expression, args.frameId, { generatePreview: true });
 
         // Convert to a Variable object then just copy the relevant fields off
-        const variable = await this.remoteObjectToVariable('', evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
+        const variable = await this.remoteObjectToVariable(args.expression, evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
         if (evalResponse.exceptionDetails) {
             let resultValue = variable.value;
             if (resultValue && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
@@ -2850,11 +2940,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
-        url = this.fixPathCasing(url);
+        url = utils.canonicalizeUrl(url);
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
-    }
-
-    public fixPathCasing(str: string): string {
-        return str && (this._caseSensitivePaths ? str : str.toLowerCase());
     }
 }

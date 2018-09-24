@@ -58,6 +58,10 @@ suite('ChromeUtils', () => {
             assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com', PATH_MAPPING), '');
         });
 
+        test('multiple path parts are handled correctly', () => {
+            assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com/foo/bar.js', { '/': 'c:\\site1', '/foo': 'c:\\site2' }), 'c:\\site2\\bar.js');
+        });
+
         test('it searches the disk for a path that exists, built from the url', () => {
             const statSync = (aPath: string) => {
                 if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');

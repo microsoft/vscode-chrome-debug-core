@@ -103,7 +103,9 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
     }
 
     // Dealing with the path portion of either a url or an absolute path to remote file.
-    const pathParts = pathName.split(/[\/\\]/);
+    const pathParts = pathName
+        .replace(/^\//, '') // Strip leading /
+        .split(/[\/\\]/);
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
         const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
@@ -294,9 +296,9 @@ export function isEvalScript(scriptPath: string): boolean {
 /* Constructs the regex for files to enable break on load
 For example, for a file index.js the regex will match urls containing index.js, index.ts, abc/index.ts, index.bin.js etc
 It won't match index100.js, indexabc.ts etc */
-export function getUrlRegexForBreakOnLoad(url: string, caseSensitivePaths: boolean): string {
+export function getUrlRegexForBreakOnLoad(url: string): string {
     const fileNameWithoutFullPath = path.parse(url).base;
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
-    const escapedFileName = pathToRegex(fileNameWithoutExtension, caseSensitivePaths);
+    const escapedFileName = pathToRegex(fileNameWithoutExtension);
     return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
 }

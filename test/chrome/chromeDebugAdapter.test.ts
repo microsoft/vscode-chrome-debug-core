@@ -4,6 +4,8 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
+import { logger } from 'vscode-debugadapter';
+
 import { getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer } from '../mocks/transformerMocks';
 import { getMockChromeConnectionApi, IMockChromeConnectionAPI } from '../mocks/debugProtocolMocks';
 
@@ -22,6 +24,7 @@ import { Protocol as Crdp } from 'devtools-protocol';
 
 import * as testUtils from '../testUtils';
 import * as utils from '../../src/utils';
+import * as fs from 'fs';
 
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
@@ -108,11 +111,14 @@ suite('ChromeDebugAdapter', () => {
         /* tslint:enable */
     }
 
-    teardown(() => {
+    teardown(async () => {
         sendEventHandler = undefined;
         testUtils.removeUnhandledRejectionListener();
         mockery.deregisterAll();
         mockery.disable();
+
+        // To avoid warnings about leaking event listeners
+        await logger.dispose();
 
         mockChromeConnection.verifyAll();
         mockChrome.Debugger.verifyAll();
@@ -186,7 +192,7 @@ suite('ChromeDebugAdapter', () => {
                 const location = { scriptId, lineNumber, columnNumber };
 
                 if (url) {
-                    const urlRegex = utils.pathToRegex(url, true);
+                    const urlRegex = utils.pathToRegex(url);
                     mockChrome.Debugger
                         .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex, lineNumber, columnNumber, condition })))
                         .returns(() => Promise.resolve(
@@ -359,7 +365,7 @@ suite('ChromeDebugAdapter', () => {
             const expectedResponse: ISetBreakpointsResponseBody = {
                 breakpoints: [{ line: location.lineNumber, column: location.columnNumber, verified: true, id: 1000 }]};
 
-            const expectedRegex = utils.pathToRegex(FILE_NAME, true);
+            const expectedRegex = utils.pathToRegex(FILE_NAME);
             mockChrome.Debugger
                 .setup(x => x.setBreakpointByUrl(It.isValue({ urlRegex: expectedRegex, lineNumber: breakpoints[0].line, columnNumber: breakpoints[0].column, condition: undefined })))
                 .returns(() => Promise.resolve(
@@ -394,10 +400,10 @@ suite('ChromeDebugAdapter', () => {
             mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
                 .returns(() => Promise.resolve(generatedScriptPath));
 
-            mockSourceMapTransformer.setup(x => x.setBreakpoints(It.isAny(), It.isAnyNumber()))
-                .returns((args: ISetBreakpointsArgs) => {
+            mockSourceMapTransformer.setup(x => x.setBreakpoints(It.isAny(), It.isAnyNumber(), It.isAny()))
+                .returns(( args: ISetBreakpointsArgs, ids: number[]) => {
                     args.source.path = generatedScriptPath;
-                    return args;
+                    return { args, ids };
                 });
 
             setBp_emitScriptParsed(generatedScriptPath, undefined, [authoredSourcePath]);
@@ -603,6 +609,78 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
+        // This is needed for Edge debug adapter, please keep the logic of sendLoadedSourceEvent()
+        test('tests that sendLoadedSourceEvent will set the `reason` parameter based on our internal view of the events we sent to the client even if fs.access takes unexpected times while blocking async', async () => {
+            let eventIndex = 0;
+            sendEventHandler = (event) => {
+                switch (eventIndex) {
+                    case 0:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('new', event.body.reason);
+                        break;
+                    case 1:
+                        assert.equal('loadedSource', event.event);
+                        assert.notEqual(null, event.body);
+                        assert.equal('changed', event.body.reason);
+                        break;
+                    default:
+                        throw new RangeError('Unexpected event index');
+                }
+                ++eventIndex;
+            };
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+
+            const originalFSAccess = fs.access;
+            let callIndex = 0;
+            let callbackForFirstEvent = null;
+
+            /* Mock fs.access so the first call will block until the second call is finished */
+            (fs as any).access = (path, callback) => {
+                if (callIndex === 0) {
+                    callbackForFirstEvent = callback;
+                    // Blocking first fs.access until second call is finished
+                    ++callIndex;
+                } else {
+                    callback();
+
+                    if (callbackForFirstEvent !== null) {
+                        // Second call went through. Unblocking first call
+                        setTimeout(callbackForFirstEvent, 50);
+                        callbackForFirstEvent = null;
+                    }
+                }
+            };
+
+            try {
+                const firstEvent = (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                });
+                const secondEvent =  (<any>chromeDebugAdapter).sendLoadedSourceEvent({
+                    scriptId: 1,
+                    url: '',
+                    startLine: 0,
+                    startColumn: 0,
+                    endLine: 0,
+                    endColumn: 0,
+                    executionContextId: 0,
+                    hash: ''
+                });
+
+                await Promise.all([firstEvent, secondEvent]);
+            } finally {
+                (fs as any).access = originalFSAccess;
+            }
+        });
+
         function createSource(name: string, path?: string, sourceReference?: number, origin?: string): Source {
             return <Source>{
                 name: name,
@@ -618,11 +696,11 @@ suite('ChromeDebugAdapter', () => {
                 new InitializedEvent(),
                 new LoadedSourceEvent('new', createSource('about:blank', 'about:blank', 1000)),
                 new LoadedSourceEvent('removed', createSource('about:blank', 'about:blank', 1000)),
-                new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312/', 1001))
-              ];
+                new LoadedSourceEvent('new', createSource('localhost:61312', 'http://localhost:61312', 1001))
+            ];
 
-              const receivedEvents: DebugProtocol.Event[] = [];
-              sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
+            const receivedEvents: DebugProtocol.Event[] = [];
+            sendEventHandler = (event: DebugProtocol.Event) => { receivedEvents.push(event); };
 
             await chromeDebugAdapter.attach(ATTACH_ARGS);
             emitScriptParsed('about:blank', '1');

@@ -14,6 +14,29 @@ import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnec
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
+export class Version {
+    static parse(versionString: string): Version {
+        const majorAndMinor = versionString.split('.');
+        const major = parseInt(majorAndMinor[0], 10);
+        const minor = parseInt(majorAndMinor[1], 10);
+        return new Version(major, minor);
+    }
+
+    public static unknownVersion(): Version {
+        return new Version(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
+    }
+
+    constructor(private _major: number, private _minor: number) {}
+
+    public isAtLeastVersion(major: number, minor: number): boolean {
+        return this._major > major || (this._major === major && this._minor >= minor);
+    }
+}
+
+export class TargetVersions {
+    constructor(public readonly protocol: Version, public readonly browser: Version) {}
+}
+
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObservableEvents<IStepStartedEventsEmitter> {
     private logger: Logger.ILogger;
     private telemetry: telemetry.ITelemetryReporter;
@@ -55,11 +78,49 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
     }
 
+    private async _getVersionData(address: string, port: number): Promise<TargetVersions> {
+
+        const url = `http://${address}:${port}/json/version`;
+        this.logger.log(`Getting browser and debug protocol version via ${url}`);
+
+        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
+            .catch(e => this.logger.log(`There was an error connecting to ${url} : ${e.message}`));
+
+        try {
+            if (jsonResponse) {
+                const response = JSON.parse(jsonResponse);
+                const protocolVersionString = response['Protocol-Version'] as string;
+                const browserWithPrefixVersionString = response.Browser as string;
+                this.logger.log(`Got browser version: ${browserWithPrefixVersionString }`);
+                this.logger.log(`Got debug protocol version: ${protocolVersionString}`);
+
+                /* __GDPR__
+                   "targetDebugProtocolVersion" : {
+                       "debugProtocolVersion" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
+                       "${include}": [ "${DebugCommonProperties}" ]
+                   }
+                 */
+
+                const chromePrefix = 'Chrome/';
+                let browserVersion = Version.unknownVersion();
+                if (browserWithPrefixVersionString.startsWith(chromePrefix)) {
+                    const browserVersionString = browserWithPrefixVersionString.substr(chromePrefix.length);
+                    browserVersion = Version.parse(browserVersionString);
+                }
+
+                this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
+                return new TargetVersions(Version.parse(protocolVersionString), browserVersion);
+            }
+        } catch (e) {
+            this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);
+        }
+        return new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
+    }
+
     private async _getTargets(address: string, port: number): Promise<ITarget[]> {
-        // Temporary workaround till Edge fixes this bug: https://microsoft.visualstudio.com/OS/_workitems?id=15517727&fullScreen=false&_a=edit
-        // Chrome and Node alias /json to /json/list so this should work too
-        const url = `http://${address}:${port}/json/list`;
-        this.logger.log(`Discovering targets via ${url}`);
+
+        // Get the browser and the protocol version
+        const version = this._getVersionData(address, port);
 
         /* __GDPR__FRAGMENT__
            "StepNames" : {
@@ -67,7 +128,14 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
            }
          */
         this.events.emitStepStarted('Attach.RequestDebuggerTargetsInformation');
-        const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
+
+        const checkDiscoveryEndpoint = (url: string) => {
+            this.logger.log(`Discovering targets via ${url}`);
+            return utils.getURL(url, { headers: { Host: 'localhost' } });
+        };
+
+        const jsonResponse = await checkDiscoveryEndpoint(`http://${address}:${port}/json/list`)
+            .catch(() => checkDiscoveryEndpoint(`http://${address}:${port}/json`))
             .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
 
         /* __GDPR__FRAGMENT__
@@ -80,7 +148,11 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             const responseArray = JSON.parse(jsonResponse);
             if (Array.isArray(responseArray)) {
                 return (responseArray as ITarget[])
-                    .map(target => this._fixRemoteUrl(address, port, target));
+                    .map(target => {
+                        this._fixRemoteUrl(address, port, target);
+                        target.version = version;
+                        return target;
+                    });
             } else {
                 return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
             }
