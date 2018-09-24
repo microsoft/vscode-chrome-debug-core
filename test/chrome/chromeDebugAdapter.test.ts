@@ -754,6 +754,18 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
+        test('returns error with localized message when watch variable is missing', () => {
+            const expression = 'zzz';
+            const context = 'watch';
+            const result: Crdp.Runtime.RemoteObject = { type: 'object', description: '', subtype: 'error' };
+            setupEvalMock(expression, result);
+
+            return chromeDebugAdapter.evaluate({ expression, context }).then(
+                () => Promise.reject(new Error('Expected method to reject')),
+                () => {}
+            );
+        });
+
         test('calls Debugger.evaluateOnCallFrame when paused', () => {
             const callFrameId = '1';
             const expression = '1+1';

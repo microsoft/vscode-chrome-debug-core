@@ -2729,7 +2729,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             } else {
                 propCountP = this.getCollectionNumPropsByEval(object.objectId);
             }
-        } else {
+        } else if (context === 'watch' && object.subtype && object.subtype === 'error') {
+            propCountP = Promise.reject(new Error(errors.evalNotAvailableMsg));
+        }
+        else {
             propCountP = Promise.resolve({
                 indexedVariables: undefined,
                 namedVariables: undefined
