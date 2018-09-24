@@ -40,7 +40,7 @@ export interface ITargetDiscoveryStrategy {
  * A subclass of WebSocket that logs all traffic
  */
 class LoggingSocket extends WebSocket {
-    constructor(address: string, protocols?: string | string[], options?: WebSocket.IClientOptions) {
+    constructor(address: string, protocols?: string | string[], options?: WebSocket.ClientOptions) {
         super(address, protocols, options);
 
         this.on('error', e => {
