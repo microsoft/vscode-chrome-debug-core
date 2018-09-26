@@ -1461,13 +1461,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     targetScriptUrl = args.source.path;
                 }
 
+                let authoredPath: string;
+                if (args.authoredPath) {
+                    authoredPath = utils.canonicalizeUrl(args.authoredPath);
+                }
+
                 if (targetScriptUrl) {
                     // DebugProtocol sends all current breakpoints for the script. Clear all breakpoints for the script then add all of them
                     const internalBPs = args.breakpoints.map(bp => new InternalSourceBreakpoint(bp));
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
-                        .then(() => this.clearAllBreakpoints(targetScriptUrl, args.authoredPath))
+                        .then(() => this.clearAllBreakpoints(targetScriptUrl, authoredPath))
                         .then(() => this.addBreakpoints(targetScriptUrl, internalBPs))
-                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, args.authoredPath, responses, internalBPs, ids) }));
+                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, authoredPath, responses, internalBPs, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', 'Set breakpoints request timed out'));
 
