@@ -10,6 +10,7 @@ import { logger } from 'vscode-debugadapter';
 import * as utils from '../utils';
 import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
+import { pathToRegex } from '../utils';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -298,7 +299,6 @@ It won't match index100.js, indexabc.ts etc */
 export function getUrlRegexForBreakOnLoad(url: string): string {
     const fileNameWithoutFullPath = path.parse(url).base;
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
-    const escapedFileName = fileNameWithoutExtension.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
+    const escapedFileName = pathToRegex(fileNameWithoutExtension);
     return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
 }

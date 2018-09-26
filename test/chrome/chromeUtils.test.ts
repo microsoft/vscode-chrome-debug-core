@@ -5,6 +5,8 @@
 import * as mockery from 'mockery';
 import * as assert from 'assert';
 import * as _path from 'path';
+import * as _fs from 'fs';
+import * as _utils from '../../src/utils';
 
 import { ITarget } from '../../src/chrome/chromeConnection';
 import * as testUtils from '../testUtils';
@@ -13,6 +15,8 @@ import * as testUtils from '../testUtils';
 import * as _ChromeUtils from '../../src/chrome/chromeUtils';
 
 let path: typeof _path;
+let utils: typeof  _utils;
+let fs: typeof  _fs;
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeUtils';
 suite('ChromeUtils', () => {
@@ -30,6 +34,8 @@ suite('ChromeUtils', () => {
 
         // Get path with win32 mocks
         path = require('path');
+        utils = require('../../src/utils');
+        fs = require('fs');
     });
 
     teardown(() => {
@@ -63,19 +69,29 @@ suite('ChromeUtils', () => {
         });
 
         test('it searches the disk for a path that exists, built from the url', () => {
-            const statSync = (aPath: string) => {
-                if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');
-            };
-            mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), TEST_CLIENT_PATH);
+            const original = fs.statSync;
+            try {
+                (fs.statSync as any) = (aPath: string) => {
+                    if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');
+                };
+
+                assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), TEST_CLIENT_PATH);
+            } finally {
+                fs.statSync = original;
+            }
         });
 
         test(`returns an empty string when it can't resolve a url`, () => {
-            const statSync = (aPath: string) => {
-                throw new Error('Not found');
-            };
-            mockery.registerMock('fs', { statSync });
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), '');
+            const original = fs.statSync;
+            try {
+                (fs.statSync as any) = (aPath: string) => {
+                    throw new Error('Not found');
+                };
+
+                assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), '');
+            } finally {
+                fs.statSync = original;
+            }
         });
 
         test('file:/// urls are returned canonicalized', () => {
@@ -397,24 +413,56 @@ suite('ChromeUtils', () => {
 
     suite('getUrlRegexForBreakOnLoad', () => {
 
-        test('Works with a base file path', () => {
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index123.js'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
-        });
+        suite('when using case sensitive paths', () => {
+            test('Works with a base file path', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index123.js'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
+            });
 
-        test('Strips the nested file path', () => {
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\index123.ts'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
-        });
+            test('Strips the nested file path', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\index.js'), '.*[\\\\\\/]index([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\index123.ts'), '.*[\\\\\\/]index123([^A-z^0-9].*)?$');
+            });
 
-        test('Works case sensitive', () => {
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex.js'), '.*[\\\\\\/]inDex([^A-z^0-9].*)?$');
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\INDex123.ts'), '.*[\\\\\\/]INDex123([^A-z^0-9].*)?$');
-        });
+            test('Works case sensitive', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex.js'), '.*[\\\\\\/]inDex([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\INDex123.ts'), '.*[\\\\\\/]INDex123([^A-z^0-9].*)?$');
+            });
 
-        test('Escapes special characters', () => {
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex?abc.js'), '.*[\\\\\\/]inDex\\?abc([^A-z^0-9].*)?$');
-            assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\IN+De*x123.ts'), '.*[\\\\\\/]IN\\+De\\*x123([^A-z^0-9].*)?$');
-        });
+            test('Escapes special characters', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex?abc.js'), '.*[\\\\\\/]inDex\\?abc([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\IN+De*x123.ts'), '.*[\\\\\\/]IN\\+De\\*x123([^A-z^0-9].*)?$');
+            });
+            });
+
+        suite('when using case insensitive paths', () => {
+            setup(() => {
+                utils.setCaseSensitivePaths(false);
+            });
+
+            teardown(() => {
+                utils.setCaseSensitivePaths(true);
+            });
+
+            test('Works with a base file path', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index.js'), '.*[\\\\\\/][iI][nN][dD][eE][xX]([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('index123.js'), '.*[\\\\\\/][iI][nN][dD][eE][xX]123([^A-z^0-9].*)?$');
+            });
+
+            test('Strips the nested file path', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\index.js'), '.*[\\\\\\/][iI][nN][dD][eE][xX]([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\index123.ts'), '.*[\\\\\\/][iI][nN][dD][eE][xX]123([^A-z^0-9].*)?$');
+            });
+
+            test('Works case sensitive', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex.js'), '.*[\\\\\\/][iI][nN][dD][eE][xX]([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\INDex123.ts'), '.*[\\\\\\/][iI][nN][dD][eE][xX]123([^A-z^0-9].*)?$');
+            });
+
+            test('Escapes special characters', () => {
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\Subfolder\\inDex?abc.js'), '.*[\\\\\\/][iI][nN][dD][eE][xX]\\?[aA][bB][cC]([^A-z^0-9].*)?$');
+                assert.deepEqual(getChromeUtils().getUrlRegexForBreakOnLoad('C:\\Folder\\IN+De*x123.ts'), '.*[\\\\\\/][iI][nN]\\+[dD][eE]\\*[xX]123([^A-z^0-9].*)?$');
+            });
+            });
     });
 });

@@ -4,8 +4,6 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
-import { logger } from 'vscode-debugadapter';
-
 import { getMockLineNumberTransformer, getMockPathTransformer, getMockSourceMapTransformer } from '../mocks/transformerMocks';
 import { getMockChromeConnectionApi, IMockChromeConnectionAPI } from '../mocks/debugProtocolMocks';
 
@@ -29,6 +27,7 @@ import * as fs from 'fs';
 /** Not mocked - use for type only */
 import {ChromeDebugAdapter as _ChromeDebugAdapter } from '../../src/chrome/chromeDebugAdapter';
 import { InitializedEvent, LoadedSourceEvent, Source, BreakpointEvent } from 'vscode-debugadapter/lib/debugSession';
+import { Version, TargetVersions } from '../../src';
 
 const MODULE_UNDER_TEST = '../../src/chrome/chromeDebugAdapter';
 suite('ChromeDebugAdapter', () => {
@@ -81,7 +80,10 @@ suite('ChromeDebugAdapter', () => {
             .setup(x => x.run())
             .returns(() => Promise.resolve())
             .verifiable(Times.atLeast(0));
-
+        mockChromeConnection
+            .setup(x => x.version)
+            .returns(() => Promise.resolve(new TargetVersions(Version.unknownVersion(), Version.unknownVersion())))
+            .verifiable(Times.atLeast(0));
         mockLineNumberTransformer = getMockLineNumberTransformer();
         mockSourceMapTransformer = getMockSourceMapTransformer();
         mockPathTransformer = getMockPathTransformer();
@@ -116,9 +118,6 @@ suite('ChromeDebugAdapter', () => {
         testUtils.removeUnhandledRejectionListener();
         mockery.deregisterAll();
         mockery.disable();
-
-        // To avoid warnings about leaking event listeners
-        await logger.dispose();
 
         mockChromeConnection.verifyAll();
         mockChrome.Debugger.verifyAll();
@@ -857,6 +856,18 @@ suite('ChromeDebugAdapter', () => {
 
             mockEventEmitter.emit('Runtime.exceptionThrown', exceptionEvent);
             await sendEventP;
+        });
+    });
+
+    suite('break-on-load', () => {
+        test('is active when the parameter is specified and we are launching', async () => {
+            await chromeDebugAdapter.launch({breakOnLoadStrategy: 'regex'});
+            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should be active if we pass the proper parameter and we are attaching');
+        });
+
+        test('is active when the parameter is specified and we are attaching', async () => {
+            await chromeDebugAdapter.attach({breakOnLoadStrategy: 'regex', port: ATTACH_SUCCESS_PORT});
+            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should be active if we pass the proper parameter and we are attaching');
         });
     });
 

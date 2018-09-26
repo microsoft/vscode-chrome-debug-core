@@ -331,10 +331,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._sourceMapTransformer.launch(args);
         await this._pathTransformer.launch(args);
 
-        if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
-            this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
-        }
-
         if (!args.__restart) {
             /* __GDPR__
                "debugStarted" : {
@@ -400,6 +396,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
 
         this._smartStepEnabled = this._launchAttachArgs.smartStep;
+
+        if (args.breakOnLoadStrategy && args.breakOnLoadStrategy !== 'off') {
+            this._breakOnLoadHelper = new BreakOnLoadHelper(this, args.breakOnLoadStrategy);
+        }
 
         // Use hasOwnProperty to explicitly permit setting a falsy targetFilter.
         if (args.hasOwnProperty('targetFilter')) {
