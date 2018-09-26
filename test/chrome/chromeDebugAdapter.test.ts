@@ -862,12 +862,12 @@ suite('ChromeDebugAdapter', () => {
     suite('break-on-load', () => {
         test('is active when the parameter is specified and we are launching', async () => {
             await chromeDebugAdapter.launch({breakOnLoadStrategy: 'regex'});
-            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should we active if we pass the proper parameter and we are attaching');
+            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should be active if we pass the proper parameter and we are attaching');
         });
 
         test('is active when the parameter is specified and we are attaching', async () => {
             await chromeDebugAdapter.attach({breakOnLoadStrategy: 'regex', port: ATTACH_SUCCESS_PORT});
-            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should we active if we pass the proper parameter and we are attaching');
+            assert(chromeDebugAdapter.breakOnLoadActive, 'Break on load should be active if we pass the proper parameter and we are attaching');
         });
     });
 
