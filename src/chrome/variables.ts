@@ -63,8 +63,8 @@ export class ScopeContainer extends BaseVariableContainer {
     public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         // No filtering in scopes right now
         return super.expand(adapter, 'all', start, count).then(variables => {
-            if (this._thisObj) {
-                // If this is a scope that should have the 'this', prop, insert it at the top of the list
+            if (this._thisObj && !variables.find(v => v.name === 'this')) {
+                // If this is a scope that should have the 'this', prop, insert it at the top of the list unless it's already there
                 return this.insertRemoteObject(adapter, variables, 'this', this._thisObj);
             }
 
