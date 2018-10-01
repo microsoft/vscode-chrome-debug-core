@@ -87,6 +87,11 @@ export interface IOnPausedResult {
     didPause: boolean;
 }
 
+export interface CommittedBreakpoint {
+    breakpoint: ISetBreakpointResult;
+    authoredPath?: string;
+}
+
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -101,7 +106,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _domains = new Map<CrdpDomain, Crdp.Schema.Domain>();
     private _clientAttached: boolean;
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
-    private _committedBreakpointsByUrl: Map<string, ISetBreakpointResult[]>;
+    private _committedBreakpointsByUrl: Map<string, CommittedBreakpoint[]>;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
     private _expectingResumedEvent: boolean;
@@ -202,8 +207,24 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._pendingBreakpointsByUrl;
     }
 
-    public get committedBreakpointsByUrl(): Map<string, ISetBreakpointResult[]> {
+    public get committedBreakpointsByUrl(): Map<string, CommittedBreakpoint[]> {
         return this._committedBreakpointsByUrl;
+    }
+
+    public addCommittedBreakpointByUrl(url: string, toAdd: CommittedBreakpoint): void {
+        const committedBps = this._committedBreakpointsByUrl.get(url) || [];
+        if (!committedBps.find(committedBp => committedBp.breakpoint.breakpointId === toAdd.breakpoint.breakpointId)) {
+            committedBps.push(toAdd);
+        }
+        this._committedBreakpointsByUrl.set(url, committedBps);
+    }
+
+    public removeCommittedBreakpointByUrl(url: string, toRemove: CommittedBreakpoint): void {
+        const committedBps = this._committedBreakpointsByUrl.get(url);
+        const index = committedBps.findIndex(committedBp => committedBp.breakpoint.breakpointId === toRemove.breakpoint.breakpointId);
+        if (index >= 0) {
+            this._committedBreakpointsByUrl.get(url).splice(index, 1);
+        }
     }
 
     public get sourceMapTransformer(): BaseSourceMapTransformer {
@@ -219,7 +240,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._scriptsById = new Map<Crdp.Runtime.ScriptId, Crdp.Debugger.ScriptParsedEvent>();
         this._scriptsByUrl = new Map<string, Crdp.Debugger.ScriptParsedEvent>();
 
-        this._committedBreakpointsByUrl = new Map<string, ISetBreakpointResult[]>();
+        this._committedBreakpointsByUrl = new Map<string, CommittedBreakpoint[]>();
         this._setBreakpointsRequestQ = Promise.resolve();
 
         this._pathTransformer.clearTargetContext();
@@ -1180,7 +1201,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         });
     }
 
-    protected onBreakpointResolved(params: Crdp.Debugger.BreakpointResolvedEvent): void {
+    protected async onBreakpointResolved(params: Crdp.Debugger.BreakpointResolvedEvent): Promise<void> {
         const script = this._scriptsById.get(params.location.scriptId);
         const breakpointId = this._breakpointIdHandles.lookup(params.breakpointId);
         if (!script || !breakpointId) {
@@ -1193,12 +1214,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
-        if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
-            committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
-        }
-        this._committedBreakpointsByUrl.set(script.url, committedBps);
-
         const bp = <DebugProtocol.Breakpoint>{
             id: breakpointId,
             verified: true,
@@ -1206,6 +1221,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             column: params.location.columnNumber
         };
         const scriptPath = this._pathTransformer.breakpointResolved(bp, script.url);
+
+        const authoredPosition = await this._sourceMapTransformer.mapToAuthored(scriptPath, bp.line, bp.column);
+        const authoredPath = authoredPosition ? authoredPosition.source : null;
+        const committedBp = {breakpoint: {breakpointId: params.breakpointId, actualLocation: params.location}, authoredPath: authoredPath};
+        this.addCommittedBreakpointByUrl(script.url, committedBp);
 
         if (this._pendingBreakpointsByUrl.has(scriptPath)) {
             // If we set these BPs before the script was loaded, remove from the pending list
@@ -1443,13 +1463,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     targetScriptUrl = args.source.path;
                 }
 
+                let authoredPath: string;
+                if (args.authoredPath) {
+                    authoredPath = utils.canonicalizeUrl(args.authoredPath);
+                }
+
                 if (targetScriptUrl) {
                     // DebugProtocol sends all current breakpoints for the script. Clear all breakpoints for the script then add all of them
                     const internalBPs = args.breakpoints.map(bp => new InternalSourceBreakpoint(bp));
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
-                        .then(() => this.clearAllBreakpoints(targetScriptUrl))
+                        .then(() => this.clearAllBreakpoints(targetScriptUrl, authoredPath))
                         .then(() => this.addBreakpoints(targetScriptUrl, internalBPs))
-                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, internalBPs, ids) }));
+                        .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, authoredPath, responses, internalBPs, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, ChromeDebugAdapter.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', 'Set breakpoints request timed out'));
 
@@ -1559,7 +1584,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return { breakpoints };
     }
 
-    private clearAllBreakpoints(url: string): Promise<void> {
+    private clearAllBreakpoints(url: string, authoredPath: string): Promise<void> {
         if (!this._committedBreakpointsByUrl.has(url)) {
             return Promise.resolve();
         }
@@ -1569,10 +1594,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         // state where later adds on the same line will fail with 'breakpoint already exists' even though it
         // does not break there.
         return this._committedBreakpointsByUrl.get(url).reduce((p, bp) => {
-            return p.then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId: bp.breakpointId })).then(() => { });
-        }, Promise.resolve()).then(() => {
-            this._committedBreakpointsByUrl.delete(url);
-        });
+            // If we are clearing breakpoints with an authored path, skip any breakpoints that do not match
+            // the authored path.
+            if (authoredPath && authoredPath !== bp.authoredPath) {
+                return Promise.resolve();
+            }
+
+            return p
+                .then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId: bp.breakpoint.breakpointId }))
+                .then(() => this.removeCommittedBreakpointByUrl(url, bp));
+        }, Promise.resolve());
     }
 
     /**
@@ -1651,13 +1682,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
     }
 
-    private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: InternalSourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
+    private targetBreakpointResponsesToBreakpointSetResults(url: string, authoredPath: string, responses: ISetBreakpointResult[], requestBps: InternalSourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
-        const committedBps = responses
+        const successfulResponses = responses
             .filter(response => response && response.breakpointId);
 
         // Cache successfully set breakpoint ids from chrome in committedBreakpoints set
-        this._committedBreakpointsByUrl.set(url, committedBps);
+        successfulResponses.forEach(response => {
+            const committedBp = {breakpoint: response, authoredPath: authoredPath};
+            this.addCommittedBreakpointByUrl(url, committedBp);
+        });
 
         // Map committed breakpoints to DebugProtocol response breakpoints
         return responses

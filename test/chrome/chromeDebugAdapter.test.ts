@@ -213,12 +213,12 @@ suite('ChromeDebugAdapter', () => {
             });
         }
 
-        function expectRemoveBreakpoint(indicies: number[]): void {
+        function expectRemoveBreakpoint(indicies: number[], times: Times = Times.atLeastOnce()): void {
             indicies.forEach(i => {
                 mockChrome.Debugger
                     .setup(x => x.removeBreakpoint(It.isValue({ breakpointId: BP_ID + i })))
                     .returns(() => Promise.resolve())
-                    .verifiable(Times.atLeastOnce());
+                    .verifiable(times);
             });
         }
 
@@ -389,23 +389,26 @@ suite('ChromeDebugAdapter', () => {
                 .then(response => assertExpectedResponse(response, breakpoints));
         });
 
-        function setBp_emitScriptParsedWithSourcemaps(generatedScriptPath: string, authoredSourcePath: string): void {
+        function setBp_emitScriptParsedWithSourcemaps(generatedScriptPath: string, authoredSourcePaths: string[]): void {
             mockSourceMapTransformer.setup(m => m.mapToAuthored(It.isAnyString(), It.isAnyNumber(), It.isAnyNumber()))
                 .returns(somePath => Promise.resolve(somePath));
 
             mockSourceMapTransformer.setup(m => m.allSources(It.isAnyString()))
                 .returns(() => Promise.resolve([]));
 
-            mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
+            authoredSourcePaths.forEach((authoredSourcePath) => {
+                mockSourceMapTransformer.setup(x => x.getGeneratedPathFromAuthoredPath(It.isValue(authoredSourcePath)))
                 .returns(() => Promise.resolve(generatedScriptPath));
+            });
 
             mockSourceMapTransformer.setup(x => x.setBreakpoints(It.isAny(), It.isAnyNumber(), It.isAny()))
                 .returns(( args: ISetBreakpointsArgs, ids: number[]) => {
+                    args.authoredPath = args.source.path;
                     args.source.path = generatedScriptPath;
                     return { args, ids };
                 });
 
-            setBp_emitScriptParsed(generatedScriptPath, undefined, [authoredSourcePath]);
+            setBp_emitScriptParsed(generatedScriptPath, undefined, authoredSourcePaths);
         }
 
         function expectBreakpointEvent(bpId: number): Promise<void> {
@@ -445,7 +448,7 @@ suite('ChromeDebugAdapter', () => {
             mockSourceMapTransformer.reset();
 
             expectSetBreakpoint(breakpoints, generatedScriptPath);
-            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, authoredSourcePath);
+            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, [authoredSourcePath]);
             await expectBreakpointEvent(bpId);
         });
 
@@ -471,8 +474,72 @@ suite('ChromeDebugAdapter', () => {
             mockSourceMapTransformer.reset();
 
             expectSetBreakpoint(breakpoints, generatedScriptPath);
-            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, authoredSourcePath);
+            setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, [authoredSourcePath]);
             await expectBreakpointEvent(bpId);
+        });
+
+        test('breakpoints are set in multiple .ts scripts that are sourcemapped to the same .js bundle', async () => {
+            const breakpoints1: DebugProtocol.SourceBreakpoint[] = [
+                { line: 2, column: 3 },
+                { line: 3, column: 4 }
+            ];
+            const breakpoints2: DebugProtocol.SourceBreakpoint[] = [
+                { line: 5, column: 6 },
+                { line: 7, column: 8 }
+            ];
+
+            const authoredSourcePath1 = '/project/authored1.ts';
+            const authoredSourcePath2 = '/project/authored2.ts';
+            const generatedScriptPath = '/project/bundle.js';
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS)
+                .then(() => setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, [authoredSourcePath1, authoredSourcePath2]))
+                .then(() => {
+                    expectSetBreakpoint(breakpoints1, generatedScriptPath);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath1 }, breakpoints: breakpoints1 }, null, 0);
+                })
+                .then(response => assertExpectedResponse(response, breakpoints1))
+                .then(() => {
+                    expectSetBreakpoint(breakpoints2, generatedScriptPath);
+                    expectRemoveBreakpoint([0, 1, 2, 3], Times.never());
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath2 }, breakpoints: breakpoints2 }, null, 0);
+                })
+                .then(response => assertExpectedResponse(response, breakpoints2));
+        });
+
+        test('breakpoints are cleared properly in multiple .ts scripts that are sourcemapped to the same .js bundle', async () => {
+            const breakpoints1: DebugProtocol.SourceBreakpoint[] = [
+                { line: 2, column: 3 },
+                { line: 3, column: 4 }
+            ];
+            const breakpoints2: DebugProtocol.SourceBreakpoint[] = [
+                { line: 5, column: 6 },
+                { line: 7, column: 8 }
+            ];
+
+            const authoredSourcePath1 = '/project/authored1.ts';
+            const authoredSourcePath2 = '/project/authored2.ts';
+            const generatedScriptPath = '/project/bundle.js';
+
+            await chromeDebugAdapter.attach(ATTACH_ARGS)
+                .then(() => setBp_emitScriptParsedWithSourcemaps(generatedScriptPath, [authoredSourcePath1, authoredSourcePath2]))
+                .then(() => {
+                    expectSetBreakpoint(breakpoints1, generatedScriptPath);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath1 }, breakpoints: breakpoints1 }, null, 0);
+                })
+                .then(response => assertExpectedResponse(response, breakpoints1))
+                .then(() => {
+                    expectSetBreakpoint(breakpoints2, generatedScriptPath);
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath2 }, breakpoints: breakpoints2 }, null, 0);
+                })
+                .then(response => assertExpectedResponse(response, breakpoints2))
+                .then(() => {
+                    expectSetBreakpoint(breakpoints1, generatedScriptPath);
+                    expectRemoveBreakpoint([0, 1], Times.once());
+                    expectRemoveBreakpoint([2, 3], Times.never());
+                    return chromeDebugAdapter.setBreakpoints({ source: { path: authoredSourcePath1 }, breakpoints: breakpoints1 }, null, 0);
+                })
+                .then(response => assertExpectedResponse(response, breakpoints1));
         });
     });
 
