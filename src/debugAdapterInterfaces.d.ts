@@ -30,6 +30,7 @@ export interface ICommonRequestArgs {
     sourceMaps?: boolean;
     trace?: boolean|string;
     logFilePath?: string;
+    logTimestamps?: boolean;
     sourceMapPathOverrides?: ISourceMapPathOverrides;
     smartStep?: boolean;
     skipFiles?: string[]; // an array of file names or glob patterns
