@@ -19,7 +19,7 @@
     "source-map": "^0.6.1",
     "vscode-debugadapter": "^1.33.0-pre.0",
     "vscode-debugprotocol": "^1.32.0-pre.0",
-    "vscode-nls": "^3.2.5",
+    "vscode-nls": "^4.0.0",
     "ws": "^6.0.0"
   },
   "devDependencies": {
