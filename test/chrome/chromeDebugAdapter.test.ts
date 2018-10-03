@@ -184,7 +184,7 @@ suite('ChromeDebugAdapter', () => {
 
     suite('setBreakpoints()', () => {
         const BP_ID = 'bpId';
-        const FILE_NAME = 'file:///a.js';
+        const FILE_NAME = '/a.js';
         const SCRIPT_ID = '1';
         function expectSetBreakpoint(breakpoints: DebugProtocol.SourceBreakpoint[], url?: string, scriptId = SCRIPT_ID, success = true): void {
             breakpoints.forEach((bp, i) => {
