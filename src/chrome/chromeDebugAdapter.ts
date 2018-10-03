@@ -1407,7 +1407,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.reportBpTelemetry(args);
         if (args.source.path) {
             args.source.path = this.displayPathToRealPath(args.source.path);
-            args.source.path = utils.fixDriveLetterAndSlashes(args.source.path);
+            args.source.path = utils.canonicalizeUrl(args.source.path);
         }
 
         return this.validateBreakpointsPath(args)
