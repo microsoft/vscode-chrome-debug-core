@@ -58,7 +58,7 @@ suite('ConsoleHelper', () => {
         });
 
         test('strips %c patterns', () => {
-            doAssertForString(Runtime.makeLog('foo %cbar', 'color: red'), 'foo bar');
+            doAssertForString(Runtime.makeLog('foo %cbar', 'color: red;font-weight: bold'), 'foo \x1b[0;91;1mbar');
         });
 
         test('starts with non-string', () => {
