@@ -1553,7 +1553,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // We can use this to tell when the script is loaded whether we guessed correctly, and predict whether the BP will bind.
             this._pendingBreakpointsByUrl.set(
                 utils.canonicalizeUrl(args.source.path),
-                { args, ids, requestSeq, setWithPath: targetScriptUrl });
+                { args, ids, requestSeq, setWithPath: this.breakOnLoadActive ? '' : targetScriptUrl }); // Breakpoints need to be re-set when break-on-load is enabled
         }
 
         return { breakpoints };
