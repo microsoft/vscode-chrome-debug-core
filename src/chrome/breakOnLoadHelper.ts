@@ -55,7 +55,7 @@ export class BreakOnLoadHelper {
     }
 
     private getScriptUrlFromId(scriptId: string): string {
-        return this._chromeDebugAdapter.scriptsById.get(scriptId).url;
+        return utils.canonicalizeUrl(this._chromeDebugAdapter.scriptsById.get(scriptId).url);
     }
 
     public async setBrowserVersion(version: Version): Promise<void> {
