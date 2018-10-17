@@ -57,7 +57,11 @@ suite('ConsoleHelper', () => {
             doAssertForString(Runtime.makeLog('test', null, undefined), 'test null undefined');
         });
 
-        test('strips %c patterns', () => {
+        test('handles %c patterns for color', () => {
+            doAssertForString(Runtime.makeLog('foo %cbar', 'color: red'), 'foo \x1b[0;91mbar');
+        });
+
+        test('handles %c patterns with font-weight', () => {
             doAssertForString(Runtime.makeLog('foo %cbar', 'color: red;font-weight: bold'), 'foo \x1b[0;91;1mbar');
         });
 
