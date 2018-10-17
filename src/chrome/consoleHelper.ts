@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import { Protocol as Crdp } from 'devtools-protocol';
+import * as Color from 'color';
 import * as variables from './variables';
 
 export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
@@ -136,6 +137,9 @@ function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?:
     return processedArgs;
 }
 
+const colorRegex = /color: (.*?)(?:;|$)/;
+const fontWeightRegex = /font-weight: (.*?)(?:;|$)/;
+
 function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string | Crdp.Runtime.RemoteObject {
     const paramValue = String(typeof arg.value !== 'undefined' ? arg.value : arg.description);
 
@@ -146,9 +150,38 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
     } else if (formatSpec === 'f') {
         return +paramValue + '';
     } else if (formatSpec === 'c') {
-        // Remove %c - Applies CSS color rules
-        // Could use terminal color codes in the future
-        return '';
+        // value:"color: gray; font-weight: light
+        const colorMatches = colorRegex.exec(arg.value);
+        const fontWeightMatches = fontWeightRegex.exec(arg.value);
+
+        let escapedSequence = '';
+
+        if (colorMatches && colorMatches.length > 0) {
+          try {
+            // Color can parse, hex and color names
+            const color = new Color(colorMatches[1]);
+            const ansi = color.ansi16().object().ansi16;
+            escapedSequence = `;${ansi}`;
+          } catch (ex) {
+            // Unable to parse Color
+            // For instance, "inherit" color will throw
+          }
+        }
+
+        if (fontWeightMatches && fontWeightMatches.length > 0) {
+          switch (fontWeightMatches[1]) {
+            case 'bold':
+              escapedSequence += ';1';
+              break;
+            default:
+          }
+        }
+
+        if (escapedSequence.length > 0) {
+          escapedSequence = `\x1b[0${escapedSequence}m`;
+        }
+
+        return escapedSequence;
     } else if (formatSpec === 'O') {
         if (arg.objectId) {
             return arg;
