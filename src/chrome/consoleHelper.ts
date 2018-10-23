@@ -137,9 +137,6 @@ function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?:
     return processedArgs;
 }
 
-const colorRegex = /color: (.*?)(?:;|$)/;
-const fontWeightRegex = /font-weight: (.*?)(?:;|$)/;
-
 function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string | Crdp.Runtime.RemoteObject {
     const paramValue = String(typeof arg.value !== 'undefined' ? arg.value : arg.description);
 
@@ -150,31 +147,41 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
     } else if (formatSpec === 'f') {
         return +paramValue + '';
     } else if (formatSpec === 'c') {
-        // value:"color: gray; font-weight: light
-        const colorMatches = colorRegex.exec(arg.value);
-        const fontWeightMatches = fontWeightRegex.exec(arg.value);
+        const cssRegex = /\s*(.*?)\s*:\s*(.*?)\s*(?:;|$)/g;
 
         let escapedSequence = '';
+        let match = cssRegex.exec(arg.value);
+        while (match != null) {
+            if (match.length === 3) {
+                switch (match[1]) {
+                    case 'color':
+                        const color = getAnsi16Color(match[2]);
+                        if (color) {
+                            escapedSequence += `;${color}`;
+                        }
+                        break;
+                    case 'background':
+                        const background = getAnsi16Color(match[2]);
+                        if (background) {
+                            escapedSequence += `;${background + 10}`;
+                        }
+                        break;
+                    case 'font-weight':
+                        if (match[2] === 'bold') {
+                            escapedSequence += ';1';
+                        }
+                        break;
+                    case 'text-decoration':
+                        if (match[2] === 'underline') {
+                            escapedSequence += ';4';
+                        }
+                        break;
+                    default:
+                        // css not mapped, skip
+                }
+            }
 
-        if (colorMatches && colorMatches.length > 0) {
-          try {
-            // Color can parse, hex and color names
-            const color = new Color(colorMatches[1]);
-            const ansi = color.ansi16().object().ansi16;
-            escapedSequence = `;${ansi}`;
-          } catch (ex) {
-            // Unable to parse Color
-            // For instance, "inherit" color will throw
-          }
-        }
-
-        if (fontWeightMatches && fontWeightMatches.length > 0) {
-          switch (fontWeightMatches[1]) {
-            case 'bold':
-              escapedSequence += ';1';
-              break;
-            default:
-          }
+            match = cssRegex.exec(arg.value);
         }
 
         if (escapedSequence.length > 0) {
@@ -211,4 +218,17 @@ function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');
+}
+
+function getAnsi16Color(colorString: string): number {
+    try {
+      // Color can parse hex and color names
+      const color = new Color(colorString);
+      return color.ansi16().object().ansi16;
+    } catch (ex) {
+      // Unable to parse Color
+      // For instance, "inherit" color will throw
+    }
+
+    return undefined;
 }
