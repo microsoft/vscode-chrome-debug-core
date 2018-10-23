@@ -123,6 +123,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _sourceMapTransformer: BaseSourceMapTransformer;
     protected _pathTransformer: BasePathTransformer;
 
+    protected _clientRequestedSessionEnd: boolean;
     protected _hasTerminated: boolean;
     protected _inShutdown: boolean;
     protected _attachMode: boolean;
@@ -1391,6 +1392,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     */
     public disconnect(args: DebugProtocol.DisconnectArguments): void {
         telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
+        this._clientRequestedSessionEnd = true;
         this.shutdown();
         this.terminateSession('Got disconnect request', args);
     }
