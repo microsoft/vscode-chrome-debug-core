@@ -2050,7 +2050,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
-        const exists = await utils.existsAsync(script.url);
+        const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
         return <DebugProtocol.Source>{
             name: path.basename(displayPath),
             path: displayPath,
