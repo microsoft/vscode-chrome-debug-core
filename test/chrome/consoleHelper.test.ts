@@ -62,7 +62,19 @@ suite('ConsoleHelper', () => {
         });
 
         test('handles %c patterns with font-weight', () => {
-            doAssertForString(Runtime.makeLog('foo %cbar', 'color: red;font-weight: bold'), 'foo \x1b[0;91;1mbar');
+            doAssertForString(Runtime.makeLog('foo %cbar', 'font-weight: bold'), 'foo \x1b[0;1mbar');
+        });
+
+        test('handles %c patterns with background', () => {
+          doAssertForString(Runtime.makeLog('foo %cbar', 'background: red'), 'foo \x1b[0;101mbar');
+        });
+
+        test('handles %c patterns with text-decoration', () => {
+          doAssertForString(Runtime.makeLog('foo %cbar', 'text-decoration: underline'), 'foo \x1b[0;4mbar');
+        });
+
+        test('handles %c patterns with multiple attributes', () => {
+          doAssertForString(Runtime.makeLog('foo %cbar', 'color: red; background: blue; font-weight: bold; text-decoration: underline'), 'foo \x1b[0;91;104;1;4mbar');
         });
 
         test('starts with non-string', () => {
