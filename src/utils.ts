@@ -477,24 +477,30 @@ export class ReverseHandles<T> extends Handles<T> {
  */
 export function pathToRegex(aPath: string): string {
     const fileUrlPrefix = 'file:///';
-    let isFileUrl = aPath.startsWith(fileUrlPrefix);
+    const isFileUrl = aPath.startsWith(fileUrlPrefix);
+    const isAbsolutePath = isAbsolute(aPath);
     if (isFileUrl) {
         // Purposely avoiding fileUrlToPath/pathToFileUrl for this, because it does decodeURI/encodeURI
-        // for special URL chars and I don't want to think about that interacting with special regex chars
+        // for special URL chars and I don't want to think about that interacting with special regex chars.
+        // Strip file://, process as a regex, then add file: back at the end.
         aPath = aPath.substr(fileUrlPrefix.length);
     }
 
-    aPath = escapeRegexSpecialChars(aPath);
+    if (isURL(aPath) || isFileUrl || !isAbsolutePath) {
+        aPath = escapeRegexSpecialChars(aPath);
+    } else {
+        const escapedAPath = escapeRegexSpecialChars(aPath);
+        aPath = `${escapedAPath}|${escapeRegexSpecialChars(pathToFileURL(aPath))}`;
+    }
 
     // If we should resolve paths in a case-sensitive way, we still need to set the BP for either an
     // upper or lowercased drive letter
     if (caseSensitivePaths) {
-        if (aPath.match(/^[a-zA-Z]:/)) {
-            const driveLetter = aPath.charAt(0);
-            const u = driveLetter.toUpperCase();
-            const l = driveLetter.toLowerCase();
-            aPath = `[${u}${l}]${aPath.substr(1)}`;
-        }
+        aPath = aPath.replace(/(?<=^|file:\\\/\\\/\\\/)([a-zA-Z]):/g, (match, letter) => {
+            const u = letter.toUpperCase();
+            const l = letter.toLowerCase();
+            return `[${u}${l}]:`;
+        });
     } else {
         aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
     }

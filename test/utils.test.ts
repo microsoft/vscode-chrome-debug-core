@@ -302,11 +302,11 @@ suite('Utils', () => {
         }
 
         test('works for a simple posix path', () => {
-            testPathToRegex('/a/b.js', '\\/a\\/b\\.js');
+            testPathToRegex('/a/b.js', '\\/a\\/b\\.js|file:\\/\\/\\/a\\/b\\.js');
         });
 
         test('works for a simple windows path', () => {
-            testPathToRegex('c:\\a\\b.js', '[Cc]:\\\\a\\\\b\\.js');
+            testPathToRegex('c:\\a\\b.js', '[Cc]:\\\\a\\\\b\\.js|file:\\/\\/\\/[Cc]:\\/a\\/b\\.js');
         });
 
         test('works for a url', () => {
@@ -334,11 +334,11 @@ suite('Utils', () => {
         }
 
         test('works for a simple posix path', () => {
-            testPathToRegex('/a/b.js', '\\/[aA]\\/[bB]\\.[jJ][sS]');
+            testPathToRegex('/a/b.js', '\\/[aA]\\/[bB]\\.[jJ][sS]|[fF][iI][lL][eE]:\\/\\/\\/[aA]\\/[bB]\\.[jJ][sS]');
         });
 
         test('works for a simple windows path', () => {
-            testPathToRegex('c:\\a\\b.js', '[cC]:\\\\[aA]\\\\[bB]\\.[jJ][sS]');
+            testPathToRegex('c:\\a\\b.js', '[cC]:\\\\[aA]\\\\[bB]\\.[jJ][sS]|[fF][iI][lL][eE]:\\/\\/\\/[cC]:\\/[aA]\\/[bB]\\.[jJ][sS]');
         });
 
         test('works for a url', () => {
