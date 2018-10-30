@@ -6,8 +6,12 @@
             "type": "node",
             "request": "launch",
             "protocol": "inspector",
-            "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
-            "args": [ "test" ],
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "--exit",
+                "--recursive",
+                "-u", "tdd", "./out/test/", "--debug"
+            ],
             "cwd": "${workspaceFolder}",
             "smartStep": true,
             "skipFiles": [

@@ -35,7 +35,6 @@
     "event-stream": "^3.3.4",
     "gulp": "^3.9.1",
     "gulp-debug": "^2.1.2",
-    "gulp-mocha": "^6.0.0",
     "gulp-plumber": "^1.1.0",
     "gulp-sourcemaps": "^1.6.0",
     "gulp-tslint": "^8.1.3",

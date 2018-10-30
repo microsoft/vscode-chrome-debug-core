@@ -8,7 +8,6 @@ const ts = require('gulp-typescript');
 const log = require('gulp-util').log;
 const typescript = require('typescript');
 const sourcemaps = require('gulp-sourcemaps');
-const mocha = require('gulp-mocha');
 const tslint = require('gulp-tslint');
 const merge = require('merge2');
 const debug = require('gulp-debug');
@@ -146,20 +145,4 @@ gulp.task('i18n-import', function () {
             .pipe(nls.prepareJsonFiles())
             .pipe(gulp.dest(path.join('./i18n', language.folderName)));
     }));
-});
-
-function test() {
-    return gulp.src('out/test/**/*.test.js', { read: false })
-        .pipe(mocha({ ui: 'tdd' }))
-        .on('error', e => {
-            log(e ? e.toString() : 'error in test task!');
-            this.emit('end');
-        });
-}
-
-gulp.task('dev-build-test', ['dev-build'], test);
-gulp.task('test', test);
-
-gulp.task('watch-build-test', ['dev-build', 'dev-build-test'], () => {
-    return gulp.watch(sources, ['dev-build', 'dev-build-test']);
 });
