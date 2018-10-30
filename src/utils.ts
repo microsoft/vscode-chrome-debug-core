@@ -496,10 +496,10 @@ export function pathToRegex(aPath: string): string {
     // If we should resolve paths in a case-sensitive way, we still need to set the BP for either an
     // upper or lowercased drive letter
     if (caseSensitivePaths) {
-        aPath = aPath.replace(/(?<=^|file:\\\/\\\/\\\/)([a-zA-Z]):/g, (match, letter) => {
+        aPath = aPath.replace(/(^|file:\\\/\\\/\\\/)([a-zA-Z]):/g, (match, prefix, letter) => {
             const u = letter.toUpperCase();
             const l = letter.toLowerCase();
-            return `[${u}${l}]:`;
+            return `${prefix}[${u}${l}]:`;
         });
     } else {
         aPath = aPath.replace(/[a-zA-Z]/g, letter => `[${letter.toLowerCase()}${letter.toUpperCase()}]`);
