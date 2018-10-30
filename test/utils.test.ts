@@ -320,6 +320,10 @@ suite('Utils', () => {
         test('escapes the drive letter for a windows file url', () => {
             testPathToRegex('file:///c:\\a\\b.js', 'file:\\/\\/\\/[Cc]:\\\\a\\\\b\\.js');
         });
+
+        test('space in path', () => {
+            testPathToRegex('/a/space path.js', '\\/a\\/space path\\.js|file:\\/\\/\\/a\\/space%20path\\.js');
+        });
     });
 
     suite('pathToRegex - case insensitive', () => {
