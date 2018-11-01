@@ -94,6 +94,9 @@ export class RemotePathTransformer extends UrlPathTransformer {
 
     public getClientPathFromTargetPath(remotePath: string): string {
         remotePath = super.getClientPathFromTargetPath(remotePath) || remotePath;
+
+        // Map as non-file-uri because remoteRoot won't expect a file uri
+        remotePath = utils.fileUrlToPath(remotePath);
         if (!this.shouldMapPaths(remotePath)) return '';
 
         const relPath = relative(this._remoteRoot, remotePath);
