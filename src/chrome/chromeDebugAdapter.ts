@@ -914,7 +914,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             case 'new':
             case 'changed':
                 if (this._loadedSourcesByScriptId.get(script.scriptId)) {
-                    loadedSourceEventReason = 'changed';
+                    if (source.sourceReference) {
+                        // We only need to send changed events for dynamic scripts. The client tracks files on storage on it's own, so this notification is not needed
+                        loadedSourceEventReason = 'changed';
+                    } else {
+                        return; // VS is strict about the changed notifications, and it will fail if we send a changed notification for a file on storage, so we omit it on purpose
+                    }
                 } else {
                     loadedSourceEventReason = 'new';
                 }
