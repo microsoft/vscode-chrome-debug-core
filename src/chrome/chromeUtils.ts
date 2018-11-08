@@ -92,8 +92,15 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
     // If the url is an absolute path to a file that exists, return it without file:///.
     // A remote absolute url (cordova) will still need the logic below.
     const canonicalUrl = utils.canonicalizeUrl(aUrl);
-    if (aUrl.startsWith('file:///') && utils.existsSync(canonicalUrl)) {
-        return canonicalUrl;
+    if (utils.isFileUrl(aUrl)) {
+        if (utils.existsSync(canonicalUrl)) {
+            return canonicalUrl;
+        }
+
+        const networkPath = utils.fileUrlToNetworkPath(aUrl);
+        if (networkPath !== aUrl && utils.existsSync(networkPath)) {
+            return networkPath;
+        }
     }
 
     // Search the filesystem under the webRoot for the file that best matches the given url

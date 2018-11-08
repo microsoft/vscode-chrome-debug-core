@@ -9,7 +9,7 @@ import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakp
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody,
-    IExceptionInfoResponseBody, ISetBreakpointResult, TimeTravelRuntime, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector, IGetLoadedSourcesResponseBody } from '../debugAdapterInterfaces';
+    IExceptionInfoResponseBody, ISetBreakpointResult, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector, IGetLoadedSourcesResponseBody, TimeTravelRuntime } from '../debugAdapterInterfaces';
 import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
 import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -2221,7 +2221,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      */
     private lookupFrameIndex(frameId: number): number {
         const currentFrame = this._frameHandles.get(frameId);
-        if (!currentFrame || !currentFrame.callFrameId) {
+        if (!currentFrame || !currentFrame.callFrameId || !this._currentPauseNotification) {
             return -1;
         }
 

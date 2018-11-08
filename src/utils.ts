@@ -168,6 +168,16 @@ export function fileUrlToPath(urlOrPath: string): string {
     return urlOrPath;
 }
 
+export function fileUrlToNetworkPath(urlOrPath: string): string {
+    if (isFileUrl(urlOrPath)) {
+        urlOrPath = urlOrPath.replace('file:///', '\\\\');
+        urlOrPath = urlOrPath.replace(/\//g, '\\');
+        urlOrPath = urlOrPath = decodeURIComponent(urlOrPath);
+    }
+
+    return urlOrPath;
+}
+
 /**
  * Replace any backslashes with forward slashes
  * blah\something => blah/something
@@ -285,11 +295,7 @@ export function isURL(urlOrPath: string): boolean {
 }
 
 export function isAbsolute(_path: string): boolean {
-    return _path.startsWith('/') || isAbsolute_win(_path);
-}
-
-export function isAbsolute_win(_path: string): boolean {
-    return /^[a-zA-Z]\:[\\\/]/.test(_path);
+    return path.posix.isAbsolute(_path) || path.win32.isAbsolute(_path);
 }
 
 /**
@@ -305,16 +311,20 @@ export function lstrip(s: string, lStr: string): string {
  * Convert a local path to a file URL, like
  * C:/code/app.js => file:///C:/code/app.js
  * /code/app.js => file:///code/app.js
+ * \\code\app.js => file:///code/app.js
  */
-export function pathToFileURL(absPath: string, normalize?: boolean): string {
-    absPath = forceForwardSlashes(absPath);
+export function pathToFileURL(_absPath: string, normalize?: boolean): string {
+    let absPath = forceForwardSlashes(_absPath);
     if (normalize) {
         absPath = path.normalize(absPath);
         absPath = forceForwardSlashes(absPath);
     }
 
-    absPath = (absPath.startsWith('/') ? 'file://' : 'file:///') +
-        absPath;
+    const filePrefix = _absPath.startsWith('\\\\') ? 'file:/' :
+        absPath.startsWith('/') ? 'file://' :
+            'file:///';
+
+    absPath = filePrefix + absPath;
     return encodeURI(absPath);
 }
 

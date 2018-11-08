@@ -283,6 +283,11 @@ suite('Utils', () => {
             assert.equal(getUtils().pathToFileURL('c:\\code\\app.js'), 'file:///c:/code/app.js');
         });
 
+        test('converts network path paths', () => {
+            assert.equal(getUtils().pathToFileURL('\\\\foo bar\\something'), 'file:///foo%20bar/something');
+            assert.equal(getUtils().pathToFileURL('\\\\localhost\\c$\\app.js'), 'file:///localhost/c$/app.js');
+        });
+
         test('converts unix-style paths', () => {
             assert.equal(getUtils().pathToFileURL('/code/app.js'), 'file:///code/app.js');
         });
@@ -452,27 +457,12 @@ suite('Utils', () => {
         });
     });
 
-    suite('isAbsolute_win', () => {
-        test('true for windows-style absolute paths', () => {
+    suite('fileUrlToNetworkPath', () => {
+        test('true for network paths', () => {
             [
-                'c:/foo/bar/blah.js',
-                'c:/',
-                'z:/foo',
-                'z:\\',
-                'z:\\foo',
-            ].forEach(testPath => assert(getUtils().isAbsolute_win(testPath)));
-        });
-
-        test('false for everything else', () => {
-            [
-                'c :/foo/bar/blah.js',
-                'c:',
-                'ö:/foo',
-                '/foo/bar',
-                'foo/bar',
-                '',
-                'file:///foo/bar/blah.js',
-            ].forEach(testPath => assert.equal(getUtils().isAbsolute_win(testPath), false));
+                ['file:///foo%20bar/something', '\\\\foo bar\\something'],
+                ['file:///localhost/c$/app.js', '\\\\localhost\\c$\\app.js']
+            ].forEach(([testPath, expected]) => assert.equal(getUtils().fileUrlToNetworkPath(testPath), expected));
         });
     });
 });
