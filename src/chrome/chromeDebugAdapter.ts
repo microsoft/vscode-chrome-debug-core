@@ -705,7 +705,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (expectingStopReason) {
             // If this was a step, check whether to smart step
             reason = expectingStopReason;
-            shouldSmartStep = await this.shouldSmartStep(this._currentPauseNotification.callFrames[0]);
+            shouldSmartStep = await this.shouldSmartStepCallFrame(this._currentPauseNotification.callFrames[0]);
         } else {
             reason = 'debugger_statement';
         }
@@ -768,12 +768,16 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    private async shouldSmartStep(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
+    private async shouldSmartStepCallFrame(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
         if (!this._smartStepEnabled) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
+        return this.shouldSmartStep(stackFrame);
+    }
+
+    private async shouldSmartStep(stackFrame: DebugProtocol.StackFrame): Promise<boolean> {
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
-        const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, frame.location.lineNumber, frame.location.columnNumber);
+        const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, stackFrame.line, stackFrame.column);
         if (mapping) {
             return false;
         }
@@ -1977,7 +1981,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
             // Remove isSourceMapped to convert back to DebugProtocol.StackFrame
-            const isSourceMapped = frame.isSourceMapped;
             delete frame.isSourceMapped;
 
             if (!frame.source) {
@@ -1989,7 +1992,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('skipFiles');
                 frame.source.presentationHint = 'deemphasize';
-            } else if (this._smartStepEnabled && !isSourceMapped) {
+            } else if (await this.shouldSmartStep(frame)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('smartStep');
                 frame.source.presentationHint = 'deemphasize';
             }
