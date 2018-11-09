@@ -1,19 +1,24 @@
 parameters:
   name: ''
-  queueName: ''
+  vmImage: ''
 
-phases:
-- phase: ${{ parameters.name }}
-  queue:
-    name: ${{ parameters.queueName }}
-    demands:
-    - npm
-    - node.js
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  strategy:
+    matrix:
+      node8:
+        nodeVersion: 8.x
+      node10:
+        nodeVersion: 10.x
+      node11:
+        nodeVersion: 11.x
   steps:
   - task: NodeTool@0
-    displayName: Use Node 8.x
+    displayName: Use Node
     inputs:
-      versionSpec: 8.x
+      versionSpec: $(nodeVersion)
       checkLatest: true
 
   - task: Npm@1
