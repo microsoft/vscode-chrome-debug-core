@@ -1203,6 +1203,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
+        script.url = utils.canonicalizeUrl(script.url);
+
         const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
         if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
             committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
