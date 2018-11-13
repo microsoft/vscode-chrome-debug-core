@@ -1203,9 +1203,19 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        script.url = utils.canonicalizeUrl(script.url);
+        // If we cannot find the script url in the committed breakpoints, we check for the canonicalized path. If found, use those committed breakpoints
+        // If we cannot find either the given url or the canonicalized url (or they are the same and the script simply cannot be found), committed breakpoints is an empty array
+        let committedBps = this._committedBreakpointsByUrl.get(script.url);
+        if (!committedBps) {
+            let canonicalizedUrl = utils.canonicalizeUrl(script.url);
+            committedBps = this._committedBreakpointsByUrl.get(canonicalizedUrl);
+            if (committedBps) {
+                script.url = canonicalizedUrl;
+            } else {
+                committedBps = [];
+            }
+        }
 
-        const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
         if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
             committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
         }
