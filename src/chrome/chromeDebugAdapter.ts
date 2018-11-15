@@ -166,7 +166,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
 
-    private _isVSClient: boolean;
+    protected _isVSClient: boolean;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
@@ -400,6 +400,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
+        args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks;
 
         this._smartStepEnabled = this._launchAttachArgs.smartStep;
 

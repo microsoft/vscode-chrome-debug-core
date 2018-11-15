@@ -565,7 +565,7 @@ function blackboxNegativeLookaheadPattern(aPath: string): string {
 export function makeRegexNotMatchPath(regex: RegExp, aPath: string): RegExp {
     if (regex.test(aPath)) {
         const regSourceWithoutCaret = regex.source.replace(/^\^/, '');
-        const source = `^${blackboxNegativeLookaheadPattern(aPath)}.*${regSourceWithoutCaret}`;
+        const source = `^${blackboxNegativeLookaheadPattern(aPath)}.*(${regSourceWithoutCaret})`;
         return new RegExp(source, 'i');
     } else {
         return regex;
