@@ -1204,7 +1204,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         // committed breakpoints (this._committedBreakpointsByUrl) should always have url keys in canonicalized form
-        let committedBps = this.getValueFromCommittedBreakpointsByUrl(script.url);
+        const committedBps = this.getValueFromCommittedBreakpointsByUrl(script.url);
 
         if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
             committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
