@@ -101,6 +101,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _domains = new Map<CrdpDomain, Crdp.Schema.Domain>();
     private _clientAttached: boolean;
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
+
+    // when working with _committedBreakpointsByUrl, we want to keep the url keys canonicalized for consistency
+    // use methods getValueFromCommittedBreakpointsByUrl and setValueForCommittedBreakpointsByUrl
     private _committedBreakpointsByUrl: Map<string, ISetBreakpointResult[]>;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
@@ -1204,7 +1207,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         // committed breakpoints (this._committedBreakpointsByUrl) should always have url keys in canonicalized form
-        const committedBps = this.getValueFromCommittedBreakpointsByUrl(script.url);
+        const committedBps = this.getValueFromCommittedBreakpointsByUrl(script.url) || [];
 
         if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
             committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
