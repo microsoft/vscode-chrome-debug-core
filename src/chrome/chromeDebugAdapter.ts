@@ -397,6 +397,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         // Enable sourcemaps and async callstacks by default
         args.sourceMaps = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
+        args.showAsyncStacks = typeof args.showAsyncStacks === 'undefined' || args.showAsyncStacks;
 
         this._smartStepEnabled = this._launchAttachArgs.smartStep;
 
