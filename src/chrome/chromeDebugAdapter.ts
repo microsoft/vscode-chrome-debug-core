@@ -163,7 +163,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _loadedSourcesByScriptId = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
 
-    private _isVSClient: boolean;
+    protected _isVSClient: boolean;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
