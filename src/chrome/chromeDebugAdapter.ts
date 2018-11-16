@@ -101,6 +101,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _domains = new Map<CrdpDomain, Crdp.Schema.Domain>();
     private _clientAttached: boolean;
     private _currentPauseNotification: Crdp.Debugger.PausedEvent;
+
+    // when working with _committedBreakpointsByUrl, we want to keep the url keys canonicalized for consistency
+    // use methods getValueFromCommittedBreakpointsByUrl and setValueForCommittedBreakpointsByUrl
     private _committedBreakpointsByUrl: Map<string, ISetBreakpointResult[]>;
     private _exception: Crdp.Runtime.RemoteObject;
     private _setBreakpointsRequestQ: Promise<any>;
@@ -1204,11 +1207,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return;
         }
 
-        const committedBps = this._committedBreakpointsByUrl.get(script.url) || [];
+        // committed breakpoints (this._committedBreakpointsByUrl) should always have url keys in canonicalized form
+        const committedBps = this.getValueFromCommittedBreakpointsByUrl(script.url) || [];
+
         if (!committedBps.find(committedBp => committedBp.breakpointId === params.breakpointId)) {
             committedBps.push({breakpointId: params.breakpointId, actualLocation: params.location});
         }
-        this._committedBreakpointsByUrl.set(script.url, committedBps);
+        this.setValueForCommittedBreakpointsByUrl(script.url, committedBps);
 
         const bp = <DebugProtocol.Breakpoint>{
             id: breakpointId,
@@ -1216,7 +1221,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             line: params.location.lineNumber,
             column: params.location.columnNumber
         };
-        const scriptPath = this._pathTransformer.breakpointResolved(bp, script.url);
+
+        // need to canonicalize this path because the following maps use paths canonicalized
+        const scriptPath = utils.canonicalizeUrl(this._pathTransformer.breakpointResolved(bp, script.url));
 
         if (this._pendingBreakpointsByUrl.has(scriptPath)) {
             // If we set these BPs before the script was loaded, remove from the pending list
@@ -1572,6 +1579,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private clearAllBreakpoints(url: string): Promise<void> {
+        // We want to canonicalize this url because this._committedBreakpointsByUrl keeps url keys in canonicalized form
+        url = utils.canonicalizeUrl(url);
         if (!this._committedBreakpointsByUrl.has(url)) {
             return Promise.resolve();
         }
@@ -1669,7 +1678,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             .filter(response => response && response.breakpointId);
 
         // Cache successfully set breakpoint ids from chrome in committedBreakpoints set
-        this._committedBreakpointsByUrl.set(url, committedBps);
+        this.setValueForCommittedBreakpointsByUrl(url, committedBps);
 
         // Map committed breakpoints to DebugProtocol response breakpoints
         return responses
@@ -2955,5 +2964,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
         url = utils.canonicalizeUrl(url);
         return this._scriptsByUrl.get(url) || this._scriptsByUrl.get(utils.fixDriveLetter(url));
+    }
+
+    private getValueFromCommittedBreakpointsByUrl(url: string): ISetBreakpointResult[] {
+        let canonicalizedUrl = utils.canonicalizeUrl(url);
+        return this._committedBreakpointsByUrl.get(canonicalizedUrl);
+    }
+
+    private setValueForCommittedBreakpointsByUrl(url: string, value: ISetBreakpointResult[]): void {
+        let canonicalizedUrl = utils.canonicalizeUrl(url);
+        this._committedBreakpointsByUrl.set(canonicalizedUrl, value);
     }
 }

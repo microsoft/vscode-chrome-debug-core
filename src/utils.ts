@@ -118,6 +118,9 @@ export function setCaseSensitivePaths(useCaseSensitivePaths: boolean) {
  * http://site.com/ => http://site.com
  */
 export function canonicalizeUrl(urlOrPath: string): string {
+    if (urlOrPath == null) {
+        return urlOrPath;
+    }
     urlOrPath = fileUrlToPath(urlOrPath);
 
     // Remove query params
