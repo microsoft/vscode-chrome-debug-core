@@ -6,7 +6,6 @@ import { ILaunchRequestArgs, IAttachRequestArgs } from '../../debugAdapterInterf
 
 export interface IExtensibilityPoints {
     isPromiseRejectExceptionFilterEnabled: boolean;
-    enableSourceMapCaching: boolean;
 
     targetFilter?: ITargetFilter;
 
@@ -20,7 +19,6 @@ export interface IExtensibilityPoints {
 
 export class ExtensibilityPoints implements IExtensibilityPoints {
     public readonly isPromiseRejectExceptionFilterEnabled = false;
-    public readonly enableSourceMapCaching = true;
 
     targetFilter?: ITargetFilter;
     chromeConnection?: typeof ChromeConnection;

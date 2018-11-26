@@ -20,7 +20,6 @@ export class ChromeDebugAdapter implements IDebugAdapter {
         args.extensibilityPoints.pathTransformer = args.extensibilityPoints.pathTransformer || args.pathTransformer;
         args.extensibilityPoints.sourceMapTransformer = args.extensibilityPoints.sourceMapTransformer || args.sourceMapTransformer;
         args.extensibilityPoints.lineColTransformer = args.extensibilityPoints.lineColTransformer || args.lineColTransformer;
-        args.extensibilityPoints.enableSourceMapCaching = args.extensibilityPoints.enableSourceMapCaching || args.enableSourceMapCaching;
         args.extensibilityPoints.targetFilter = args.extensibilityPoints.targetFilter || args.targetFilter;
 
         this._state = new UninitializedCDA(args.extensibilityPoints, originalSession, args.chromeConnection || ChromeConnection);

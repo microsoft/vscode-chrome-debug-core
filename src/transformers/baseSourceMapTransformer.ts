@@ -51,7 +51,7 @@ export class BaseSourceMapTransformer implements IComponent {
 
     public install(configuration: ComponentConfiguration): PromiseOrNot<void | this> {
         this.launch(configuration.args);
-        this._enableSourceMapCaching = configuration._extensibilityPoints.enableSourceMapCaching;
+        this._enableSourceMapCaching = configuration.args.enableSourceMapCaching;
         this.isVSClient = configuration._clientCapabilities.clientID === 'visualstudio';
     }
 

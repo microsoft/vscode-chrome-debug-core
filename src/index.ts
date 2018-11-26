@@ -33,6 +33,7 @@ import { Protocol as Crdp } from 'devtools-protocol';
 import { Version, TargetVersions } from './chrome/chromeTargetDiscoveryStrategy';
 import { IOnPausedResult } from './chrome/internal/breakpoints/breakpointsLogic';
 import { parseResourceIdentifier } from './chrome/internal/sources/resourceIdentifier';
+import { ChromeDebugAdapter } from './chrome/client/chromeDebugAdapter/chromeDebugAdapterV2';
 
 export {
     chromeConnection,
@@ -47,6 +48,8 @@ export {
     LoadedSourceEventReason,
     InternalSourceBreakpoint,
     ErrorWithMessage,
+
+    ChromeDebugAdapter,
 
     UrlPathTransformer,
     BasePathTransformer,

@@ -21,8 +21,6 @@ import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
-    enableSourceMapCaching: boolean;
-
     extensibilityPoints: IExtensibilityPoints;
 
     // Override services
@@ -48,6 +46,7 @@ export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {
     /** The class of the adapter, which is instantiated for each session */
     adapter: typeof ChromeDebugAdapter;
     extensionName: string;
+    logFilePath: string;
 }
 
 export const ErrorTelemetryEventName = 'error';

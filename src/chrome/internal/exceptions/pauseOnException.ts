@@ -34,7 +34,7 @@ export interface EventsConsumedByPauseOnException {
 
 export class ExceptionWasThrown extends NotifyStoppedCommonLogic {
     public readonly relevance = VoteRelevance.NormalVote;
-    public readonly reason: 'exception' = 'exception'; // There is an issue of how the .d.ts is generated for this file, so we need to type that explicitly
+    public readonly reason = 'exception'; // There is an issue of how the .d.ts is generated for this file, so we need to type that explicitly
 
     constructor(protected readonly _eventsToClientReporter: IEventsToClientReporter) {
         super();
