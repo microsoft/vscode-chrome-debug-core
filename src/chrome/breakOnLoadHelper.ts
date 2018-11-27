@@ -113,7 +113,6 @@ export class BreakOnLoadHelper {
         // Important: We need to get the committed breakpoints only after all the pending breakpoints for this file have been resolved. If not this logic won't work
         const committedBps = this._chromeDebugAdapter.committedBreakpointsByUrl.get(pausedScriptUrl) || [];
         const anyBreakpointsAtPausedLocation = committedBps.filter(bp =>
-            // Important: Chrome devtools-protocol can return an empty locations array, resulting in 'undefined' for the actualLocation, so we have to check an actualLocation exists
             bp.actualLocation &&
             bp.actualLocation.lineNumber === pausedLocation.lineNumber &&
             bp.actualLocation.columnNumber === pausedLocation.columnNumber).length > 0;
