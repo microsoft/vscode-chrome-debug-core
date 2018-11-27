@@ -14,6 +14,8 @@ import { DeleteMeScriptsRegistry } from '../scripts/scriptsRegistry';
 
 type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
+export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
+
 export interface IExceptionInformationDetails {
     readonly stackTrace: IFormattedExceptionLineDescription[];
     readonly message: string;

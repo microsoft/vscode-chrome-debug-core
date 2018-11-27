@@ -12,6 +12,8 @@ import { VoteCommonLogic, VoteRelevance, Vote, Abstained } from '../../communica
 import { ITargetBreakpoints, CDTPDebugger, IBreakpointFeaturesSupport } from '../../target/cdtpDebugger';
 import { inject } from 'inversify';
 
+export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
+
 export class HitBreakpoint extends VoteCommonLogic<void> {
     public readonly relevance = VoteRelevance.NormalVote;
 
