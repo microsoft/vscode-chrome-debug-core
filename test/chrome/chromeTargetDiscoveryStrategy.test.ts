@@ -12,6 +12,8 @@ import { NullLogger } from '../../src/nullLogger';
 import { NullTelemetryReporter } from '../../src/telemetry';
 import { Version } from '../../src';
 
+import * as _ctds from '../../src/chrome/chromeTargetDiscoveryStrategy';
+
 const MODULE_UNDER_TEST = '../../src/chrome/chromeTargetDiscoveryStrategy';
 suite('ChromeTargetDiscoveryStrategy', () => {
     function getChromeTargetDiscoveryStrategy(): ITargetDiscoveryStrategy {
@@ -241,6 +243,15 @@ suite('ChromeTargetDiscoveryStrategy', () => {
             assert.ok(schema1dot0.isAtLeastVersion(1, 0));
             assert.ok(!schema1dot0.isAtLeastVersion(1, 1));
             assert.ok(!schema1dot0.isAtLeastVersion(1, 2));
+        });
+    });
+
+    suite('removeTitleProperty', () => {
+        const removeTitleProperty: typeof _ctds.removeTitleProperty = require(MODULE_UNDER_TEST).removeTitleProperty;
+        test('works', () => {
+            assert.equal(removeTitleProperty('{ "title": "foo" }'), '{  }');
+            assert.equal(removeTitleProperty('{ "url": "foo" }'), '{ "url": "foo" }');
+            assert.equal(removeTitleProperty('{ "title": "foo", "url": "foo2" }'), '{  "url": "foo2" }');
         });
     });
 });

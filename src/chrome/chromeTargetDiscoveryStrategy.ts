@@ -144,20 +144,30 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
            }
          */
         this.events.emitStepStarted('Attach.ProcessDebuggerTargetsInformation');
+        let responseArray: any;
+
         try {
-            const responseArray = JSON.parse(jsonResponse);
-            if (Array.isArray(responseArray)) {
-                return (responseArray as ITarget[])
-                    .map(target => {
-                        this._fixRemoteUrl(address, port, target);
-                        target.version = version;
-                        return target;
-                    });
-            } else {
-                return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
-            }
+            responseArray = JSON.parse(jsonResponse);
         } catch (e) {
-            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse));
+            try {
+                // If it fails to parse, this is possibly https://github.com/electron/electron/issues/11524.
+                // Workaround, just snip out the title property and try again.
+                // Since we don't know exactly which characters might break JSON.parse or why, we can't give a more targeted fix.
+                responseArray = JSON.parse(removeTitleProperty(jsonResponse));
+            } catch (e) {
+                return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse));
+            }
+        }
+
+        if (Array.isArray(responseArray)) {
+            return (responseArray as ITarget[])
+                .map(target => {
+                    this._fixRemoteUrl(address, port, target);
+                    target.version = version;
+                    return target;
+                });
+        } else {
+            return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
         }
     }
 
@@ -195,4 +205,8 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
 
         return target;
     }
+}
+
+export function removeTitleProperty(targetsResponse: string): string {
+    return targetsResponse.replace(/"title": "[^"]+",?/, '');
 }
