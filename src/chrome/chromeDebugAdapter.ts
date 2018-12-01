@@ -892,7 +892,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     }
                 }
 
-                if (script.url === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && this._pendingBreakpointsByUrl.get(mappedUrl).setWithPath === mappedUrl) {
+                if (utils.canonicalizeUrl(script.url) === mappedUrl && this._pendingBreakpointsByUrl.has(mappedUrl) && utils.canonicalizeUrl(this._pendingBreakpointsByUrl.get(mappedUrl).setWithPath) === utils.canonicalizeUrl(mappedUrl)) {
                     // If the pathTransformer had no effect, and we attempted to set the BPs with that path earlier, then assume that they are about
                     // to be resolved in this loaded script, and remove the pendingBP.
                     this._pendingBreakpointsByUrl.delete(mappedUrl);
