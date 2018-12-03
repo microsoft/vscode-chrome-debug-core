@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ValidatedMap } from './validatedMap';
-import { printMap } from './printting';
+import { printMap } from './printing';
 
 /** A map where we can efficiently get the key from the value or the value from the key */
 export class BidirectionalMap<Left, Right> {

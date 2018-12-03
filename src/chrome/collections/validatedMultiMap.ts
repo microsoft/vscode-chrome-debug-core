@@ -1,5 +1,5 @@
 import { ValidatedMap } from './validatedMap';
-import { printMap } from './printting';
+import { printMap } from './printing';
 
 /** A multi map that throws exceptions instead of returning error codes. */
 export class ValidatedMultiMap<K, V> {

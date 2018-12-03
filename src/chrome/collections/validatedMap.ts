@@ -1,4 +1,4 @@
-import { printMap } from './printting';
+import { printMap } from './printing';
 
 export interface IValidatedMap<K, V> extends Map<K, V> {
     tryGetting(key: K): V | undefined;

@@ -1,5 +1,5 @@
 import { ValidatedMap, IValidatedMap } from './validatedMap';
-import { printSet } from './printting';
+import { printSet } from './printing';
 
 export interface IProjection<K, P> {
     (element: K): P;

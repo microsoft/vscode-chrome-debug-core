@@ -1,6 +1,6 @@
 import { ValidatedMap, IValidatedMap } from './validatedMap';
 import { IProjection } from './setUsingProjection';
-import { printMap } from './printting';
+import { printMap } from './printing';
 
 class KeyAndValue<K, V> {
     constructor(public readonly key: K, public readonly value: V) { }
