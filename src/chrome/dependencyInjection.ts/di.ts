@@ -20,4 +20,8 @@ export class DependencyInjection {
     public createClassWithDI<T>(classToCreate: interfaces.Newable<T>): T {
         return this._container.get(classToCreate);
     }
+
+    public createComponent<T>(componentIdentifier: symbol): T {
+        return this._container.get(componentIdentifier);
+    }
 }

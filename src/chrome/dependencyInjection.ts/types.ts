@@ -13,6 +13,7 @@ const TYPES = {
     IStackTracePresentationLogicProvider: Symbol.for('IStackTracePresentationLogicProvider'),
     IScriptSources: Symbol.for('IScriptSources'),
     EventsConsumedByConnectedCDA: Symbol.for('EventsConsumedByConnectedCDA'),
+    IDebugeeLauncher: Symbol.for('IDebugeeLauncher'),
 
 };
 

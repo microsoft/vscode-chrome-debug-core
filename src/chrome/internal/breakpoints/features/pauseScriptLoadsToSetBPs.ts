@@ -14,6 +14,8 @@ import { TYPES } from '../../../dependencyInjection.ts/types';
 import { IEventsToClientReporter } from '../../../client/eventSender';
 import { IDebugeeExecutionControl } from '../../../target/cdtpDebugger';
 
+export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
+
 export interface PauseScriptLoadsToSetBPsDependencies {
     subscriberForAskForInformationAboutPaused(listener: InformationAboutPausedProvider): void;
     waitUntilUnbindedBPsAreSet(loadedSource: ILoadedSource): Promise<void>;

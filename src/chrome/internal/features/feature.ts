@@ -17,3 +17,12 @@ export type IComponent<Configuration = ComponentConfiguration> =
     Configuration extends void
     ? IConfigurationlessFeature
     : IConfigurableFeature<Configuration>;
+
+export interface ICommandHandlerDeclaration {
+    readonly commandName: string;
+    readonly commandHandler: (args: any) => PromiseOrNot<void>;
+}
+
+export interface ICommandHandlerDeclarer {
+    getCommandHandlerDeclarations(): PromiseOrNot<ICommandHandlerDeclaration>;
+}

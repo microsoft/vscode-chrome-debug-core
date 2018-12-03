@@ -1,5 +1,5 @@
 import { UnconnectedCDACommonLogic } from './unconnectedCDACommonLogic';
-import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, BasePathTransformer, BaseSourceMapTransformer, LineColTransformer, utils } from '../../..';
+import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, BasePathTransformer, BaseSourceMapTransformer, LineColTransformer, utils, IDebugeeLauncher } from '../../..';
 import { ChromeConnection } from '../../chromeConnection';
 import { IClientCapabilities } from '../../../debugAdapterInterfaces';
 import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
@@ -29,13 +29,13 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         throw new Error('The chrome debug adapter can only be used when the debug adapter is connected');
     }
 
-    public async launch(args: ILaunchRequestArgs, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<IDebugAdapterState> {
-        return this.createConnection(ScenarioType.Launch, args);
+    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<IDebugAdapterState> {
+        return this.createConnection(ScenarioType.Launch, args, telemetryPropertyCollector);
     }
 
-    public async attach(args: IAttachRequestArgs, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<IDebugAdapterState> {
+    public async attach(args: IAttachRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<IDebugAdapterState> {
         const updatedArgs = Object.assign({}, { port: 9229 }, args);
-        return this.createConnection(ScenarioType.Attach, updatedArgs);
+        return this.createConnection(ScenarioType.Attach, updatedArgs, telemetryPropertyCollector);
     }
 
     private parseLoggingConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs): LoggingConfiguration {
@@ -44,7 +44,7 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: args.logTimestamps };
     }
 
-    private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs): Promise<IDebugAdapterState> {
+    private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
         if (this._clientCapabilities.pathFormat !== 'path') {
             throw errors.pathFormat();
         }
@@ -63,9 +63,10 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         const chromeConnection = new (this._chromeConnectionClass)(undefined, args.targetFilter || this._extensibilityPoints.targetFilter);
         const communicator = new LoggingCommunicator(new Communicator(), new ExecutionLogger(logging));
 
-        return di
-            .configureClass(LineColTransformer, lineColTransformerClass)
-            .configureValue(TYPES.communicator, communicator)
+        di
+        .configureClass(LineColTransformer, lineColTransformerClass)
+        .configureClass(TYPES.IDebugeeLauncher, this._extensibilityPoints.debugeeLauncher)
+        .configureValue(TYPES.communicator, communicator)
             .configureValue(TYPES.EventsConsumedByConnectedCDA, new ConnectedCDAEventsCreator(communicator).create())
             .configureValue(TYPES.chromeConnectionApi, chromeConnection.api)
             .configureValue(TYPES.ISession, new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(this._session)))
@@ -78,8 +79,12 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
                 this._clientCapabilities,
                 this._chromeConnectionClass,
                 scenarioType,
-                args))
-            .createClassWithDI<ConnectedCDA>(ConnectedCDA);
+                args));
+
+        const launcher = di.createComponent<IDebugeeLauncher>(TYPES.IDebugeeLauncher);
+        await launcher.launch(telemetryPropertyCollector);
+
+        return di.createClassWithDI<ConnectedCDA>(ConnectedCDA);
     }
 
     constructor(
