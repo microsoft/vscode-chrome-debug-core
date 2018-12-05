@@ -4,8 +4,7 @@ import { ScriptParsedEvent, ExceptionDetails, LogEntry } from './events';
 import { LocationInScript, Coordinates, ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
 import { asyncUndefinedOnFailure } from '../utils/failures';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
-import { BreakpointInScript, BreakpointInUrl, BreakpointInUrlRegexp, Breakpoint } from '../internal/breakpoints/breakpoint';
-import { BPRecipieInUrl, BPRecipieInScript, BPRecipie, BPRecipieInUrlRegexp, URLRegexp, IBPRecipie } from '../internal/breakpoints/bpRecipie';
+import { URLRegexp, IBPRecipie } from '../internal/breakpoints/bpRecipie';
 import { BreakpointIdRegistry } from './breakpointIdRegistry';
 import { CodeFlowStackTrace } from '../internal/stackTraces/stackTrace';
 import { CodeFlowFrame, ICallFrame, ScriptCallFrame } from '../internal/stackTraces/callFrame';
@@ -31,10 +30,7 @@ interface HasScript {
 
 interface HasScriptLocation extends HasLocation, HasScript { }
 
-interface BreakpointClass<TResource extends ScriptOrSourceOrIdentifierOrUrlRegexp> {
-    new(recipie: BPRecipie<TResource>, actualLocation: LocationInScript): Breakpoint<TResource>;
-}
-
+// TODO DIEGO: Rename/Refactor this class to CDTPSerializer or something similar
 export class TargetToInternal {
     public getBPsFromIDs = adaptToSinglIntoToMulti(this, this.getBPFromID);
 
@@ -44,36 +40,6 @@ export class TargetToInternal {
 
     public markExecutionContextAsDestroyed(id: Crdp.Runtime.ExecutionContextId): IExecutionContext {
         return this._scriptsRegistry.markExecutionContextAsDestroyed(id);
-    }
-
-    public toBPRecipie(breakpointId: Crdp.Debugger.BreakpointId): IBPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp> {
-        return this._breakpointIdRegistry.getRecipieByBreakpointId(breakpointId);
-    }
-
-    public unregisterBreakpointId(bpRecipie: BPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>): void {
-        this._breakpointIdRegistry.unregisterRecipie(bpRecipie);
-    }
-
-    public registerBreakpointId(cdtpBreakpointId: Crdp.Debugger.BreakpointId, bpRecipie: BPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>): void {
-        this._breakpointIdRegistry.registerRecipie(cdtpBreakpointId, bpRecipie);
-    }
-
-    public async toBreakpoinInResource<TResource extends ScriptOrSourceOrIdentifierOrUrlRegexp>(classToUse: BreakpointClass<TResource>,
-        bpRecipie: BPRecipie<TResource>, actualLocation: Crdp.Debugger.Location): Promise<Breakpoint<TResource>> {
-        const breakpoint = new classToUse(bpRecipie, await this.toLocationInScript(actualLocation));
-        return breakpoint;
-    }
-
-    public async toBreakpointInScript(bpRecipie: BPRecipieInScript, params: Crdp.Debugger.SetBreakpointResponse): Promise<BreakpointInScript> {
-        return this.toBreakpoinInResource<IScript>(BreakpointInScript, bpRecipie, params.actualLocation);
-    }
-
-    public async toBreakpointInUrl(bpRecipie: BPRecipieInUrl, actualLocation: Crdp.Debugger.Location): Promise<BreakpointInUrl> {
-        return this.toBreakpoinInResource<IResourceIdentifier>(BreakpointInUrl, bpRecipie, actualLocation);
-    }
-
-    public async toBreakpointInUrlRegexp(bpRecipie: BPRecipieInUrlRegexp, actualLocation: Crdp.Debugger.Location): Promise<BreakpointInUrlRegexp> {
-        return this.toBreakpoinInResource<URLRegexp>(BreakpointInUrlRegexp, bpRecipie, actualLocation);
     }
 
     public async toScriptParsedEvent(params: Crdp.Debugger.ScriptParsedEvent): Promise<ScriptParsedEvent> {

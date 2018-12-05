@@ -1,31 +1,19 @@
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
-import { Crdp, utils } from '../..';
-import { LocationInScript, ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
+import { Crdp, utils, inject } from '../..';
 import { PausedEvent, SetVariableValueRequest, ScriptParsedEvent } from './events';
 import { IScript } from '../internal/scripts/script';
 import { EvaluateOnCallFrameRequest } from './requests';
 import { TargetToInternal } from './targetToInternal';
 import { InternalToTarget } from './internalToTarget';
-import { BPRecipieInScript, BPRecipieInUrl, BPRecipieInUrlRegexp, BPRecipie } from '../internal/breakpoints/bpRecipie';
-import { AlwaysBreak, ConditionalBreak } from '../internal/breakpoints/bpActionWhenHit';
-import { Breakpoint, BreakpointInScript, BreakpointInUrl, BreakpointInUrlRegexp } from '../internal/breakpoints/breakpoint';
 import { asyncMap } from '../collections/async';
 import { ICallFrame } from '../internal/stackTraces/callFrame';
-import { RangeInScript } from '../internal/locations/rangeInScript';
 import { PauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../internal/exceptions/strategies';
+import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
 export type ScriptParsedListener = (params: ScriptParsedEvent) => void;
 
 export interface IBreakpointFeaturesSupport {
     supportsColumnBreakpoints(): Promise<boolean>;
-}
-
-export interface ITargetBreakpoints {
-    setBreakpoint(bpRecipie: BPRecipieInScript<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInScript>;
-    setBreakpointByUrl(bpRecipie: BPRecipieInUrl<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInUrl[]>;
-    setBreakpointByUrlRegexp(bpRecipie: BPRecipieInUrlRegexp<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInUrlRegexp[]>;
-    getPossibleBreakpoints(rangeInScript: RangeInScript): Promise<LocationInScript[]>;
-    removeBreakpoint(bpRecipie: BPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>): Promise<void>;
 }
 
 export interface IDebugeeStepping {
@@ -52,16 +40,9 @@ export interface IScriptSources {
     getScriptSource(script: IScript): Promise<string>;
 }
 
-export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements ITargetBreakpoints,
-    IDebugeeStepping, IDebugeeExecutionControl, IBreakpointFeaturesSupport, IPauseOnExceptions, IBreakpointFeaturesSupport, IScriptSources {
+export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IDebugeeStepping, IDebugeeExecutionControl,
+    IBreakpointFeaturesSupport, IPauseOnExceptions, IBreakpointFeaturesSupport, IScriptSources {
     private _firstScriptWasParsed = utils.promiseDefer<Crdp.Runtime.ScriptId>();
-
-    public readonly onBreakpointResolved = this.addApiListener('breakpointResolved', async (params: Crdp.Debugger.BreakpointResolvedEvent) => {
-        const bpRecipie = this._crdpToInternal.toBPRecipie(params.breakpointId);
-        const breakpoint = new Breakpoint(bpRecipie,
-            await this._crdpToInternal.toLocationInScript(params.location));
-        return breakpoint;
-    });
 
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {
         // We resolve the promise waiting for the first script parse. This is used to detect column breakpoints support
@@ -104,63 +85,12 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
         return this.api.resume();
     }
 
-    public async getPossibleBreakpoints(rangeInScript: RangeInScript): Promise<LocationInScript[]> {
-        const response = await this.api.getPossibleBreakpoints({
-            start: this._internalToCRDP.toCrdpLocation(rangeInScript.startInScript),
-            end: this._internalToCRDP.toCrdpLocation(rangeInScript.endInScript)
-        });
-
-        return asyncMap(response.locations, async location => await this._crdpToInternal.toLocationInScript(location));
-    }
-
     public setBlackboxedRanges(script: IScript, positions: Crdp.Debugger.ScriptPosition[]): Promise<void> {
-        return this.api.setBlackboxedRanges({ scriptId: this._internalToCRDP.getScriptId(script), positions: positions });
+        return this.api.setBlackboxedRanges({ scriptId: this._scriptsRegistry.getCrdpId(script), positions: positions });
     }
 
     public setBlackboxPatterns(params: Crdp.Debugger.SetBlackboxPatternsRequest): Promise<void> {
         return this.api.setBlackboxPatterns(params);
-    }
-
-    public async removeBreakpoint(bpRecipie: BPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>): Promise<void> {
-        await this.api.removeBreakpoint({ breakpointId: this._internalToCRDP.getBreakpointId(bpRecipie) });
-        this._crdpToInternal.unregisterBreakpointId(bpRecipie);
-    }
-
-    public async setBreakpoint(bpRecipie: BPRecipieInScript<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInScript> {
-        const condition = this._internalToCRDP.getBPRecipieCondition(bpRecipie);
-
-        const response = await this.api.setBreakpoint({ location: this._internalToCRDP.toCrdpLocation(bpRecipie.location), condition });
-
-        // We need to call registerRecipie sync with the response, before any awaits so if we get an event witha breakpointId we'll be able to resolve it properly
-        this._crdpToInternal.registerBreakpointId(response.breakpointId, bpRecipie);
-
-        return this._crdpToInternal.toBreakpointInScript(bpRecipie, response);
-    }
-
-    public async setBreakpointByUrl(bpRecipie: BPRecipieInUrl<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInUrl[]> {
-        const condition = this._internalToCRDP.getBPRecipieCondition(bpRecipie);
-        const url = bpRecipie.location.resource.textRepresentation;
-        const location = bpRecipie.location.coordinates;
-
-        const response = await this.api.setBreakpointByUrl({ url, lineNumber: location.lineNumber, columnNumber: location.columnNumber, condition });
-
-        // We need to call registerRecipie sync with the response, before any awaits so if we get an event witha breakpointId we'll be able to resolve it properly
-        this._crdpToInternal.registerBreakpointId(response.breakpointId, bpRecipie);
-
-        return Promise.all(response.locations.map(cdtpLocation => this._crdpToInternal.toBreakpointInUrl(bpRecipie, cdtpLocation)));
-    }
-
-    public async setBreakpointByUrlRegexp(bpRecipie: BPRecipieInUrlRegexp<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInUrlRegexp[]> {
-        const condition = this._internalToCRDP.getBPRecipieCondition(bpRecipie);
-        const urlRegex = bpRecipie.location.resource.textRepresentation;
-        const location = bpRecipie.location.coordinates;
-
-        const response = await this.api.setBreakpointByUrl({ urlRegex, lineNumber: location.lineNumber, columnNumber: location.columnNumber, condition });
-
-        // We need to call registerRecipie sync with the response, before any awaits so if we get an event witha breakpointId we'll be able to resolve it properly
-        this._crdpToInternal.registerBreakpointId(response.breakpointId, bpRecipie);
-
-        return Promise.all(response.locations.map(cdtpLocation => this._crdpToInternal.toBreakpointInUrlRegexp(bpRecipie, cdtpLocation)));
     }
 
     public setPauseOnExceptions(strategy: PauseOnExceptionsStrategy): Promise<void> {
@@ -196,7 +126,7 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
     }
 
     public async getScriptSource(script: IScript): Promise<string> {
-        return (await this.api.getScriptSource({ scriptId: this._internalToCRDP.getScriptId(script) })).scriptSource;
+        return (await this.api.getScriptSource({ scriptId: this._scriptsRegistry.getCrdpId(script) })).scriptSource;
     }
 
     public evaluateOnCallFrame(params: EvaluateOnCallFrameRequest): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse> {
@@ -245,7 +175,8 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
     constructor(
         protected readonly api: Crdp.DebuggerApi,
         private readonly _crdpToInternal: TargetToInternal,
-        private readonly _internalToCRDP: InternalToTarget) {
+        private readonly _internalToCRDP: InternalToTarget,
+        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }

@@ -9,8 +9,9 @@ import { RangeInScript } from '../locations/rangeInScript';
 import { BreakpointsRegistry } from './breakpointsRegistry';
 import { PausedEvent } from '../../target/events';
 import { VoteCommonLogic, VoteRelevance, Vote, Abstained } from '../../communication/collaborativeDecision';
-import { ITargetBreakpoints, CDTPDebugger, IBreakpointFeaturesSupport } from '../../target/cdtpDebugger';
+import { CDTPDebugger, IBreakpointFeaturesSupport } from '../../target/cdtpDebugger';
 import { inject } from 'inversify';
+import { ITargetBreakpoints } from '../../target/cdtpTargetBreakpoints';
 
 export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
 
