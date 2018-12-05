@@ -1,17 +1,15 @@
 import { Crdp, } from '../..';
 import { IScript, } from '../internal/scripts/script';
-import { LocationInScript, Coordinates, ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
+import { LocationInScript, Coordinates } from '../internal/locations/location';
 import { asyncUndefinedOnFailure } from '../utils/failures';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
-import { URLRegexp, IBPRecipie } from '../internal/breakpoints/bpRecipie';
-import { BreakpointIdRegistry } from './breakpointIdRegistry';
+import { URLRegexp } from '../internal/breakpoints/bpRecipie';
 import { CodeFlowStackTrace } from '../internal/stackTraces/stackTrace';
 import { CodeFlowFrame, ICallFrame, ScriptCallFrame } from '../internal/stackTraces/callFrame';
 import { createCallFrameName } from '../internal/stackTraces/callFrameName';
 import { Scope } from '../internal/stackTraces/scopes';
 import { LineNumber, ColumnNumber } from '../internal/locations/subtypes';
 import { IResourceIdentifier } from '../internal/sources/resourceIdentifier';
-import { adaptToSinglIntoToMulti } from '../../utils';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
 export type CDTPResource = IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
@@ -29,8 +27,6 @@ interface HasScriptLocation extends HasLocation, HasScript { }
 
 // TODO DIEGO: Rename/Refactor this class to CDTPSerializer or something similar
 export class TargetToInternal {
-    public getBPsFromIDs = adaptToSinglIntoToMulti(this, this.getBPFromID);
-
     public async toStackTraceCodeFlow(stackTrace: NonNullable<Crdp.Runtime.StackTrace>): Promise<CodeFlowStackTrace<IScript>> {
         return {
             codeFlowFrames: await Promise.all(stackTrace.callFrames.map((callFrame, index) => this.RuntimetoCallFrameCodeFlow(index, callFrame))),
@@ -81,11 +77,6 @@ export class TargetToInternal {
         return new LocationInScript(await this._scriptsRegistry.getScriptById(crdpScriptLocation.scriptId), this.getLocation(crdpScriptLocation));
     }
 
-    public getBPFromID(hitBreakpoint: Crdp.Debugger.BreakpointId): IBPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp> {
-        return this._breakpointIdRegistry.getRecipieByBreakpointId(hitBreakpoint);
-    }
-
     constructor(
-        private readonly _scriptsRegistry: CDTPScriptsRegistry,
-        private readonly _breakpointIdRegistry: BreakpointIdRegistry) { }
+        private readonly _scriptsRegistry: CDTPScriptsRegistry) { }
 }

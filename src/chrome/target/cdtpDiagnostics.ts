@@ -39,10 +39,10 @@ export class CDTPDiagnostics implements IComponent {
     constructor(private _api: Crdp.ProtocolApi) {
         const scriptsRegistry = new CDTPScriptsRegistry();
         const breakpointIdRegistry = new BreakpointIdRegistry();
-        const crdpToInternal = new TargetToInternal(scriptsRegistry, breakpointIdRegistry);
+        const crdpToInternal = new TargetToInternal(scriptsRegistry);
         const internalToCRDP = new InternalToTarget(new ValidatedMap<ICallFrame<IScript>, Crdp.Debugger.CallFrameId>());
         this.Debugger = new CDTPDebugger(this._api.Debugger, internalToCRDP, scriptsRegistry);
-        this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, crdpToInternal);
+        this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, crdpToInternal, breakpointIdRegistry);
         this.Console = new CDTPConsole(this._api.Console);
         this.Runtime = new CDTPRuntime(this._api.Runtime, crdpToInternal, internalToCRDP, scriptsRegistry);
         this.Schema = new CDTPSchema(this._api.Schema);
