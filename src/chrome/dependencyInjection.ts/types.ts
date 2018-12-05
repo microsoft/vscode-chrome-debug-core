@@ -15,7 +15,8 @@ const TYPES = {
     EventsConsumedByConnectedCDA: Symbol.for('EventsConsumedByConnectedCDA'),
     IDebugeeLauncher: Symbol.for('IDebugeeLauncher'),
     CrdpApi: Symbol.for('CrdpApi'),
-    TargetToInternal: Symbol.for('TargetToInternal')
+    CDTPStackTraceParser: Symbol.for('CDTPStackTraceParser'),
+    CDTPLocationParser: Symbol.for('CDTPLocationParser'),
 };
 
 export { TYPES };

@@ -1,6 +1,6 @@
 import { Crdp, inject } from '../..';
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { InternalToTarget } from './internalToTarget';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { ExceptionDetails } from './events';
@@ -72,7 +72,7 @@ export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.Runtime
 
     constructor(
         protected readonly api: Crdp.RuntimeApi,
-        private readonly _crdpToInternal: TargetToInternal,
+        private readonly _crdpToInternal: CDTPStackTraceParser,
         private readonly _internalToTarget: InternalToTarget,
         @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();

@@ -11,7 +11,7 @@ import { asyncMap } from '../collections/async';
 import { IScript } from '../internal/scripts/script';
 import { IResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPLocationParser } from './cdtpLocationParser';
 
 export interface ITargetBreakpoints {
     setBreakpoint(bpRecipie: BPRecipieInScript<AlwaysBreak | ConditionalBreak>): Promise<BreakpointInScript>;
@@ -31,7 +31,7 @@ export class CDTPTargetBreakpoints extends CDTPEventsEmitterDiagnosticsModule<Cr
     public readonly onBreakpointResolved = this.addApiListener('breakpointResolved', async (params: Crdp.Debugger.BreakpointResolvedEvent) => {
         const bpRecipie = this._breakpointIdRegistry.getRecipieByBreakpointId(params.breakpointId);
         const breakpoint = new Breakpoint(bpRecipie,
-            await this._crdpToInternal.toLocationInScript(params.location));
+            await this.toLocationInScript(params.location));
         return breakpoint;
     });
 
@@ -78,7 +78,7 @@ export class CDTPTargetBreakpoints extends CDTPEventsEmitterDiagnosticsModule<Cr
             end: this.toCrdpLocation(rangeInScript.endInScript)
         });
 
-        return asyncMap(response.locations, async location => await this._crdpToInternal.toLocationInScript(location));
+        return asyncMap(response.locations, async location => await this.toLocationInScript(location));
     }
 
     public async removeBreakpoint(bpRecipie: BPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>): Promise<void> {
@@ -99,7 +99,7 @@ export class CDTPTargetBreakpoints extends CDTPEventsEmitterDiagnosticsModule<Cr
 
     private async toBreakpoinInResource<TResource extends ScriptOrSourceOrIdentifierOrUrlRegexp>(classToUse: BreakpointClass<TResource>,
         bpRecipie: BPRecipie<TResource>, actualLocation: Crdp.Debugger.Location): Promise<Breakpoint<TResource>> {
-        const breakpoint = new classToUse(bpRecipie, await this._crdpToInternal.toLocationInScript(actualLocation));
+        const breakpoint = new classToUse(bpRecipie, await this.toLocationInScript(actualLocation));
         return breakpoint;
     }
 
@@ -119,9 +119,13 @@ export class CDTPTargetBreakpoints extends CDTPEventsEmitterDiagnosticsModule<Cr
         };
     }
 
+    public toLocationInScript(location: Crdp.Debugger.Location): Promise<LocationInScript> {
+        return this._cdtpLocationParser.getScriptLocation(location);
+    }
+
     constructor(
         @inject(TYPES.CrdpApi) protected readonly protocolApi: Crdp.ProtocolApi,
-        @inject(TYPES.TargetToInternal) private readonly _crdpToInternal: TargetToInternal,
+        @inject(TYPES.CDTPLocationParser) private readonly _cdtpLocationParser: CDTPLocationParser,
         @inject(BreakpointIdRegistry) private readonly _breakpointIdRegistry: BreakpointIdRegistry,
         @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();

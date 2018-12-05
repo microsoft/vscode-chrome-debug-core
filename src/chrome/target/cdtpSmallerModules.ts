@@ -1,6 +1,6 @@
 import { CDTPDiagnosticsModule, CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { Crdp } from '../..';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { injectable } from 'inversify';
 import { LogEntry } from './events';
 
@@ -126,7 +126,7 @@ export class CDTPLog extends CDTPEventsEmitterDiagnosticsModule<Crdp.LogApi> {
         };
     }
 
-    constructor(protected readonly api: Crdp.LogApi, private readonly _crdpToInternal: TargetToInternal) {
+    constructor(protected readonly api: Crdp.LogApi, private readonly _crdpToInternal: CDTPStackTraceParser) {
         super();
     }
 }

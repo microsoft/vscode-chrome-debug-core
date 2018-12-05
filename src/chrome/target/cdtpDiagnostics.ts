@@ -1,6 +1,6 @@
 import { Crdp } from '../..';
 import { IScript } from '../internal/scripts/script';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { InternalToTarget } from './internalToTarget';
 import { CDTPDebugger } from './cdtpDebugger';
 import { ValidatedMap } from '../collections/validatedMap';
@@ -12,6 +12,7 @@ import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { injectable } from 'inversify';
 import { IComponent } from '../internal/features/feature';
 import { CDTPDebuggerEventsProvider } from './cdtpDebuggerEventsProvider';
+import { CDTPLocationParser } from './cdtpLocationParser';
 
 @injectable()
 export class CDTPDiagnostics implements IComponent {
@@ -39,18 +40,19 @@ export class CDTPDiagnostics implements IComponent {
     constructor(private _api: Crdp.ProtocolApi) {
         const scriptsRegistry = new CDTPScriptsRegistry();
         const breakpointIdRegistry = new BreakpointIdRegistry();
-        const crdpToInternal = new TargetToInternal(scriptsRegistry);
+        const cdtpLocationParser = new CDTPLocationParser(scriptsRegistry);
+        const cdtpStackTraceParser = new CDTPStackTraceParser(cdtpLocationParser);
         const internalToCRDP = new InternalToTarget(new ValidatedMap<ICallFrame<IScript>, Crdp.Debugger.CallFrameId>());
         this.Debugger = new CDTPDebugger(this._api.Debugger, internalToCRDP, scriptsRegistry);
-        this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, crdpToInternal, breakpointIdRegistry);
+        this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, cdtpStackTraceParser, breakpointIdRegistry, cdtpLocationParser);
         this.Console = new CDTPConsole(this._api.Console);
-        this.Runtime = new CDTPRuntime(this._api.Runtime, crdpToInternal, internalToCRDP, scriptsRegistry);
+        this.Runtime = new CDTPRuntime(this._api.Runtime, cdtpStackTraceParser, internalToCRDP, scriptsRegistry);
         this.Schema = new CDTPSchema(this._api.Schema);
         this.DOMDebugger = new CDTPDOMDebugger(this._api.DOMDebugger);
         this.Page = new CDTPPage(this._api.Page);
         this.Network = new CDTPNetwork(this._api.Network);
         this.Browser = new CDTPBrowser(this._api.Browser);
         this.Overlay = new CDTPOverlay(this._api.Overlay);
-        this.Log = new CDTPLog(this._api.Log, crdpToInternal);
+        this.Log = new CDTPLog(this._api.Log, cdtpStackTraceParser);
     }
 }

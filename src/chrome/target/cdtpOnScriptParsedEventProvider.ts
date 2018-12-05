@@ -7,7 +7,7 @@ import { SourcesMapper, NoSourceMapping } from '../internal/scripts/sourcesMappe
 import { ResourceName } from '../internal/sources/resourceIdentifier';
 import { ScriptParsedEvent } from './events';
 import { TYPES } from '../dependencyInjection.ts/types';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 
 export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {
@@ -69,7 +69,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
 
     constructor(
         protected readonly api: Crdp.DebuggerApi,
-        @inject(TYPES.TargetToInternal) private readonly _crdpToInternal: TargetToInternal,
+        @inject(TYPES.CDTPStackTraceParser) private readonly _crdpToInternal: CDTPStackTraceParser,
         @inject(BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
         @inject(BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
         @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {

@@ -2,11 +2,16 @@ import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { Crdp } from '../..';
 import { asyncMap } from '../collections/async';
 import { PausedEvent } from './events';
-import { TargetToInternal } from './targetToInternal';
+import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { adaptToSinglIntoToMulti } from '../../utils';
 import { IBPRecipie } from '../internal/breakpoints/bpRecipie';
 import { ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
 import { BreakpointIdRegistry } from './breakpointIdRegistry';
+import { ScriptCallFrame, ICallFrame, CodeFlowFrame } from '../internal/stackTraces/callFrame';
+import { asyncUndefinedOnFailure } from '../utils/failures';
+import { CDTPLocationParser } from './cdtpLocationParser';
+import { Scope } from '../internal/stackTraces/scopes';
+import { IScript } from '../internal/scripts/script';
 
 export class CDTPDebuggerEventsProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
     private getBPsFromIDs = adaptToSinglIntoToMulti(this, this.getBPFromID);
@@ -16,7 +21,7 @@ export class CDTPDebuggerEventsProvider extends CDTPEventsEmitterDiagnosticsModu
             throw new Error(`Expected a pause event to have at least a single call frame: ${JSON.stringify(params)}`);
         }
 
-        const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this._crdpToInternal.toCallFrame(index, callFrame));
+        const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this.toCallFrame(index, callFrame));
         return new PausedEvent(callFrames, params.reason, params.data,
             this.getBPsFromIDs(params.hitBreakpoints),
             params.asyncStackTrace && await this._crdpToInternal.toStackTraceCodeFlow(params.asyncStackTrace),
@@ -31,10 +36,32 @@ export class CDTPDebuggerEventsProvider extends CDTPEventsEmitterDiagnosticsModu
         return this._breakpointIdRegistry.getRecipieByBreakpointId(hitBreakpoint);
     }
 
+    private async toCallFrame(index: number, callFrame: Crdp.Debugger.CallFrame): Promise<ICallFrame<IScript>> {
+        return new ScriptCallFrame(await this.DebuggertoCallFrameCodeFlow(index, callFrame),
+            await Promise.all(callFrame.scopeChain.map(scope => this.toScope(scope))),
+            callFrame.this, callFrame.returnValue);
+    }
+
+    private DebuggertoCallFrameCodeFlow(index: number, callFrame: Crdp.Debugger.CallFrame): Promise<CodeFlowFrame<IScript>> {
+        return this._crdpToInternal.configurableToCallFrameCodeFlow(index, callFrame, callFrame.location);
+    }
+
+    private async toScope(scope: Crdp.Debugger.Scope): Promise<Scope> {
+        return {
+            type: scope.type,
+            object: scope.object,
+            name: scope.name,
+            // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
+            startLocation: await asyncUndefinedOnFailure(async () => scope.startLocation && await this._cdtpLocationParser.getScriptLocation(scope.startLocation)),
+            endLocation: await asyncUndefinedOnFailure(async () => scope.endLocation && await this._cdtpLocationParser.getScriptLocation(scope.endLocation))
+        };
+    }
+
     constructor(
         protected readonly api: Crdp.DebuggerApi,
-        private readonly _crdpToInternal: TargetToInternal,
-        private readonly _breakpointIdRegistry: BreakpointIdRegistry) {
+        private readonly _crdpToInternal: CDTPStackTraceParser,
+        private readonly _breakpointIdRegistry: BreakpointIdRegistry,
+        private readonly _cdtpLocationParser: CDTPLocationParser) {
         super();
     }
 }
