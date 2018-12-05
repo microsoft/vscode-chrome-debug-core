@@ -2,6 +2,7 @@ import { CDTPDiagnosticsModule, CDTPEventsEmitterDiagnosticsModule } from './cdt
 import { Crdp } from '../..';
 import { TargetToInternal } from './targetToInternal';
 import { injectable } from 'inversify';
+import { LogEntry } from './events';
 
 export class CDTPConsole extends CDTPEventsEmitterDiagnosticsModule<Crdp.ConsoleApi> {
     public readonly onMessageAdded = this.addApiListener('messageAdded', (params: Crdp.Console.MessageAddedEvent) => params);
@@ -104,10 +105,25 @@ export class CDTPOverlay extends CDTPDiagnosticsModule<Crdp.OverlayApi> {
 }
 
 export class CDTPLog extends CDTPEventsEmitterDiagnosticsModule<Crdp.LogApi> {
-    public readonly onEntryAdded = this.addApiListener('entryAdded', async (params: Crdp.Log.EntryAddedEvent) => await this._crdpToInternal.toLogEntry(params.entry));
+    public readonly onEntryAdded = this.addApiListener('entryAdded', async (params: Crdp.Log.EntryAddedEvent) => await this.toLogEntry(params.entry));
 
     public enable(): Promise<void> {
         return this.api.enable();
+    }
+
+    private async toLogEntry(entry: Crdp.Log.LogEntry): Promise<LogEntry> {
+        return {
+            source: entry.source,
+            level: entry.level,
+            text: entry.text,
+            timestamp: entry.timestamp,
+            url: entry.url,
+            lineNumber: entry.lineNumber,
+            stackTrace: entry.stackTrace && await this._crdpToInternal.toStackTraceCodeFlow(entry.stackTrace),
+            networkRequestId: entry.networkRequestId,
+            workerId: entry.workerId,
+            args: entry.args,
+        };
     }
 
     constructor(protected readonly api: Crdp.LogApi, private readonly _crdpToInternal: TargetToInternal) {

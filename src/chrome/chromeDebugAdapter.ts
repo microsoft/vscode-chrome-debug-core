@@ -286,8 +286,8 @@ export class ChromeDebugLogic {
      * Hook up all connection events
      */
     public install(): ChromeDebugLogic {
-        this.chrome.Debugger.onResumed(() => this.onResumed());
-        this.chrome.Debugger.onPaused(paused => this.onPaused(paused));
+        this.chrome.DebuggerEvents.onResumed(() => this.onResumed());
+        this.chrome.DebuggerEvents.onPaused(paused => this.onPaused(paused));
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Console.enable();
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));

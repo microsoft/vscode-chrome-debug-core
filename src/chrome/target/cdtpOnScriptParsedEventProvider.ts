@@ -1,4 +1,4 @@
-import { utils, Crdp, inject, parseResourceIdentifier, BasePathTransformer, BaseSourceMapTransformer } from '../..';
+import { Crdp, inject, parseResourceIdentifier, BasePathTransformer, BaseSourceMapTransformer } from '../..';
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { IScript, Script } from '../internal/scripts/script';
@@ -9,13 +9,8 @@ import { ScriptParsedEvent } from './events';
 import { TYPES } from '../dependencyInjection.ts/types';
 import { TargetToInternal } from './targetToInternal';
 
-export class CDTPScriptEvents extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
-    private _firstScriptWasParsed = utils.promiseDefer<Crdp.Runtime.ScriptId>();
-
+export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {
-        // We resolve the promise waiting for the first script parse. This is used to detect column breakpoints support
-        this._firstScriptWasParsed.resolve(params.scriptId);
-
         await this.createAndRegisterScript(params);
 
         return await this.toScriptParsedEvent(params);

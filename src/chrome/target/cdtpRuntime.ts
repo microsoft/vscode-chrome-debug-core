@@ -3,6 +3,7 @@ import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { TargetToInternal } from './targetToInternal';
 import { InternalToTarget } from './internalToTarget';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
+import { ExceptionDetails } from './events';
 
 export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.RuntimeApi> {
     public readonly onExecutionContextsCleared = this.addApiListener('executionContextsCleared', (params: void) => params);
@@ -16,7 +17,7 @@ export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.Runtime
     public readonly onExceptionThrown = this.addApiListener('exceptionThrown', async (params: Crdp.Runtime.ExceptionThrownEvent) =>
         ({
             timestamp: params.timestamp,
-            exceptionDetails: await this._crdpToInternal.toExceptionDetails(params.exceptionDetails)
+            exceptionDetails: await this.toExceptionDetails(params.exceptionDetails)
         }));
 
     public readonly onConsoleAPICalled = this.addApiListener('consoleAPICalled', async (params: Crdp.Runtime.ConsoleAPICalledEvent) =>
@@ -53,6 +54,20 @@ export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.Runtime
         } catch (exception) {
             // Ignore the failed call
         }
+    }
+
+    private async toExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): Promise<ExceptionDetails> {
+        return {
+            exceptionId: exceptionDetails.exceptionId,
+            text: exceptionDetails.text,
+            lineNumber: exceptionDetails.lineNumber,
+            columnNumber: exceptionDetails.columnNumber,
+            script: exceptionDetails.scriptId ? await this._scriptsRegistry.getScriptById(exceptionDetails.scriptId) : undefined,
+            url: exceptionDetails.url,
+            stackTrace: exceptionDetails.stackTrace && await this._crdpToInternal.toStackTraceCodeFlow(exceptionDetails.stackTrace),
+            exception: exceptionDetails.exception,
+            executionContextId: exceptionDetails.executionContextId,
+        };
     }
 
     constructor(

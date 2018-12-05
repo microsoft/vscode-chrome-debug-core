@@ -11,10 +11,12 @@ import { ICallFrame } from '../internal/stackTraces/callFrame';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { injectable } from 'inversify';
 import { IComponent } from '../internal/features/feature';
+import { CDTPDebuggerEventsProvider } from './cdtpDebuggerEventsProvider';
 
 @injectable()
 export class CDTPDiagnostics implements IComponent {
     public Debugger: CDTPDebugger;
+    public DebuggerEvents: CDTPDebuggerEventsProvider;
     public Console: CDTPConsole;
     public Runtime: CDTPRuntime;
     public Schema: CDTPSchema;
@@ -39,7 +41,8 @@ export class CDTPDiagnostics implements IComponent {
         const breakpointIdRegistry = new BreakpointIdRegistry();
         const crdpToInternal = new TargetToInternal(scriptsRegistry, breakpointIdRegistry);
         const internalToCRDP = new InternalToTarget(new ValidatedMap<ICallFrame<IScript>, Crdp.Debugger.CallFrameId>());
-        this.Debugger = new CDTPDebugger(this._api.Debugger, crdpToInternal, internalToCRDP, scriptsRegistry);
+        this.Debugger = new CDTPDebugger(this._api.Debugger, internalToCRDP, scriptsRegistry);
+        this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, crdpToInternal);
         this.Console = new CDTPConsole(this._api.Console);
         this.Runtime = new CDTPRuntime(this._api.Runtime, crdpToInternal, internalToCRDP, scriptsRegistry);
         this.Schema = new CDTPSchema(this._api.Schema);

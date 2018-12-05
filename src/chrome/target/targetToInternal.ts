@@ -1,6 +1,5 @@
 import { Crdp, } from '../..';
 import { IScript, } from '../internal/scripts/script';
-import { ExceptionDetails, LogEntry } from './events';
 import { LocationInScript, Coordinates, ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
 import { asyncUndefinedOnFailure } from '../utils/failures';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
@@ -70,37 +69,8 @@ export class TargetToInternal {
         };
     }
 
-    public async toExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): Promise<ExceptionDetails> {
-        return {
-            exceptionId: exceptionDetails.exceptionId,
-            text: exceptionDetails.text,
-            lineNumber: exceptionDetails.lineNumber,
-            columnNumber: exceptionDetails.columnNumber,
-            script: exceptionDetails.scriptId ? await this._scriptsRegistry.getScriptById(exceptionDetails.scriptId) : undefined,
-            url: exceptionDetails.url,
-            stackTrace: exceptionDetails.stackTrace && await this.toStackTraceCodeFlow(exceptionDetails.stackTrace),
-            exception: exceptionDetails.exception,
-            executionContextId: exceptionDetails.executionContextId,
-        };
-    }
-
     public toLocationInScript(location: Crdp.Debugger.Location): Promise<LocationInScript> {
         return this.getScriptLocation(location);
-    }
-
-    public async toLogEntry(entry: Crdp.Log.LogEntry): Promise<LogEntry> {
-        return {
-            source: entry.source,
-            level: entry.level,
-            text: entry.text,
-            timestamp: entry.timestamp,
-            url: entry.url,
-            lineNumber: entry.lineNumber,
-            stackTrace: entry.stackTrace && await this.toStackTraceCodeFlow(entry.stackTrace),
-            networkRequestId: entry.networkRequestId,
-            workerId: entry.workerId,
-            args: entry.args,
-        };
     }
 
     private getLocation(crdpLocation: HasLocation): Coordinates {

@@ -1,11 +1,9 @@
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { Crdp, inject } from '../..';
-import { PausedEvent, SetVariableValueRequest, ScriptParsedEvent } from './events';
+import { SetVariableValueRequest, ScriptParsedEvent } from './events';
 import { IScript } from '../internal/scripts/script';
 import { EvaluateOnCallFrameRequest } from './requests';
-import { TargetToInternal } from './targetToInternal';
 import { InternalToTarget } from './internalToTarget';
-import { asyncMap } from '../collections/async';
 import { ICallFrame } from '../internal/stackTraces/callFrame';
 import { PauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../internal/exceptions/strategies';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
@@ -38,22 +36,6 @@ export interface IScriptSources {
 
 export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IDebugeeStepping, IDebugeeExecutionControl,
     IPauseOnExceptions, IScriptSources {
-
-    public readonly onPaused = this.addApiListener('paused', async (params: Crdp.Debugger.PausedEvent) => {
-        if (params.callFrames.length === 0) {
-            throw new Error(`Expected a pause event to have at least a single call frame: ${JSON.stringify(params)}`);
-        }
-
-        const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this._crdpToInternal.toCallFrame(index, callFrame));
-        return new PausedEvent(callFrames, params.reason, params.data,
-            this._crdpToInternal.getBPsFromIDs(params.hitBreakpoints),
-            params.asyncStackTrace && await this._crdpToInternal.toStackTraceCodeFlow(params.asyncStackTrace),
-            params.asyncStackTraceId, params.asyncCallStackTraceId);
-    });
-
-    public readonly onResumed = this.addApiListener('resumed', (params: void) => params);
-
-    public readonly onScriptFailedToParse = this.addApiListener('resumed', (params: Crdp.Debugger.ScriptFailedToParseEvent) => params);
 
     public enable(): Promise<Crdp.Debugger.EnableResponse> {
         return this.api.enable();
@@ -145,7 +127,6 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
 
     constructor(
         protected readonly api: Crdp.DebuggerApi,
-        private readonly _crdpToInternal: TargetToInternal,
         private readonly _internalToCRDP: InternalToTarget,
         @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
