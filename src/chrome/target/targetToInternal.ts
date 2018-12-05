@@ -1,6 +1,6 @@
-import { Crdp, BasePathTransformer, BaseSourceMapTransformer, parseResourceIdentifier } from '../..';
-import { IScript, Script } from '../internal/scripts/script';
-import { ScriptParsedEvent, ExceptionDetails, LogEntry } from './events';
+import { Crdp, } from '../..';
+import { IScript, } from '../internal/scripts/script';
+import { ExceptionDetails, LogEntry } from './events';
 import { LocationInScript, Coordinates, ScriptOrSourceOrIdentifierOrUrlRegexp } from '../internal/locations/location';
 import { asyncUndefinedOnFailure } from '../utils/failures';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
@@ -11,8 +11,7 @@ import { CodeFlowFrame, ICallFrame, ScriptCallFrame } from '../internal/stackTra
 import { createCallFrameName } from '../internal/stackTraces/callFrameName';
 import { Scope } from '../internal/stackTraces/scopes';
 import { LineNumber, ColumnNumber } from '../internal/locations/subtypes';
-import { IResourceIdentifier, ResourceName } from '../internal/sources/resourceIdentifier';
-import { SourcesMapper, NoSourceMapping } from '../internal/scripts/sourcesMapper';
+import { IResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { adaptToSinglIntoToMulti } from '../../utils';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
@@ -32,26 +31,6 @@ interface HasScriptLocation extends HasLocation, HasScript { }
 // TODO DIEGO: Rename/Refactor this class to CDTPSerializer or something similar
 export class TargetToInternal {
     public getBPsFromIDs = adaptToSinglIntoToMulti(this, this.getBPFromID);
-
-    public async toScriptParsedEvent(params: Crdp.Debugger.ScriptParsedEvent): Promise<ScriptParsedEvent> {
-        return {
-            script: await this.toScript(params.scriptId),
-            url: params.url,
-            startLine: params.startLine,
-            startColumn: params.startColumn,
-            endLine: params.endLine,
-            endColumn: params.endColumn,
-            executionContextId: params.executionContextId,
-            hash: params.hash,
-            executionContextAuxData: params.executionContextAuxData,
-            isLiveEdit: params.isLiveEdit,
-            sourceMapURL: params.sourceMapURL,
-            hasSourceURL: params.hasSourceURL,
-            isModule: params.isModule,
-            length: params.length,
-            stackTrace: params.stackTrace && await this.toStackTraceCodeFlow(params.stackTrace)
-        };
-    }
 
     public async toStackTraceCodeFlow(stackTrace: NonNullable<Crdp.Runtime.StackTrace>): Promise<CodeFlowStackTrace<IScript>> {
         return {
@@ -97,16 +76,12 @@ export class TargetToInternal {
             text: exceptionDetails.text,
             lineNumber: exceptionDetails.lineNumber,
             columnNumber: exceptionDetails.columnNumber,
-            script: exceptionDetails.scriptId ? await this.toScript(exceptionDetails.scriptId) : undefined,
+            script: exceptionDetails.scriptId ? await this._scriptsRegistry.getScriptById(exceptionDetails.scriptId) : undefined,
             url: exceptionDetails.url,
             stackTrace: exceptionDetails.stackTrace && await this.toStackTraceCodeFlow(exceptionDetails.stackTrace),
             exception: exceptionDetails.exception,
             executionContextId: exceptionDetails.executionContextId,
         };
-    }
-
-    public toScript(scriptId: Crdp.Runtime.ScriptId): Promise<IScript> {
-        return this._scriptsRegistry.getScriptById(scriptId);
     }
 
     public toLocationInScript(location: Crdp.Debugger.Location): Promise<LocationInScript> {
@@ -128,47 +103,12 @@ export class TargetToInternal {
         };
     }
 
-    public async createAndRegisterScript(params: Crdp.Debugger.ScriptParsedEvent): Promise<IScript> {
-        // The stack trace and hash can be large and the DA doesn't need it.
-        delete params.stackTrace;
-        delete params.hash;
-
-        const executionContext = this._scriptsRegistry.getExecutionContextById(params.executionContextId);
-
-        const script = await this._scriptsRegistry.registerNewScript(params.scriptId, async () => {
-            if (params.url !== undefined && params.url !== '') {
-                const runtimeSourceLocation = parseResourceIdentifier<CDTPScriptUrl>(params.url as CDTPScriptUrl);
-                const developmentSourceLocation = await this._pathTransformer.scriptParsed(runtimeSourceLocation);
-                const sourceMap = await this._sourceMapTransformer.scriptParsed(runtimeSourceLocation.canonicalized, params.sourceMapURL);
-                const sourceMapper = sourceMap
-                    ? new SourcesMapper(sourceMap)
-                    : new NoSourceMapping();
-
-                const runtimeScript = Script.create(executionContext, runtimeSourceLocation, developmentSourceLocation, sourceMapper);
-                return runtimeScript;
-            } else {
-                const sourceMap = await this._sourceMapTransformer.scriptParsed('', params.sourceMapURL);
-                const sourceMapper = sourceMap
-                    ? new SourcesMapper(sourceMap)
-                    : new NoSourceMapping();
-                const runtimeScript = Script.createEval(executionContext, new ResourceName(params.scriptId as CDTPScriptUrl), sourceMapper);
-                return runtimeScript;
-            }
-        });
-
-        return script;
-    }
-
-    private getScript(crdpScript: HasScript): Promise<IScript> {
-        return this.toScript(crdpScript.scriptId);
-    }
-
     private getLocation(crdpLocation: HasLocation): Coordinates {
         return new Coordinates(crdpLocation.lineNumber as LineNumber, crdpLocation.columnNumber as ColumnNumber);
     }
 
     private async getScriptLocation(crdpScriptLocation: HasScriptLocation): Promise<LocationInScript> {
-        return new LocationInScript(await this.getScript(crdpScriptLocation), this.getLocation(crdpScriptLocation));
+        return new LocationInScript(await this._scriptsRegistry.getScriptById(crdpScriptLocation.scriptId), this.getLocation(crdpScriptLocation));
     }
 
     public getBPFromID(hitBreakpoint: Crdp.Debugger.BreakpointId): IBPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp> {
@@ -177,7 +117,5 @@ export class TargetToInternal {
 
     constructor(
         private readonly _scriptsRegistry: CDTPScriptsRegistry,
-        private readonly _pathTransformer: BasePathTransformer,
-        private readonly _sourceMapTransformer: BaseSourceMapTransformer,
         private readonly _breakpointIdRegistry: BreakpointIdRegistry) { }
 }

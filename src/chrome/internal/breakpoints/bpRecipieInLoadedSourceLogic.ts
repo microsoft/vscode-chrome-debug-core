@@ -9,9 +9,11 @@ import { RangeInScript } from '../locations/rangeInScript';
 import { BreakpointsRegistry } from './breakpointsRegistry';
 import { PausedEvent } from '../../target/events';
 import { VoteCommonLogic, VoteRelevance, Vote, Abstained } from '../../communication/collaborativeDecision';
-import { CDTPDebugger, IBreakpointFeaturesSupport } from '../../target/cdtpDebugger';
+import { CDTPDebugger } from '../../target/cdtpDebugger';
 import { inject } from 'inversify';
 import { ITargetBreakpoints } from '../../target/cdtpTargetBreakpoints';
+import { IBreakpointFeaturesSupport } from '../../target/breakpointFeaturesSupport';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
 
@@ -83,9 +85,9 @@ export class BPRecipieInLoadedSourceLogic implements IBreakpointsInLoadedSource 
     }
 
     constructor(
-        private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
+        @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
         private readonly _breakpointRegistry: BreakpointsRegistry,
         @inject(CDTPDebugger) private readonly _targetBreakpoints: ITargetBreakpoints) {
-        this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints();
+        this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints;
     }
 }

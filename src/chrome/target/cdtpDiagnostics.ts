@@ -1,4 +1,4 @@
-import { Crdp, BasePathTransformer, BaseSourceMapTransformer } from '../..';
+import { Crdp } from '../..';
 import { IScript } from '../internal/scripts/script';
 import { TargetToInternal } from './targetToInternal';
 import { InternalToTarget } from './internalToTarget';
@@ -34,11 +34,10 @@ export class CDTPDiagnostics implements IComponent {
         ]);
     }
 
-    constructor(private _api: Crdp.ProtocolApi,
-        pathTransformer: BasePathTransformer, sourceMapTransformer: BaseSourceMapTransformer) {
+    constructor(private _api: Crdp.ProtocolApi) {
         const scriptsRegistry = new CDTPScriptsRegistry();
         const breakpointIdRegistry = new BreakpointIdRegistry();
-        const crdpToInternal = new TargetToInternal(scriptsRegistry, pathTransformer, sourceMapTransformer, breakpointIdRegistry);
+        const crdpToInternal = new TargetToInternal(scriptsRegistry, breakpointIdRegistry);
         const internalToCRDP = new InternalToTarget(new ValidatedMap<ICallFrame<IScript>, Crdp.Debugger.CallFrameId>());
         this.Debugger = new CDTPDebugger(this._api.Debugger, crdpToInternal, internalToCRDP, scriptsRegistry);
         this.Console = new CDTPConsole(this._api.Console);

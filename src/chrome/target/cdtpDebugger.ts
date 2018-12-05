@@ -1,5 +1,5 @@
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
-import { Crdp, utils, inject } from '../..';
+import { Crdp, inject } from '../..';
 import { PausedEvent, SetVariableValueRequest, ScriptParsedEvent } from './events';
 import { IScript } from '../internal/scripts/script';
 import { EvaluateOnCallFrameRequest } from './requests';
@@ -11,10 +11,6 @@ import { PauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExcept
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
 export type ScriptParsedListener = (params: ScriptParsedEvent) => void;
-
-export interface IBreakpointFeaturesSupport {
-    supportsColumnBreakpoints(): Promise<boolean>;
-}
 
 export interface IDebugeeStepping {
     stepOver(): Promise<void>;
@@ -41,17 +37,7 @@ export interface IScriptSources {
 }
 
 export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IDebugeeStepping, IDebugeeExecutionControl,
-    IBreakpointFeaturesSupport, IPauseOnExceptions, IBreakpointFeaturesSupport, IScriptSources {
-    private _firstScriptWasParsed = utils.promiseDefer<Crdp.Runtime.ScriptId>();
-
-    public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {
-        // We resolve the promise waiting for the first script parse. This is used to detect column breakpoints support
-        this._firstScriptWasParsed.resolve(params.scriptId);
-
-        await this._crdpToInternal.createAndRegisterScript(params);
-
-        return await this._crdpToInternal.toScriptParsedEvent(params);
-    });
+    IPauseOnExceptions, IScriptSources {
 
     public readonly onPaused = this.addApiListener('paused', async (params: Crdp.Debugger.PausedEvent) => {
         if (params.callFrames.length === 0) {
@@ -155,21 +141,6 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
 
     public restartFrame(frame: ICallFrame<IScript>): Promise<Crdp.Debugger.RestartFrameResponse> {
         return this.api.restartFrame({ callFrameId: this._internalToCRDP.getFrameId(frame) });
-    }
-
-    public async supportsColumnBreakpoints(): Promise<boolean> {
-        const scriptId = await this._firstScriptWasParsed.promise;
-
-        try {
-            await this.api.getPossibleBreakpoints({
-                start: { scriptId, lineNumber: 0, columnNumber: 0 },
-                end: { scriptId, lineNumber: 1, columnNumber: 0 },
-                restrictToFunction: false
-            });
-            return true;
-        } catch (e) {
-            return false;
-        }
     }
 
     constructor(
