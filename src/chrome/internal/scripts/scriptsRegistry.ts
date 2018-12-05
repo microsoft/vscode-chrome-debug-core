@@ -8,12 +8,6 @@ export class DeleteMeScriptsRegistry {
     private readonly _scriptsGeneration = new ScriptsGeneration();
     private readonly _idToExecutionContext = new ValidatedMap<Crdp.Runtime.ExecutionContextId, ExecutionContext>();
 
-    public markExecutionContextAsDestroyed(executionContextId: Crdp.Runtime.ExecutionContextId): IExecutionContext {
-        const executionContext = this._idToExecutionContext.get(executionContextId);
-        executionContext.markAsDestroyed();
-        return executionContext;
-    }
-
     public registerExecutionContext(executionContextId: Crdp.Runtime.ExecutionContextId): IExecutionContext {
         const executionContext = new ExecutionContext();
         this._idToExecutionContext.set(executionContextId, executionContext);

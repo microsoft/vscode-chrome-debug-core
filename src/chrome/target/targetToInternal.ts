@@ -14,7 +14,6 @@ import { LineNumber, ColumnNumber } from '../internal/locations/subtypes';
 import { IResourceIdentifier, ResourceName } from '../internal/sources/resourceIdentifier';
 import { SourcesMapper, NoSourceMapping } from '../internal/scripts/sourcesMapper';
 import { adaptToSinglIntoToMulti } from '../../utils';
-import { IExecutionContext } from '../internal/scripts/executionContext';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
 export type CDTPResource = IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
@@ -33,14 +32,6 @@ interface HasScriptLocation extends HasLocation, HasScript { }
 // TODO DIEGO: Rename/Refactor this class to CDTPSerializer or something similar
 export class TargetToInternal {
     public getBPsFromIDs = adaptToSinglIntoToMulti(this, this.getBPFromID);
-
-    public toNewExecutionContext(id: Crdp.Runtime.ExecutionContextId): IExecutionContext {
-        return this._scriptsRegistry.registerExecutionContext(id);
-    }
-
-    public markExecutionContextAsDestroyed(id: Crdp.Runtime.ExecutionContextId): IExecutionContext {
-        return this._scriptsRegistry.markExecutionContextAsDestroyed(id);
-    }
 
     public async toScriptParsedEvent(params: Crdp.Debugger.ScriptParsedEvent): Promise<ScriptParsedEvent> {
         return {

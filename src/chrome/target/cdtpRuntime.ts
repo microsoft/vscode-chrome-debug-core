@@ -1,16 +1,17 @@
-import { Crdp } from '../..';
+import { Crdp, inject } from '../..';
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { TargetToInternal } from './targetToInternal';
 import { InternalToTarget } from './internalToTarget';
+import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 
 export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.RuntimeApi> {
     public readonly onExecutionContextsCleared = this.addApiListener('executionContextsCleared', (params: void) => params);
 
     public readonly onExecutionContextDestroyed = this.addApiListener('executionContextDestroyed', async (params: Crdp.Runtime.ExecutionContextDestroyedEvent) =>
-        this._crdpToInternal.markExecutionContextAsDestroyed(params.executionContextId));
+        this._scriptsRegistry.markExecutionContextAsDestroyed(params.executionContextId));
 
     public readonly onExecutionContextCreated = this.addApiListener('executionContextCreated', async (params: Crdp.Runtime.ExecutionContextCreatedEvent) =>
-        this._crdpToInternal.toNewExecutionContext(params.context.id));
+        this._scriptsRegistry.registerExecutionContext(params.context.id));
 
     public readonly onExceptionThrown = this.addApiListener('exceptionThrown', async (params: Crdp.Runtime.ExceptionThrownEvent) =>
         ({
@@ -57,7 +58,8 @@ export class CDTPRuntime extends CDTPEventsEmitterDiagnosticsModule<Crdp.Runtime
     constructor(
         protected readonly api: Crdp.RuntimeApi,
         private readonly _crdpToInternal: TargetToInternal,
-        private readonly _internalToTarget: InternalToTarget) {
+        private readonly _internalToTarget: InternalToTarget,
+        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }
