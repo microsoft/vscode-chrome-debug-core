@@ -9,7 +9,7 @@ export interface ScriptDevelopmentLocation extends IResourceIdentifier {
     readonly [ScriptDevelopmentLocationSymbol]: true;
 }
 
-const SourceOfCompiledLocationSymbol = Symbol();
-export interface SourceOfCompiledLocation extends IResourceIdentifier {
-    readonly [SourceOfCompiledLocationSymbol]: true;
+const MappedSourceLocationSymbol = Symbol();
+export interface MappedSourceLocation extends IResourceIdentifier {
+    readonly [MappedSourceLocationSymbol]: true;
 }

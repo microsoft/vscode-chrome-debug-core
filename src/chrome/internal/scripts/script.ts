@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import {
-    ILoadedSource, SourceOfCompiled, ScriptRunFromLocalStorage, DynamicScript,
+    ILoadedSource, MappedSource, ScriptRunFromLocalStorage, DynamicScript,
     ScriptRuntimeSource, ScriptDevelopmentSource, NoURLScriptSource
 } from '../sources/loadedSource';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
@@ -17,7 +17,7 @@ export interface IScript {
     readonly executionContext: IExecutionContext;
     readonly runtimeSource: ILoadedSource<CDTPScriptUrl>; // Source in Webserver
     readonly developmentSource: ILoadedSource; // Source in Workspace
-    readonly sourcesOfCompiled: SourceOfCompiled[]; // Sources before compilation
+    readonly mappedSources: MappedSource[]; // Sources before compilation
     readonly allSources: ILoadedSource[]; // runtimeSource + developmentSource + sourcesOfCompiled
     readonly url: CDTPScriptUrl;
 
@@ -31,13 +31,13 @@ export interface IScript {
 export class Script implements IScript {
     private readonly _runtimeSource: ILoadedSource<CDTPScriptUrl>;
     private readonly _developmentSource: ILoadedSource;
-    private readonly _compiledSources: IValidatedMap<IResourceIdentifier, SourceOfCompiled>;
+    private readonly _compiledSources: IValidatedMap<IResourceIdentifier, MappedSource>;
 
     public static create(executionContext: IExecutionContext, locationInRuntimeEnvironment: IResourceLocation<CDTPScriptUrl>, locationInDevelopmentEnvinronment: IResourceLocation,
         sourcesMapper: ISourcesMapper): Script {
-        const sourcesOfCompiled = (script: IScript) => newResourceIdentifierMap<SourceOfCompiled>(sourcesMapper.sources.map(path => {
+        const sourcesOfCompiled = (script: IScript) => newResourceIdentifierMap<MappedSource>(sourcesMapper.sources.map(path => {
             const identifier = parseResourceIdentifier(path);
-            return [identifier, new SourceOfCompiled(script, identifier, 'TODO DIEGO')] as [IResourceIdentifier, SourceOfCompiled];
+            return [identifier, new MappedSource(script, identifier, 'TODO DIEGO')] as [IResourceIdentifier, MappedSource];
         }));
 
         /**
@@ -67,11 +67,11 @@ export class Script implements IScript {
     public static createEval(executionContext: IExecutionContext, name: ResourceName<CDTPScriptUrl>, sourcesMapper: ISourcesMapper): Script {
         // TODO DIEGO Return the same instance both functions
         const getNoURLScript = (script: IScript) => new NoURLScriptSource(script, name, 'TODO DIEGO');
-        return new Script(executionContext, getNoURLScript, getNoURLScript, _ => new Map<IResourceIdentifier, SourceOfCompiled>(), sourcesMapper);
+        return new Script(executionContext, getNoURLScript, getNoURLScript, _ => new Map<IResourceIdentifier, MappedSource>(), sourcesMapper);
     }
 
     constructor(public readonly executionContext: IExecutionContext, getRuntimeSource: (script: IScript) => ILoadedSource<CDTPScriptUrl>, getDevelopmentSource: (script: IScript) => ILoadedSource,
-        getCompiledScriptSources: (script: IScript) => Map<IResourceIdentifier, SourceOfCompiled>, public readonly sourcesMapper: ISourcesMapper) {
+        getCompiledScriptSources: (script: IScript) => Map<IResourceIdentifier, MappedSource>, public readonly sourcesMapper: ISourcesMapper) {
         this._runtimeSource = getRuntimeSource(this);
         this._developmentSource = getDevelopmentSource(this);
         this._compiledSources = newResourceIdentifierMap(getCompiledScriptSources(this));
@@ -85,7 +85,7 @@ export class Script implements IScript {
         return this._runtimeSource;
     }
 
-    public get sourcesOfCompiled(): SourceOfCompiled[] {
+    public get mappedSources(): MappedSource[] {
         return Array.from(this._compiledSources.values());
     }
 
@@ -99,7 +99,7 @@ export class Script implements IScript {
             unmappedSources.push(this.developmentSource);
         }
 
-        return unmappedSources.concat(this.sourcesOfCompiled);
+        return unmappedSources.concat(this.mappedSources);
     }
 
     public get url(): CDTPScriptUrl {
@@ -112,6 +112,6 @@ export class Script implements IScript {
 
     public toString(): string {
         return `Script:\n  Runtime source: ${this.runtimeSource}\n  Development source: ${this.developmentSource}\n`
-            + printArray('  Sources of compiledsource', this.sourcesOfCompiled);
+            + printArray('  Sources of compiledsource', this.mappedSources);
     }
 }

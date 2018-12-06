@@ -11,7 +11,7 @@ export interface ILoadedSource<TString = string> {
     readonly identifier: IResourceIdentifier<TString>;
     readonly origin: string;
     doesScriptHasUrl(): boolean; // TODO DIEGO: Figure out if we can delete this property
-    isSourceOfCompiled(): boolean;
+    isMappedSource(): boolean;
     isEquivalent(source: ILoadedSource<TString>): boolean;
 }
 
@@ -25,7 +25,7 @@ export interface ILoadedSource<TString = string> {
  */
 
 abstract class LoadedSourceWithURLCommonLogic<TSource = string> implements ILoadedSource<TSource> {
-    public isSourceOfCompiled(): boolean {
+    public isMappedSource(): boolean {
         return false;
     }
 
@@ -62,7 +62,7 @@ export class NoURLScriptSource implements ILoadedSource<CDTPScriptUrl> {
     public static EVAL_PSEUDO_FOLDER = '<eval>';
     public static EVAL_PSEUDO_PREFIX = `${NoURLScriptSource.EVAL_PSEUDO_FOLDER}\\${NoURLScriptSource.EVAL_FILENAME_PREFIX}`;
 
-    public isSourceOfCompiled(): boolean {
+    public isMappedSource(): boolean {
         return false;
     }
 
@@ -85,8 +85,8 @@ export class NoURLScriptSource implements ILoadedSource<CDTPScriptUrl> {
 }
 
 // This represents a path to a development source that was compiled to generate the runtime code of the script
-export class SourceOfCompiled extends LoadedSourceWithURLCommonLogic implements ILoadedSource {
-    public isSourceOfCompiled(): boolean {
+export class MappedSource extends LoadedSourceWithURLCommonLogic implements ILoadedSource {
+    public isMappedSource(): boolean {
         return true;
     }
 }
