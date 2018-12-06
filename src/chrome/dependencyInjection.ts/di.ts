@@ -1,4 +1,5 @@
 import { Container, interfaces } from 'inversify';
+import { bindAll } from './bind';
 
 // Hides the current DI framework from the rest of our implementation
 export class DependencyInjection {
@@ -23,5 +24,10 @@ export class DependencyInjection {
 
     public createComponent<T>(componentIdentifier: symbol): T {
         return this._container.get(componentIdentifier);
+    }
+
+    public bindAll(): this {
+        bindAll(this._container);
+        return this;
     }
 }

@@ -6,7 +6,7 @@ import { IDebugeeExecutionControl, ControlDebugeeExecution } from '../target/con
 import { IPauseOnExceptions, IAsyncDebuggingConfiguration, IScriptSources, CDTPDebugger } from '../target/cdtpDebugger';
 import { IBreakpointFeaturesSupport, BreakpointFeaturesSupport } from '../target/breakpointFeaturesSupport';
 import { IStackTracePresentationLogicProvider, StackTracesLogic } from '../internal/stackTraces/stackTracesLogic';
-import { ChromeDebugLogic, BaseSourceMapTransformer, BasePathTransformer, ConnectedCDAConfiguration, LineColTransformer } from '../..';
+import { ChromeDebugLogic, LineColTransformer } from '../..';
 import { CDTPStackTraceParser } from '../target/cdtpStackTraceParser';
 import { CDTPLocationParser } from '../target/cdtpLocationParser';
 import { SourcesLogic } from '../internal/sources/sourcesLogic';
@@ -30,7 +30,6 @@ import { ExceptionThrownEventProvider } from '../target/exceptionThrownEventProv
 import { ExecutionContextEventsProvider } from '../target/executionContextEventsProvider';
 import { IInspectDebugeeState, InspectDebugeeState } from '../target/inspectDebugeeState';
 import { IUpdateDebugeeState, UpdateDebugeeState } from '../target/updateDebugeeState';
-import { ChromeConnection } from '../chromeConnection';
 import { SkipFilesLogic } from '../internal/features/skipFiles';
 import { SmartStepLogic } from '../internal/features/smartStep';
 
@@ -68,14 +67,12 @@ export function bindAll(di: Container) {
     di.bind<EventSender>(TYPES.EventSender).to(EventSender);
     di.bind<CDTPDiagnostics>(TYPES.CDTPDiagnostics).to(CDTPDiagnostics);
     di.bind<DeleteMeScriptsRegistry>(TYPES.DeleteMeScriptsRegistry).to(DeleteMeScriptsRegistry);
-    di.bind<BaseSourceMapTransformer>(TYPES.BaseSourceMapTransformer).to(BaseSourceMapTransformer);
-    di.bind<BasePathTransformer>(TYPES.BasePathTransformer).to(BasePathTransformer);
+    // di.bind<BaseSourceMapTransformer>(TYPES.BaseSourceMapTransformer).to(BaseSourceMapTransformer);
+    // di.bind<BasePathTransformer>(TYPES.BasePathTransformer).to(BasePathTransformer);
     di.bind<SyncStepping>(TYPES.SyncStepping).to(SyncStepping);
     di.bind<AsyncStepping>(TYPES.AsyncStepping).to(AsyncStepping);
-    di.bind<ConnectedCDAConfiguration>(TYPES.ConnectedCDAConfiguration).to(ConnectedCDAConfiguration);
     di.bind<BreakpointIdRegistry>(TYPES.BreakpointIdRegistry).to(BreakpointIdRegistry);
     di.bind<ExceptionThrownEventProvider>(TYPES.ExceptionThrownEventProvider).to(ExceptionThrownEventProvider);
     di.bind<ExecutionContextEventsProvider>(TYPES.ExecutionContextEventsProvider).to(ExecutionContextEventsProvider);
     di.bind<LineColTransformer>(TYPES.LineColTransformer).to(LineColTransformer);
-    di.bind<ChromeConnection>(TYPES.ChromeConnection).to(ChromeConnection);
 }

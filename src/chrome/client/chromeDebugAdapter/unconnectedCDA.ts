@@ -1,5 +1,5 @@
 import { UnconnectedCDACommonLogic } from './unconnectedCDACommonLogic';
-import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, BasePathTransformer, BaseSourceMapTransformer, LineColTransformer, utils } from '../../..';
+import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, LineColTransformer, utils } from '../../..';
 import { ChromeConnection } from '../../chromeConnection';
 import { IClientCapabilities } from '../../../debugAdapterInterfaces';
 import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
@@ -65,16 +65,17 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
 
         const debugeeLauncher = new this._extensibilityPoints.debugeeLauncher();
         di
-        .configureClass(LineColTransformer, lineColTransformerClass)
-        // .configureClass(TYPES.IDebugeeLauncher, debugeeLauncher)
-        .configureValue(TYPES.communicator, communicator)
+            .bindAll()
+            .configureClass(LineColTransformer, lineColTransformerClass)
+            // .configureClass(TYPES.IDebugeeLauncher, debugeeLauncher)
+            .configureValue(TYPES.communicator, communicator)
             .configureValue(TYPES.EventsConsumedByConnectedCDA, new ConnectedCDAEventsCreator(communicator).create())
             .configureValue(TYPES.CDTPClient, chromeConnection.api)
             .configureValue(TYPES.ISession, new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(this._session)))
-            .configureClass(BasePathTransformer, pathTransformerClass)
-            .configureClass(BaseSourceMapTransformer, sourceMapTransformerClass)
-            .configureValue(ChromeConnection, chromeConnection)
-            .configureValue(ConnectedCDAConfiguration, new ConnectedCDAConfiguration(this._extensibilityPoints,
+            .configureClass(TYPES.BasePathTransformer, pathTransformerClass)
+            .configureClass(TYPES.BaseSourceMapTransformer, sourceMapTransformerClass)
+            .configureValue(TYPES.ChromeConnection, chromeConnection)
+            .configureValue(TYPES.ConnectedCDAConfiguration, new ConnectedCDAConfiguration(this._extensibilityPoints,
                 this.parseLoggingConfiguration(args),
                 this._session,
                 this._clientCapabilities,

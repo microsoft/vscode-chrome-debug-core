@@ -5,7 +5,9 @@ import { ChromeConnection } from '../../chromeConnection';
 import { LoggingConfiguration } from '../../internal/services/logging';
 import { utils } from '../../..';
 import { ScenarioType } from './unconnectedCDA';
+import { injectable } from 'inversify';
 
+@injectable()
 export class ConnectedCDAConfiguration {
     public readonly args: ILaunchRequestArgs | IAttachRequestArgs;
 

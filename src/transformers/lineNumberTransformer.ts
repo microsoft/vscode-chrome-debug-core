@@ -6,12 +6,13 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { IDebugTransformer, ISetBreakpointsResponseBody, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import { ComponentConfiguration } from '../chrome/internal/features/feature';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
  */
+@injectable()
 export class LineColTransformer implements IDebugTransformer {
     private columnBreakpointsEnabled: boolean;
     private _clientToDebuggerLineNumberDifference: number; // Client line number - debugger line number. 0 if client line number is 0-based, 1 otherwise

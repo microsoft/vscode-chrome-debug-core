@@ -5,11 +5,12 @@ import { CDTPConsole, CDTPSchema, CDTPDOMDebugger, CDTPPage, CDTPNetwork, CDTPBr
 import { CDTPRuntime } from './cdtpRuntime';
 import { BreakpointIdRegistry } from './breakpointIdRegistry';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { IComponent } from '../internal/features/feature';
 import { CDTPDebuggerEventsProvider } from './cdtpDebuggerEventsProvider';
 import { CDTPLocationParser } from './cdtpLocationParser';
 import { ExceptionThrownEventProvider } from './exceptionThrownEventProvider';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 // TODO: Remove this class and use dependency injection/inversify to initialize all this
 @injectable()
@@ -36,7 +37,7 @@ export class CDTPDiagnostics implements IComponent {
         ]);
     }
 
-    constructor(private _api: Crdp.ProtocolApi) {
+    constructor(@inject(TYPES.CDTPClient) private _api: Crdp.ProtocolApi) {
         const scriptsRegistry = new CDTPScriptsRegistry();
         const breakpointIdRegistry = new BreakpointIdRegistry();
         const cdtpLocationParser = new CDTPLocationParser(scriptsRegistry);

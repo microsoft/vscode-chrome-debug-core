@@ -8,6 +8,7 @@ import { IBPRecipieStatus } from '../internal/breakpoints/bpRecipieStatus';
 import { IFormattedExceptionLineDescription } from '../internal/formattedExceptionParser';
 import { StoppedEvent2, ReasonType } from '../stoppedEvent';
 import { Crdp, ChromeDebugLogic } from '../..';
+import { injectable } from 'inversify';
 
 export interface OutputParameters {
     readonly output: NonNullable<string>;
@@ -45,6 +46,7 @@ export interface IEventsToClientReporter {
     sendDebugeeIsStopped(params: DebugeeIsStoppedParameters): Promise<void>;
 }
 
+@injectable()
 export class EventSender implements IEventsToClientReporter {
     public sendOutput(params: OutputParameters): void {
         const event = new OutputEvent(params.output, params.category) as DebugProtocol.OutputEvent;

@@ -3,7 +3,9 @@ import { IScript } from './script';
 import { ValidatedMap } from '../../collections/validatedMap';
 import { IResourceIdentifier, newResourceIdentifierMap } from '../sources/resourceIdentifier';
 import { ExecutionContext, IExecutionContext } from './executionContext';
+import { injectable } from 'inversify';
 
+@injectable()
 export class DeleteMeScriptsRegistry {
     private readonly _scriptsGeneration = new ScriptsGeneration();
     private readonly _idToExecutionContext = new ValidatedMap<Crdp.Runtime.ExecutionContextId, ExecutionContext>();
