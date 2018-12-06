@@ -18,22 +18,23 @@ import { PauseOnExceptionOrRejection } from '../../internal/exceptions/pauseOnEx
 import { Stepping } from '../../internal/stepping/stepping';
 import { DotScriptCommand } from '../../internal/sources/features/dotScriptsCommand';
 import { inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 // TODO DIEGO: Remember to call here and only here         this._lineColTransformer.convertDebuggerLocationToClient(stackFrame); for all responses
 export class ConnectedCDA implements IDebugAdapterState {
     public static SCRIPTS_COMMAND = '.scripts';
 
     constructor(
-        @inject(ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic,
-        @inject(SourcesLogic) private readonly _sourcesLogic: SourcesLogic,
-        @inject(CDTPScriptsRegistry) protected _scriptsLogic: CDTPScriptsRegistry,
-        @inject(ClientToInternal) protected readonly _clientToInternal: ClientToInternal,
-        @inject(InternalToClient) private readonly _internalToVsCode: InternalToClient,
-        @inject(StackTracesLogic) private readonly _stackTraceLogic: StackTracesLogic,
-        @inject(BreakpointsLogic) protected readonly _breakpointsLogic: BreakpointsLogic,
-        @inject(PauseOnExceptionOrRejection) public readonly _pauseOnException: PauseOnExceptionOrRejection,
-        @inject(Stepping) private readonly _stepping: Stepping,
-        @inject(DotScriptCommand) public readonly _dotScriptCommand: DotScriptCommand) {
+        @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic,
+        @inject(TYPES.SourcesLogic) private readonly _sourcesLogic: SourcesLogic,
+        @inject(TYPES.CDTPScriptsRegistry) protected _scriptsLogic: CDTPScriptsRegistry,
+        @inject(TYPES.ClientToInternal) protected readonly _clientToInternal: ClientToInternal,
+        @inject(TYPES.InternalToClient) private readonly _internalToVsCode: InternalToClient,
+        @inject(TYPES.StackTracesLogic) private readonly _stackTraceLogic: StackTracesLogic,
+        @inject(TYPES.BreakpointsLogic) protected readonly _breakpointsLogic: BreakpointsLogic,
+        @inject(TYPES.PauseOnExceptionOrRejection) public readonly _pauseOnException: PauseOnExceptionOrRejection,
+        @inject(TYPES.Stepping) private readonly _stepping: Stepping,
+        @inject(TYPES.DotScriptCommand) public readonly _dotScriptCommand: DotScriptCommand) {
 
     }
 

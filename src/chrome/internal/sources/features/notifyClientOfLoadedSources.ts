@@ -2,11 +2,12 @@ import { IComponent } from '../../features/feature';
 import { IScript } from '../../scripts/script';
 import { ScriptParsedEvent } from '../../../target/events';
 import { telemetry } from '../../../../telemetry';
-import { SourceWasLoadedParameters, EventSender, IEventsToClientReporter } from '../../../client/eventSender';
+import { SourceWasLoadedParameters, IEventsToClientReporter } from '../../../client/eventSender';
 import { ValidatedMap } from '../../../collections/validatedMap';
 import { CDTPScriptUrl } from '../resourceIdentifierSubtypes';
 import { LoadedSourceEventReason, utils } from '../../../..';
 import { injectable, inject } from 'inversify';
+import { TYPES } from '../../../dependencyInjection.ts/types';
 
 export interface NotifyClientOfLoadedSourcesDependencies {
     sendSourceWasLoaded(params: SourceWasLoadedParameters): Promise<void>;
@@ -70,5 +71,5 @@ export class NotifyClientOfLoadedSources implements IComponent {
     }
 
     constructor(private readonly _dependencies: NotifyClientOfLoadedSourcesDependencies,
-        @inject(EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter) { }
+        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 }

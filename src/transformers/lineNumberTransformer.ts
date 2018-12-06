@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IDebugTransformer, ISetBreakpointsResponseBody, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import { ComponentConfiguration } from '../chrome/internal/features/feature';
 import { inject } from 'inversify';
-import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
+import { TYPES } from '../chrome/dependencyInjection.ts/types';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
@@ -17,7 +17,7 @@ export class LineColTransformer implements IDebugTransformer {
     private _clientToDebuggerLineNumberDifference: number; // Client line number - debugger line number. 0 if client line number is 0-based, 1 otherwise
     private _clientToDebuggerColumnsDifference: number; // Similar to line numbers
 
-    constructor(@inject(ConnectedCDAConfiguration) configuration: ComponentConfiguration) {
+    constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: ComponentConfiguration) {
         this._clientToDebuggerLineNumberDifference = configuration._clientCapabilities.linesStartAt1 ? 1 : 0;
         this._clientToDebuggerColumnsDifference = configuration._clientCapabilities.columnsStartAt1 ? 1 : 0;
     }

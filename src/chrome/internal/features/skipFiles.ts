@@ -12,6 +12,7 @@ import { ICallFramePresentationDetails } from '../stackTraces/callFramePresentat
 import * as nls from 'vscode-nls';
 import { injectable, inject } from 'inversify';
 import { DeleteMeScriptsRegistry } from '../scripts/scriptsRegistry';
+import { TYPES } from '../../dependencyInjection.ts/types';
 const localize = nls.loadMessageBundle();
 
 export interface EventsConsumedBySkipFilesLogic {
@@ -277,10 +278,10 @@ export class SkipFilesLogic implements IComponent<ISkipFilesConfiguration>, ISta
 
     constructor(
         private readonly _dependencies: EventsConsumedBySkipFilesLogic,
-        @inject(CDTPDiagnostics) private readonly chrome: CDTPDiagnostics,
-        @inject(DeleteMeScriptsRegistry) private readonly _scriptsRegistry: DeleteMeScriptsRegistry,
-        @inject(StackTracesLogic) private readonly stackTracesLogic: StackTracesLogic,
-        @inject(BaseSourceMapTransformer) private readonly sourceMapTransformer: BaseSourceMapTransformer,
-        @inject(BasePathTransformer) private readonly pathTransformer: BasePathTransformer,
+        @inject(TYPES.CDTPDiagnostics) private readonly chrome: CDTPDiagnostics,
+        @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsRegistry: DeleteMeScriptsRegistry,
+        @inject(TYPES.StackTracesLogic) private readonly stackTracesLogic: StackTracesLogic,
+        @inject(TYPES.BaseSourceMapTransformer) private readonly sourceMapTransformer: BaseSourceMapTransformer,
+        @inject(TYPES.BasePathTransformer) private readonly pathTransformer: BasePathTransformer,
     ) { }
 }

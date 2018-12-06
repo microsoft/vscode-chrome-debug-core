@@ -6,8 +6,8 @@ import { IComponent } from '../../features/feature';
 import { PausedEvent } from '../../../target/events';
 import { Abstained, Vote } from '../../../communication/collaborativeDecision';
 import { injectable, inject } from 'inversify';
-import { CDTPDebugger } from '../../../target/cdtpDebugger';
 import { IDebugeeStepping, IDebugeeExecutionControl } from '../../../target/controlDebugeeExecution';
+import { TYPES } from '../../../dependencyInjection.ts/types';
 
 type SteppingAction = () => Promise<void>;
 
@@ -71,6 +71,6 @@ export class SyncStepping implements IComponent {
     }
 
     constructor(private readonly _dependencies: SyncSteppingDependencies,
-        @inject(CDTPDebugger) private readonly _debugeeStepping: IDebugeeStepping,
-        @inject(CDTPDebugger) private readonly _debugeeExecutionControl: IDebugeeExecutionControl) { }
+        @inject(TYPES.CDTPDebugger) private readonly _debugeeStepping: IDebugeeStepping,
+        @inject(TYPES.CDTPDebugger) private readonly _debugeeExecutionControl: IDebugeeExecutionControl) { }
 }

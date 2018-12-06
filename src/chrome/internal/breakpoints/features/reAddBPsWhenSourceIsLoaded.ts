@@ -3,11 +3,12 @@ import { ILoadedSource } from '../../sources/loadedSource';
 import { asyncMap } from '../../../collections/async';
 import { BPRecipieIsUnbinded, BPRecipieIsBinded } from '../bpRecipieStatus';
 import { newResourceIdentifierMap, IResourceIdentifier } from '../../sources/resourceIdentifier';
-import { EventSender, IEventsToClientReporter } from '../../../client/eventSender';
+import { IEventsToClientReporter } from '../../../client/eventSender';
 import { PromiseDefer, promiseDefer } from '../../../../utils';
 import { IComponent } from '../../features/feature';
 import { injectable, inject } from 'inversify';
-import { IBreakpointsInLoadedSource, BPRecipieInLoadedSourceLogic } from '../bpRecipieInLoadedSourceLogic';
+import { IBreakpointsInLoadedSource } from '../bpRecipieInLoadedSourceLogic';
+import { TYPES } from '../../../dependencyInjection.ts/types';
 
 export interface ReAddBPsWhenSourceIsLoadedDependencies {
     onLoadedSourceIsAvailable(listener: (source: ILoadedSource) => Promise<void>): void;
@@ -86,6 +87,6 @@ export class ReAddBPsWhenSourceIsLoaded implements IComponent {
     }
 
     constructor(private readonly _dependencies: ReAddBPsWhenSourceIsLoadedDependencies,
-        @inject(EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
-        @inject(BPRecipieInLoadedSourceLogic) private readonly _breakpointsInLoadedSource: IBreakpointsInLoadedSource) { }
+        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
+        @inject(TYPES.BPRecipieInLoadedSourceLogic) private readonly _breakpointsInLoadedSource: IBreakpointsInLoadedSource) { }
 }

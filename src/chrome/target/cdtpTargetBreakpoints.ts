@@ -126,8 +126,8 @@ export class CDTPTargetBreakpoints extends CDTPEventsEmitterDiagnosticsModule<Cr
     constructor(
         @inject(TYPES.CrdpApi) protected readonly protocolApi: Crdp.ProtocolApi,
         @inject(TYPES.CDTPLocationParser) private readonly _cdtpLocationParser: CDTPLocationParser,
-        @inject(BreakpointIdRegistry) private readonly _breakpointIdRegistry: BreakpointIdRegistry,
-        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.BreakpointIdRegistry) private readonly _breakpointIdRegistry: BreakpointIdRegistry,
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }

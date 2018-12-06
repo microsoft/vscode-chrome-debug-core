@@ -5,6 +5,7 @@ import { IScript } from '../internal/scripts/script';
 import { PauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../internal/exceptions/strategies';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export type ScriptParsedListener = (params: ScriptParsedEvent) => void;
 
@@ -60,7 +61,7 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
 
     constructor(
         protected readonly api: Crdp.DebuggerApi,
-        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }

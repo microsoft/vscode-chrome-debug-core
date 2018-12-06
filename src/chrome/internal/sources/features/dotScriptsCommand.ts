@@ -2,7 +2,7 @@ import { IScript } from '../../scripts/script';
 
 import { parseResourceIdentifier } from '../../../..';
 
-import {  EventSender, IEventsToClientReporter } from '../../../client/eventSender';
+import { IEventsToClientReporter } from '../../../client/eventSender';
 import { determineOrderingOfStrings } from '../../../collections/utilities';
 import { inject } from 'inversify';
 import { BaseSourceMapTransformer } from '../../../../transformers/baseSourceMapTransformer';
@@ -60,8 +60,8 @@ export class DotScriptCommand {
     }
 
     constructor(
-        @inject(BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
-        @inject(DeleteMeScriptsRegistry) private readonly _scriptsLogic: DeleteMeScriptsRegistry,
+        @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
+        @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsLogic: DeleteMeScriptsRegistry,
         @inject(TYPES.IScriptSources) private readonly _scriptSources: IScriptSources,
-        @inject(EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter) { }
+        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 }

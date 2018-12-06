@@ -4,6 +4,7 @@ import { SyncStepping } from './features/syncStepping';
 import { ICallFrame } from '../stackTraces/callFrame';
 import { IScript } from '../scripts/script';
 import { injectable, inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 @injectable()
 export class Stepping implements IComponent {
@@ -37,7 +38,7 @@ export class Stepping implements IComponent {
     }
 
     constructor(
-        @inject(SyncStepping) private readonly _syncStepping: SyncStepping,
-        @inject(AsyncStepping) private readonly _asyncStepping: AsyncStepping
+        @inject(TYPES.SyncStepping) private readonly _syncStepping: SyncStepping,
+        @inject(TYPES.AsyncStepping) private readonly _asyncStepping: AsyncStepping
     ) { }
 }

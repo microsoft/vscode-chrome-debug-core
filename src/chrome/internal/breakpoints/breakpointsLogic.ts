@@ -10,9 +10,10 @@ import { ClientCurrentBPRecipiesRegistry } from './clientCurrentBPRecipiesRegist
 import { BreakpointsRegistry } from './breakpointsRegistry';
 import { BPRecipieInLoadedSourceLogic } from './bpRecipieInLoadedSourceLogic';
 import { RemoveProperty } from '../../../typeUtils';
-import { IEventsToClientReporter, EventSender } from '../../client/eventSender';
+import { IEventsToClientReporter } from '../../client/eventSender';
 import { PauseScriptLoadsToSetBPs, PauseScriptLoadsToSetBPsDependencies } from './features/pauseScriptLoadsToSetBPs';
 import { inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export interface IOnPausedResult {
     didPause: boolean;
@@ -83,11 +84,11 @@ export class BreakpointsLogic {
     }
 
     constructor(private readonly _dependencies: EventsConsumedByBreakpointsLogic,
-        @inject(BreakpointsRegistry) private readonly _breakpointRegistry: BreakpointsRegistry,
-        @inject(ReAddBPsWhenSourceIsLoaded) private readonly _unbindedBreakpointsLogic: ReAddBPsWhenSourceIsLoaded,
-        @inject(PauseScriptLoadsToSetBPs) private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs,
-        @inject(BPRecipieInLoadedSourceLogic) private readonly _bprInLoadedSourceLogic: BPRecipieInLoadedSourceLogic,
-        @inject(EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
+        @inject(TYPES.BreakpointsRegistry) private readonly _breakpointRegistry: BreakpointsRegistry,
+        @inject(TYPES.ReAddBPsWhenSourceIsLoaded) private readonly _unbindedBreakpointsLogic: ReAddBPsWhenSourceIsLoaded,
+        @inject(TYPES.PauseScriptLoadsToSetBPs) private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs,
+        @inject(TYPES.BPRecipieInLoadedSourceLogic) private readonly _bprInLoadedSourceLogic: BPRecipieInLoadedSourceLogic,
+        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
         private readonly _isBpsWhileLoadingEnable: boolean) {
         this._dependencies.onAsyncBreakpointResolved(breakpoint => this.onAsyncBreakpointResolved(breakpoint));
     }

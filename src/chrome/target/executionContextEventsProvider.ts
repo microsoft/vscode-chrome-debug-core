@@ -2,6 +2,7 @@ import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { Crdp } from '../..';
 import { inject } from 'inversify';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export class ExecutionContextEventsProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.RuntimeApi> {
     public readonly onExecutionContextsCleared = this.addApiListener('executionContextsCleared', (params: void) => params);
@@ -14,7 +15,7 @@ export class ExecutionContextEventsProvider extends CDTPEventsEmitterDiagnostics
 
     constructor(
         protected readonly api: Crdp.RuntimeApi,
-        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }

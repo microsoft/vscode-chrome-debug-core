@@ -71,9 +71,9 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     constructor(
         protected readonly api: Crdp.DebuggerApi,
         @inject(TYPES.CDTPStackTraceParser) private readonly _crdpToInternal: CDTPStackTraceParser,
-        @inject(BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
-        @inject(BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
-        @inject(CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
+        @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }
 }
