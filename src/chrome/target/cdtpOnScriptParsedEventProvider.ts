@@ -1,4 +1,4 @@
-import { Crdp, inject, parseResourceIdentifier, BasePathTransformer, BaseSourceMapTransformer } from '../..';
+import { Crdp, parseResourceIdentifier, BasePathTransformer, BaseSourceMapTransformer } from '../..';
 import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { IScript, Script } from '../internal/scripts/script';
@@ -8,6 +8,7 @@ import { ResourceName } from '../internal/sources/resourceIdentifier';
 import { ScriptParsedEvent } from './events';
 import { TYPES } from '../dependencyInjection.ts/types';
 import { CDTPStackTraceParser } from './cdtpStackTraceParser';
+import { inject } from 'inversify';
 
 export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {

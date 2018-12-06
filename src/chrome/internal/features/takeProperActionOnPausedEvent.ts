@@ -6,7 +6,7 @@ import { PromiseOrNot } from '../../utils/promises';
 import { Vote, VoteCommonLogic, VoteRelevance, ExecuteDecisionBasedOnVotes } from '../../communication/collaborativeDecision';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { IDebugeeExecutionControl } from '../../target/cdtpDebugger';
+import { IDebugeeExecutionControl } from '../../target/controlDebugeeExecution';
 
 export abstract class ResumeCommonLogic extends VoteCommonLogic<void> {
     protected readonly abstract _debugeeExecutionControl: IDebugeeExecutionControl;

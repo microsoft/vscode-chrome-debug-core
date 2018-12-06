@@ -4,21 +4,9 @@ import { ScriptOrSource } from '../internal/locations/location';
 import { ValidatedMap } from '../collections/validatedMap';
 import { ICallFrame } from '../internal/stackTraces/callFrame';
 
-export class InternalToTarget {
-    private nextEvaluateScriptId = 0;
-
+export class CallFrameRegistry {
     public getFrameId(frame: ICallFrame<ScriptOrSource>): Crdp.Debugger.CallFrameId {
         return this._callFrameToId.get(frame.unmappedCallFrame);
-    }
-
-    public addURLIfMissing(expression: string): string {
-        const sourceUrlPrefix = '\n//# sourceURL=';
-
-        if (expression.indexOf(sourceUrlPrefix) < 0) {
-            expression += `${sourceUrlPrefix}<debugger-internal>/id=${this.nextEvaluateScriptId++}`;
-        }
-
-        return expression;
     }
 
     constructor(

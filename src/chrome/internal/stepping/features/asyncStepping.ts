@@ -4,7 +4,7 @@ import {  InformationAboutPausedProvider, ResumeCommonLogic } from '../../featur
 import { Crdp } from '../../../..';
 import { VoteRelevance, Vote, Abstained } from '../../../communication/collaborativeDecision';
 import { injectable } from 'inversify';
-import { IDebugeeExecutionControl } from '../../../target/cdtpDebugger';
+import { IDebugeeExecutionControl } from '../../../target/controlDebugeeExecution';
 
 export interface AsyncSteppingDependencies {
     subscriberForAskForInformationAboutPaused(listener: InformationAboutPausedProvider): void;

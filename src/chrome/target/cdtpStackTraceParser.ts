@@ -10,7 +10,6 @@ import { CDTPLocationParser, HasScriptLocation } from './cdtpLocationParser';
 
 export type CDTPResource = IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
 
-// TODO DIEGO: Rename/Refactor this class to CDTPSerializer or something similar
 export class CDTPStackTraceParser {
     public async toStackTraceCodeFlow(stackTrace: NonNullable<Crdp.Runtime.StackTrace>): Promise<CodeFlowStackTrace<IScript>> {
         return {

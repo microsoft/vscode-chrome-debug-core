@@ -47,6 +47,10 @@ import { CodeFlowStackTrace } from './internal/stackTraces/stackTrace';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 import { FormattedExceptionParser } from './internal/formattedExceptionParser';
 import { DeleteMeScriptsRegistry } from './internal/scripts/scriptsRegistry';
+import { ExceptionThrownEventProvider } from './target/ExceptionThrownEventProvider';
+import { ExecutionContextEventsProvider } from './target/executionContextEventsProvider';
+import { IInspectDebugeeState } from './target/inspectDebugeeState';
+import { IUpdateDebugeeState } from './target/updateDebugeeState';
 
 // export class ChromeDebugAdapter extends ChromeDebugAdapterClass {
 //     /** These methods are called by the ChromeDebugAdapter subclass in chrome-debug. We need to redirect them like this
@@ -196,7 +200,12 @@ export class ChromeDebugLogic {
         session: ISession, chromeConnection: ChromeConnection,
         chromeDiagnostics: CDTPDiagnostics,
         private readonly _scriptsLogic: DeleteMeScriptsRegistry,
-        private readonly _eventSender: EventSender) {
+        private readonly _eventSender: EventSender,
+        private readonly _exceptionThrownEventProvider: ExceptionThrownEventProvider,
+        private readonly _executionContextEventsProvider: ExecutionContextEventsProvider,
+        private readonly _inspectDebugeeState: IInspectDebugeeState,
+        private readonly _updateDebugeeState: IUpdateDebugeeState,
+        ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
@@ -291,8 +300,8 @@ export class ChromeDebugLogic {
         this.chrome.Console.onMessageAdded(params => this.onMessageAdded(params));
         this.chrome.Console.enable();
         this.chrome.Runtime.onConsoleAPICalled(params => this.onConsoleAPICalled(params));
-        this.chrome.Runtime.onExceptionThrown(params => this.onExceptionThrown(params));
-        this.chrome.Runtime.onExecutionContextsCleared(() => this.clearTargetContext());
+        this._exceptionThrownEventProvider.onExceptionThrown(params => this.onExceptionThrown(params));
+        this._executionContextEventsProvider.onExecutionContextsCleared(() => this.clearTargetContext());
         this.chrome.Log.onEntryAdded(entry => this.onLogEntryAdded(entry));
 
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
@@ -623,7 +632,7 @@ export class ChromeDebugLogic {
 
             let response: Crdp.Runtime.CallFunctionOnResponse;
             try {
-                response = await this.chrome.Runtime.callFunctionOn({
+                response = await this._inspectDebugeeState.callFunctionOn({
                     objectId: owningObjectId,
                     functionDeclaration: grabGetterValue,
                     arguments: [{ value: propDesc.name }]
@@ -700,7 +709,7 @@ export class ChromeDebugLogic {
     }
 
     private getRuntimeProperties(params: Crdp.Runtime.GetPropertiesRequest): Promise<Crdp.Runtime.GetPropertiesResponse> {
-        return this.chrome.Runtime.getProperties(params)
+        return this._inspectDebugeeState.getProperties(params)
             .catch(err => {
                 if (err.message.startsWith('Cannot find context with specified id')) {
                     // Hack to ignore this error until we fix https://github.com/Microsoft/client/issues/18001 to not request variables at unexpected times.
@@ -737,7 +746,7 @@ export class ChromeDebugLogic {
     }
 
     private getFilteredVariablesForObjectId(objectId: string, evaluateName: string, getVarsFn: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
-        return this.chrome.Runtime.callFunctionOn({
+        return this._inspectDebugeeState.callFunctionOn({
             objectId,
             functionDeclaration: getVarsFn,
             arguments: [{ value: start }, { value: count }],
@@ -822,7 +831,7 @@ export class ChromeDebugLogic {
      * Allow consumers to override just because of https://github.com/nodejs/node/issues/8426
      */
     public globalEvaluate(args: Crdp.Runtime.EvaluateRequest): Promise<Crdp.Runtime.EvaluateResponse> {
-        return this.chrome.Runtime.evaluate(args);
+        return this._inspectDebugeeState.evaluate(args);
     }
 
     private async waitThenDoEvaluate(expression: string, frame?: ICallFrame<ScriptOrSource>, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
@@ -868,7 +877,7 @@ export class ChromeDebugLogic {
             args = Object.assign(args, extraArgs);
         }
 
-        return this.chrome.Debugger.evaluateOnCallFrame(args);
+        return this._inspectDebugeeState.evaluateOnCallFrame(args);
     }
 
     /* __GDPR__
@@ -891,14 +900,14 @@ export class ChromeDebugLogic {
 
     public setVariableValue(frame: ICallFrame<ScriptOrSource>, scopeNumber: number, variableName: string, value: string): Promise<string> {
         let evalResultObject: Crdp.Runtime.RemoteObject;
-        return this.chrome.Debugger.evaluateOnCallFrame({ frame, expression: value, silent: true }).then(evalResponse => {
+        return this._inspectDebugeeState.evaluateOnCallFrame({ frame, expression: value, silent: true }).then(evalResponse => {
             if (evalResponse.exceptionDetails) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
                 return Promise.reject(errors.errorFromEvaluate(errMsg));
             } else {
                 evalResultObject = evalResponse.result;
                 const newValue = ChromeUtils.remoteObjectToCallArgument(evalResultObject);
-                return this.chrome.Debugger.setVariableValue({ frame, scopeNumber, variableName, newValue });
+                return this._updateDebugeeState.setVariableValue({ frame, scopeNumber, variableName, newValue });
             }
         },
             error => Promise.reject(errors.errorFromEvaluate(error.message)))
@@ -908,7 +917,7 @@ export class ChromeDebugLogic {
 
     public setPropertyValue(objectId: string, propName: string, value: string): Promise<string> {
         const setPropertyValueFn = `function() { return this["${propName}"] = ${value} }`;
-        return this.chrome.Runtime.callFunctionOn({
+        return this._inspectDebugeeState.callFunctionOn({
             objectId, functionDeclaration: setPropertyValueFn,
             silent: true
         }).then(response => {
@@ -1141,7 +1150,7 @@ export class ChromeDebugLogic {
     }
 
     private getNumPropsByEval(objectId: string, getNumPropsFn: string): Promise<IPropCount> {
-        return this.chrome.Runtime.callFunctionOn({
+        return this._inspectDebugeeState.callFunctionOn({
             objectId,
             functionDeclaration: getNumPropsFn,
             silent: true,

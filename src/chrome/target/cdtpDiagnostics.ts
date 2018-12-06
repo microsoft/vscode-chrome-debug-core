@@ -1,23 +1,22 @@
 import { Crdp } from '../..';
-import { IScript } from '../internal/scripts/script';
 import { CDTPStackTraceParser } from './cdtpStackTraceParser';
-import { InternalToTarget } from './internalToTarget';
 import { CDTPDebugger } from './cdtpDebugger';
-import { ValidatedMap } from '../collections/validatedMap';
 import { CDTPConsole, CDTPSchema, CDTPDOMDebugger, CDTPPage, CDTPNetwork, CDTPBrowser, CDTPOverlay, CDTPLog } from './cdtpSmallerModules';
 import { CDTPRuntime } from './cdtpRuntime';
 import { BreakpointIdRegistry } from './breakpointIdRegistry';
-import { ICallFrame } from '../internal/stackTraces/callFrame';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
 import { injectable } from 'inversify';
 import { IComponent } from '../internal/features/feature';
 import { CDTPDebuggerEventsProvider } from './cdtpDebuggerEventsProvider';
 import { CDTPLocationParser } from './cdtpLocationParser';
+import { ExceptionThrownEventProvider } from './exceptionThrownEventProvider';
 
+// TODO: Remove this class and use dependency injection/inversify to initialize all this
 @injectable()
 export class CDTPDiagnostics implements IComponent {
     public Debugger: CDTPDebugger;
     public DebuggerEvents: CDTPDebuggerEventsProvider;
+    public ExceptionThrownEventProvider: ExceptionThrownEventProvider;
     public Console: CDTPConsole;
     public Runtime: CDTPRuntime;
     public Schema: CDTPSchema;
@@ -42,11 +41,11 @@ export class CDTPDiagnostics implements IComponent {
         const breakpointIdRegistry = new BreakpointIdRegistry();
         const cdtpLocationParser = new CDTPLocationParser(scriptsRegistry);
         const cdtpStackTraceParser = new CDTPStackTraceParser(cdtpLocationParser);
-        const internalToCRDP = new InternalToTarget(new ValidatedMap<ICallFrame<IScript>, Crdp.Debugger.CallFrameId>());
-        this.Debugger = new CDTPDebugger(this._api.Debugger, internalToCRDP, scriptsRegistry);
+        this.Debugger = new CDTPDebugger(this._api.Debugger, scriptsRegistry);
         this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, cdtpStackTraceParser, breakpointIdRegistry, cdtpLocationParser);
+        this.ExceptionThrownEventProvider = new ExceptionThrownEventProvider(this._api.Runtime, cdtpStackTraceParser, scriptsRegistry);
         this.Console = new CDTPConsole(this._api.Console);
-        this.Runtime = new CDTPRuntime(this._api.Runtime, cdtpStackTraceParser, internalToCRDP, scriptsRegistry);
+        this.Runtime = new CDTPRuntime(this._api.Runtime, cdtpStackTraceParser);
         this.Schema = new CDTPSchema(this._api.Schema);
         this.DOMDebugger = new CDTPDOMDebugger(this._api.DOMDebugger);
         this.Page = new CDTPPage(this._api.Page);

@@ -6,7 +6,8 @@ import { IComponent } from '../../features/feature';
 import { PausedEvent } from '../../../target/events';
 import { Abstained, Vote } from '../../../communication/collaborativeDecision';
 import { injectable, inject } from 'inversify';
-import { CDTPDebugger, IDebugeeStepping, IDebugeeExecutionControl } from '../../../target/cdtpDebugger';
+import { CDTPDebugger } from '../../../target/cdtpDebugger';
+import { IDebugeeStepping, IDebugeeExecutionControl } from '../../../target/controlDebugeeExecution';
 
 type SteppingAction = () => Promise<void>;
 

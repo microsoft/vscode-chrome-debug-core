@@ -12,7 +12,7 @@ import { injectable, inject } from 'inversify';
 import { IDOMInstrumentationBreakpoints } from '../../../target/cdtpSmallerModules';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { IEventsToClientReporter } from '../../../client/eventSender';
-import { IDebugeeExecutionControl } from '../../../target/cdtpDebugger';
+import { IDebugeeExecutionControl } from '../../../target/controlDebugeeExecution';
 
 export type Dummy = VoteRelevance; // If we don't do this the .d.ts doesn't include VoteRelevance and the compilation fails. Remove this when the issue disappears...
 
