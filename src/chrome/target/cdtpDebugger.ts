@@ -21,14 +21,14 @@ export interface IScriptSources {
     getScriptSource(script: IScript): Promise<string>;
 }
 
-export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IPauseOnExceptions, IScriptSources {
+export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IPauseOnExceptions, IScriptSources, IAsyncDebuggingConfiguration {
 
     public enable(): Promise<Crdp.Debugger.EnableResponse> {
         return this.api.enable();
     }
 
-    public setAsyncCallStackDepth(params: Crdp.Debugger.SetAsyncCallStackDepthRequest): Promise<void> {
-        return this.api.setAsyncCallStackDepth(params);
+    public setAsyncCallStackDepth(maxDepth: Crdp.integer): Promise<void> {
+        return this.api.setAsyncCallStackDepth({ maxDepth });
     }
 
     public setBlackboxedRanges(script: IScript, positions: Crdp.Debugger.ScriptPosition[]): Promise<void> {

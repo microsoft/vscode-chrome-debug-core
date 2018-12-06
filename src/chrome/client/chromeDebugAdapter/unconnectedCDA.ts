@@ -69,7 +69,7 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         // .configureClass(TYPES.IDebugeeLauncher, debugeeLauncher)
         .configureValue(TYPES.communicator, communicator)
             .configureValue(TYPES.EventsConsumedByConnectedCDA, new ConnectedCDAEventsCreator(communicator).create())
-            .configureValue(TYPES.chromeConnectionApi, chromeConnection.api)
+            .configureValue(TYPES.CDTPClient, chromeConnection.api)
             .configureValue(TYPES.ISession, new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(this._session)))
             .configureClass(BasePathTransformer, pathTransformerClass)
             .configureClass(BaseSourceMapTransformer, sourceMapTransformerClass)

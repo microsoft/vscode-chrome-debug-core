@@ -3,7 +3,7 @@ import 'reflect-metadata';
 const TYPES = {
     ISession: Symbol.for('ISession'),
     communicator: Symbol.for('communicator'),
-    chromeConnectionApi: Symbol.for('chromeConnection.api'),
+    CDTPClient: Symbol.for('chromeConnection.api'),
     IDOMInstrumentationBreakpoints: Symbol.for('IDOMInstrumentationBreakpoints'),
     IEventsToClientReporter: Symbol.for('IEventsToClientReporter'),
     IDebugeeExecutionControl: Symbol.for('IDebugeeExecutionControl'),
@@ -14,7 +14,6 @@ const TYPES = {
     IScriptSources: Symbol.for('IScriptSources'),
     EventsConsumedByConnectedCDA: Symbol.for('EventsConsumedByConnectedCDA'),
     IDebugeeLauncher: Symbol.for('IDebugeeLauncher'),
-    CrdpApi: Symbol.for('CrdpApi'),
     CDTPStackTraceParser: Symbol.for('CDTPStackTraceParser'),
     CDTPLocationParser: Symbol.for('CDTPLocationParser'),
     ChromeDebugLogic: Symbol.for('ChromeDebugLogic'),

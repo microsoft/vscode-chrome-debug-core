@@ -1,14 +1,12 @@
 import { Container } from 'inversify';
-import { ISession } from '../client/session';
 import { TYPES } from './types';
-import { IDOMInstrumentationBreakpoints } from '../target/cdtpSmallerModules';
+import { IDOMInstrumentationBreakpoints, CDTPDOMDebugger } from '../target/cdtpSmallerModules';
 import { IEventsToClientReporter, EventSender } from '../client/eventSender';
 import { IDebugeeExecutionControl, ControlDebugeeExecution } from '../target/controlDebugeeExecution';
 import { IPauseOnExceptions, IAsyncDebuggingConfiguration, IScriptSources, CDTPDebugger } from '../target/cdtpDebugger';
 import { IBreakpointFeaturesSupport, BreakpointFeaturesSupport } from '../target/breakpointFeaturesSupport';
 import { IStackTracePresentationLogicProvider, StackTracesLogic } from '../internal/stackTraces/stackTracesLogic';
-import { EventsConsumedByConnectedCDA } from '../client/chromeDebugAdapter/connectedCDAEvents';
-import { IDebugeeLauncher, ChromeDebugLogic, BaseSourceMapTransformer, BasePathTransformer, ConnectedCDAConfiguration, LineColTransformer } from '../..';
+import { ChromeDebugLogic, BaseSourceMapTransformer, BasePathTransformer, ConnectedCDAConfiguration, LineColTransformer } from '../..';
 import { CDTPStackTraceParser } from '../target/cdtpStackTraceParser';
 import { CDTPLocationParser } from '../target/cdtpLocationParser';
 import { SourcesLogic } from '../internal/sources/sourcesLogic';
@@ -37,18 +35,12 @@ import { SkipFilesLogic } from '../internal/features/skipFiles';
 import { SmartStepLogic } from '../internal/features/smartStep';
 
 export function bindAll(di: Container) {
-    di.bind<ISession>(TYPES.ISession).to(ISession);
-    di.bind<communicator>(TYPES.communicator).to(communicator);
-    di.bind<chromeConnectionApi>(TYPES.chromeConnectionApi).to(chromeConnectionApi);
-    di.bind<CrdpApi>(TYPES.CrdpApi).to(CrdpApi);
-    di.bind<IDOMInstrumentationBreakpoints>(TYPES.IDOMInstrumentationBreakpoints).to(DOMInstrumentationBreakpoints);
+    di.bind<IDOMInstrumentationBreakpoints>(TYPES.IDOMInstrumentationBreakpoints).to(CDTPDOMDebugger);
     di.bind<IAsyncDebuggingConfiguration>(TYPES.IAsyncDebuggingConfiguration).to(CDTPDebugger);
-    di.bind<IScriptSources>(TYPES.IScriptSources).to(ScriptSources);
-    di.bind<EventsConsumedByConnectedCDA>(TYPES.EventsConsumedByConnectedCDA).to(EventsConsumedByConnectedCDA);
+    di.bind<IScriptSources>(TYPES.IScriptSources).to(CDTPDebugger);
 
     di.bind<IStackTracePresentationLogicProvider>(TYPES.IStackTracePresentationLogicProvider).to(SmartStepLogic);
     di.bind<IStackTracePresentationLogicProvider>(TYPES.IStackTracePresentationLogicProvider).to(SkipFilesLogic);
-
 
     di.bind<IEventsToClientReporter>(TYPES.IEventsToClientReporter).to(EventSender);
     di.bind<IDebugeeExecutionControl>(TYPES.IDebugeeExecutionControl).to(ControlDebugeeExecution);
