@@ -67,6 +67,20 @@
             "smartStep": true
         },
         {
+            "name": "launch test-debug",
+            "type": "node",
+            "request": "launch",
+            "protocol": "inspector",
+
+            // These paths are only valid for my particular setup! You need to replace them with your own.
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/out/test/testDebug/testDebug.js",
+            "args": [ "--server=4712" ],
+            "outFiles": ["${workspaceFolder}/out/**/*.js", "${workspaceFolder}/../vscode-chrome-debug/out/**/*.js"],
+            "internalConsoleOptions": "openOnSessionStart",
+            "smartStep": true
+        },
+        {
             "name": "attach chrome-debug-core",
             "type": "node",
             "request": "attach",

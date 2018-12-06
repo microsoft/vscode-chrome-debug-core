@@ -24,6 +24,7 @@
     },
     "include": [
         "src/**/*.ts",
+        "test/testDebug/**/*.ts",
         "test-DoNot-/**/*.ts",
         "node_modules/@types/**/*.ts"
     ]
