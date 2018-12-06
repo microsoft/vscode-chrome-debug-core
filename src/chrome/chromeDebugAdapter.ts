@@ -51,6 +51,8 @@ import { ExceptionThrownEventProvider } from './target/ExceptionThrownEventProvi
 import { ExecutionContextEventsProvider } from './target/executionContextEventsProvider';
 import { IInspectDebugeeState } from './target/inspectDebugeeState';
 import { IUpdateDebugeeState } from './target/updateDebugeeState';
+import { injectable, inject } from 'inversify';
+import { TYPES } from './dependencyInjection.ts/types';
 
 // export class ChromeDebugAdapter extends ChromeDebugAdapterClass {
 //     /** These methods are called by the ChromeDebugAdapter subclass in chrome-debug. We need to redirect them like this
@@ -152,6 +154,7 @@ export type CrdpDomain = string;
 
 export type LoadedSourceEventReason = 'new' | 'changed' | 'removed';
 
+@injectable()
 export class ChromeDebugLogic {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
@@ -196,15 +199,19 @@ export class ChromeDebugLogic {
     public _pauseOnPromiseRejections = true;
     static HITCONDITION_MATCHER: any;
 
-    public constructor(lineColTransformer: LineColTransformer, sourceMapTransformer: BaseSourceMapTransformer, pathTransformer: BasePathTransformer,
-        session: ISession, chromeConnection: ChromeConnection,
-        chromeDiagnostics: CDTPDiagnostics,
-        private readonly _scriptsLogic: DeleteMeScriptsRegistry,
-        private readonly _eventSender: EventSender,
-        private readonly _exceptionThrownEventProvider: ExceptionThrownEventProvider,
-        private readonly _executionContextEventsProvider: ExecutionContextEventsProvider,
-        private readonly _inspectDebugeeState: IInspectDebugeeState,
-        private readonly _updateDebugeeState: IUpdateDebugeeState,
+    public constructor(
+        @inject(TYPES.LineColTransformer) lineColTransformer: LineColTransformer,
+        @inject(TYPES.BaseSourceMapTransformer) sourceMapTransformer: BaseSourceMapTransformer,
+        @inject(TYPES.BasePathTransformer) pathTransformer: BasePathTransformer,
+        @inject(TYPES.ISession) session: ISession,
+        @inject(TYPES.ChromeConnection) chromeConnection: ChromeConnection,
+        @inject(TYPES.CDTPDiagnostics) chromeDiagnostics: CDTPDiagnostics,
+        @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsLogic: DeleteMeScriptsRegistry,
+        @inject(TYPES.EventSender) private readonly _eventSender: EventSender,
+        @inject(TYPES.ExceptionThrownEventProvider) private readonly _exceptionThrownEventProvider: ExceptionThrownEventProvider,
+        @inject(TYPES.ExecutionContextEventsProvider) private readonly _executionContextEventsProvider: ExecutionContextEventsProvider,
+        @inject(TYPES.IInspectDebugeeState) private readonly _inspectDebugeeState: IInspectDebugeeState,
+        @inject(TYPES.IUpdateDebugeeState) private readonly _updateDebugeeState: IUpdateDebugeeState,
         ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);

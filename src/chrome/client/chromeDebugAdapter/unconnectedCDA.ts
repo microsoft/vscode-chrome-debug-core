@@ -1,5 +1,5 @@
 import { UnconnectedCDACommonLogic } from './unconnectedCDACommonLogic';
-import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, BasePathTransformer, BaseSourceMapTransformer, LineColTransformer, utils, IDebugeeLauncher } from '../../..';
+import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, BasePathTransformer, BaseSourceMapTransformer, LineColTransformer, utils } from '../../..';
 import { ChromeConnection } from '../../chromeConnection';
 import { IClientCapabilities } from '../../../debugAdapterInterfaces';
 import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
@@ -40,7 +40,7 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
 
     private parseLoggingConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs): LoggingConfiguration {
         const traceMapping: { [key: string]: Logger.LogLevel | undefined } = { true: Logger.LogLevel.Warn, verbose: Logger.LogLevel.Verbose };
-        const traceValue = traceMapping[args.trace.toString().toLowerCase()];
+        const traceValue = args.trace && traceMapping[args.trace.toString().toLowerCase()];
         return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: args.logTimestamps };
     }
 
@@ -63,9 +63,10 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         const chromeConnection = new (this._chromeConnectionClass)(undefined, args.targetFilter || this._extensibilityPoints.targetFilter);
         const communicator = new LoggingCommunicator(new Communicator(), new ExecutionLogger(logging));
 
+        const debugeeLauncher = new this._extensibilityPoints.debugeeLauncher();
         di
         .configureClass(LineColTransformer, lineColTransformerClass)
-        .configureClass(TYPES.IDebugeeLauncher, this._extensibilityPoints.debugeeLauncher)
+        // .configureClass(TYPES.IDebugeeLauncher, debugeeLauncher)
         .configureValue(TYPES.communicator, communicator)
             .configureValue(TYPES.EventsConsumedByConnectedCDA, new ConnectedCDAEventsCreator(communicator).create())
             .configureValue(TYPES.chromeConnectionApi, chromeConnection.api)
@@ -81,8 +82,7 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
                 scenarioType,
                 args));
 
-        const launcher = di.createComponent<IDebugeeLauncher>(TYPES.IDebugeeLauncher);
-        await launcher.launch(telemetryPropertyCollector);
+        await debugeeLauncher.launch(telemetryPropertyCollector);
 
         return di.createClassWithDI<ConnectedCDA>(ConnectedCDA);
     }

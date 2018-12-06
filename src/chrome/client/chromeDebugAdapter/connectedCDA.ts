@@ -17,10 +17,11 @@ import { CDTPScriptsRegistry } from '../../target/cdtpScriptsRegistry';
 import { PauseOnExceptionOrRejection } from '../../internal/exceptions/pauseOnException';
 import { Stepping } from '../../internal/stepping/stepping';
 import { DotScriptCommand } from '../../internal/sources/features/dotScriptsCommand';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 
 // TODO DIEGO: Remember to call here and only here         this._lineColTransformer.convertDebuggerLocationToClient(stackFrame); for all responses
+@injectable()
 export class ConnectedCDA implements IDebugAdapterState {
     public static SCRIPTS_COMMAND = '.scripts';
 

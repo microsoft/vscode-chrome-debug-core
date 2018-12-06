@@ -41,6 +41,12 @@ const TYPES = {
     AsyncStepping: Symbol.for('AsyncStepping'),
     ConnectedCDAConfiguration: Symbol.for('ConnectedCDAConfiguration'),
     BreakpointIdRegistry: Symbol.for('BreakpointIdRegistry'),
+    ExceptionThrownEventProvider: Symbol.for('ExceptionThrownEventProvider'),
+    ExecutionContextEventsProvider: Symbol.for('ExecutionContextEventsProvider'),
+    IInspectDebugeeState: Symbol.for('IInspectDebugeeState'),
+    IUpdateDebugeeState: Symbol.for('IUpdateDebugeeState'),
+    LineColTransformer: Symbol.for('LineColTransformer'),
+    ChromeConnection: Symbol.for('ChromeConnection'),
 };
 
 export { TYPES };
