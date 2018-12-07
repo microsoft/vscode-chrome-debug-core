@@ -3,7 +3,9 @@ import { IScript } from '../internal/scripts/script';
 import { newResourceIdentifierMap, IResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { ValidatedMap } from '../collections/validatedMap';
 import { ExecutionContext, IExecutionContext } from '../internal/scripts/executionContext';
+import { injectable } from 'inversify';
 
+@injectable()
 export class CDTPScriptsRegistry {
     private readonly _idToExecutionContext = new ValidatedMap<Crdp.Runtime.ExecutionContextId, ExecutionContext>();
     private readonly _scripts = new CDTPCurrentGeneration();

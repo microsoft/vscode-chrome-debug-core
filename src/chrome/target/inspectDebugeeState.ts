@@ -2,6 +2,8 @@ import { EvaluateOnCallFrameRequest } from './requests';
 import { Crdp } from '../..';
 import { CallFrameRegistry } from './callFrameRegistry';
 import { AddSourceUriToExpession } from './addSourceUriToExpression';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export interface IInspectDebugeeState {
     callFunctionOn(params: Crdp.Runtime.CallFunctionOnRequest): Promise<Crdp.Runtime.CallFunctionOnResponse>;
@@ -10,6 +12,7 @@ export interface IInspectDebugeeState {
     evaluateOnCallFrame(params: EvaluateOnCallFrameRequest): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse>;
 }
 
+@injectable()
 export class InspectDebugeeState implements IInspectDebugeeState {
     private addSourceUriToEvaluates = new AddSourceUriToExpession('evaluateOnFrame');
 
@@ -41,7 +44,7 @@ export class InspectDebugeeState implements IInspectDebugeeState {
     }
 
     constructor(
-        protected readonly api: Crdp.ProtocolApi,
+        @inject(TYPES.CDTPClient) protected readonly api: Crdp.ProtocolApi,
         private readonly _callFrameRegistry: CallFrameRegistry) {
     }
 }

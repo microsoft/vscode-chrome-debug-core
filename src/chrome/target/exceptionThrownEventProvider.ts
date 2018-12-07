@@ -3,7 +3,8 @@ import { CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { ExceptionDetails } from './events';
 import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { CDTPScriptsRegistry } from './cdtpScriptsRegistry';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export interface IExceptionThrownEventProvider {
 
@@ -11,6 +12,8 @@ export interface IExceptionThrownEventProvider {
 
 @injectable()
 export class ExceptionThrownEventProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.RuntimeApi> implements IExceptionThrownEventProvider {
+    protected readonly api: Crdp.RuntimeApi = this.protocolApi.Runtime;
+
     public readonly onExceptionThrown = this.addApiListener('exceptionThrown', async (params: Crdp.Runtime.ExceptionThrownEvent) =>
         ({
             timestamp: params.timestamp,
@@ -32,7 +35,7 @@ export class ExceptionThrownEventProvider extends CDTPEventsEmitterDiagnosticsMo
     }
 
     constructor(
-        protected readonly api: Crdp.RuntimeApi,
+        @inject(TYPES.CDTPClient) private readonly protocolApi: Crdp.ProtocolApi,
         private readonly _cdtpStackTraceParser: CDTPStackTraceParser,
         private readonly _scriptsRegistry: CDTPScriptsRegistry,
     ) {

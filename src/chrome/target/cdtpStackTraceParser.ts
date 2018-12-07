@@ -7,9 +7,11 @@ import { CodeFlowFrame } from '../internal/stackTraces/callFrame';
 import { createCallFrameName } from '../internal/stackTraces/callFrameName';
 import { IResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { CDTPLocationParser, HasScriptLocation } from './cdtpLocationParser';
+import { injectable } from 'inversify';
 
 export type CDTPResource = IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
 
+@injectable()
 export class CDTPStackTraceParser {
     public async toStackTraceCodeFlow(stackTrace: NonNullable<Crdp.Runtime.StackTrace>): Promise<CodeFlowStackTrace<IScript>> {
         return {

@@ -11,6 +11,8 @@ import { CDTPStackTraceParser } from './cdtpStackTraceParser';
 import { inject } from 'inversify';
 
 export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> {
+    protected readonly api = this._protocolApi.Debugger;
+
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: Crdp.Debugger.ScriptParsedEvent) => {
         await this.createAndRegisterScript(params);
 
@@ -69,7 +71,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     }
 
     constructor(
-        protected readonly api: Crdp.DebuggerApi,
+        private readonly _protocolApi: Crdp.ProtocolApi,
         @inject(TYPES.CDTPStackTraceParser) private readonly _crdpToInternal: CDTPStackTraceParser,
         @inject(TYPES.BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
         @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
