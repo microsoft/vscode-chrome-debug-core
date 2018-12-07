@@ -277,7 +277,7 @@ export class SkipFilesLogic implements IComponent<ISkipFilesConfiguration>, ISta
     }
 
     constructor(
-        private readonly _dependencies: EventsConsumedBySkipFilesLogic,
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedBySkipFilesLogic,
         @inject(TYPES.CDTPDiagnostics) private readonly chrome: CDTPDiagnostics,
         @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsRegistry: DeleteMeScriptsRegistry,
         @inject(TYPES.StackTracesLogic) private readonly stackTracesLogic: StackTracesLogic,
