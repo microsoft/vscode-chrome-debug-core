@@ -3,8 +3,8 @@ import { SourceMap } from '../../../sourceMaps/sourceMap';
 
 export interface ISourcesMapper {
     readonly sources: string[];
-    getSourceLocation(scriptLocation: IPositionInScript): IPositionInSource | null;
-    getScriptLocation(scriptLocation: IPositionInSource): IPositionInScript | null;
+    getSourcePosition(positionInScript: IPositionInScript): IPositionInSource | null;
+    getScriptPosition(positionInSource: IPositionInSource): IPositionInScript | null;
 }
 
 interface IPositionInSource {
@@ -20,16 +20,16 @@ interface IPositionInScript {
 
 /** This class maps locations from a script into the sources form which it was compiled, and back. */
 export class SourcesMapper implements ISourcesMapper {
-    public getSourceLocation(scriptLocation: IPositionInScript): IPositionInSource | null {
-        const mappedPosition = this._sourceMap.authoredPositionFor(scriptLocation.line, scriptLocation.column || 0);
+    public getSourcePosition(positionInScript: IPositionInScript): IPositionInSource | null {
+        const mappedPosition = this._sourceMap.authoredPositionFor(positionInScript.line, positionInScript.column || 0);
         return mappedPosition && mappedPosition.source && mappedPosition.line
             ? { source: mappedPosition.source, line: mappedPosition.line as LineNumber, column: mappedPosition.column as ColumnNumber }
             : null;
     }
 
-    public getScriptLocation(sourcePosition: IPositionInSource): IPositionInScript | null {
-        const mappedPosition = this._sourceMap.generatedPositionFor(sourcePosition.source,
-            sourcePosition.line, sourcePosition.column || 0);
+    public getScriptPosition(positionInSource: IPositionInSource): IPositionInScript | null {
+        const mappedPosition = this._sourceMap.generatedPositionFor(positionInSource.source,
+            positionInSource.line, positionInSource.column || 0);
         return mappedPosition && mappedPosition.line
             ? { line: mappedPosition.line as LineNumber, column: mappedPosition.column as ColumnNumber }
             : null;
@@ -44,11 +44,11 @@ export class SourcesMapper implements ISourcesMapper {
 }
 
 export class NoSourceMapping implements ISourcesMapper {
-    public getSourceLocation(_: IPositionInScript): null {
+    public getSourcePosition(_: IPositionInScript): null {
         return null;
     }
 
-    public getScriptLocation(_: IPositionInSource): null {
+    public getScriptPosition(_: IPositionInSource): null {
         return null;
     }
 
