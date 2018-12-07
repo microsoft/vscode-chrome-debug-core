@@ -2,6 +2,7 @@ import { ILoadedSource } from '../internal/sources/loadedSource';
 import { IBPRecipie } from '../internal/breakpoints/bpRecipie';
 import { BidirectionalMap } from '../collections/bidirectionalMap';
 import { FramePresentationOrLabel } from '../internal/stackTraces/stackTracePresentation';
+import { injectable } from 'inversify';
 
 export class BidirectionalHandles<T> {
     private readonly _idToObject = new BidirectionalMap<number, T>();
@@ -30,6 +31,7 @@ export class BidirectionalHandles<T> {
 
 const prefixMultiplier = 1000000;
 
+@injectable()
 export class HandlesRegistry {
     // TODO DIEGO: V1 reseted the frames on an onPaused event. Figure out if that is the right thing to do
     // We use different prefixes so it's easier to identify the IDs in the logs...

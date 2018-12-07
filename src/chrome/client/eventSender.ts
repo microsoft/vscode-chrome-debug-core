@@ -8,7 +8,8 @@ import { IBPRecipieStatus } from '../internal/breakpoints/bpRecipieStatus';
 import { IFormattedExceptionLineDescription } from '../internal/formattedExceptionParser';
 import { StoppedEvent2, ReasonType } from '../stoppedEvent';
 import { Crdp, ChromeDebugLogic } from '../..';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export interface OutputParameters {
     readonly output: NonNullable<string>;
@@ -89,5 +90,7 @@ export class EventSender implements IEventsToClientReporter {
         return this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
     }
 
-    constructor(private readonly _session: ISession, private readonly _internalToClient: InternalToClient) { }
+    constructor(
+        @inject(TYPES.ISession) private readonly _session: ISession,
+        private readonly _internalToClient: InternalToClient) { }
 }

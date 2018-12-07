@@ -12,6 +12,8 @@ import { HandlesRegistry } from './handlesRegistry';
 import { FramePresentationOrLabel, StackTraceLabel } from '../internal/stackTraces/stackTracePresentation';
 import { IExceptionInformation } from '../internal/exceptions/pauseOnException';
 import { IFormattedExceptionLineDescription } from '../internal/formattedExceptionParser';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 interface ClientLocationInSource {
     source: DebugProtocol.Source;
@@ -19,6 +21,7 @@ interface ClientLocationInSource {
     column: number;
 }
 
+@injectable()
 export class InternalToClient {
     public readonly toStackFrames = asyncAdaptToSinglIntoToMulti(this, this.toStackFrame);
     public readonly toSourceTrees = asyncAdaptToSinglIntoToMulti(this, this.toSourceTree);
@@ -124,5 +127,5 @@ export class InternalToClient {
 
     constructor(
         private readonly _handlesRegistry: HandlesRegistry,
-        private readonly _lineColTransformer: NonNullable<LineColTransformer>) { }
+        @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 }
