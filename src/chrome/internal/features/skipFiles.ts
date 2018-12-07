@@ -10,7 +10,7 @@ import { ScriptParsedEvent } from '../../target/events';
 import { LocationInLoadedSource } from '../locations/location';
 import { ICallFramePresentationDetails } from '../stackTraces/callFramePresentation';
 import * as nls from 'vscode-nls';
-import { injectable, inject } from 'inversify';
+import { injectable, inject, LazyServiceIdentifer } from 'inversify';
 import { DeleteMeScriptsRegistry } from '../scripts/scriptsRegistry';
 import { TYPES } from '../../dependencyInjection.ts/types';
 const localize = nls.loadMessageBundle();
@@ -280,7 +280,7 @@ export class SkipFilesLogic implements IComponent<ISkipFilesConfiguration>, ISta
         @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedBySkipFilesLogic,
         @inject(TYPES.CDTPDiagnostics) private readonly chrome: CDTPDiagnostics,
         @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsRegistry: DeleteMeScriptsRegistry,
-        @inject(TYPES.StackTracesLogic) private readonly stackTracesLogic: StackTracesLogic,
+        @inject(new LazyServiceIdentifer(() => TYPES.StackTracesLogic)) private readonly stackTracesLogic: StackTracesLogic,
         @inject(TYPES.BaseSourceMapTransformer) private readonly sourceMapTransformer: BaseSourceMapTransformer,
         @inject(TYPES.BasePathTransformer) private readonly pathTransformer: BasePathTransformer,
     ) { }
