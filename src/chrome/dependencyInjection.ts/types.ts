@@ -46,6 +46,7 @@ const TYPES = {
     IUpdateDebugeeState: Symbol.for('IUpdateDebugeeState'),
     LineColTransformer: Symbol.for('LineColTransformer'),
     ChromeConnection: Symbol.for('ChromeConnection'),
+    IDebugeeStepping: Symbol.for('IDebugeeStepping'),
 };
 
 export { TYPES };

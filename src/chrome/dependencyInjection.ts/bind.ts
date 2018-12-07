@@ -2,7 +2,7 @@ import { Container } from 'inversify';
 import { TYPES } from './types';
 import { IDOMInstrumentationBreakpoints, CDTPDOMDebugger } from '../target/cdtpSmallerModules';
 import { IEventsToClientReporter, EventSender } from '../client/eventSender';
-import { IDebugeeExecutionControl, ControlDebugeeExecution } from '../target/controlDebugeeExecution';
+import { IDebugeeExecutionControl, ControlDebugeeExecution, IDebugeeStepping } from '../target/controlDebugeeExecution';
 import { IPauseOnExceptions, IAsyncDebuggingConfiguration, IScriptSources, CDTPDebugger } from '../target/cdtpDebugger';
 import { IBreakpointFeaturesSupport, BreakpointFeaturesSupport } from '../target/breakpointFeaturesSupport';
 import { IStackTracePresentationLogicProvider, StackTracesLogic } from '../internal/stackTraces/stackTracesLogic';
@@ -74,4 +74,5 @@ export function bindAll(di: Container) {
     di.bind<ExceptionThrownEventProvider>(TYPES.ExceptionThrownEventProvider).to(ExceptionThrownEventProvider);
     di.bind<ExecutionContextEventsProvider>(TYPES.ExecutionContextEventsProvider).to(ExecutionContextEventsProvider);
     di.bind<LineColTransformer>(TYPES.LineColTransformer).to(LineColTransformer);
+    di.bind<IDebugeeStepping>(TYPES.IDebugeeStepping).to(ControlDebugeeExecution);
 }

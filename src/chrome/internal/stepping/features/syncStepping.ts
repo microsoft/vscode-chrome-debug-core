@@ -70,7 +70,8 @@ export class SyncStepping implements IComponent {
         this._dependencies.subscriberForAskForInformationAboutPaused(paused => this.askForInformationAboutPaused(paused));
     }
 
-    constructor(private readonly _dependencies: SyncSteppingDependencies,
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: SyncSteppingDependencies,
         @inject(TYPES.CDTPDebugger) private readonly _debugeeStepping: IDebugeeStepping,
         @inject(TYPES.CDTPDebugger) private readonly _debugeeExecutionControl: IDebugeeExecutionControl) { }
 }

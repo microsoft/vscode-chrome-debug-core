@@ -48,7 +48,7 @@ export class CDTPDiagnostics implements IComponent {
         this.Console = new CDTPConsole(this._api.Console);
         this.Runtime = new CDTPRuntime(this._api.Runtime, cdtpStackTraceParser);
         this.Schema = new CDTPSchema(this._api.Schema);
-        this.DOMDebugger = new CDTPDOMDebugger(this._api.DOMDebugger);
+        this.DOMDebugger = new CDTPDOMDebugger(this._api);
         this.Page = new CDTPPage(this._api.Page);
         this.Network = new CDTPNetwork(this._api.Network);
         this.Browser = new CDTPBrowser(this._api.Browser);

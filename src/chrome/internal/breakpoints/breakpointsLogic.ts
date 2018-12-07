@@ -3,7 +3,7 @@ import { ITelemetryPropertyCollector, IComponent, ConnectedCDAConfiguration } fr
 import { ScriptOrSourceOrIdentifierOrUrlRegexp } from '../locations/location';
 import { BPRecipiesInUnresolvedSource } from './bpRecipies';
 import { Breakpoint } from './breakpoint';
-import { ReAddBPsWhenSourceIsLoaded, ReAddBPsWhenSourceIsLoadedDependencies } from './features/reAddBPsWhenSourceIsLoaded';
+import { ReAddBPsWhenSourceIsLoaded, EventsConsumedByReAddBPsWhenSourceIsLoaded } from './features/reAddBPsWhenSourceIsLoaded';
 import { asyncMap } from '../../collections/async';
 import { IBPRecipieStatus } from './bpRecipieStatus';
 import { ClientCurrentBPRecipiesRegistry } from './clientCurrentBPRecipiesRegistry';
@@ -20,7 +20,7 @@ export interface IOnPausedResult {
 }
 
 export interface InternalDependencies extends
-    ReAddBPsWhenSourceIsLoadedDependencies,
+    EventsConsumedByReAddBPsWhenSourceIsLoaded,
     PauseScriptLoadsToSetBPsDependencies {
 
     onAsyncBreakpointResolved(listener: (params: Breakpoint<ScriptOrSourceOrIdentifierOrUrlRegexp>) => void): void;

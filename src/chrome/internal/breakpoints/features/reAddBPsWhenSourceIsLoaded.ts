@@ -10,7 +10,7 @@ import { injectable, inject } from 'inversify';
 import { IBreakpointsInLoadedSource } from '../bpRecipieInLoadedSourceLogic';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 
-export interface ReAddBPsWhenSourceIsLoadedDependencies {
+export interface EventsConsumedByReAddBPsWhenSourceIsLoaded {
     onLoadedSourceIsAvailable(listener: (source: ILoadedSource) => Promise<void>): void;
     notifyNoPendingBPs(): void;
 }
@@ -87,7 +87,7 @@ export class ReAddBPsWhenSourceIsLoaded implements IComponent {
     }
 
     constructor(
-        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: ReAddBPsWhenSourceIsLoadedDependencies,
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedByReAddBPsWhenSourceIsLoaded,
         @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.BPRecipieInLoadedSourceLogic) private readonly _breakpointsInLoadedSource: IBreakpointsInLoadedSource) { }
 }

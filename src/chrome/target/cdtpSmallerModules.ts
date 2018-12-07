@@ -1,8 +1,9 @@
 import { CDTPDiagnosticsModule, CDTPEventsEmitterDiagnosticsModule } from './cdtpDiagnosticsModule';
 import { Crdp } from '../..';
 import { CDTPStackTraceParser } from './cdtpStackTraceParser';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { LogEntry } from './events';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export class CDTPConsole extends CDTPEventsEmitterDiagnosticsModule<Crdp.ConsoleApi> {
     public readonly onMessageAdded = this.addApiListener('messageAdded', (params: Crdp.Console.MessageAddedEvent) => params);
@@ -33,6 +34,8 @@ export interface IDOMInstrumentationBreakpoints {
 
 @injectable()
 export class CDTPDOMDebugger extends CDTPDiagnosticsModule<Crdp.DOMDebuggerApi> implements IDOMInstrumentationBreakpoints {
+    protected api = this._protocolApi.DOMDebugger;
+
     public setInstrumentationBreakpoint(params: Crdp.DOMDebugger.SetInstrumentationBreakpointRequest): Promise<void> {
         return this.api.setInstrumentationBreakpoint(params);
     }
@@ -41,7 +44,7 @@ export class CDTPDOMDebugger extends CDTPDiagnosticsModule<Crdp.DOMDebuggerApi> 
         return this.api.removeInstrumentationBreakpoint(params);
     }
 
-    constructor(protected api: Crdp.DOMDebuggerApi) {
+    constructor(@inject(TYPES.CDTPClient) protected _protocolApi: Crdp.ProtocolApi) {
         super();
     }
 }

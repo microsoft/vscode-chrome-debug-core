@@ -17,6 +17,7 @@ export interface IDebugeeStepping {
     stepInto(params: { breakOnAsyncCall: boolean }): Promise<void>;
     stepOut(): Promise<void>;
     restartFrame(callFrame: ICallFrame<IScript>): Promise<Crdp.Debugger.RestartFrameResponse>;
+    pauseOnAsyncCall(params: Crdp.Debugger.PauseOnAsyncCallRequest): Promise<void>;
 }
 
 @injectable()

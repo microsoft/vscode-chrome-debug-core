@@ -108,7 +108,7 @@ export class PauseOnExceptionOrRejection implements IComponent {
         return this;
     }
 
-    constructor(private readonly _dependencies: EventsConsumedByPauseOnException,
+    constructor(@inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedByPauseOnException,
         @inject(TYPES.DeleteMeScriptsRegistry) private readonly _scriptsLogic: DeleteMeScriptsRegistry,
         @inject(TYPES.IPauseOnExceptions) private readonly _pauseOnExceptions: IPauseOnExceptions,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter) { }
