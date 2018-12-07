@@ -1,5 +1,5 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { injectable, inject, multiInject } from 'inversify';
+import { injectable, inject, LazyServiceIdentifer } from 'inversify';
 
 import * as errors from '../../../errors';
 import * as path from 'path';
@@ -152,7 +152,8 @@ export class StackTracesLogic implements IComponent {
 
     constructor(
         @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedByStackTrace,
-        @multiInject(TYPES.IStackTracePresentationLogicProvider) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationLogicProvider[],
+        // TODO DIEGO: @multiInject(new LazyServiceIdentifer(() => TYPES.IStackTracePresentationLogicProvider)) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationLogicProvider[],
+        @inject(new LazyServiceIdentifer(() => TYPES.IStackTracePresentationLogicProvider)) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationLogicProvider[],
         @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfiguration) {
     }
 }

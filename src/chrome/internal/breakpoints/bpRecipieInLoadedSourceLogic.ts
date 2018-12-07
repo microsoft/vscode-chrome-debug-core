@@ -9,7 +9,7 @@ import { RangeInScript } from '../locations/rangeInScript';
 import { BreakpointsRegistry } from './breakpointsRegistry';
 import { PausedEvent } from '../../target/events';
 import { VoteCommonLogic, VoteRelevance, Vote, Abstained } from '../../communication/collaborativeDecision';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { ITargetBreakpoints } from '../../target/cdtpTargetBreakpoints';
 import { IBreakpointFeaturesSupport } from '../../target/breakpointFeaturesSupport';
 import { TYPES } from '../../dependencyInjection.ts/types';
@@ -28,6 +28,7 @@ export interface IBreakpointsInLoadedSource {
     addBreakpointForLoadedSource(bpRecipie: BPRecipieInLoadedSource<ConditionalBreak | AlwaysBreak>): Promise<IBreakpoint<ScriptOrSourceOrIdentifierOrUrlRegexp>[]>;
 }
 
+@injectable()
 export class BPRecipieInLoadedSourceLogic implements IBreakpointsInLoadedSource {
     private readonly doesTargetSupportColumnBreakpointsCached: Promise<boolean>;
 

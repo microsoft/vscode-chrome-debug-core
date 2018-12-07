@@ -30,7 +30,6 @@ import { ExceptionThrownEventProvider } from '../target/exceptionThrownEventProv
 import { ExecutionContextEventsProvider } from '../target/executionContextEventsProvider';
 import { IInspectDebugeeState, InspectDebugeeState } from '../target/inspectDebugeeState';
 import { IUpdateDebugeeState, UpdateDebugeeState } from '../target/updateDebugeeState';
-import { SkipFilesLogic } from '../internal/features/skipFiles';
 import { SmartStepLogic } from '../internal/features/smartStep';
 
 export function bindAll(di: Container) {
@@ -39,7 +38,7 @@ export function bindAll(di: Container) {
     di.bind<IScriptSources>(TYPES.IScriptSources).to(CDTPDebugger);
 
     di.bind<IStackTracePresentationLogicProvider>(TYPES.IStackTracePresentationLogicProvider).to(SmartStepLogic);
-    di.bind<IStackTracePresentationLogicProvider>(TYPES.IStackTracePresentationLogicProvider).to(SkipFilesLogic);
+    // TODO DIEGO: di.bind<IStackTracePresentationLogicProvider>(TYPES.IStackTracePresentationLogicProvider).to(SkipFilesLogic);
 
     di.bind<IEventsToClientReporter>(TYPES.IEventsToClientReporter).to(EventSender);
     di.bind<IDebugeeExecutionControl>(TYPES.IDebugeeExecutionControl).to(ControlDebugeeExecution);

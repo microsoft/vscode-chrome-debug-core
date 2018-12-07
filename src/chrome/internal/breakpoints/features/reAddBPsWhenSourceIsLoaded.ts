@@ -86,7 +86,8 @@ export class ReAddBPsWhenSourceIsLoaded implements IComponent {
         return `{ BPs to re-add when source is laoded: ${this._sourcePathToBPRecipies}}`;
     }
 
-    constructor(private readonly _dependencies: ReAddBPsWhenSourceIsLoadedDependencies,
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: ReAddBPsWhenSourceIsLoadedDependencies,
         @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.BPRecipieInLoadedSourceLogic) private readonly _breakpointsInLoadedSource: IBreakpointsInLoadedSource) { }
 }

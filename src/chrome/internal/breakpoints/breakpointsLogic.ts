@@ -1,5 +1,5 @@
 import { IBPRecipie } from './bpRecipie';
-import { ITelemetryPropertyCollector } from '../../..';
+import { ITelemetryPropertyCollector, IComponent, ConnectedCDAConfiguration } from '../../..';
 import { ScriptOrSourceOrIdentifierOrUrlRegexp } from '../locations/location';
 import { BPRecipiesInUnresolvedSource } from './bpRecipies';
 import { Breakpoint } from './breakpoint';
@@ -12,7 +12,7 @@ import { BPRecipieInLoadedSourceLogic } from './bpRecipieInLoadedSourceLogic';
 import { RemoveProperty } from '../../../typeUtils';
 import { IEventsToClientReporter } from '../../client/eventSender';
 import { PauseScriptLoadsToSetBPs, PauseScriptLoadsToSetBPsDependencies } from './features/pauseScriptLoadsToSetBPs';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 
 export interface IOnPausedResult {
@@ -31,7 +31,10 @@ export type EventsConsumedByBreakpointsLogic = RemoveProperty<InternalDependenci
     'notifyAllBPsAreBinded' |
     'tryGettingBreakpointAtLocation'>;
 
-export class BreakpointsLogic {
+@injectable()
+export class BreakpointsLogic implements IComponent {
+    private _isBpsWhileLoadingEnable: boolean;
+
     private readonly _clientBreakpointsRegistry = new ClientCurrentBPRecipiesRegistry();
 
     protected onAsyncBreakpointResolved(breakpoint: Breakpoint<ScriptOrSourceOrIdentifierOrUrlRegexp>): void {
@@ -83,13 +86,22 @@ export class BreakpointsLogic {
         return bpsDelta.matchesForRequested.map(bpRecipie => this._breakpointRegistry.getStatusOfBPRecipie(bpRecipie));
     }
 
-    constructor(private readonly _dependencies: EventsConsumedByBreakpointsLogic,
+    public install(configuration: ConnectedCDAConfiguration): this {
+        return this.configure(configuration);
+    }
+
+    public configure(configuration: ConnectedCDAConfiguration): this {
+        this._isBpsWhileLoadingEnable = configuration.args.breakOnLoadStrategy !== 'off';
+        return this;
+    }
+
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedByBreakpointsLogic,
         @inject(TYPES.BreakpointsRegistry) private readonly _breakpointRegistry: BreakpointsRegistry,
         @inject(TYPES.ReAddBPsWhenSourceIsLoaded) private readonly _unbindedBreakpointsLogic: ReAddBPsWhenSourceIsLoaded,
         @inject(TYPES.PauseScriptLoadsToSetBPs) private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs,
         @inject(TYPES.BPRecipieInLoadedSourceLogic) private readonly _bprInLoadedSourceLogic: BPRecipieInLoadedSourceLogic,
-        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter,
-        private readonly _isBpsWhileLoadingEnable: boolean) {
+        @inject(TYPES.EventSender) private readonly _eventsToClientReporter: IEventsToClientReporter) {
         this._dependencies.onAsyncBreakpointResolved(breakpoint => this.onAsyncBreakpointResolved(breakpoint));
     }
 }

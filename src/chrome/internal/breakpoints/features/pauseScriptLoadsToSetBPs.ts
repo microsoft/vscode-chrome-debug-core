@@ -111,7 +111,7 @@ export class PauseScriptLoadsToSetBPs implements IComponent<PauseScriptLoadsToSe
     }
 
     constructor(
-        private readonly _dependencies: PauseScriptLoadsToSetBPsDependencies,
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: PauseScriptLoadsToSetBPsDependencies,
         @inject(TYPES.IDOMInstrumentationBreakpoints) private readonly _domInstrumentationBreakpoints: IDOMInstrumentationBreakpoints,
         @inject(TYPES.IDebugeeExecutionControl) private readonly _debugeeExecutionControl: IDebugeeExecutionControl,
         @inject(TYPES.IEventsToClientReporter) protected readonly _eventsToClientReporter: IEventsToClientReporter

@@ -1,9 +1,12 @@
 import { Crdp, utils } from '../..';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
 export interface IBreakpointFeaturesSupport {
     supportsColumnBreakpoints: Promise<boolean>;
 }
 
+@injectable()
 export class BreakpointFeaturesSupport implements IBreakpointFeaturesSupport {
     private result = utils.promiseDefer<boolean>();
 
@@ -24,7 +27,8 @@ export class BreakpointFeaturesSupport implements IBreakpointFeaturesSupport {
         }
     }
 
-    constructor(protected readonly api: Crdp.ProtocolApi) {
+    constructor(
+        @inject(TYPES.CDTPClient) protected readonly api: Crdp.ProtocolApi) {
         api.Debugger.on('scriptParsed', params => this.onScriptParsed(params));
     }
 }

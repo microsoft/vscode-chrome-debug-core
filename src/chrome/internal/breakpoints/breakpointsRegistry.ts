@@ -3,7 +3,9 @@ import { IBreakpoint } from './breakpoint';
 import { ValidatedMultiMap } from '../../collections/validatedMultiMap';
 import { BPRecipie, IBPRecipie } from './bpRecipie';
 import { ScriptOrSourceOrIdentifierOrUrlRegexp, LocationInScript } from '../locations/location';
+import { injectable } from 'inversify';
 
+@injectable()
 export class BreakpointsRegistry {
     // TODO DIEGO: Figure out how to handle if two breakpoint rules set a breakpoint in the same location so it ends up being the same breakpoint id
     private readonly _unmappedRecipieToBreakpoints = new ValidatedMultiMap<IBPRecipie<ScriptOrSourceOrIdentifierOrUrlRegexp>,

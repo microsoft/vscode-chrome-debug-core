@@ -10,9 +10,12 @@ import { EventsConsumedByPauseOnException } from '../../internal/exceptions/paus
 import { EventsConsumedByTakeProperActionOnPausedEvent } from '../../internal/features/takeProperActionOnPausedEvent';
 import { EventsConsumedBySourceResolverLogic } from '../../internal/sources/sourceResolverLogic';
 import { EventsConsumedBySmartStepLogic } from '../../internal/features/smartStep';
+import { ReAddBPsWhenSourceIsLoadedDependencies } from '../../internal/breakpoints/features/reAddBPsWhenSourceIsLoaded';
 
 export interface EventsConsumedByConnectedCDA extends EventsConsumedByBreakpointsLogic, EventsConsumedByPauseOnException,
-    EventsConsumedByStackTrace, EventsConsumedByTakeProperActionOnPausedEvent, EventsConsumedBySkipFilesLogic, EventsConsumedBySourceResolverLogic, EventsConsumedBySmartStepLogic { }
+    EventsConsumedByStackTrace, EventsConsumedByTakeProperActionOnPausedEvent, EventsConsumedBySkipFilesLogic,
+    EventsConsumedBySourceResolverLogic, EventsConsumedBySmartStepLogic,
+    ReAddBPsWhenSourceIsLoadedDependencies { }
 
 export class ConnectedCDAEventsCreator {
     constructor(private readonly communicator: ICommunicator) { }
