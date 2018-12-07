@@ -3,9 +3,10 @@ import { ISourceResolver, ResolveSourceUsingPath } from './sourceResolver';
 import { newResourceIdentifierMap, IResourceIdentifier } from './resourceIdentifier';
 import { IComponent } from '../features/feature';
 import { ScriptParsedEvent } from '../../target/events';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
-export interface SourceResolverLogicDependencies {
+export interface EventsConsumedBySourceResolverLogic {
     onScriptParsed(listener: (scriptEvent: ScriptParsedEvent) => Promise<void>): void;
 }
 
@@ -42,5 +43,6 @@ export class SourceResolverLogic implements IComponent {
         return this;
     }
 
-    constructor(private readonly _dependencies: SourceResolverLogicDependencies) { }
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedBySourceResolverLogic) { }
 }

@@ -8,9 +8,11 @@ import { ILoadedSource } from '../../internal/sources/loadedSource';
 import { asyncMap } from '../../collections/async';
 import { EventsConsumedByPauseOnException } from '../../internal/exceptions/pauseOnException';
 import { EventsConsumedByTakeProperActionOnPausedEvent } from '../../internal/features/takeProperActionOnPausedEvent';
+import { EventsConsumedBySourceResolverLogic } from '../../internal/sources/sourceResolverLogic';
+import { EventsConsumedBySmartStepLogic } from '../../internal/features/smartStep';
 
 export interface EventsConsumedByConnectedCDA extends EventsConsumedByBreakpointsLogic, EventsConsumedByPauseOnException,
-    EventsConsumedByStackTrace, EventsConsumedByTakeProperActionOnPausedEvent, EventsConsumedBySkipFilesLogic { }
+    EventsConsumedByStackTrace, EventsConsumedByTakeProperActionOnPausedEvent, EventsConsumedBySkipFilesLogic, EventsConsumedBySourceResolverLogic, EventsConsumedBySmartStepLogic { }
 
 export class ConnectedCDAEventsCreator {
     constructor(private readonly communicator: ICommunicator) { }

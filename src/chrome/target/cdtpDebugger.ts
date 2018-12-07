@@ -22,6 +22,7 @@ export interface IScriptSources {
 }
 
 export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.DebuggerApi> implements IPauseOnExceptions, IScriptSources, IAsyncDebuggingConfiguration {
+    protected readonly api = this._protocolApi.Debugger;
 
     public enable(): Promise<Crdp.Debugger.EnableResponse> {
         return this.api.enable();
@@ -60,7 +61,7 @@ export class CDTPDebugger extends CDTPEventsEmitterDiagnosticsModule<Crdp.Debugg
     }
 
     constructor(
-        protected readonly api: Crdp.DebuggerApi,
+        @inject(TYPES.CDTPClient) private readonly _protocolApi: Crdp.ProtocolApi,
         @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         super();
     }

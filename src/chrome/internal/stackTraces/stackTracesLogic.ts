@@ -150,7 +150,8 @@ export class StackTracesLogic implements IComponent {
         return this;
     }
 
-    constructor(private readonly _dependencies: EventsConsumedByStackTrace,
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedByStackTrace,
         @multiInject(TYPES.IStackTracePresentationLogicProvider) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationLogicProvider[],
         @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfiguration) {
     }

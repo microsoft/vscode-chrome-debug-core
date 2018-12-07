@@ -12,7 +12,10 @@ import { FramePresentationOrLabel } from '../internal/stackTraces/stackTracePres
 import { LineNumber, ColumnNumber } from '../internal/locations/subtypes';
 import { parseResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { PauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions, PauseOnAllRejections, DoNotPauseOnAnyRejections, PauseOnPromiseRejectionsStrategy } from '../internal/exceptions/strategies';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../dependencyInjection.ts/types';
 
+@injectable()
 export class ClientToInternal {
     public toPauseOnExceptionsStrategy(exceptionFilters: string[]): PauseOnExceptionsStrategy {
         if (exceptionFilters.indexOf('all') >= 0) {
@@ -95,6 +98,6 @@ export class ClientToInternal {
 
     constructor(
         private readonly _handlesRegistry: HandlesRegistry,
-        private readonly _lineColTransformer: NonNullable<LineColTransformer>,
+        @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: NonNullable<LineColTransformer>,
         private readonly _sourcesLogic: SourcesLogic) { }
 }

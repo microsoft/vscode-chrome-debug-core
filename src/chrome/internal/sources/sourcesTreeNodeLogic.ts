@@ -1,11 +1,9 @@
 import { ILoadedSource, ILoadedSourceTreeNode, determineOrderingOfLoadedSources } from './loadedSource';
 import { IScript } from '../scripts/script';
 import { IComponent } from '../features/feature';
-import { injectable } from 'inversify';
-
-export interface SourcesTreeNodeLogicDependencies {
-    allScripts(): Promise<IScript[]>;
-}
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
+import { CDTPScriptsRegistry } from '../../target/cdtpScriptsRegistry';
 
 @injectable()
 export class SourcesTreeNodeLogic implements IComponent {
@@ -18,7 +16,7 @@ export class SourcesTreeNodeLogic implements IComponent {
     */
     // TODO DIEGO: Verify if this is the format we should use for the tree
     public async getLoadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]> {
-        const scripts = await Promise.all(Array.from(await this._dependencies.allScripts()));
+        const scripts = await Promise.all(Array.from(await this._cdtpScriptsRegistry.getAllScripts()));
         const sourceMetadataTree = scripts.map(script => this.getLoadedSourcesTreeForScript(script));
         return sourceMetadataTree;
     }
@@ -42,5 +40,5 @@ export class SourcesTreeNodeLogic implements IComponent {
         return this;
     }
 
-    constructor(private readonly _dependencies: SourcesTreeNodeLogicDependencies) { }
+    constructor(@inject(TYPES.CDTPScriptsRegistry) private readonly _cdtpScriptsRegistry: CDTPScriptsRegistry) { }
 }

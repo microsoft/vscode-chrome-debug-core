@@ -42,7 +42,7 @@ export class CDTPDiagnostics implements IComponent {
         const breakpointIdRegistry = new BreakpointIdRegistry();
         const cdtpLocationParser = new CDTPLocationParser(scriptsRegistry);
         const cdtpStackTraceParser = new CDTPStackTraceParser(cdtpLocationParser);
-        this.Debugger = new CDTPDebugger(this._api.Debugger, scriptsRegistry);
+        this.Debugger = new CDTPDebugger(this._api, scriptsRegistry);
         this.DebuggerEvents = new CDTPDebuggerEventsProvider(this._api.Debugger, cdtpStackTraceParser, breakpointIdRegistry, cdtpLocationParser);
         this.ExceptionThrownEventProvider = new ExceptionThrownEventProvider(this._api, cdtpStackTraceParser, scriptsRegistry);
         this.Console = new CDTPConsole(this._api.Console);

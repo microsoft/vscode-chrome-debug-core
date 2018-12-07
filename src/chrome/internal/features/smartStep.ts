@@ -10,15 +10,12 @@ import { LocationInLoadedSource } from '../locations/location';
 import { ICallFramePresentationDetails } from '../stackTraces/callFramePresentation';
 import { Abstained, VoteRelevance, VoteCommonLogic, Vote } from '../../communication/collaborativeDecision';
 import * as nls from 'vscode-nls';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { IStackTracePresentationLogicProvider } from '../stackTraces/stackTracesLogic';
+import { TYPES } from '../../dependencyInjection.ts/types';
 const localize = nls.loadMessageBundle();
 
-export interface SmartStepLogicDependencies {
-    // TODO DIEGO: Refactor these away
-    readonly pathTransformer: BasePathTransformer;
-    readonly sourceMapTransformer: BaseSourceMapTransformer;
-
+export interface EventsConsumedBySmartStepLogic {
     subscriberForAskForInformationAboutPaused(listener: InformationAboutPausedProvider): void;
 }
 
@@ -81,14 +78,14 @@ export class SmartStepLogic implements IComponent, IStackTracePresentationLogicP
     public async shouldSkip(frame: ICallFrame<IScript>): Promise<boolean> {
         if (!this._isEnabled) return false;
 
-        const clientPath = this._dependencies.pathTransformer.getClientPathFromTargetPath(frame.location.script.runtimeSource.identifier)
+        const clientPath = this._pathTransformer.getClientPathFromTargetPath(frame.location.script.runtimeSource.identifier)
             || frame.location.script.runtimeSource.identifier;
-        const mapping = await this._dependencies.sourceMapTransformer.mapToAuthored(clientPath.canonicalized, frame.codeFlow.location.lineNumber, frame.codeFlow.location.columnNumber);
+        const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath.canonicalized, frame.codeFlow.location.lineNumber, frame.codeFlow.location.columnNumber);
         if (mapping) {
             return false;
         }
 
-        if ((await this._dependencies.sourceMapTransformer.allSources(clientPath.canonicalized)).length) {
+        if ((await this._sourceMapTransformer.allSources(clientPath.canonicalized)).length) {
             return true;
         }
 
@@ -114,6 +111,10 @@ export class SmartStepLogic implements IComponent, IStackTracePresentationLogicP
         this._isEnabled = !!configuration.args.smartStep;
     }
 
-    constructor(private readonly _dependencies: SmartStepLogicDependencies) {
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedBySmartStepLogic,
+        @inject(TYPES.BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
+        @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer
+    ) {
     }
 }
