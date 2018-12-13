@@ -10,6 +10,7 @@
     "search.exclude": {
         ".git": true,
         "**/node_modules": true,
+        "i18n/": true,
         "bin": true,
         "out": true,
         "lib": true
