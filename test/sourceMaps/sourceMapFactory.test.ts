@@ -64,7 +64,7 @@ suite('SourceMapFactory', () => {
 
         test('resolves inlined base64-encoded sourcemap', () => {
             const sourceMapData = JSON.stringify({ sources: [ 'a.ts', 'b.ts' ]});
-            const encodedData = 'data:application/json;base64,' + new Buffer(sourceMapData).toString('base64');
+            const encodedData = 'data:application/json;base64,' + Buffer.from(sourceMapData).toString('base64');
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
 
             return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {

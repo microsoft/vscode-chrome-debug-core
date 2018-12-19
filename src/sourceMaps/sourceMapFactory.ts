@@ -73,7 +73,7 @@ export class SourceMapFactory {
 
         try {
             if (header.indexOf(';base64') !== -1) {
-                const buffer = new Buffer(data, 'base64');
+                const buffer = Buffer.from(data, 'base64');
                 return buffer.toString();
             } else {
                 // URI encoded.
