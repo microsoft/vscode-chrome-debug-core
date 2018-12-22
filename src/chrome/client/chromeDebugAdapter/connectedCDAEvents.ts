@@ -12,12 +12,11 @@ import { EventsConsumedBySourceResolverLogic } from '../../internal/sources/sour
 import { EventsConsumedBySmartStepLogic } from '../../internal/features/smartStep';
 import { EventsConsumedByReAddBPsWhenSourceIsLoaded } from '../../internal/breakpoints/features/reAddBPsWhenSourceIsLoaded';
 import { EventsConsumedByAsyncStepping } from '../../internal/stepping/features/asyncStepping';
-import { EventsConsumedBySyncStepping } from '../../internal/stepping/features/syncStepping';
 
 export interface EventsConsumedByConnectedCDA extends EventsConsumedByBreakpointsLogic, EventsConsumedByPauseOnException,
     EventsConsumedByStackTrace, EventsConsumedByTakeProperActionOnPausedEvent, EventsConsumedBySkipFilesLogic,
     EventsConsumedBySourceResolverLogic, EventsConsumedBySmartStepLogic,
-    EventsConsumedByReAddBPsWhenSourceIsLoaded, EventsConsumedByAsyncStepping, EventsConsumedBySyncStepping { }
+    EventsConsumedByReAddBPsWhenSourceIsLoaded, EventsConsumedByAsyncStepping { }
 
 export class ConnectedCDAEventsCreator {
     constructor(private readonly communicator: ICommunicator) { }

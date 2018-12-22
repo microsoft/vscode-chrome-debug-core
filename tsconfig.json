@@ -6,7 +6,6 @@
         "sourceMap": true,
         "outDir": "out",
         "declaration": true,
-        "types": ["reflect-metadata"],
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "noUnusedLocals": true,

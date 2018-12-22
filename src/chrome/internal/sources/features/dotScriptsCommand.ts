@@ -4,12 +4,13 @@ import { parseResourceIdentifier } from '../../../..';
 
 import { IEventsToClientReporter } from '../../../client/eventSender';
 import { determineOrderingOfStrings } from '../../../collections/utilities';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { BaseSourceMapTransformer } from '../../../../transformers/baseSourceMapTransformer';
 import { DeleteMeScriptsRegistry } from '../../scripts/scriptsRegistry';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { IScriptSources } from '../../../target/cdtpDebugger';
 
+@injectable()
 export class DotScriptCommand {
     /**
      * Handle the .scripts command, which can be used as `.scripts` to return a list of all script details,

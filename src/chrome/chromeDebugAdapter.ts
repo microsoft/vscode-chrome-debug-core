@@ -212,7 +212,7 @@ export class ChromeDebugLogic {
         @inject(TYPES.ExecutionContextEventsProvider) private readonly _executionContextEventsProvider: ExecutionContextEventsProvider,
         @inject(TYPES.IInspectDebugeeState) private readonly _inspectDebugeeState: IInspectDebugeeState,
         @inject(TYPES.IUpdateDebugeeState) private readonly _updateDebugeeState: IUpdateDebugeeState,
-        ) {
+    ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;

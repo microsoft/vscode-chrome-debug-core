@@ -14,7 +14,7 @@ import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifi
 export class FallbackToClientPathTransformer extends UrlPathTransformer {
     private static ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT = 500;
 
-    constructor(private _session: ISession) {
+    constructor(private _session?: ISession) {
         super();
     }
 

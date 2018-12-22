@@ -1,23 +1,23 @@
-import { UnconnectedCDACommonLogic } from './unconnectedCDACommonLogic';
-import { ILaunchRequestArgs, ITelemetryPropertyCollector, IAttachRequestArgs, ChromeDebugLogic, IDebugAdapterState, ChromeDebugSession, LineColTransformer, utils } from '../../..';
-import { ChromeConnection } from '../../chromeConnection';
-import { IClientCapabilities } from '../../../debugAdapterInterfaces';
-import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
 import { InitializedEvent, Logger } from 'vscode-debugadapter';
-import { LoggingConfiguration, Logging } from '../../internal/services/logging';
-import { DependencyInjection } from '../../dependencyInjection.ts/di';
-import { ConnectedCDA } from './connectedCDA';
-import { ConnectedCDAConfiguration } from './cdaConfiguration';
+import { ChromeDebugLogic, ChromeDebugSession, IAttachRequestArgs, IDebugAdapterState, ILaunchRequestArgs, ITelemetryPropertyCollector, LineColTransformer, utils } from '../../..';
+import { IClientCapabilities } from '../../../debugAdapterInterfaces';
+import * as errors from '../../../errors';
+import { EagerSourceMapTransformer } from '../../../transformers/eagerSourceMapTransformer';
 import { FallbackToClientPathTransformer } from '../../../transformers/fallbackToClientPathTransformer';
 import { RemotePathTransformer } from '../../../transformers/remotePathTransformer';
-import { EagerSourceMapTransformer } from '../../../transformers/eagerSourceMapTransformer';
+import { ChromeConnection } from '../../chromeConnection';
+import { Communicator, LoggingCommunicator } from '../../communication/communicator';
+import { DependencyInjection } from '../../dependencyInjection.ts/di';
+import { TYPES } from '../../dependencyInjection.ts/types';
+import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
+import { Logging, LoggingConfiguration } from '../../internal/services/logging';
+import { ExecutionLogger } from '../../logging/executionLogger';
 import { DelayMessagesUntilInitializedSession } from '../delayMessagesUntilInitializedSession';
 import { DoNotPauseWhileSteppingSession } from '../doNotPauseWhileSteppingSession';
-import * as errors from '../../../errors';
-import { TYPES } from '../../dependencyInjection.ts/types';
-import { LoggingCommunicator, Communicator } from '../../communication/communicator';
-import { ExecutionLogger } from '../../logging/executionLogger';
+import { ConnectedCDAConfiguration } from './cdaConfiguration';
+import { ConnectedCDA } from './connectedCDA';
 import { ConnectedCDAEventsCreator } from './connectedCDAEvents';
+import { UnconnectedCDACommonLogic } from './unconnectedCDACommonLogic';
 
 export enum ScenarioType {
     Launch,
@@ -50,7 +50,6 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         }
 
         utils.setCaseSensitivePaths(this._clientCapabilities.clientID !== 'visualstudio'); // TODO DIEGO: Find a way to remove this
-        this._session.sendEvent(new InitializedEvent());
         const di = new DependencyInjection();
 
         const pathTransformerClass = this._clientCapabilities.supportsMapURLToFilePathRequest
@@ -64,6 +63,9 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
         const communicator = new LoggingCommunicator(new Communicator(), new ExecutionLogger(logging));
 
         const debugeeLauncher = new this._extensibilityPoints.debugeeLauncher();
+        const result = await debugeeLauncher.launch(args, telemetryPropertyCollector);
+        await chromeConnection.attach(result.address, result.port, result.url, args.timeout, args.extraCRDPChannelPort);
+
         di
             .bindAll()
             .configureClass(LineColTransformer, lineColTransformerClass)
@@ -72,8 +74,8 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
             .configureValue(TYPES.EventsConsumedByConnectedCDA, new ConnectedCDAEventsCreator(communicator).create())
             .configureValue(TYPES.CDTPClient, chromeConnection.api)
             .configureValue(TYPES.ISession, new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(this._session)))
-            .configureClass(TYPES.BasePathTransformer, pathTransformerClass)
-            .configureClass(TYPES.BaseSourceMapTransformer, sourceMapTransformerClass)
+            .configureValue(TYPES.BasePathTransformer, new pathTransformerClass())
+            .configureValue(TYPES.BaseSourceMapTransformer, new sourceMapTransformerClass())
             .configureValue(TYPES.ChromeConnection, chromeConnection)
             .configureValue(TYPES.ConnectedCDAConfiguration, new ConnectedCDAConfiguration(this._extensibilityPoints,
                 this.parseLoggingConfiguration(args),
@@ -83,7 +85,7 @@ export class UnconnectedCDA extends UnconnectedCDACommonLogic implements IDebugA
                 scenarioType,
                 args));
 
-        await debugeeLauncher.launch(telemetryPropertyCollector);
+        this._session.sendEvent(new InitializedEvent());
 
         return di.createClassWithDI<ConnectedCDA>(ConnectedCDA);
     }

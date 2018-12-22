@@ -64,7 +64,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     public set(key: K, value: V): this {
         if (this.has(key)) {
-            throw new Error(`Cannot set key ${key} because it already exists`);
+            // throw new Error(`Cannot set key ${key} because it already exists`);
         }
 
         this._wrappedMap.set(key, value);

@@ -35,8 +35,9 @@ export class ConnectedCDA implements IDebugAdapterState {
         @inject(TYPES.BreakpointsLogic) protected readonly _breakpointsLogic: BreakpointsLogic,
         @inject(TYPES.PauseOnExceptionOrRejection) public readonly _pauseOnException: PauseOnExceptionOrRejection,
         @inject(TYPES.Stepping) private readonly _stepping: Stepping,
-        @inject(TYPES.DotScriptCommand) public readonly _dotScriptCommand: DotScriptCommand) {
-
+        @inject(TYPES.DotScriptCommand) public readonly _dotScriptCommand: DotScriptCommand
+    ) {
+        this.chrome.install();
     }
 
     public get chrome(): CDTPDiagnostics {

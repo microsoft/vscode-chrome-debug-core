@@ -3,12 +3,12 @@ import { BasePathTransformer } from '../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../transformers/baseSourceMapTransformer';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { ILaunchRequestArgs, IAttachRequestArgs } from '../../debugAdapterInterfaces';
-import { IDebugeeLauncher } from '../..';
 import { interfaces } from 'inversify';
+import { IDebuggeeLauncher } from '../debugee/debugeeLauncher';
 
 export interface IExtensibilityPoints {
     isPromiseRejectExceptionFilterEnabled: boolean;
-    debugeeLauncher: interfaces.Newable<IDebugeeLauncher>;
+    debugeeLauncher: interfaces.Newable<IDebuggeeLauncher>;
 
     targetFilter?: ITargetFilter;
 
@@ -33,7 +33,7 @@ export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibil
         return argumentsFromClient;
     }
 
-    constructor(public readonly debugeeLauncher: interfaces.Newable<IDebugeeLauncher>) {
+    constructor(public readonly debugeeLauncher: interfaces.Newable<IDebuggeeLauncher>) {
 
     }
 }

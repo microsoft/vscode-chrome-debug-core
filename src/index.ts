@@ -34,8 +34,8 @@ import { Version, TargetVersions } from './chrome/chromeTargetDiscoveryStrategy'
 import { IOnPausedResult } from './chrome/internal/breakpoints/breakpointsLogic';
 import { parseResourceIdentifier } from './chrome/internal/sources/resourceIdentifier';
 import { ChromeDebugAdapter } from './chrome/client/chromeDebugAdapter/chromeDebugAdapterV2';
-import { IExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
-import { IDebugeeLauncher } from './chrome/debugee/debugeeLauncher';
+import { IExtensibilityPoints, OnlyProvideCustomLauncherExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
+import { IDebuggeeLauncher, ILaunchResult } from './chrome/debugee/debugeeLauncher';
 import { inject } from 'inversify';
 import { ConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { IComponent } from './chrome/internal/features/feature';
@@ -56,7 +56,10 @@ export {
 
     ChromeDebugAdapter,
     IExtensibilityPoints,
-    IDebugeeLauncher,
+    OnlyProvideCustomLauncherExtensibilityPoints,
+
+    IDebuggeeLauncher,
+    ILaunchResult,
     ConnectedCDAConfiguration,
     inject,
     IComponent,
