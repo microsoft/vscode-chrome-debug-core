@@ -21,6 +21,8 @@ export function resolveRelativeToFile(absPath: string, relPath: string): string 
  * Determine an absolute path for the sourceRoot.
  */
 export function getComputedSourceRoot(sourceRoot: string, generatedPath: string, pathMapping: IPathMapping = {}): string {
+    generatedPath = utils.fileUrlToPath(generatedPath);
+
     let absSourceRoot: string;
     if (sourceRoot) {
         if (sourceRoot.startsWith('file:///')) {
