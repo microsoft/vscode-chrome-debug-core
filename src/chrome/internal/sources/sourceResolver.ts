@@ -21,7 +21,7 @@ export class SourceResolver implements IComponent {
 
     public tryResolving<R>(sourceIdentifier: IResourceIdentifier,
         succesfulAction: (resolvedSource: ILoadedSource) => R,
-        failedAction: (sourceIdentifier: IResourceIdentifier) => R = path => { throw new Error(`Couldn't find the source at path ${path}`); }): R {
+        failedAction: (sourceIdentifier: IResourceIdentifier) => R): R {
         const source = this._pathToSource.tryGetting(sourceIdentifier);
         if (source !== undefined) {
             return succesfulAction(source);
@@ -30,7 +30,7 @@ export class SourceResolver implements IComponent {
         }
     }
 
-    public createSourceResolver(sourceIdentifier: IResourceIdentifier): IUnresolvedSource {
+    public createUnresolvedSource(sourceIdentifier: IResourceIdentifier): IUnresolvedSource {
         return new SourceToBeResolvedViaPath(sourceIdentifier, this);
     }
 
