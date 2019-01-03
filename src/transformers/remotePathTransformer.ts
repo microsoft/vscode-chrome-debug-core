@@ -100,7 +100,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
         if (!this.shouldMapPaths(remotePath)) return '';
 
         const relPath = relative(this._remoteRoot, remotePath);
-        if (relPath.startsWith('.')) return '';
+        if (relPath.startsWith('../')) return '';
 
         let localPath = join(this._localRoot, relPath);
 
@@ -114,7 +114,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
         if (!this.shouldMapPaths(localPath)) return localPath;
 
         const relPath = relative(this._localRoot, localPath);
-        if (relPath.startsWith('.')) return '';
+        if (relPath.startsWith('../')) return '';
 
         let remotePath = join(this._remoteRoot, relPath);
 
