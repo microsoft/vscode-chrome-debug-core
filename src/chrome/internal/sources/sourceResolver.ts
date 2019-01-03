@@ -1,5 +1,5 @@
 import { ILoadedSource } from './loadedSource';
-import { IUnresolvedSource, SourceToBeResolvedViaPath } from './unresolvedSource';
+import { ISource, SourceToBeResolvedViaPath } from './source';
 import { newResourceIdentifierMap, IResourceIdentifier } from './resourceIdentifier';
 import { IComponent } from '../features/feature';
 import { ScriptParsedEvent } from '../../target/events';
@@ -30,7 +30,7 @@ export class SourceResolver implements IComponent {
         }
     }
 
-    public createUnresolvedSource(sourceIdentifier: IResourceIdentifier): IUnresolvedSource {
+    public createUnresolvedSource(sourceIdentifier: IResourceIdentifier): ISource {
         return new SourceToBeResolvedViaPath(sourceIdentifier, this);
     }
 
