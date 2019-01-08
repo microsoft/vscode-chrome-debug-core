@@ -45,7 +45,7 @@
             "cwd": "${workspaceFolder}/../vscode-node-debug2",
             "program": "${workspaceFolder}/../vscode-node-debug2/out/src/nodeDebug.js",
             "args": [ "--server=4712" ],
-            "outFiles": ["${workspaceFolder}/out/**/*.js"],
+            "outFiles": ["${workspaceFolder}/../vscode-node-debug2/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true,
             "skipFiles": [
@@ -62,7 +62,7 @@
             "cwd": "${workspaceFolder}/../vscode-chrome-debug",
             "program": "${workspaceFolder}/../vscode-chrome-debug/out/src/chromeDebug.js",
             "args": [ "--server=4712" ],
-            "outFiles": ["${workspaceFolder}/out/**/*.js"],
+            "outFiles": ["${workspaceFolder}/../vscode-chrome-debug/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true
         },
