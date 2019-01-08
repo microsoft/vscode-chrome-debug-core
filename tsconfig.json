@@ -13,7 +13,9 @@
         "noImplicitReturns": true,
         "lib": [
             "es2015"
-        ]
+        ],
+
+        "experimentalDecorators": true
     },
     "include": [
         "src/**/*.ts",
