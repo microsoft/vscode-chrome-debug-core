@@ -34,7 +34,7 @@ export class Position {
 interface ILocation<T extends ScriptOrSourceOrURLOrURLRegexp> {
     readonly lineNumber: integer;
     readonly columnNumber?: integer;
-    readonly coordinates: Position;
+    readonly position: Position;
     readonly resource: T;
 }
 
@@ -51,18 +51,18 @@ export type Location<T extends ScriptOrSourceOrURLOrURLRegexp> =
 abstract class LocationCommonLogic<T extends ScriptOrSourceOrURLOrURLRegexp> implements ILocation<T> {
     constructor(
         public readonly resource: T,
-        public readonly coordinates: Position) { }
+        public readonly position: Position) { }
 
     public get lineNumber(): LineNumber {
-        return this.coordinates.lineNumber;
+        return this.position.lineNumber;
     }
 
     public get columnNumber(): ColumnNumber {
-        return this.coordinates.columnNumber;
+        return this.position.columnNumber;
     }
 
     public toString(): string {
-        return `${this.resource}:${this.coordinates}`;
+        return `${this.resource}:${this.position}`;
     }
 }
 
@@ -75,13 +75,13 @@ export class LocationInSource extends LocationCommonLogic<ISource> {
         whenSuccesfulDo: (locationInLoadedSource: LocationInLoadedSource) => R,
         whenFailedDo: (locationInSource: LocationInSource) => R): R {
         return this.identifier.tryResolving(
-            loadedSource => whenSuccesfulDo(new LocationInLoadedSource(loadedSource, this.coordinates)),
+            loadedSource => whenSuccesfulDo(new LocationInLoadedSource(loadedSource, this.position)),
             () => whenFailedDo(this));
     }
 
     public resolvedWith(loadedSource: ILoadedSource): LocationInLoadedSource {
         if (this.resource.sourceIdentifier.isEquivalent(loadedSource.identifier)) {
-            return new LocationInLoadedSource(loadedSource, this.coordinates);
+            return new LocationInLoadedSource(loadedSource, this.position);
         } else {
             throw new Error(`Can't resolve a location with a source (${this}) to a location with a loaded source that doesn't match the unresolved source: ${loadedSource}`);
         }
@@ -101,13 +101,13 @@ export class LocationInScript extends LocationCommonLogic<IScript> {
             logger.verbose(`SourceMap: ${this} to ${result}`);
             return result;
         } else {
-            return new LocationInLoadedSource(this.script.developmentSource, this.coordinates);
+            return new LocationInLoadedSource(this.script.developmentSource, this.position);
         }
     }
 
     public mappedToUrl(): LocationInUrl {
         if (this.script.runtimeSource.doesScriptHasUrl()) {
-            return new LocationInUrl(this.script.runtimeSource.identifier, this.coordinates);
+            return new LocationInUrl(this.script.runtimeSource.identifier, this.position);
         } else {
             throw new Error(`Can't convert a location in a script without an URL (${this}) into a location in an URL`);
         }
@@ -115,11 +115,11 @@ export class LocationInScript extends LocationCommonLogic<IScript> {
 
     public isSameAs(locationInScript: LocationInScript): boolean {
         return this.script === locationInScript.script &&
-            this.coordinates.isSameAs(locationInScript.coordinates);
+            this.position.isSameAs(locationInScript.position);
     }
 
     public toString(): string {
-        return `${this.resource}:${this.coordinates}`;
+        return `${this.resource}:${this.position}`;
     }
 }
 
@@ -139,7 +139,7 @@ export class LocationInLoadedSource extends LocationCommonLogic<ILoadedSource> {
             logger.verbose(`SourceMap: ${this} to ${result}`);
             return result;
         } else {
-            throw new Error(`Couldn't map the location (${this.coordinates}) in the source $(${this.source}) to a script file`);
+            throw new Error(`Couldn't map the location (${this.position}) in the source $(${this.source}) to a script file`);
         }
     }
 }
