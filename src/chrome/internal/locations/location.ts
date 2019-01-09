@@ -51,14 +51,6 @@ abstract class LocationCommonLogic<T extends ScriptOrSourceOrURLOrURLRegexp> imp
         public readonly resource: T,
         public readonly position: Position) { }
 
-    public get lineNumber(): LineNumber {
-        return this.position.lineNumber;
-    }
-
-    public get columnNumber(): ColumnNumber {
-        return this.position.columnNumber;
-    }
-
     public toString(): string {
         return `${this.resource}:${this.position}`;
     }
@@ -92,7 +84,7 @@ export class LocationInScript extends LocationCommonLogic<IScript> {
     }
 
     public mappedToSource(): LocationInLoadedSource {
-        const mapped = this.script.sourcesMapper.getPositionInSource({ line: this.lineNumber, column: this.columnNumber });
+        const mapped = this.script.sourcesMapper.getPositionInSource({ line: this.position.lineNumber, column: this.position.columnNumber });
         if (mapped) {
             const loadedSource = this.script.getSource(parseResourceIdentifier(mapped.source));
             const result = new LocationInLoadedSource(loadedSource, new Position(mapped.line, mapped.column));
@@ -129,8 +121,8 @@ export class LocationInLoadedSource extends LocationCommonLogic<ILoadedSource> {
     public mappedToScript(): LocationInScript {
         const mapped = this.source.script.sourcesMapper.getPositionInScript({
             source: this.source.identifier.textRepresentation,
-            line: this.lineNumber,
-            column: this.columnNumber
+            line: this.position.lineNumber,
+            column: this.position.columnNumber
         });
         if (mapped) {
             const result = new LocationInScript(this.source.script, new Position(mapped.line, mapped.column));
