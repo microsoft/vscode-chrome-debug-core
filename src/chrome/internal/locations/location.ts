@@ -32,8 +32,6 @@ export class Position {
 }
 
 interface ILocation<T extends ScriptOrSourceOrURLOrURLRegexp> {
-    readonly lineNumber: integer;
-    readonly columnNumber?: integer;
     readonly position: Position;
     readonly resource: T;
 }
