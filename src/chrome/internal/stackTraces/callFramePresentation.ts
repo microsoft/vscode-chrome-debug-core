@@ -45,7 +45,7 @@ export abstract class BaseFramePresentation implements ICodeFlowFramePresentatio
         return this.codeFlow.columnNumber;
     }
 
-    public isNotLabel(): this is ICodeFlowFramePresentation {
+    public isCodeFlow(): this is ICodeFlowFramePresentation {
         return true;
     }
 }

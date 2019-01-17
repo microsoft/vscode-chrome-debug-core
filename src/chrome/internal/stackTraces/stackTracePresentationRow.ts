@@ -5,7 +5,7 @@ export type CallFramePresentationHint = 'normal' | 'label' | 'subtle';
 // Row of a stack trace that we send to the client
 export interface StackTracePresentationRow {
     readonly presentationHint?: CallFramePresentationHint;
-    isNotLabel(): this is ICodeFlowFramePresentation;
+    isCodeFlow(): this is ICodeFlowFramePresentation;
     isCallFrame(): this is CallFramePresentation;
 }
 
@@ -19,7 +19,7 @@ export class StackTraceLabel implements StackTracePresentationRow {
         return false;
     }
 
-    public isNotLabel(): this is ICodeFlowFramePresentation {
+    public isCodeFlow(): this is ICodeFlowFramePresentation {
         return false;
     }
 }
