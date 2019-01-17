@@ -6,7 +6,6 @@
 import { ILoadedSource } from '../sources/loadedSource';
 import { IScript } from '../scripts/script';
 import { Protocol as CDTP } from 'devtools-protocol';
-import { ICallFrameFunction } from './callFrameFunction';
 import { Scope } from './scopes';
 
 /** CDTP has two types of stack traces:
@@ -25,7 +24,7 @@ export type ScriptOrLoadedSource = IScript | ILoadedSource;
 export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
     constructor(
         public readonly index: number,
-        public readonly callFrameFunction: ICallFrameFunction,
+        public readonly functionName: string | undefined,
         public readonly location: Location<TResource>) { }
 
     public get source(): TResource extends ILoadedSource ? TResource : never {
@@ -42,10 +41,6 @@ export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
 
     public get columnNumber(): number {
         return this.location.position.columnNumber;
-    }
-
-    public get functionDescription(): string {
-        return this.callFrameFunction.description;
     }
 }
 
@@ -92,8 +87,8 @@ abstract class BaseCallFrame<TResource extends ScriptOrLoadedSource> implements 
         return this.codeFlow.index;
     }
 
-    public get functionDescription(): string {
-        return this.codeFlow.functionDescription;
+    public get functionName(): string {
+        return this.codeFlow.functionName;
     }
 }
 
@@ -107,7 +102,7 @@ export class ScriptCallFrame extends BaseCallFrame<IScript> {
     }
 
     public mappedToSource(): LoadedSourceCallFrame {
-        const codeFlow = new CodeFlowFrame<ILoadedSource>(this.index, this.codeFlow.callFrameFunction, this.location.mappedToSource());
+        const codeFlow = new CodeFlowFrame<ILoadedSource>(this.index, this.codeFlow.functionName, this.location.mappedToSource());
         return new LoadedSourceCallFrame(this, codeFlow);
     }
 }

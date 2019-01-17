@@ -2,11 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { Location } from '../locations/location';
+import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame } from './callFrame';
-import { IStackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
-import { ICallFrameDescriptionFormatter } from './callFrameDescription';
+import { CallFramePresentationHint, IStackTracePresentationRow } from './stackTracePresentationRow';
+import { formatCallFrameDescription } from './formatCallFrameDescription';
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { IScript } from '../scripts/script';
 
 export type SourcePresentationHint = 'normal' | 'emphasize' | 'deemphasize';
 
@@ -15,24 +17,7 @@ export interface ICallFramePresentationDetails {
     readonly sourcePresentationHint: SourcePresentationHint;
 }
 
-export interface ICodeFlowFramePresentation extends IStackTracePresentationRow {
-    readonly description: string;
-    readonly source: ILoadedSource;
-    readonly location: Location<ILoadedSource>;
-    readonly lineNumber: number;
-    readonly columnNumber: number;
-    readonly codeFlow: CodeFlowFrame<ILoadedSource>;
-}
-
-export abstract class BaseFramePresentation implements ICodeFlowFramePresentation {
-    constructor(
-        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
-        public readonly presentationHint?: CallFramePresentationHint) { }
-
-    public abstract get codeFlow(): CodeFlowFrame<ILoadedSource>;
-    public abstract isCallFrame(): this is CallFramePresentation;
-    public abstract get description(): string;
-
+export class CallFramePresentation implements IStackTracePresentationRow {
     public get source(): ILoadedSource {
         return this.codeFlow.source;
     }
@@ -49,20 +34,6 @@ export abstract class BaseFramePresentation implements ICodeFlowFramePresentatio
         return this.codeFlow.columnNumber;
     }
 
-    public isCodeFlow(): this is ICodeFlowFramePresentation {
-        return true;
-    }
-}
-
-export class CallFramePresentation extends BaseFramePresentation implements IStackTracePresentationRow {
-    constructor(
-        public readonly callFrame: CallFrame<ILoadedSource>,
-        private readonly _descriptionFormatter: ICallFrameDescriptionFormatter,
-        additionalPresentationDetails?: ICallFramePresentationDetails,
-        presentationHint?: CallFramePresentationHint) {
-        super(additionalPresentationDetails, presentationHint);
-    }
-
     public get codeFlow(): CodeFlowFrame<ILoadedSource> {
         return (<ICallFrame<ILoadedSource>>this.callFrame).codeFlow; // TODO: Figure out how to remove the cast
     }
@@ -72,23 +43,23 @@ export class CallFramePresentation extends BaseFramePresentation implements ISta
     }
 
     public get description(): string {
-        return this._descriptionFormatter.description;
+        return formatCallFrameDescription(this.callFrame, this._descriptionFormatArgs);
+    }
+
+    constructor(
+        public readonly callFrame: CallFrame<ILoadedSource>,
+        private readonly _descriptionFormatArgs?: DebugProtocol.StackFrameFormat,
+        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
+        public readonly presentationHint?: CallFramePresentationHint) {
     }
 }
 
-export class CodeFlowFramePresentation extends BaseFramePresentation implements IStackTracePresentationRow {
-    constructor(
-        public readonly codeFlow: CodeFlowFrame<ILoadedSource>,
-        additionalPresentationDetails?: ICallFramePresentationDetails,
-        presentationHint?: CallFramePresentationHint) {
-        super(additionalPresentationDetails, presentationHint);
-    }
-
-    public get description(): string {
-        return this.codeFlow.functionDescription;
-    }
-
-    public isCallFrame(): this is CallFramePresentation {
-        return false;
+export function functionDescription(functionName: string | undefined, functionModule: IScript): string {
+    if (functionName) {
+        return functionName;
+    } else if (functionModule.runtimeSource.doesScriptHasUrl()) {
+        return '(anonymous function)';
+    } else {
+        return '(eval code)';
     }
 }
