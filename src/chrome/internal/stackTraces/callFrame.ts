@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { Location } from '../locations/location';
+import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IScript } from '../scripts/script';
 import { Protocol as CDTP } from 'devtools-protocol';
