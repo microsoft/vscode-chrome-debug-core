@@ -1,4 +1,8 @@
-import { IScript } from '../scripts/script';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { IScript } from '../scripts/script';
 
 /** We use these classes to generate a proper description for the function
  * based on wheter it is named, and the script where it's at is named

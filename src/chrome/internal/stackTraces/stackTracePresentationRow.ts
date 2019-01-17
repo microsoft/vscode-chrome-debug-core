@@ -1,4 +1,8 @@
-import { ICodeFlowFramePresentation, CallFramePresentation } from './callFramePresentation';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { ICodeFlowFramePresentation, CallFramePresentation } from './callFramePresentation';
 
 export type CallFramePresentationHint = 'normal' | 'label' | 'subtle';
 

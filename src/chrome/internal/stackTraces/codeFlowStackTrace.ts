@@ -1,4 +1,8 @@
-import { CodeFlowFrame } from './callFrame';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { CodeFlowFrame } from './callFrame';
 import { IScript } from '../scripts/script';
 
 /**

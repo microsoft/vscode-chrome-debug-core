@@ -1,4 +1,8 @@
-import { Location } from '../locations/location';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame } from './callFrame';
 import { IStackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';

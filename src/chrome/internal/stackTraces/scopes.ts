@@ -1,4 +1,8 @@
-import { LocationInScript } from '../locations/location';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { LocationInScript } from '../locations/location';
 import { Protocol as CDTP } from 'devtools-protocol';
 
 /** This class represents a variable's scope (Globals, locals, block variables, etc...) */

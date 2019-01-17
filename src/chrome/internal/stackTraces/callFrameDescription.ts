@@ -1,4 +1,8 @@
-import * as path from 'path';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import * as path from 'path';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ScriptCallFrame } from './callFrame';
 

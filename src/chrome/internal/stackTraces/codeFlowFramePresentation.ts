@@ -1,4 +1,8 @@
-import { ILoadedSource } from '../sources/loadedSource';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame } from './callFrame';
 import { IStackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
 import { BaseFramePresentation, CallFramePresentation, ICallFramePresentationDetails } from './callFramePresentation';

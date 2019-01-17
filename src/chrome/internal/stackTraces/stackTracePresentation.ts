@@ -1,4 +1,8 @@
-import { IStackTracePresentationRow } from './stackTracePresentationRow';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import { IStackTracePresentationRow } from './stackTracePresentationRow';
 
 /** The stack traces we sent to the client will be represented by this classes and it is a combination of:
  *    1. CallFrames with state information from the sync frames.
