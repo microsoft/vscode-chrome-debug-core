@@ -20,7 +20,7 @@ export interface ICodeFlowFramePresentation extends StackTracePresentationRow {
     readonly codeFlow: CodeFlowFrame<ILoadedSource>;
 }
 
-export abstract class FramePresentationCommonLogic implements ICodeFlowFramePresentation {
+export abstract class BaseFramePresentation implements ICodeFlowFramePresentation {
     public abstract get codeFlow(): CodeFlowFrame<ILoadedSource>;
     public abstract isCallFrame(): this is CallFramePresentation;
     public abstract get description(): string;
@@ -50,7 +50,7 @@ export abstract class FramePresentationCommonLogic implements ICodeFlowFramePres
         public readonly presentationHint?: CallFramePresentationHint) { }
 }
 
-export class CallFramePresentation extends FramePresentationCommonLogic implements StackTracePresentationRow {
+export class CallFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
     public get codeFlow(): CodeFlowFrame<ILoadedSource> {
         return (<ICallFrame<ILoadedSource>>this.callFrame).codeFlow; // TODO: Figure out how to remove the cast
     }
@@ -72,7 +72,7 @@ export class CallFramePresentation extends FramePresentationCommonLogic implemen
     }
 }
 
-export class CodeFlowFramePresentation extends FramePresentationCommonLogic implements StackTracePresentationRow {
+export class CodeFlowFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
     public get description(): string {
         return this.codeFlow.functionDescription;
     }

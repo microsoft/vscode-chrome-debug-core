@@ -64,7 +64,7 @@ export type CallFrame<TResource extends ScriptOrLoadedSource> =
     TResource extends IScript ? ScriptCallFrame :
     ICallFrame<never>; // TODO: Figure out how to change this for never
 
-abstract class CallFrameCommonLogic<TResource extends ScriptOrLoadedSource> implements ICallFrame<TResource> {
+abstract class BaseCallFrame<TResource extends ScriptOrLoadedSource> implements ICallFrame<TResource> {
     public abstract get scopeChain(): Scope[];
     public abstract get codeFlow(): CodeFlowFrame<TResource>;
 
@@ -93,7 +93,7 @@ abstract class CallFrameCommonLogic<TResource extends ScriptOrLoadedSource> impl
     }
 }
 
-export class ScriptCallFrame extends CallFrameCommonLogic<IScript> {
+export class ScriptCallFrame extends BaseCallFrame<IScript> {
     constructor(
         public readonly codeFlow: CodeFlowFrame<IScript>,
         public readonly scopeChain: Scope[],
@@ -108,7 +108,7 @@ export class ScriptCallFrame extends CallFrameCommonLogic<IScript> {
     }
 }
 
-export class LoadedSourceCallFrame extends CallFrameCommonLogic<ILoadedSource> {
+export class LoadedSourceCallFrame extends BaseCallFrame<ILoadedSource> {
     public get scopeChain(): Scope[] {
         return this.unmappedCallFrame.scopeChain;
     }
