@@ -9,7 +9,7 @@
  *    2. CodeFlowFrames without state information from async frames.
  *    3. Labels that we use to separate and show the description of the async frames
  */
- export interface StackTracePresentation {
+ export interface IStackTracePresentation {
     readonly stackFrames: IStackTracePresentationRow[];
     readonly totalFrames: number;
 }
