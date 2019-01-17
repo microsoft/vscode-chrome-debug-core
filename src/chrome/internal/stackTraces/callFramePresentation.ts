@@ -21,6 +21,10 @@ export interface ICodeFlowFramePresentation extends StackTracePresentationRow {
 }
 
 export abstract class BaseFramePresentation implements ICodeFlowFramePresentation {
+    constructor(
+        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
+        public readonly presentationHint?: CallFramePresentationHint) { }
+
     public abstract get codeFlow(): CodeFlowFrame<ILoadedSource>;
     public abstract isCallFrame(): this is CallFramePresentation;
     public abstract get description(): string;
@@ -44,13 +48,17 @@ export abstract class BaseFramePresentation implements ICodeFlowFramePresentatio
     public isNotLabel(): this is ICodeFlowFramePresentation {
         return true;
     }
-
-    constructor(
-        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
-        public readonly presentationHint?: CallFramePresentationHint) { }
 }
 
 export class CallFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
+    constructor(
+        public readonly callFrame: CallFrame<ILoadedSource>,
+        private readonly _descriptionFormatter: ICallFrameDescriptionFormatter,
+        additionalPresentationDetails?: ICallFramePresentationDetails,
+        presentationHint?: CallFramePresentationHint) {
+        super(additionalPresentationDetails, presentationHint);
+    }
+
     public get codeFlow(): CodeFlowFrame<ILoadedSource> {
         return (<ICallFrame<ILoadedSource>>this.callFrame).codeFlow; // TODO: Figure out how to remove the cast
     }
@@ -62,29 +70,21 @@ export class CallFramePresentation extends BaseFramePresentation implements Stac
     public get description(): string {
         return this._descriptionFormatter.description;
     }
+}
 
+export class CodeFlowFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
     constructor(
-        public readonly callFrame: CallFrame<ILoadedSource>,
-        private readonly _descriptionFormatter: ICallFrameDescriptionFormatter,
+        public readonly codeFlow: CodeFlowFrame<ILoadedSource>,
         additionalPresentationDetails?: ICallFramePresentationDetails,
         presentationHint?: CallFramePresentationHint) {
         super(additionalPresentationDetails, presentationHint);
     }
-}
 
-export class CodeFlowFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
     public get description(): string {
         return this.codeFlow.functionDescription;
     }
 
     public isCallFrame(): this is CallFramePresentation {
         return false;
-    }
-
-    constructor(
-        public readonly codeFlow: CodeFlowFrame<ILoadedSource>,
-        additionalPresentationDetails?: ICallFramePresentationDetails,
-        presentationHint?: CallFramePresentationHint) {
-        super(additionalPresentationDetails, presentationHint);
     }
 }

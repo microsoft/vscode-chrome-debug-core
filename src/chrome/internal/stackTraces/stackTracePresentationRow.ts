@@ -13,6 +13,8 @@ export interface StackTracePresentationRow {
 export class StackTraceLabel implements StackTracePresentationRow {
     public readonly presentationHint = 'label';
 
+    constructor(public readonly description: string) { }
+
     public isCallFrame(): this is CallFramePresentation {
         return false;
     }
@@ -20,6 +22,4 @@ export class StackTraceLabel implements StackTracePresentationRow {
     public isNotLabel(): this is ICodeFlowFramePresentation {
         return false;
     }
-
-    constructor(public readonly description: string) { }
 }

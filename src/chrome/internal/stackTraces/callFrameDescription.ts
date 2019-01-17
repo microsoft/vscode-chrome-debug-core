@@ -16,6 +16,8 @@ export interface ICallFrameDescriptionFormatter {
 export class CustomCallFrameDescriptionFormatter implements ICallFrameDescriptionFormatter {
     [ImplementsCallFrameDescriptionFormatter]: void;
 
+    constructor(private readonly _callFrame: ScriptCallFrame, private readonly _formatArgs?: DebugProtocol.StackFrameFormat) { }
+
     public get description(): string {
         const locationInLoadedSource = this._callFrame.location.mappedToSource();
 
@@ -33,6 +35,4 @@ export class CustomCallFrameDescriptionFormatter implements ICallFrameDescriptio
 
         return formattedDescription;
     }
-
-    constructor(private readonly _callFrame: ScriptCallFrame, private readonly _formatArgs?: DebugProtocol.StackFrameFormat) { }
 }

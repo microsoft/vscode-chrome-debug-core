@@ -109,6 +109,12 @@ export class ScriptCallFrame extends BaseCallFrame<IScript> {
 }
 
 export class LoadedSourceCallFrame extends BaseCallFrame<ILoadedSource> {
+    constructor(
+        public readonly unmappedCallFrame: ScriptCallFrame,
+        public readonly codeFlow: CodeFlowFrame<ILoadedSource>) {
+        super();
+    }
+
     public get scopeChain(): Scope[] {
         return this.unmappedCallFrame.scopeChain;
     }
@@ -119,11 +125,5 @@ export class LoadedSourceCallFrame extends BaseCallFrame<ILoadedSource> {
 
     public get returnValue(): CDTP.Runtime.RemoteObject {
         return this.unmappedCallFrame.returnValue;
-    }
-
-    constructor(
-        public readonly unmappedCallFrame: ScriptCallFrame,
-        public readonly codeFlow: CodeFlowFrame<ILoadedSource>) {
-        super();
     }
 }
