@@ -1,7 +1,7 @@
 import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame } from './callFrame';
-import { StackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
+import { IStackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
 import { ICallFrameDescriptionFormatter } from './callFrameDescription';
 
 export type SourcePresentationHint = 'normal' | 'emphasize' | 'deemphasize';
@@ -11,7 +11,7 @@ export interface ICallFramePresentationDetails {
     readonly sourcePresentationHint: SourcePresentationHint;
 }
 
-export interface ICodeFlowFramePresentation extends StackTracePresentationRow {
+export interface ICodeFlowFramePresentation extends IStackTracePresentationRow {
     readonly description: string;
     readonly source: ILoadedSource;
     readonly location: Location<ILoadedSource>;
@@ -50,7 +50,7 @@ export abstract class BaseFramePresentation implements ICodeFlowFramePresentatio
     }
 }
 
-export class CallFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
+export class CallFramePresentation extends BaseFramePresentation implements IStackTracePresentationRow {
     constructor(
         public readonly callFrame: CallFrame<ILoadedSource>,
         private readonly _descriptionFormatter: ICallFrameDescriptionFormatter,
@@ -72,7 +72,7 @@ export class CallFramePresentation extends BaseFramePresentation implements Stac
     }
 }
 
-export class CodeFlowFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
+export class CodeFlowFramePresentation extends BaseFramePresentation implements IStackTracePresentationRow {
     constructor(
         public readonly codeFlow: CodeFlowFrame<ILoadedSource>,
         additionalPresentationDetails?: ICallFramePresentationDetails,

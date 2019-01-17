@@ -1,9 +1,9 @@
 import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame } from './callFrame';
-import { StackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
+import { IStackTracePresentationRow, CallFramePresentationHint } from './stackTracePresentationRow';
 import { BaseFramePresentation, CallFramePresentation, ICallFramePresentationDetails } from './callFramePresentation';
 
-export class CodeFlowFramePresentation extends BaseFramePresentation implements StackTracePresentationRow {
+export class CodeFlowFramePresentation extends BaseFramePresentation implements IStackTracePresentationRow {
     constructor(public readonly codeFlow: CodeFlowFrame<ILoadedSource>, additionalPresentationDetails?: ICallFramePresentationDetails, presentationHint?: CallFramePresentationHint) {
         super(additionalPresentationDetails, presentationHint);
     }

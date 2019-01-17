@@ -1,7 +1,8 @@
 import { CodeFlowFrame } from './callFrame';
 import { IScript } from '../scripts/script';
 
-/** This class represents a stack trace that only has code flow information, but no state
+/**
+ * This class represents a stack trace that only has code flow information, but no state
  * (This is the information provided by the CDTP.Runtime domain and/or async stack traces)
  */
 export class CodeFlowStackTrace {

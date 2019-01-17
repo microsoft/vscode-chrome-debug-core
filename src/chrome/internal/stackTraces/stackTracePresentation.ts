@@ -1,4 +1,4 @@
-import { StackTracePresentationRow } from './stackTracePresentationRow';
+import { IStackTracePresentationRow } from './stackTracePresentationRow';
 
 /** The stack traces we sent to the client will be represented by this classes and it is a combination of:
  *    1. CallFrames with state information from the sync frames.
@@ -6,6 +6,6 @@ import { StackTracePresentationRow } from './stackTracePresentationRow';
  *    3. Labels that we use to [Show more frames] or [Frames skipped by smartStep], etc...
  */
  export interface StackTracePresentation {
-    readonly stackFrames: StackTracePresentationRow[];
+    readonly stackFrames: IStackTracePresentationRow[];
     readonly totalFrames: number;
 }
