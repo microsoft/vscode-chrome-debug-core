@@ -9,7 +9,7 @@ import { determineOrderingOfStrings } from '../../collections/utilities';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 
 /**
- * This interface represents a source or text that is related to a script that the debugee is executing. The text can be the contents of the script itself,
+ * This interface represents a source or text that is related to a script that the debuggee is executing. The text can be the contents of the script itself,
  *  or a file from which the script was loaded, or a file that was compiled to generate the contents of the script
  */
 export interface ILoadedSource<TString = string> extends IEquivalenceComparable {

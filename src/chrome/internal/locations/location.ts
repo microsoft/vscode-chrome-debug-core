@@ -45,8 +45,8 @@ export type ScriptOrSourceOrURLOrURLRegexp = IScript | ILoadedSource | ISource |
 
 export type Location<T extends ScriptOrSourceOrURLOrURLRegexp> =
     T extends ISource ? LocationInSource : // Used when receiving locations from the client
-    T extends ILoadedSource ? LocationInLoadedSource : // Used to translate between locations on the client and the debugee
-    T extends IScript ? LocationInScript : // Used when receiving locations from the debugee
+    T extends ILoadedSource ? LocationInLoadedSource : // Used to translate between locations on the client and the debuggee
+    T extends IScript ? LocationInScript : // Used when receiving locations from the debuggee
     T extends URLRegexp ? LocationInUrlRegexp : // Used when setting a breakpoint by URL in a local file path in windows, to make it case insensitive
     T extends IURL<CDTPScriptUrl> ? LocationInUrl : // Used when setting a breakpoint by URL for case-insensitive URLs
     ILocation<never>; // TODO: Figure out how to replace this by never (We run into some issues with the isEquivalentTo call if we do)

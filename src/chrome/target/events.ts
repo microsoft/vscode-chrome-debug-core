@@ -5,7 +5,7 @@ import { Crdp } from '../..';
 export type integer = number;
 
 /**
- * A new JavaScript Script has been parsed by the debugee and it's about to be executed
+ * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
  */
 export interface ScriptParsedEvent {
     readonly script: IScript;

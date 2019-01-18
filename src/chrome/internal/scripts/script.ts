@@ -16,7 +16,7 @@ import { IExecutionContext } from './executionContext';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 
 /**
- * This interface represents a piece of code that is being executed in the debugee. Usually a script matches to a file or a url, but that is not always the case.
+ * This interface represents a piece of code that is being executed in the debuggee. Usually a script matches to a file or a url, but that is not always the case.
  * This interface solves the problem of finding the different loaded sources associated with a script, and being able to identify and compare both scripts and sources easily.
  */
 export interface IScript extends IEquivalenceComparable {

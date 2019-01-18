@@ -242,7 +242,7 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg: string|Error): Promise<never> {
+export function errP(msg: string | Error): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
@@ -665,11 +665,19 @@ export function makeUnique<T>(elements: T[]): T[] {
     return Array.from(new Set(elements));
 }
 
-export function adaptToSinglIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => R): (multi: T[]) => R[] {
+/**
+ * adaptToSingleIntoToMulti transforms a function that takes a single parameter, to a version that takes an array and applies the function to each parameter.
+ * Some usage examples:
+ *   public readonly getBPsFromIDs = adaptToSingleIntoToMulti(this, this.getBPFromID);
+ *   public readonly toStackFrames = asyncAdaptToSingleIntoToMulti(this, this.toStackFrame);
+ *   public readonly toSourceTrees = asyncAdaptToSingleIntoToMulti(this, this.toSourceTree);
+ *   public readonly toBPRecipiesStatus = asyncAdaptToSingleIntoToMulti(this, this.toBPRecipieStatus);
+ */
+export function adaptToSingleIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => R): (multi: T[]) => R[] {
     return (multi: T[]) => multi.map(single => toSingle.call(thisObject, single));
 }
 
-export function asyncAdaptToSinglIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => Promise<R>): (multi: T[]) => Promise<R[]> {
+export function asyncAdaptToSingleIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => Promise<R>): (multi: T[]) => Promise<R[]> {
     return (multi: T[]) => Promise.all(multi.map(single => toSingle.call(thisObject, single)));
 }
 
