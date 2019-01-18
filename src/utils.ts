@@ -665,22 +665,6 @@ export function makeUnique<T>(elements: T[]): T[] {
     return Array.from(new Set(elements));
 }
 
-/**
- * adaptToSingleIntoToMulti transforms a function that takes a single parameter, to a version that takes an array and applies the function to each parameter.
- * Some usage examples:
- *   public readonly getBPsFromIDs = adaptToSingleIntoToMulti(this, this.getBPFromID);
- *   public readonly toStackFrames = asyncAdaptToSingleIntoToMulti(this, this.toStackFrame);
- *   public readonly toSourceTrees = asyncAdaptToSingleIntoToMulti(this, this.toSourceTree);
- *   public readonly toBPRecipiesStatus = asyncAdaptToSingleIntoToMulti(this, this.toBPRecipieStatus);
- */
-export function adaptToSingleIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => R): (multi: T[]) => R[] {
-    return (multi: T[]) => multi.map(single => toSingle.call(thisObject, single));
-}
-
-export function asyncAdaptToSingleIntoToMulti<T, R>(thisObject: object, toSingle: (single: T) => Promise<R>): (multi: T[]) => Promise<R[]> {
-    return (multi: T[]) => Promise.all(multi.map(single => toSingle.call(thisObject, single)));
-}
-
 export function defaultIfUndefined<T>(value: T | undefined, defaultValue: T): T {
     return value !== undefined ? value : defaultValue;
 }
