@@ -1,9 +1,15 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as path from 'path';
 import { utils } from '../../..';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { MapUsingProjection } from '../../collections/mapUsingProjection';
+import { IEquivalenceComparable } from '../../utils/equivalence';
 
-/** Hierarchy:
+/**
+ * Hierarchy:
  * IResourceIdentifier: Identifies a resource
  *   IResourceLocation: Identifies and tells us how to get the resource
  *     URL: Url
@@ -17,17 +23,17 @@ import { MapUsingProjection } from '../../collections/mapUsingProjection';
  */
 
 /** This interface represents a text to identify a particular resource. This class will properly compare urls and file paths, while preserving the original case that was used for the identifier */
-export interface IResourceIdentifier<TString = string> {
+export interface IResourceIdentifier<TString = string> extends IEquivalenceComparable {
     readonly textRepresentation: TString;
     readonly canonicalized: string;
-    isEquivalent(right: IResourceIdentifier<string>): boolean;
+    isEquivalentTo(right: IResourceIdentifier<TString>): boolean;
     isLocalFilePath(): boolean;
 }
 
 abstract class IsEquivalentCommonLogic {
     public abstract get canonicalized(): string;
 
-    public isEquivalent(right: IResourceIdentifier): boolean {
+    public isEquivalentTo(right: IResourceIdentifier): boolean {
         return this.canonicalized === right.canonicalized;
     }
 
@@ -61,10 +67,10 @@ export class ResourceName<TString extends string = string> extends IsEquivalentA
 export interface IResourceLocation<TString extends string = string> extends IResourceIdentifier<TString> { }
 
 // A standard URL
-export interface URL<TString extends string = string> extends IResourceLocation<TString> { }
+export interface IURL<TString extends string = string> extends IResourceLocation<TString> { }
 
 // A local file URL is a 'file:///' url
-export class LocalFileURL<TString extends string = string> extends IsEquivalentCommonLogic implements URL<TString> {
+export class LocalFileURL<TString extends string = string> extends IsEquivalentCommonLogic implements IURL<TString> {
     private _localResourcePath: ILocalFilePath;
 
     public static isValid(path: string) {
@@ -95,7 +101,7 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
 }
 
 // Any URL that is not a 'file:///' url
-export class NonLocalFileURL<TString extends string = string> extends IsEquivalentAndConstructorCommonLogic<TString> implements URL<TString> {
+export class NonLocalFileURL<TString extends string = string> extends IsEquivalentAndConstructorCommonLogic<TString> implements IURL<TString> {
     public toString(): string {
         return path.basename(this.textRepresentation);
     }
@@ -181,7 +187,7 @@ function parseLocalResourcePath<TString extends string = string>(path: TString):
     }
 }
 
-function parseURL<TString extends string = string>(textRepresentation: TString): URL<TString> {
+function parseURL<TString extends string = string>(textRepresentation: TString): IURL<TString> {
     if (LocalFileURL.isValid(textRepresentation)) {
         return new LocalFileURL<TString>(textRepresentation);
     } else {

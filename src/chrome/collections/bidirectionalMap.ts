@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as assert from 'assert';
 import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';

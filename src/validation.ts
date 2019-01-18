@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 export function zeroOrPositive(name: string, value: number) {
     if (value < 0) {
         breakWhileDebugging();

@@ -1,13 +1,22 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { ILoadedSource } from './loadedSource';
 import { ISource, SourceToBeResolvedViaPath } from './source';
 import { newResourceIdentifierMap, IResourceIdentifier } from './resourceIdentifier';
 import { IComponent } from '../features/feature';
-import { ScriptParsedEvent } from '../../target/events';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { IScript } from '../scripts/script';
 
-export interface EventsConsumedBySourceResolver {
-    onScriptParsed(listener: (scriptEvent: ScriptParsedEvent) => Promise<void>): void;
+// TODO: Delete this and use the proper interface
+interface IScriptParsedEvent {
+    script: IScript;
+}
+
+export interface IEventsConsumedBySourceResolver {
+    onScriptParsed(listener: (scriptEvent: IScriptParsedEvent) => Promise<void>): void;
 }
 
 /**
@@ -49,5 +58,5 @@ export class SourceResolver implements IComponent {
     }
 
     constructor(
-        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: EventsConsumedBySourceResolver) { }
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: IEventsConsumedBySourceResolver) { }
 }

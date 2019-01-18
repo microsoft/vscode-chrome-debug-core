@@ -8,7 +8,8 @@ import { IScript } from '../scripts/script';
 import { Protocol as CDTP } from 'devtools-protocol';
 import { Scope } from './scopes';
 
-/** CDTP has two types of stack traces:
+/**
+ * CDTP has two types of stack traces:
  * 1. CDTP.Runtime stack traces have only information about which code was executed, but not the state associated with it
  * 2. CDTP.Debugger stack traces which have all the information that CDTP.Runtime has, and it also includes state information
  *
@@ -18,7 +19,8 @@ import { Scope } from './scopes';
 
 export type ScriptOrLoadedSource = IScript | ILoadedSource;
 
-/** This class represents the code flow (which code was executed) of a call frame.
+/**
+ * This class represents the code flow (which code was executed) of a call frame.
  * (This has similar properties as the stack traces from the CDTP.Runtime domain)
  */
 export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
@@ -44,7 +46,8 @@ export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
     }
 }
 
-/** This interface represents both the code flow and the state of a call frame.
+/**
+ * This interface represents both the code flow and the state of a call frame.
  * (This has similar properties as the stack traces from the CDTP.Debugger domain)
  */
 export interface ICallFrame<TResource extends ScriptOrLoadedSource> {
