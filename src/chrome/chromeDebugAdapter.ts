@@ -1987,7 +1987,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         };
         this._pathTransformer.stackTraceResponse(stackTraceResponse);
         await this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
-        this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
             // Remove isSourceMapped to convert back to DebugProtocol.StackFrame
@@ -2021,6 +2020,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // Format stackframe name
             frame.name = this.formatStackFrameName(frame, args.format);
         }));
+
+        this._lineColTransformer.stackTraceResponse(stackTraceResponse);
 
         return stackTraceResponse;
     }
