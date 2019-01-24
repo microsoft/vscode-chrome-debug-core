@@ -20,7 +20,7 @@ export function determineOrderingOfStrings(left: string, right: string): number 
     }
 }
 
-export function singleOne<T>(array: ReadonlyArray<T>): T {
+export function singleElementOfArray<T>(array: ReadonlyArray<T>): T {
     if (array.length === 1) {
         return array[0];
     } else {
