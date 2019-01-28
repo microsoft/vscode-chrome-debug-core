@@ -1,8 +1,14 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { printMap } from './printing';
+import { breakWhileDebugging } from '../../validation';
 
 export interface IValidatedMap<K, V> extends Map<K, V> {
     tryGetting(key: K): V | undefined;
     getOrAdd(key: K, obtainValueToAdd: () => V): V;
+    setAndReplaceIfExist(key: K, value: V): this;
 }
 
 /** A map that throws exceptions instead of returning error codes. */
@@ -29,6 +35,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     public delete(key: K): boolean {
         if (!this._wrappedMap.delete(key)) {
+            breakWhileDebugging();
             throw new Error(`Couldn't delete element with key ${key} because it wasn't present in the map`);
         }
 
@@ -42,6 +49,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public get(key: K): V {
         const value = this._wrappedMap.get(key);
         if (value === undefined) {
+            breakWhileDebugging();
             throw new Error(`Couldn't get the element with key '${key}' because it wasn't present in this map <${this}>`);
         }
         return value;
@@ -64,9 +72,14 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     public set(key: K, value: V): this {
         if (this.has(key)) {
+            breakWhileDebugging();
             throw new Error(`Cannot set key ${key} because it already exists`);
         }
 
+        return this.setAndReplaceIfExist(key, value);
+    }
+
+    public setAndReplaceIfExist(key: K, value: V): this {
         this._wrappedMap.set(key, value);
         return this;
     }

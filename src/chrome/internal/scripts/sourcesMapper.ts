@@ -1,4 +1,8 @@
-import { LineNumber, ColumnNumber } from '../locations/subtypes';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import { LineNumber, ColumnNumber, createColumnNumber, createLineNumber } from '../locations/subtypes';
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 
 export interface ISourcesMapper {
@@ -23,7 +27,7 @@ export class SourcesMapper implements ISourcesMapper {
     public getPositionInSource(positionInScript: IPositionInScript): IPositionInSource | null {
         const mappedPosition = this._sourceMap.authoredPositionFor(positionInScript.line, positionInScript.column || 0);
         return mappedPosition && mappedPosition.source && mappedPosition.line
-            ? { source: mappedPosition.source, line: mappedPosition.line as LineNumber, column: mappedPosition.column as ColumnNumber }
+            ? { source: mappedPosition.source, line: createLineNumber(mappedPosition.line), column: createColumnNumber(mappedPosition.column) }
             : null;
     }
 
@@ -31,7 +35,7 @@ export class SourcesMapper implements ISourcesMapper {
         const mappedPosition = this._sourceMap.generatedPositionFor(positionInSource.source,
             positionInSource.line, positionInSource.column || 0);
         return mappedPosition && mappedPosition.line
-            ? { line: mappedPosition.line as LineNumber, column: mappedPosition.column as ColumnNumber }
+            ? { line: createLineNumber(mappedPosition.line), column: createColumnNumber(mappedPosition.column) }
             : null;
     }
 

@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as fs from 'fs';
 import {
     ILoadedSource, MappedSource, ScriptRunFromLocalStorage, DynamicScript,
@@ -9,23 +13,25 @@ import { printArray } from '../../collections/printing';
 import { ISourcesMapper } from './sourcesMapper';
 import { IResourceIdentifier, IResourceLocation, newResourceIdentifierMap, parseResourceIdentifier, ResourceName } from '../sources/resourceIdentifier';
 import { IExecutionContext } from './executionContext';
+import { IEquivalenceComparable } from '../../utils/equivalence';
 
-/** This interface represents a piece of code that is being executed in the debugee. Usually a script matches to a file or a url, but that is not always the case.
+/**
+ * This interface represents a piece of code that is being executed in the debuggee. Usually a script matches to a file or a url, but that is not always the case.
  * This interface solves the problem of finding the different loaded sources associated with a script, and being able to identify and compare both scripts and sources easily.
  */
-export interface IScript {
+export interface IScript extends IEquivalenceComparable {
     readonly executionContext: IExecutionContext;
     readonly runtimeSource: ILoadedSource<CDTPScriptUrl>; // Source in Webserver
     readonly developmentSource: ILoadedSource; // Source in Workspace
     readonly mappedSources: MappedSource[]; // Sources before compilation
-    readonly allSources: ILoadedSource[]; // runtimeSource + developmentSource + sourcesOfCompiled
+    readonly allSources: ILoadedSource[]; // runtimeSource + developmentSource + mappedSources
     readonly url: CDTPScriptUrl;
 
     readonly sourcesMapper: ISourcesMapper; // TODO DIEGO: See if we can delete this property
 
     getSource(sourceIdentifier: IResourceIdentifier): ILoadedSource;
 
-    isEquivalent(source: IScript): boolean;
+    isEquivalentTo(script: IScript): boolean;
 }
 
 export class Script implements IScript {
@@ -35,7 +41,7 @@ export class Script implements IScript {
 
     public static create(executionContext: IExecutionContext, locationInRuntimeEnvironment: IResourceLocation<CDTPScriptUrl>, locationInDevelopmentEnvinronment: IResourceLocation,
         sourcesMapper: ISourcesMapper): Script {
-        const sourcesOfCompiled = (script: IScript) => newResourceIdentifierMap<MappedSource>(sourcesMapper.sources.map(path => {
+        const mappedSources = (script: IScript) => newResourceIdentifierMap<MappedSource>(sourcesMapper.sources.map(path => {
             const identifier = parseResourceIdentifier(path);
             return [identifier, new MappedSource(script, identifier, 'TODO DIEGO')] as [IResourceIdentifier, MappedSource];
         }));
@@ -50,23 +56,24 @@ export class Script implements IScript {
          */
         let runtimeSource: (script: IScript) => ILoadedSource<CDTPScriptUrl>;
         let developmentSource: (script: IScript) => ILoadedSource;
-        if (locationInRuntimeEnvironment.isEquivalent(locationInDevelopmentEnvinronment) || locationInDevelopmentEnvinronment.textRepresentation === '') {
+        if (locationInDevelopmentEnvinronment.isEquivalentTo(locationInRuntimeEnvironment) || locationInDevelopmentEnvinronment.textRepresentation === '') {
             if (fs.existsSync(locationInRuntimeEnvironment.textRepresentation)) {
-                developmentSource = runtimeSource = script => new ScriptRunFromLocalStorage(script, locationInRuntimeEnvironment, 'TODO DIEGO');
+                developmentSource = runtimeSource = (script: IScript) =>
+                    new ScriptRunFromLocalStorage(script, locationInRuntimeEnvironment, 'TODO DIEGO');
             } else {
-                developmentSource = runtimeSource = script => new DynamicScript(script, locationInRuntimeEnvironment, 'TODO DIEGO');
+                developmentSource = runtimeSource = (script: IScript) =>
+                    new DynamicScript(script, locationInRuntimeEnvironment, 'TODO DIEGO');
             }
         } else {
             // The script is served from one location, and it's on the workspace on a different location
             runtimeSource = script => new ScriptRuntimeSource(script, locationInRuntimeEnvironment, 'TODO DIEGO');
             developmentSource = script => new ScriptDevelopmentSource(script, locationInDevelopmentEnvinronment, 'TODO DIEGO');
         }
-        return new Script(executionContext, runtimeSource, developmentSource, sourcesOfCompiled, sourcesMapper);
+        return new Script(executionContext, runtimeSource, developmentSource, mappedSources, sourcesMapper);
     }
 
     public static createEval(executionContext: IExecutionContext, name: ResourceName<CDTPScriptUrl>, sourcesMapper: ISourcesMapper): Script {
-        // TODO DIEGO Return the same instance both functions
-        const getNoURLScript = (script: IScript) => new NoURLScriptSource(script, name, 'TODO DIEGO');
+        let getNoURLScript = (script: IScript) => new NoURLScriptSource(script, name, 'TODO DIEGO');
         return new Script(executionContext, getNoURLScript, getNoURLScript, _ => new Map<IResourceIdentifier, MappedSource>(), sourcesMapper);
     }
 
@@ -106,7 +113,7 @@ export class Script implements IScript {
         return this._runtimeSource.identifier.textRepresentation;
     }
 
-    public isEquivalent(script: Script): boolean {
+    public isEquivalentTo(script: Script): boolean {
         return this === script;
     }
 

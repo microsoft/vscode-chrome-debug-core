@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 /** Methods to print the contents of a collection for logging and debugging purposes (This is not intended for the end-user to see) */
 export function printMap<K, V>(typeDescription: string, map: { entries(): IterableIterator<[K, V]> }): string {
     const elementsPrintted = Array.from(map.entries()).map(entry => `${entry[0]}: ${entry[1]}`).join('; ');

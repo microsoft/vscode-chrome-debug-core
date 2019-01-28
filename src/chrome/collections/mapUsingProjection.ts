@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { ValidatedMap, IValidatedMap } from './validatedMap';
 import { IProjection } from './setUsingProjection';
 import { printMap } from './printing';
@@ -57,6 +61,11 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
 
     public set(key: K, value: V): this {
         this._projectionToKeyAndvalue.set(this._projection(key), new KeyAndValue(key, value));
+        return this;
+    }
+
+    public setAndReplaceIfExist(key: K, value: V): this {
+        this._projectionToKeyAndvalue.setAndReplaceIfExist(this._projection(key), new KeyAndValue(key, value));
         return this;
     }
 

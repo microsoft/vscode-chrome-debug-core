@@ -45,7 +45,7 @@ export function existsSync(path: string): boolean {
  * Checks asynchronously if a path exists on the disk.
  */
 export function existsAsync(path: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         try {
             fs.access(path, (err) => {
                 resolve(err ? false : true);
@@ -93,7 +93,7 @@ export function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDe
         return fn().catch(
             e => {
                 if (Date.now() - startTime < (timeoutMs - intervalDelay)) {
-                    return promiseTimeout(null, intervalDelay).then(tryUntilTimeout);
+                    return promiseTimeout(undefined, intervalDelay).then(tryUntilTimeout);
                 } else {
                     return errP(e);
                 }
@@ -242,7 +242,7 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg: string|Error): Promise<never> {
+export function errP(msg: string | Error): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
@@ -448,7 +448,7 @@ export function multiGlob(patterns: string[], opts?: any): Promise<string[]> {
             }
         }
 
-        let array = [];
+        let array: string[] = [];
         set.forEach(v => array.push(fixDriveLetterAndSlashes(v)));
         return array;
     });
@@ -488,7 +488,7 @@ export class ReverseHandles<T> extends Handles<T> {
 /**
  * Return a regex for the given path to set a breakpoint on
  */
-export function pathToRegex(aPath: string): string {
+export function pathToRegex(aPath: string, guid = ''): string {
     const fileUrlPrefix = 'file:///';
     const isFileUrl = aPath.startsWith(fileUrlPrefix);
     const isAbsolutePath = isAbsolute(aPath);
@@ -509,7 +509,7 @@ export function pathToRegex(aPath: string): string {
     // If we should resolve paths in a case-sensitive way, we still need to set the BP for either an
     // upper or lowercased drive letter
     if (caseSensitivePaths) {
-        aPath = aPath.replace(/(^|file:\\\/\\\/\\\/)([a-zA-Z]):/g, (match, prefix, letter) => {
+        aPath = aPath.replace(/(^|file:\\\/\\\/\\\/)([a-zA-Z]):/g, (_match, prefix, letter) => {
             const u = letter.toUpperCase();
             const l = letter.toLowerCase();
             return `${prefix}[${u}${l}]:`;
@@ -520,6 +520,11 @@ export function pathToRegex(aPath: string): string {
 
     if (isFileUrl) {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
+    }
+
+    if (guid) {
+        // Add a guid to the regexp to make it unique, without modifying what it matches. This will allow us to add duplicated breakpoints using CDTP
+        aPath = aPath + `(?:${guid}){0}`;
     }
 
     return aPath;
@@ -590,7 +595,7 @@ export function getLine(msg: string, n = 0): string {
     return msg.split('\n')[n];
 }
 
-export function firstLine(msg: string): string {
+export function firstLine(msg: string | undefined): string {
     return getLine(msg || '');
 }
 
@@ -602,16 +607,16 @@ export function toVoidP(p: Promise<any>): Promise<void> {
     return p.then(() => { });
 }
 
-export interface PromiseDefer<T> {
-    promise: Promise<void>;
+export interface IPromiseDefer<T> {
+    readonly promise: Promise<T>;
     resolve: (value?: T | PromiseLike<T>) => void;
     reject: (reason?: any) => void;
 }
 
-export function promiseDefer<T>(): PromiseDefer<T> {
+export function promiseDefer<T>(): IPromiseDefer<T> {
     let resolveCallback;
     let rejectCallback;
-    const promise = new Promise<void>((resolve, reject) => {
+    const promise = new Promise<T>((resolve, reject) => {
         resolveCallback = resolve;
         rejectCallback = reject;
     });
@@ -654,4 +659,12 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     if (e.id) {
         properties.exceptionId = e.id.toString();
     }
+}
+
+export function makeUnique<T>(elements: T[]): T[] {
+    return Array.from(new Set(elements));
+}
+
+export function defaultIfUndefined<T>(value: T | undefined, defaultValue: T): T {
+    return value !== undefined ? value : defaultValue;
 }

@@ -22,7 +22,7 @@ import { InternalSourceBreakpoint, stackTraceWithoutLogpointFrame } from './inte
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import { PromiseDefer, promiseDefer } from '../utils';
+import { promiseDefer } from '../utils';
 import { telemetry, BatchTelemetryReporter, IExecutionResultTelemetryProperties } from '../telemetry';
 import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 
@@ -158,7 +158,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
 
     // Promises so ScriptPaused events can wait for ScriptParsed events to finish resolving breakpoints
-    private _scriptIdToBreakpointsAreResolvedDefer = new Map<string, PromiseDefer<void>>();
+    private _scriptIdToBreakpointsAreResolvedDefer = new Map<string, utils.IPromiseDefer<void>>();
 
     private _batchTelemetryReporter: BatchTelemetryReporter;
 
@@ -823,7 +823,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
     }
 
-    public getBreakpointsResolvedDefer(scriptId: string): PromiseDefer<void> {
+    public getBreakpointsResolvedDefer(scriptId: string): utils.IPromiseDefer<void> {
         const existingValue =  this._scriptIdToBreakpointsAreResolvedDefer.get(scriptId);
         if (existingValue) {
             return existingValue;

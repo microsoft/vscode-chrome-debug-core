@@ -1,18 +1,23 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { IScript } from '../scripts/script';
 import { CDTPScriptUrl } from './resourceIdentifierSubtypes';
 import { IResourceIdentifier, parseResourceIdentifier, ResourceName } from './resourceIdentifier';
 import { determineOrderingOfStrings } from '../../collections/utilities';
+import { IEquivalenceComparable } from '../../utils/equivalence';
 
-/** This interface represents a source or text that is related to a script that the debugee is executing. The text can be the contents of the script itself,
+/**
+ * This interface represents a source or text that is related to a script that the debuggee is executing. The text can be the contents of the script itself,
  *  or a file from which the script was loaded, or a file that was compiled to generate the contents of the script
  */
-export interface ILoadedSource<TString = string> {
+export interface ILoadedSource<TString = string> extends IEquivalenceComparable {
     readonly script: IScript;
     readonly identifier: IResourceIdentifier<TString>;
     readonly origin: string;
     doesScriptHasUrl(): boolean; // TODO DIEGO: Figure out if we can delete this property
     isMappedSource(): boolean;
-    isEquivalent(source: ILoadedSource<TString>): boolean;
 }
 
 /**
@@ -33,7 +38,7 @@ abstract class LoadedSourceWithURLCommonLogic<TSource = string> implements ILoad
         return true;
     }
 
-    public isEquivalent(source: ILoadedSource<TSource>): boolean {
+    public isEquivalentTo(source: ILoadedSource<TSource>): boolean {
         return this === source;
     }
 
@@ -70,7 +75,7 @@ export class NoURLScriptSource implements ILoadedSource<CDTPScriptUrl> {
         return false;
     }
 
-    public isEquivalent(source: NoURLScriptSource): boolean {
+    public isEquivalentTo(source: NoURLScriptSource): boolean {
         return this === source;
     }
 
