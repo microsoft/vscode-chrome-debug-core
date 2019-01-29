@@ -13,52 +13,11 @@ import { IEquivalenceComparable } from '../../utils/equivalence';
  */
 export interface IBPActionWhenHit extends IEquivalenceComparable {
     isEquivalentTo(bpActionWhenHit: IBPActionWhenHit): boolean;
-    accept<T>(visitor: IBPActionWhenHitVisitor<T>): T;
 }
 
-export interface IBPActionWhenHitVisitor<T> {
-    alwaysPause(alwaysPause: AlwaysPause): T;
-    conditionalPause(conditionalPause: ConditionalPause): T;
-    pauseOnHitCount(pauseOnHitCount: PauseOnHitCount): T;
-    logMessage(logMessage: LogMessage): T;
-}
-
-abstract class BaseBPActionWhenHit {
-    public abstract accept<T>(visitor: IBPActionWhenHitVisitor<T>): T;
-
+export class AlwaysPause implements IBPActionWhenHit {
     public isEquivalentTo(bpActionWhenHit: IBPActionWhenHit): boolean {
-        return bpActionWhenHit.accept(new BPActionWhenHitIsEquivalentVisitor(this));
-    }
-}
-
-class BPActionWhenHitIsEquivalentVisitor implements IBPActionWhenHitVisitor<boolean> {
-    public alwaysPause(alwaysPause: AlwaysPause): boolean {
-        return this.areSameClass(this._left, alwaysPause);
-    }
-
-    public conditionalPause(conditionalPause: ConditionalPause): boolean {
-        return this.areSameClass(this._left, conditionalPause)
-            && this._left.expressionOfWhenToPause === conditionalPause.expressionOfWhenToPause;
-    }
-    public pauseOnHitCount(pauseOnHitCount: PauseOnHitCount): boolean {
-        return this.areSameClass(this._left, pauseOnHitCount)
-            && this._left.pauseOnHitCondition === pauseOnHitCount.pauseOnHitCondition;
-    }
-    public logMessage(logMessage: LogMessage): boolean {
-        return this.areSameClass(this._left, logMessage)
-            && this._left.expressionToLog === logMessage.expressionToLog;
-    }
-
-    private areSameClass<T extends IBPActionWhenHit>(left: IBPActionWhenHit, right: T): left is T {
-        return left.constructor === right.constructor;
-    }
-
-    constructor(private readonly _left: IBPActionWhenHit) { }
-}
-
-export class AlwaysPause extends BaseBPActionWhenHit {
-    public accept<T>(visitor: IBPActionWhenHitVisitor<T>): T {
-        return visitor.alwaysPause(this);
+        return bpActionWhenHit instanceof AlwaysPause;
     }
 
     public toString(): string {
@@ -66,44 +25,41 @@ export class AlwaysPause extends BaseBPActionWhenHit {
     }
 }
 
-export class ConditionalPause extends BaseBPActionWhenHit {
-    public accept<T>(visitor: IBPActionWhenHitVisitor<T>): T {
-        return visitor.conditionalPause(this);
+export class ConditionalPause implements IBPActionWhenHit {
+    constructor(public readonly expressionOfWhenToPause: string) { }
+
+    public isEquivalentTo(bpActionWhenHit: IBPActionWhenHit): boolean {
+        return (bpActionWhenHit instanceof ConditionalPause)
+            && this.expressionOfWhenToPause === bpActionWhenHit.expressionOfWhenToPause;
     }
 
     public toString(): string {
         return `pause if: ${this.expressionOfWhenToPause}`;
     }
-
-    constructor(public readonly expressionOfWhenToPause: string) {
-        super();
-    }
 }
 
-export class PauseOnHitCount extends BaseBPActionWhenHit {
-    public accept<T>(visitor: IBPActionWhenHitVisitor<T>): T {
-        return visitor.pauseOnHitCount(this);
+export class PauseOnHitCount implements IBPActionWhenHit {
+    constructor(public readonly pauseOnHitCondition: string) { }
+
+    public isEquivalentTo(bpActionWhenHit: IBPActionWhenHit): boolean {
+        return (bpActionWhenHit instanceof PauseOnHitCount)
+            && this.pauseOnHitCondition === bpActionWhenHit.pauseOnHitCondition;
     }
 
     public toString(): string {
         return `pause when hits: ${this.pauseOnHitCondition}`;
     }
-
-    constructor(public readonly pauseOnHitCondition: string) {
-        super();
-    }
 }
 
-export class LogMessage extends BaseBPActionWhenHit {
-    public accept<T>(visitor: IBPActionWhenHitVisitor<T>): T {
-        return visitor.logMessage(this);
+export class LogMessage implements IBPActionWhenHit {
+    constructor(public readonly expressionToLog: string) { }
+
+    public isEquivalentTo(bpActionWhenHit: IBPActionWhenHit): boolean {
+        return (bpActionWhenHit instanceof LogMessage)
+            && this.expressionToLog === bpActionWhenHit.expressionToLog;
     }
 
     public toString(): string {
         return `log: ${this.expressionToLog}`;
-    }
-
-    constructor(public readonly expressionToLog: string) {
-        super();
     }
 }
