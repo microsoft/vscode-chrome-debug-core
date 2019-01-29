@@ -4,15 +4,15 @@
 
 import { ILoadedSource } from '../sources/loadedSource';
 import { ISource } from '../sources/source';
-import { BPRecipie } from './bpRecipie';
+import { BPRecipe } from './bpRecipe';
 import { printArray } from '../../collections/printing';
 import { IResourceIdentifier } from '../sources/resourceIdentifier';
 
 /**
  * These classes are used to handle all the set of breakpoints for a single file as a unit, and be able to resolve them all together
  */
-export class BaseBPRecipies<TResource extends ILoadedSource | ISource> {
-    constructor(public readonly source: TResource, public readonly breakpoints: BPRecipie<TResource>[]) {
+export class BaseBPRecipes<TResource extends ILoadedSource | ISource> {
+    constructor(public readonly source: TResource, public readonly breakpoints: BPRecipe<TResource>[]) {
         this.breakpoints.forEach(breakpoint => {
             const bpResource: TResource = breakpoint.location.resource;
             if (!(<any>bpResource).isEquivalentTo(this.source)) { // TODO: Figure out a way to remove this any
@@ -26,12 +26,12 @@ export class BaseBPRecipies<TResource extends ILoadedSource | ISource> {
     }
 }
 
-export class BPRecipiesInSource extends BaseBPRecipies<ISource> {
-    public tryResolving<R>(ifSuccesfulDo: (bpsInLoadedSource: BPRecipiesInLoadedSource) => R, ifFaileDo: () => R): R {
+export class BPRecipesInSource extends BaseBPRecipes<ISource> {
+    public tryResolving<R>(ifSuccesfulDo: (bpsInLoadedSource: BPRecipesInLoadedSource) => R, ifFaileDo: () => R): R {
         return this.source.tryResolving(
             loadedSource => {
                 const loadedSourceBPs = this.breakpoints.map(breakpoint => breakpoint.resolvedWithLoadedSource(loadedSource));
-                return ifSuccesfulDo(new BPRecipiesInLoadedSource(loadedSource, loadedSourceBPs));
+                return ifSuccesfulDo(new BPRecipesInLoadedSource(loadedSource, loadedSourceBPs));
             },
             ifFaileDo);
     }
@@ -41,4 +41,4 @@ export class BPRecipiesInSource extends BaseBPRecipies<ISource> {
     }
 }
 
-export class BPRecipiesInLoadedSource extends BaseBPRecipies<ILoadedSource> { }
+export class BPRecipesInLoadedSource extends BaseBPRecipes<ILoadedSource> { }

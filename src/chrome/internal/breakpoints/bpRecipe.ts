@@ -10,20 +10,20 @@ import { IBPActionWhenHit, AlwaysPause, ConditionalPause } from './bpActionWhenH
 import { IResourceIdentifier } from '../sources/resourceIdentifier';
 import { URLRegexp } from '../locations/subtypes';
 import { IEquivalenceComparable } from '../../utils/equivalence';
-import { BPRecipieInLoadedSource, BPRecipieInScript, BPRecipieInUrl, BPRecipieInUrlRegexp } from './baseMappedBPRecipie';
-import { BPRecipieInSource } from './bpRecipieInSource';
+import { BPRecipeInLoadedSource, BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp } from './baseMappedBPRecipe';
+import { BPRecipeInSource } from './bpRecipeInSource';
 
 /**
- * IBPRecipie represents the instruction/recipie to set a breakpoint with some particular properties. Assuming that IBPRecipie ends up creating an actual
+ * IBPRecipe represents the instruction/recipe to set a breakpoint with some particular properties. Assuming that IBPRecipe ends up creating an actual
  * breakpoint in the debuggee, an instance of Breakpoint will be created to represent that actual breakpoint.
  */
-export interface IBPRecipie<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit = IBPActionWhenHit>
+export interface IBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit = IBPActionWhenHit>
     extends IEquivalenceComparable {
     readonly location: Location<TResource>;
     readonly bpActionWhenHit: TBPActionWhenHit;
 }
 
-export abstract class BaseBPRecipie<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit> implements IBPRecipie<TResource, TBPActionWhenHit> {
+export abstract class BaseBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit> implements IBPRecipe<TResource, TBPActionWhenHit> {
     public abstract get bpActionWhenHit(): TBPActionWhenHit;
     public abstract get location(): Location<TResource>;
     public abstract isEquivalentTo(right: this): boolean;
@@ -33,13 +33,13 @@ export abstract class BaseBPRecipie<TResource extends ScriptOrSourceOrURLOrURLRe
     }
 }
 
-export type BPRecipie<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit = IBPActionWhenHit>
-    = IBPRecipie<TResource, TBPActionWhenHit> & (
-        TResource extends ISource ? BPRecipieInSource<TBPActionWhenHit> :
-        TResource extends ILoadedSource ? BPRecipieInLoadedSource<TBPActionWhenHit> :
-        TBPActionWhenHit extends (AlwaysPause | ConditionalPause) ? (TResource extends IScript ? BPRecipieInScript :
-            TResource extends IResourceIdentifier ? BPRecipieInUrl :
-            TResource extends URLRegexp ? BPRecipieInUrlRegexp :
+export type BPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit = IBPActionWhenHit>
+    = IBPRecipe<TResource, TBPActionWhenHit> & (
+        TResource extends ISource ? BPRecipeInSource<TBPActionWhenHit> :
+        TResource extends ILoadedSource ? BPRecipeInLoadedSource<TBPActionWhenHit> :
+        TBPActionWhenHit extends (AlwaysPause | ConditionalPause) ? (TResource extends IScript ? BPRecipeInScript :
+            TResource extends IResourceIdentifier ? BPRecipeInUrl :
+            TResource extends URLRegexp ? BPRecipeInUrlRegexp :
             never)
         : never
     );
