@@ -8,7 +8,7 @@ import { IBreakpoint } from './breakpoint';
 import { printArray } from '../../collections/printing';
 import { ISource } from '../sources/source';
 
-/** These interface and classes represent the status of a BP Recipe (Is it binded or not?) */
+/** These interface and classes represent the status of a BP Recipe (Is it bound or not?) */
 export interface IBPRecipeStatus {
     readonly recipe: IBPRecipe<ISource>;
     readonly statusDescription: string;
@@ -16,13 +16,13 @@ export interface IBPRecipeStatus {
     isVerified(): boolean;
 }
 
-export class BPRecipeIsUnbinded implements IBPRecipeStatus {
+export class BPRecipeIsUnbound implements IBPRecipeStatus {
     public isVerified(): boolean {
         return false;
     }
 
     public toString(): string {
-        return `${this.recipe} is unbinded because ${this.statusDescription}`;
+        return `${this.recipe} is unbound because ${this.statusDescription}`;
     }
 
     constructor(
@@ -31,7 +31,7 @@ export class BPRecipeIsUnbinded implements IBPRecipeStatus {
     }
 }
 
-export class BPRecipeIsBinded implements IBPRecipeStatus {
+export class BPRecipeIsBound implements IBPRecipeStatus {
     public get actualLocationInSource(): LocationInLoadedSource {
         // TODO: Figure out what is the right way to decide the actual location when we have multiple breakpoints
         return this.breakpoints[0].actualLocation;
@@ -42,7 +42,7 @@ export class BPRecipeIsBinded implements IBPRecipeStatus {
     }
 
     public toString(): string {
-        return `${this.recipe} is binded with all ${printArray('', this.breakpoints)} because ${this.statusDescription}`;
+        return `${this.recipe} is bound with all ${printArray('', this.breakpoints)} because ${this.statusDescription}`;
     }
 
     constructor(
@@ -50,7 +50,7 @@ export class BPRecipeIsBinded implements IBPRecipeStatus {
         public readonly breakpoints: IBreakpoint<ISource>[],
         public readonly statusDescription: string) {
         if (this.breakpoints.length === 0) {
-            throw new Error(`A breakpoint recipe that is binded needs to have at least one breakpoint that was binded for the recipe yet ${this} had none`);
+            throw new Error(`A breakpoint recipe that is bound needs to have at least one breakpoint that was bound for the recipe yet ${this} had none`);
         }
     }
 }

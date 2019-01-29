@@ -24,7 +24,7 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
     }
 
     public tryResolvingSource<R>(succesfulAction: (breakpointInLoadedSource: BPRecipeInLoadedSource<TBPActionWhenHit>) => R,
-        failedAction: (breakpointInUnbindedSource: BPRecipeInSource) => R): R {
+        failedAction: (breakpointInUnboundSource: BPRecipeInSource) => R): R {
 
         return this.location.tryResolvingSource(
             locationInLoadedSource => succesfulAction(new BPRecipeInLoadedSource<TBPActionWhenHit>(this, locationInLoadedSource)),
