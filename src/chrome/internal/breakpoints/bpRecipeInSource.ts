@@ -23,16 +23,16 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
         return new BPRecipeInSource<AlwaysPause>(this.location, new AlwaysPause());
     }
 
-    public tryResolvingSource<R>(succesfulAction: (breakpointInLoadedSource: BPRecipeInLoadedSource<TBPActionWhenHit>) => R,
+    public tryResolving<R>(succesfulAction: (breakpointInLoadedSource: BPRecipeInLoadedSource<TBPActionWhenHit>) => R,
         failedAction: (breakpointInUnboundSource: BPRecipeInSource) => R): R {
 
-        return this.location.tryResolvingSource(
+        return this.location.tryResolving(
             locationInLoadedSource => succesfulAction(new BPRecipeInLoadedSource<TBPActionWhenHit>(this, locationInLoadedSource)),
             () => failedAction(this));
     }
 
     public resolvedToLoadedSource(): BPRecipeInLoadedSource<TBPActionWhenHit> {
-        return this.tryResolvingSource(
+        return this.tryResolving(
             breakpointInLoadedSource => breakpointInLoadedSource,
             () => { throw new Error(`Failed to convert ${this} into a breakpoint in a loaded source`); });
     }
