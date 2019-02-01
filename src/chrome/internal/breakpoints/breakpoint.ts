@@ -35,8 +35,8 @@ abstract class BaseBreakpoint<TResource extends BPPossibleResources> implements 
     }
 }
 
-type MappeableBPPossibleResources = IScript | IResourceIdentifier<CDTPScriptUrl> | URLRegexp;
-export class MappableBreakpoint<TResource extends MappeableBPPossibleResources> extends BaseBreakpoint<TResource> {
+type MappableBPPossibleResources = IScript | IResourceIdentifier<CDTPScriptUrl> | URLRegexp;
+export class MappableBreakpoint<TResource extends MappableBPPossibleResources> extends BaseBreakpoint<TResource> {
     public mappedToSource(): BreakpointInSource {
         return new BreakpointInSource(this.recipe.unmappedBPRecipe, this.actualLocation.mappedToSource());
     }
