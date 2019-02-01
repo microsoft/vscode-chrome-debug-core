@@ -27,13 +27,13 @@ export class BaseBPRecipes<TResource extends ILoadedSource | ISource> {
 }
 
 export class BPRecipesInSource extends BaseBPRecipes<ISource> {
-    public tryResolving<R>(ifSuccesfulDo: (bpsInLoadedSource: BPRecipesInLoadedSource) => R, ifFaileDo: () => R): R {
+    public tryResolving<R>(succesfulAction: (bpsInLoadedSource: BPRecipesInLoadedSource) => R, failedAction: () => R): R {
         return this.source.tryResolving(
             loadedSource => {
                 const loadedSourceBPs = this.breakpoints.map(breakpoint => breakpoint.resolvedWithLoadedSource(loadedSource));
-                return ifSuccesfulDo(new BPRecipesInLoadedSource(loadedSource, loadedSourceBPs));
+                return succesfulAction(new BPRecipesInLoadedSource(loadedSource, loadedSourceBPs));
             },
-            ifFaileDo);
+            failedAction);
     }
 
     public get requestedSourcePath(): IResourceIdentifier {
