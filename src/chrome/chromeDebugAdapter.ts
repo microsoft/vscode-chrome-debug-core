@@ -773,13 +773,14 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async shouldSmartStepCallFrame(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        if (!this._smartStepEnabled) return Promise.resolve(false);
 
         const stackFrame = this.callFrameToStackFrame(frame);
         return this.shouldSmartStep(stackFrame);
     }
 
     private async shouldSmartStep(stackFrame: DebugProtocol.StackFrame): Promise<boolean> {
+        if (!this._smartStepEnabled) return false;
+
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(stackFrame.source.path) || stackFrame.source.path;
         const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath, stackFrame.line, stackFrame.column);
         if (mapping) {
