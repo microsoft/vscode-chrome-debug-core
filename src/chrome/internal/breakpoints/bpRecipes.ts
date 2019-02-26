@@ -22,7 +22,7 @@ export class BaseBPRecipes<TResource extends ILoadedSource | ISource> {
     }
 
     public toString(): string {
-        return printArray(`BPs @ ${this.source}`, this.breakpoints);
+        return printArray(`BPs @ ${this.source}`, this.breakpoints.map(bp => `line ${bp.location.position} do: ${bp.bpActionWhenHit}`));
     }
 }
 

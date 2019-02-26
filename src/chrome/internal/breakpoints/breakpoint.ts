@@ -5,10 +5,10 @@
 import { LocationInScript, LocationInLoadedSource } from '../locations/location';
 import { IScript } from '../scripts/script';
 import { URLRegexp } from '../locations/subtypes';
-import { IResourceIdentifier } from '../sources/resourceIdentifier';
+import { IResourceIdentifier, IURL } from '../sources/resourceIdentifier';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import { ISource } from '../sources/source';
-import { IMappedBPRecipe } from './baseMappedBPRecipe';
+import { IBPRecipeForRuntimeSource } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
 
@@ -41,10 +41,14 @@ export class MappableBreakpoint<TResource extends MappableBPPossibleResources> e
         return new BreakpointInSource(this.recipe.unmappedBPRecipe, this.actualLocation.mappedToSource());
     }
 
-    constructor(public readonly recipe: IMappedBPRecipe<TResource, BPInScriptSupportedHitActions>, public readonly actualLocation: ActualLocation<TResource>) {
+    constructor(public readonly recipe: IBPRecipeForRuntimeSource<TResource, BPInScriptSupportedHitActions>, public readonly actualLocation: ActualLocation<TResource>) {
         super();
     }
 }
+
+export class BreakpointInScript extends MappableBreakpoint<IScript> { }
+
+export class BreakpointInUrl extends MappableBreakpoint<IURL<CDTPScriptUrl>> { }
 
 export class BreakpointInSource extends BaseBreakpoint<ISource> {
     constructor(public readonly recipe: BPRecipeInSource, public readonly actualLocation: ActualLocation<ISource>) {

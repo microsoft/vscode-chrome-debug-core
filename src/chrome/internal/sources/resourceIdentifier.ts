@@ -3,10 +3,10 @@
  *--------------------------------------------------------*/
 
 import * as path from 'path';
-import { utils } from '../../..';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { MapUsingProjection } from '../../collections/mapUsingProjection';
 import { IEquivalenceComparable } from '../../utils/equivalence';
+import * as utils from '../../../utils';
 
 /**
  * Hierarchy:
@@ -23,14 +23,23 @@ import { IEquivalenceComparable } from '../../utils/equivalence';
  */
 
 /** This interface represents a text to identify a particular resource. This class will properly compare urls and file paths, while preserving the original case that was used for the identifier */
+const ImplementsResourceIdentifier = Symbol();
 export interface IResourceIdentifier<TString = string> extends IEquivalenceComparable {
+    [ImplementsResourceIdentifier]: void;
+
     readonly textRepresentation: TString;
     readonly canonicalized: string;
     isEquivalentTo(right: IResourceIdentifier<TString>): boolean;
     isLocalFilePath(): boolean;
 }
 
+export function isResourceIdentifier(object: object): object is IResourceIdentifier<string> {
+    return object.hasOwnProperty(ImplementsResourceIdentifier);
+}
+
 abstract class IsEquivalentCommonLogic {
+    [ImplementsResourceIdentifier]: void;
+
     public abstract get canonicalized(): string;
 
     public isEquivalentTo(right: IResourceIdentifier): boolean {
@@ -95,13 +104,15 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
 
     constructor(fileUrl: TString) {
         super();
-        let filePath = decodeURIComponent(fileUrl.replace(`^file://`, ''));
+        let filePath = decodeURIComponent(fileUrl.replace(/^file:\/\/\//, ''));
         this._localResourcePath = parseLocalResourcePath(filePath);
     }
 }
 
 // Any URL that is not a 'file:///' url
 export class NonLocalFileURL<TString extends string = string> extends IsEquivalentAndConstructorCommonLogic<TString> implements IURL<TString> {
+    [ImplementsResourceIdentifier]: void;
+
     public toString(): string {
         return path.basename(this.textRepresentation);
     }
@@ -158,10 +169,6 @@ export class WindowLocalFilePath<TString extends string = string> extends LocalF
 
     public static isValid(path: string) {
         return path.match(/^[A-Za-z]:/);
-    }
-
-    public get canonicalized(): string {
-        return this.textRepresentation.toLowerCase().replace(/[\\\/]+/, '\\');
     }
 }
 

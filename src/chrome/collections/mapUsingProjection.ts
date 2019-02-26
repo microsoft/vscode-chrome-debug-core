@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { ValidatedMap, IValidatedMap } from './validatedMap';
+import { ValidatedMap, IValidatedMap, ValueComparerFunction } from './validatedMap';
 import { IProjection } from './setUsingProjection';
 import { printMap } from './printing';
 
@@ -49,6 +49,12 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
         return this._projectionToKeyAndvalue.get(keyProjected).value;
     }
 
+    public getOr(key: K, noKeyAction: () => V): V {
+        const keyProjected = this._projection(key);
+        const keyAndValueAdded = this._projectionToKeyAndvalue.getOr(keyProjected, () => new KeyAndValue(key, noKeyAction()));
+        return keyAndValueAdded.value;
+    }
+
     public getOrAdd(key: K, obtainValueToAdd: () => V): V {
         const keyProjected = this._projection(key);
         const keyAndValueAdded = this._projectionToKeyAndvalue.getOrAdd(keyProjected, () => new KeyAndValue(key, obtainValueToAdd()));
@@ -66,6 +72,13 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
 
     public setAndReplaceIfExist(key: K, value: V): this {
         this._projectionToKeyAndvalue.setAndReplaceIfExist(this._projection(key), new KeyAndValue(key, value));
+        return this;
+    }
+
+    public setAndIgnoreDuplicates(key: K, value: V, valueComparer: ValueComparerFunction<V> = (left, right) => left === right) {
+        this._projectionToKeyAndvalue.setAndIgnoreDuplicates(this._projection(key), new KeyAndValue(key, value),
+            (left, right) =>
+                this._projection(left.key) === this._projection(right.key) && valueComparer(left.value, right.value));
         return this;
     }
 
