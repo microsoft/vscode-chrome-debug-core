@@ -1991,6 +1991,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
             // Remove isSourceMapped to convert back to DebugProtocol.StackFrame
+            const isSourceMapped = frame.isSourceMapped;
             delete frame.isSourceMapped;
 
             if (!frame.source) {
@@ -2002,9 +2003,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (frame.source.path && this.shouldSkipSource(frame.source.path)) {
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('skipFiles');
                 frame.source.presentationHint = 'deemphasize';
-            } else if (await this.shouldSmartStep(frame)) {
+            } else if (!isSourceMapped && await this.shouldSmartStep(frame)) {
+                // TODO !isSourceMapped is a bit of a hack here
                 frame.source.origin = (frame.source.origin ? frame.source.origin + ' ' : '') + getSkipReason('smartStep');
-                frame.source.presentationHint = 'deemphasize';
+                (<any>frame).presentationHint = 'deemphasize';
             }
 
             // Allow consumer to adjust final path
