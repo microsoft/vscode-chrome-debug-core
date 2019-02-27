@@ -38,7 +38,7 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
 
         const mappedPosition = this._sourceMap.authoredPositionFor(lineNumberRelativeToScript, columnNumberRelativeToScript);
 
-        if (mappedPosition && mappedPosition.source && mappedPosition.line) {
+        if (mappedPosition && mappedPosition.source && typeof mappedPosition.line !== 'undefined') {
             const position = new Position(createLineNumber(mappedPosition.line), createColumnNumber(mappedPosition.column));
             return new LocationInLoadedSource(positionInScript.script.getSource(parseResourceIdentifier(mappedPosition.source)), position);
         } else {

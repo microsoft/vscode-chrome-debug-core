@@ -3,7 +3,7 @@ import { IScript } from '../scripts/script';
 import { IResourceIdentifier } from './resourceIdentifier';
 import { ILoadedSource, IScriptMapper, ICurrentScriptRelationshipsProvider as IScriptMapperProvider, ContentsLocation, SourceScriptRelationship, ImplementsLoadedSource, ScriptAndSourceMapper } from './loadedSource';
 import { ILoadedSourceToScriptRelationship } from './loadedSourceToScriptRelationship';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { printArray } from '../../collections/printing';
 import { LocationInScript, LocationInLoadedSource } from '../locations/location';
 
@@ -51,6 +51,9 @@ export class IdentifiedLoadedSource<TString extends string = string> implements 
     public static create<TString extends string>(identifier: IResourceIdentifier<TString>, sourceScriptRelationship: SourceScriptRelationship,
         currentScriptRelationshipsProvider: IScriptMapperProvider): IdentifiedLoadedSource<TString> {
 
+        // TODO: Figure out how to make this method async. The challenge is that this method is indirectly called by the Script class constructor,
+        // and we need to figure out how to make the constructor async, given that to preserve immutability we can only assign member variables in
+        // the constructor
         const contentsLocation = fs.existsSync(identifier.textRepresentation) ? ContentsLocation.PersistentStorage : ContentsLocation.DynamicMemory;
         return new IdentifiedLoadedSource<TString>(identifier, sourceScriptRelationship, currentScriptRelationshipsProvider, contentsLocation);
     }
