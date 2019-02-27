@@ -842,7 +842,10 @@ suite('ChromeDebugAdapter', () => {
             // because reset() creates a new instance of object
             mockSourceMapTransformer.reset();
             mockery.resetCache();
-            mockery.registerMock('fs', { statSync: () => { } });
+            mockery.registerMock('fs', {
+                statSync: () => { },
+                stat: (path, cb) => cb()
+            });
             initChromeDebugAdapter();
 
             await chromeDebugAdapter.attach(ATTACH_ARGS);

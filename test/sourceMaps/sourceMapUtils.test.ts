@@ -119,12 +119,22 @@ suite('SourceMapUtils', () => {
         test('Adds ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1', () => {
             mockery.resetCache();
             const tsFileCanonicalized = normalized(`${projectFolder}/ClientApp/src/app/counter/counter.component.ts`);
-            mockery.registerMock('fs', { statSync: (path: string) => {
-                if (normalized(path) === tsFileCanonicalized) {
-                    return true;
+            mockery.registerMock('fs', {
+                statSync: (path: string) => {
+                    if (normalized(path) === tsFileCanonicalized) {
+                        return true;
+                    }
+
+                    throw new Error(`File doesn't exist: ${path}`);
+                },
+                stat: (path: string, cb) => {
+                    if (normalized(path) === tsFileCanonicalized) {
+                        cb(undefined, true);
+                    }
+
+                    throw new Error(`File doesn't exist: ${path}`);
                 }
-                throw new Error(`File doesn't exist: ${path}`);
-            }});
+            });
 
             assert.deepEqual(
                 normalized(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve(`${projectFolder}/webRoot/*`) }, true)),
@@ -133,9 +143,9 @@ suite('SourceMapUtils', () => {
 
         test('Does not add ClientApp to the path in VisualStudio as a fallback to the ASP.NET Angular Template in 2.1 when the original method finds a file', () => {
             mockery.resetCache();
-            mockery.registerMock('fs', { statSync: (path: string) => {
-                return true;
-            }});
+            mockery.registerMock('fs', {
+                stat: (path: string, cb) => cb(undefined, true)
+            });
 
             assert.deepEqual(
                 normalized(getSourceMapUtils().applySourceMapPathOverrides('webpack:///./src/app/counter/counter.component.ts', { 'webpack:///./*': testUtils.pathResolve(`${projectFolder}/webRoot/*`) }, true)),

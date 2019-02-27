@@ -4,6 +4,7 @@
 
 import * as os from 'os';
 import * as fs from 'fs';
+import * as util from 'util';
 import * as url from 'url';
 import * as path from 'path';
 import * as glob from 'glob';
@@ -34,6 +35,19 @@ export function getPlatform(): Platform {
 export function existsSync(path: string): boolean {
     try {
         fs.statSync(path);
+        return true;
+    } catch (e) {
+        // doesn't exist
+        return false;
+    }
+}
+
+/**
+ * Node's fs.exists is deprecated, implement it in terms of statSync
+ */
+export async function exists(path: string): Promise<boolean> {
+    try {
+        await util.promisify(fs.stat)(path);
         return true;
     } catch (e) {
         // doesn't exist

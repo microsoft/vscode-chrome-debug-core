@@ -84,7 +84,7 @@ function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): 
  * http://localhost/scripts/code.js => d:/app/scripts/code.js
  * file:///d:/scripts/code.js => d:/scripts/code.js
  */
-export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): string {
+export async function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): Promise<string> {
     if (!aUrl) {
         return '';
     }
@@ -93,12 +93,12 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
     // A remote absolute url (cordova) will still need the logic below.
     const canonicalUrl = utils.canonicalizeUrl(aUrl);
     if (utils.isFileUrl(aUrl)) {
-        if (utils.existsSync(canonicalUrl)) {
+        if (await utils.exists(canonicalUrl)) {
             return canonicalUrl;
         }
 
         const networkPath = utils.fileUrlToNetworkPath(aUrl);
-        if (networkPath !== aUrl && utils.existsSync(networkPath)) {
+        if (networkPath !== aUrl && await utils.exists(networkPath)) {
             return networkPath;
         }
     }
@@ -116,7 +116,7 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
         const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
-        if (utils.existsSync(clientPath)) {
+        if (await utils.exists(clientPath)) {
             return utils.canonicalizeUrl(clientPath);
         }
 

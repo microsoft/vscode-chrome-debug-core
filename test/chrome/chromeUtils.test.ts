@@ -30,7 +30,10 @@ suite('ChromeUtils', () => {
         testUtils.registerWin32Mocks();
         testUtils.registerLocMocks();
 
-        mockery.registerMock('fs', { statSync: () => { } });
+        mockery.registerMock('fs', {
+            statSync: () => { },
+            stat: (path, cb) => cb()
+        });
 
         // Get path with win32 mocks
         path = require('path');
@@ -52,62 +55,63 @@ suite('ChromeUtils', () => {
         const TEST_WEB_ROOT = 'c:\\site';
         const PATH_MAPPING = { '/': TEST_WEB_ROOT };
 
-        test('an empty string is returned for a missing url', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('', PATH_MAPPING), '');
+        test('an empty string is returned for a missing url', async () => {
+            assert.equal(await getChromeUtils().targetUrlToClientPath('', PATH_MAPPING), '');
         });
 
-        test('an empty string is returned when the pathMapping is missing', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, null), '');
+        test('an empty string is returned when the pathMapping is missing', async () => {
+            assert.equal(await getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, null), '');
         });
 
-        test('a url without a path returns an empty string', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com', PATH_MAPPING), '');
+        test('a url without a path returns an empty string', async () => {
+            assert.equal(await getChromeUtils().targetUrlToClientPath('http://site.com', PATH_MAPPING), '');
         });
 
-        test('multiple path parts are handled correctly', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath('http://site.com/foo/bar.js', { '/': 'c:\\site1', '/foo': 'c:\\site2' }), 'c:\\site2\\bar.js');
+        test('multiple path parts are handled correctly', async () => {
+            assert.equal(await getChromeUtils().targetUrlToClientPath('http://site.com/foo/bar.js', { '/': 'c:\\site1', '/foo': 'c:\\site2' }), 'c:\\site2\\bar.js');
         });
 
-        test('it searches the disk for a path that exists, built from the url', () => {
-            const original = fs.statSync;
+        test('it searches the disk for a path that exists, built from the url', async () => {
+            const original = fs.stat;
             try {
-                (fs.statSync as any) = (aPath: string) => {
-                    if (aPath !== TEST_CLIENT_PATH) throw new Error('Not found');
+                (fs.stat as any) = (aPath: string, cb) => {
+                    if (aPath !== TEST_CLIENT_PATH) cb(new Error('Not found'));
+                    cb(undefined, true);
                 };
 
-                assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), TEST_CLIENT_PATH);
+                assert.equal(await getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), TEST_CLIENT_PATH);
             } finally {
-                fs.statSync = original;
+                fs.stat = original;
             }
         });
 
-        test(`returns an empty string when it can't resolve a url`, () => {
-            const original = fs.statSync;
+        test(`returns an empty string when it can't resolve a url`, async () => {
+            const original = fs.stat;
             try {
-                (fs.statSync as any) = (aPath: string) => {
+                (fs.stat as any) = (aPath: string) => {
                     throw new Error('Not found');
                 };
 
-                assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), '');
+                assert.equal(await getChromeUtils().targetUrlToClientPath(TEST_TARGET_HTTP_URL, PATH_MAPPING), '');
             } finally {
-                fs.statSync = original;
+                fs.stat = original;
             }
         });
 
-        test('file:/// urls are returned canonicalized', () => {
-            assert.equal(getChromeUtils().targetUrlToClientPath(TEST_TARGET_LOCAL_URL, PATH_MAPPING), TEST_CLIENT_PATH);
+        test('file:/// urls are returned canonicalized', async () => {
+            assert.equal(await getChromeUtils().targetUrlToClientPath(TEST_TARGET_LOCAL_URL, PATH_MAPPING), TEST_CLIENT_PATH);
         });
 
-        test('uri encodings are fixed for file:/// paths', () => {
+        test('uri encodings are fixed for file:/// paths', async () => {
             const clientPath = 'c:\\project\\path with spaces\\script.js';
-            assert.equal(getChromeUtils().targetUrlToClientPath('file:///' + encodeURI(clientPath), PATH_MAPPING), clientPath);
+            assert.equal(await getChromeUtils().targetUrlToClientPath('file:///' + encodeURI(clientPath), PATH_MAPPING), clientPath);
         });
 
-        test('uri encodings are fixed in URLs', () => {
+        test('uri encodings are fixed in URLs', async () => {
             const pathSegment = 'path with spaces\\script.js';
             const url = 'http:\\' + encodeURIComponent(pathSegment);
 
-            assert.equal(getChromeUtils().targetUrlToClientPath(url, PATH_MAPPING), path.join(TEST_WEB_ROOT, pathSegment));
+            assert.equal(await getChromeUtils().targetUrlToClientPath(url, PATH_MAPPING), path.join(TEST_WEB_ROOT, pathSegment));
         });
     });
 
