@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as Validation from '../../../validation';
-import * as utils from '../../../utils';
 import { IScript, Script } from '../scripts/script';
 import { ISource, isSource } from '../sources/source';
 import { ILoadedSource, isLoadedSource } from '../sources/loadedSource';

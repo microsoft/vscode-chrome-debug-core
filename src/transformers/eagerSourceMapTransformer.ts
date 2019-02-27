@@ -9,6 +9,7 @@ import { BaseSourceMapTransformer } from './baseSourceMapTransformer';
 import { ILaunchRequestArgs, IAttachRequestArgs } from '../debugAdapterInterfaces';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
+import { SourceMap } from '../sourceMaps/sourceMap';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because
@@ -41,7 +42,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
         }
     }
 
-    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void> {
+    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void | SourceMap> {
         return this.findSourceMapUrlInFile(generatedScriptPath)
             .then(uri => {
                 if (uri) {
