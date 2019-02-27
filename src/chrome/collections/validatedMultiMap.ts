@@ -4,10 +4,11 @@
 
 import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';
+import { ValidatedSet, IValidatedSet } from './validatedSet';
 
 /** A multi map that throws exceptions instead of returning error codes. */
 export class ValidatedMultiMap<K, V> {
-    private readonly _wrappedMap: ValidatedMap<K, Set<V>>;
+    private readonly _wrappedMap: ValidatedMap<K, IValidatedSet<V>>;
 
     public get keysSize(): number {
         return this._wrappedMap.size;
@@ -18,9 +19,12 @@ export class ValidatedMultiMap<K, V> {
     }
 
     constructor(initialContents?: Map<K, Set<V>> | Iterable<[K, Set<V>]> | ReadonlyArray<[K, Set<V>]>) {
+        const elements = initialContents
+            ? Array.from(initialContents).map(element => <[K, IValidatedSet<V>]>[element[0], new ValidatedSet(element[1])])
+            : null;
         this._wrappedMap = initialContents instanceof Map
-            ? new ValidatedMap<K, Set<V>>(initialContents.entries())
-            : new ValidatedMap<K, Set<V>>(initialContents);
+            ? new ValidatedMap<K, IValidatedSet<V>>(elements)
+            : new ValidatedMap<K, IValidatedSet<V>>(elements);
     }
 
     public clear(): void {
@@ -39,6 +43,10 @@ export class ValidatedMultiMap<K, V> {
         return this._wrappedMap.get(key);
     }
 
+    public getOr(key: K, elementDoesntExistAction: () => Set<V>): Set<V> {
+        return this._wrappedMap.getOr(key, () => new ValidatedSet(elementDoesntExistAction()));
+    }
+
     public has(key: K): boolean {
         return this._wrappedMap.has(key);
     }
@@ -46,7 +54,7 @@ export class ValidatedMultiMap<K, V> {
     public addKeyIfNotExistant(key: K): this {
         const existingValues = this._wrappedMap.tryGetting(key);
         if (existingValues === undefined) {
-            this._wrappedMap.set(key, new Set());
+            this._wrappedMap.set(key, new ValidatedSet());
         }
 
         return this;
@@ -57,22 +65,38 @@ export class ValidatedMultiMap<K, V> {
         if (existingValues !== undefined) {
             existingValues.add(value);
         } else {
-            this._wrappedMap.set(key, new Set([value]));
+            this._wrappedMap.set(key, new ValidatedSet([value]));
         }
         return this;
     }
 
-    public remove(key: K, value: V): this {
+    public addAndIgnoreDuplicates(key: K, value: V): this {
+        const existingValues = this._wrappedMap.tryGetting(key);
+        if (existingValues !== undefined) {
+            existingValues.addOrReplaceIfExists(value);
+        } else {
+            this._wrappedMap.set(key, new ValidatedSet([value]));
+        }
+        return this;
+    }
+
+    public removeValueAndIfLastRemoveKey(key: K, value: V): this {
+        const remainingValues = this.removeValue(key, value);
+
+        if (remainingValues.size === 0) {
+            this._wrappedMap.delete(key);
+        }
+
+        return this;
+    }
+
+    public removeValue(key: K, value: V): Set<V> {
         const existingValues = this._wrappedMap.get(key);
         if (!existingValues.delete(value)) {
             throw new Error(`Failed to delete the value ${value} under key ${key} because it wasn't present`);
         }
 
-        if (existingValues.size === 0) {
-            this._wrappedMap.delete(key);
-        }
-
-        return this;
+        return existingValues;
     }
 
     [Symbol.iterator](): IterableIterator<[K, Set<V>]> {

@@ -1,98 +1,100 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
-
-import * as fs from 'fs';
-import {
-    ILoadedSource, MappedSource, ScriptRunFromLocalStorage, DynamicScript,
-    ScriptRuntimeSource, ScriptDevelopmentSource, NoURLScriptSource
-} from '../sources/loadedSource';
+import { ILoadedSource } from '../sources/loadedSource';
+import { IdentifiedLoadedSource } from '../sources/identifiedLoadedSource';
+import { UnidentifiedLoadedSource } from '../sources/unidentifiedLoadedSource';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { printArray } from '../../collections/printing';
-import { ISourcesMapper } from './sourcesMapper';
-import { IResourceIdentifier, IResourceLocation, newResourceIdentifierMap, parseResourceIdentifier, ResourceName } from '../sources/resourceIdentifier';
+import { ISourceMapper } from './sourcesMapper';
+import { IResourceIdentifier, newResourceIdentifierMap, ResourceName } from '../sources/resourceIdentifier';
 import { IExecutionContext } from './executionContext';
 import { IEquivalenceComparable } from '../../utils/equivalence';
+import { RangeInResource } from '../locations/rangeInScript';
+import _ = require('lodash');
+
+/**
+ * Multiplicity:
+ *   Scripts N [HTMLFile or MultipleTimesLoaded] ... 1 RuntimeSource(LoadedSource)(URLs)
+ *   RuntimeSource(LoadedSource)(URLs) N ... 1 DevelopmentSource(LoadedSource)
+ *   DevelopmentSource(LoadedSource) N ... M MappedSource(LoadedSource)
+ *
+ * --- Details ---
+ * Scripts N [HTMLFile or MultipleTimesLoaded] ... 1 RuntimeSource(LoadedSource)(URLs)
+ *   RuntimeSource(LoadedSource)(URLs) can have N Scripts if it's an .html file with multiple scripts or multiple event handlers
+ *   RuntimeSource(LoadedSource)(URLs) can have N Scripts if the same script was loaded multiple times (We've seen this happen in Node when the require cache is deleted)
+ *
+ * RuntimeSource(LoadedSource)(URLs) N ... 1 DevelopmentSource(LoadedSource)
+ * DevelopmentSource(LoadedSource) can be associated with multiple RuntimeSource(LoadedSource)(URLs) if the web-server severs the same file from multiple URLs
+ *
+ * DevelopmentSource(LoadedSource) N ... M MappedSource(LoadedSource)
+ * DevelopmentSource(LoadedSource) can be associated with multiple MappedSource(LoadedSource) if files were bundled or compiled with TypeScript bundling option
+ * MappedSource(LoadedSource) can be associated with multiple DevelopmentSource(LoadedSource) if the same typescript file gets bundled into different javascript files
+ *
+ * Additional notes:
+ * It's extremelly unlikely, but it's possible for a .js file to be the MappedSource of a Script A, the RuntimeSource of a different script B, and the DevelopmentSource for a different script C
+ */
 
 /**
  * This interface represents a piece of code that is being executed in the debuggee. Usually a script matches to a file or a url, but that is not always the case.
  * This interface solves the problem of finding the different loaded sources associated with a script, and being able to identify and compare both scripts and sources easily.
  */
+const ImplementsScript = Symbol();
 export interface IScript extends IEquivalenceComparable {
+    [ImplementsScript]: string;
+
     readonly executionContext: IExecutionContext;
     readonly runtimeSource: ILoadedSource<CDTPScriptUrl>; // Source in Webserver
+    readonly rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>; // Range in runtimeSource (e.g.: In an .html file with inline scripts one script might start in line 10, and another one in line 20)
+
     readonly developmentSource: ILoadedSource; // Source in Workspace
-    readonly mappedSources: MappedSource[]; // Sources before compilation
+    readonly mappedSources: IdentifiedLoadedSource[]; // Sources before compilation
     readonly allSources: ILoadedSource[]; // runtimeSource + developmentSource + mappedSources
     readonly url: CDTPScriptUrl;
 
-    readonly sourcesMapper: ISourcesMapper; // TODO DIEGO: See if we can delete this property
+    readonly sourceMapper: ISourceMapper;
 
     getSource(sourceIdentifier: IResourceIdentifier): ILoadedSource;
 
     isEquivalentTo(script: IScript): boolean;
 }
 
+export function isScript(object: unknown): object is IScript {
+    return !!(<any>object)[ImplementsScript];
+}
+
 export class Script implements IScript {
-    private readonly _runtimeSource: ILoadedSource<CDTPScriptUrl>;
-    private readonly _developmentSource: ILoadedSource;
-    private readonly _compiledSources: IValidatedMap<IResourceIdentifier, MappedSource>;
+    public [ImplementsScript] = 'IScript';
 
-    public static create(executionContext: IExecutionContext, locationInRuntimeEnvironment: IResourceLocation<CDTPScriptUrl>, locationInDevelopmentEnvinronment: IResourceLocation,
-        sourcesMapper: ISourcesMapper): Script {
-        const mappedSources = (script: IScript) => newResourceIdentifierMap<MappedSource>(sourcesMapper.sources.map(path => {
-            const identifier = parseResourceIdentifier(path);
-            return [identifier, new MappedSource(script, identifier, 'TODO DIEGO')] as [IResourceIdentifier, MappedSource];
-        }));
+    private readonly _compiledSources: IValidatedMap<IResourceIdentifier, IdentifiedLoadedSource>;
+    public readonly runtimeSource: ILoadedSource<CDTPScriptUrl>;
+    public readonly rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>;
+    public readonly developmentSource: ILoadedSource;
+    public readonly sourceMapper: ISourceMapper;
 
-        /**
-         * Loaded Source classification:
-         * Is the script content available on a single place, or two places? (e.g.: You can find similar scripts in multiple different paths)
-         *  1. Single: Is the single place on the user workspace, or is this a dynamic script?
-         *      Single path on storage: RuntimeScriptRunFromStorage
-         *      Single path not on storage: DynamicRuntimeScript
-         *  2. Two: We assume one path is from the webserver, and the other path is in the workspace: RuntimeScriptWithSourceOnWorkspace
-         */
-        let runtimeSource: (script: IScript) => ILoadedSource<CDTPScriptUrl>;
-        let developmentSource: (script: IScript) => ILoadedSource;
-        if (locationInDevelopmentEnvinronment.isEquivalentTo(locationInRuntimeEnvironment) || locationInDevelopmentEnvinronment.textRepresentation === '') {
-            if (fs.existsSync(locationInRuntimeEnvironment.textRepresentation)) {
-                developmentSource = runtimeSource = (script: IScript) =>
-                    new ScriptRunFromLocalStorage(script, locationInRuntimeEnvironment, 'TODO DIEGO');
-            } else {
-                developmentSource = runtimeSource = (script: IScript) =>
-                    new DynamicScript(script, locationInRuntimeEnvironment, 'TODO DIEGO');
-            }
-        } else {
-            // The script is served from one location, and it's on the workspace on a different location
-            runtimeSource = script => new ScriptRuntimeSource(script, locationInRuntimeEnvironment, 'TODO DIEGO');
-            developmentSource = script => new ScriptDevelopmentSource(script, locationInDevelopmentEnvinronment, 'TODO DIEGO');
-        }
-        return new Script(executionContext, runtimeSource, developmentSource, mappedSources, sourcesMapper);
+    public static create(executionContext: IExecutionContext, runtimeSource: ILoadedSource<CDTPScriptUrl>, developmentSource: ILoadedSource,
+        sourcesMapperProvider: (script: IScript) => ISourceMapper, mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
+        return new Script(executionContext, () => runtimeSource, () => developmentSource, mappedSourcesProvider, sourcesMapperProvider, () => rangeInSource);
     }
 
-    public static createEval(executionContext: IExecutionContext, name: ResourceName<CDTPScriptUrl>, sourcesMapper: ISourcesMapper): Script {
-        let getNoURLScript = (script: IScript) => new NoURLScriptSource(script, name, 'TODO DIEGO');
-        return new Script(executionContext, getNoURLScript, getNoURLScript, _ => new Map<IResourceIdentifier, MappedSource>(), sourcesMapper);
+    public static createWithUnidentifiedSource(name: ResourceName<CDTPScriptUrl>, executionContext: IExecutionContext, sourcesMapperProvider: (script: IScript) => ISourceMapper,
+        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
+
+        // We use memoize to ensure that the function returns always the same instance for the same script, so the runtime source and the development source will be the same object/identity
+        const sourceProvider = _.memoize((script: IScript) => new UnidentifiedLoadedSource(script, name, "source for the script from the debugging engine, because the script doesn't have an url"));
+        return new Script(executionContext, sourceProvider, sourceProvider, mappedSourcesProvider, sourcesMapperProvider, rangeInSource);
     }
 
-    constructor(public readonly executionContext: IExecutionContext, getRuntimeSource: (script: IScript) => ILoadedSource<CDTPScriptUrl>, getDevelopmentSource: (script: IScript) => ILoadedSource,
-        getCompiledScriptSources: (script: IScript) => Map<IResourceIdentifier, MappedSource>, public readonly sourcesMapper: ISourcesMapper) {
-        this._runtimeSource = getRuntimeSource(this);
-        this._developmentSource = getDevelopmentSource(this);
-        this._compiledSources = newResourceIdentifierMap(getCompiledScriptSources(this));
+    constructor(public readonly executionContext: IExecutionContext, runtimeSourceProvider: (script: IScript) => ILoadedSource<CDTPScriptUrl>, developmentSourceProvider: (script: IScript) => ILoadedSource,
+        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], sourceMapperProvider: (script: IScript) => ISourceMapper,
+        rangeInSourceProvider: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>) {
+        this.runtimeSource = runtimeSourceProvider(this);
+        this.developmentSource = developmentSourceProvider(this);
+        this.rangeInSource = rangeInSourceProvider(this.runtimeSource);
+        this.sourceMapper = sourceMapperProvider(this);
+        const pathsAndMappedSources = mappedSourcesProvider(this).map(mappedSource => [mappedSource.identifier, mappedSource] as [IResourceIdentifier, IdentifiedLoadedSource]);
+        this._compiledSources = newResourceIdentifierMap(pathsAndMappedSources);
     }
 
-    public get developmentSource(): ILoadedSource {
-        return this._developmentSource;
-    }
-
-    public get runtimeSource(): ILoadedSource<CDTPScriptUrl> {
-        return this._runtimeSource;
-    }
-
-    public get mappedSources(): MappedSource[] {
+    public get mappedSources(): IdentifiedLoadedSource[] {
         return Array.from(this._compiledSources.values());
     }
 
@@ -110,15 +112,18 @@ export class Script implements IScript {
     }
 
     public get url(): CDTPScriptUrl {
-        return this._runtimeSource.identifier.textRepresentation;
+        return this.runtimeSource.identifier.textRepresentation;
     }
 
     public isEquivalentTo(script: Script): boolean {
         return this === script;
     }
 
+    public toDetailedString(): string {
+        return `Script(${this.runtimeSource} or ${this.developmentSource}) ${printArray(' --> ', this.mappedSources)}`;
+    }
+
     public toString(): string {
-        return `Script:\n  Runtime source: ${this.runtimeSource}\n  Development source: ${this.developmentSource}\n`
-            + printArray('  Sources of compiledsource', this.mappedSources);
+        return `${this.runtimeSource}` + (!this.rangeInSource.start.position.isOrigin() ? `<${this.rangeInSource.start.position}>` : ``);
     }
 }

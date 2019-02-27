@@ -1,13 +1,13 @@
-import { Location, ScriptOrSourceOrURLOrURLRegexp, LocationInScript, LocationInUrlRegexp, LocationInUrl } from '../locations/location';
+import { Location, ScriptOrSourceOrURLOrURLRegexp, LocationInScript, LocationInUrlRegexp, LocationInUrl, LocationInLoadedSource } from '../locations/location';
 import { IBPActionWhenHit } from './bpActionWhenHit';
 import { BaseBPRecipe, IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IScript } from '../scripts/script';
 import { createURLRegexp, URLRegexp } from '../locations/subtypes';
-import { utils } from '../../..';
 import { IURL } from '../sources/resourceIdentifier';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
+import * as utils from '../../../utils';
 
 export interface IMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit>
     extends IBPRecipe<TResource, TBPActionWhenHit> {
@@ -41,13 +41,23 @@ abstract class BaseMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRege
 }
 
 export class BPRecipeInLoadedSource<TBPActionWhenHit extends IBPActionWhenHit> extends BaseMappedBPRecipe<ILoadedSource, TBPActionWhenHit>  {
-    public mappedToScript(): BPRecipeInScript {
-        return new BPRecipeInScript(this.unmappedBPRecipe, this.location.mappedToScript());
+    public mappedToScript(): BPRecipeInScript[] {
+        return this.location.mappedToScript().map(location => new BPRecipeInScript(this.unmappedBPRecipe, location));
     }
 }
 
-export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupportedHitActions> {
+export interface IBPRecipeForRuntimeSource<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit>
+    extends IMappedBPRecipe<TResource, TBPActionWhenHit> {
+    readonly runtimeSourceLocation: LocationInLoadedSource; // We use this to compare whether a breakpoint recipe was set already, to easily determine if we had already set this same url before or not
+}
+
+export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupportedHitActions>
+    implements IBPRecipeForRuntimeSource<IScript, BPInScriptSupportedHitActions> {
     private static nextBPGuid = 89000000;
+
+    public get runtimeSourceLocation(): LocationInLoadedSource {
+        return this.location.mappedToRuntimeSource();
+    }
 
     /**
      * We use CDTP.getPossibleBreakpoints to find the best position to set a breakpoint. We use withLocationReplaced to get a new
@@ -62,14 +72,35 @@ export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupp
      */
     public mappedToUrlRegexp(): BPRecipeInUrlRegexp {
         const urlRegexp = createURLRegexp(utils.pathToRegex(this.location.script.url, `${BPRecipeInScript.nextBPGuid++}`));
-        return new BPRecipeInUrlRegexp(this.unmappedBPRecipe, new LocationInUrlRegexp(urlRegexp, this.location.position));
+        return new BPRecipeInUrlRegexp(this.unmappedBPRecipe, new LocationInUrlRegexp(urlRegexp, this.location.position), this.runtimeSourceLocation);
     }
 
     public mappedToUrl(): BPRecipeInUrl {
         const url = this.location.script.runtimeSource.identifier;
-        return new BPRecipeInUrl(this.unmappedBPRecipe, new LocationInUrl(url, this.location.position));
+        return new BPRecipeInUrl(this.unmappedBPRecipe, new LocationInUrl(url, this.location.position), this.runtimeSourceLocation);
+    }
+
+    public mappedToRuntimeSource(): BPRecipeInLoadedSource<BPInScriptSupportedHitActions> {
+        return new BPRecipeInLoadedSource(this.unmappedBPRecipe, this.location.mappedToRuntimeSource());
     }
 }
 
-export class BPRecipeInUrl extends BaseMappedBPRecipe<IURL<CDTPScriptUrl>, BPInScriptSupportedHitActions> { }
-export class BPRecipeInUrlRegexp extends BaseMappedBPRecipe<URLRegexp, BPInScriptSupportedHitActions> { }
+export class BPRecipeInUrl extends BaseMappedBPRecipe<IURL<CDTPScriptUrl>, BPInScriptSupportedHitActions>
+    implements IBPRecipeForRuntimeSource<IURL<CDTPScriptUrl>, BPInScriptSupportedHitActions> {
+    public constructor(
+        unmappedBPRecipe: BPRecipeInSource,
+        location: LocationInUrl,
+        public readonly runtimeSourceLocation: LocationInLoadedSource) {
+        super(unmappedBPRecipe, location);
+    }
+
+}
+export class BPRecipeInUrlRegexp extends BaseMappedBPRecipe<URLRegexp, BPInScriptSupportedHitActions>
+    implements IBPRecipeForRuntimeSource<URLRegexp, BPInScriptSupportedHitActions> {
+    public constructor(
+        unmappedBPRecipe: BPRecipeInSource,
+        location: LocationInUrlRegexp,
+        public readonly runtimeSourceLocation: LocationInLoadedSource) {
+        super(unmappedBPRecipe, location);
+    }
+}

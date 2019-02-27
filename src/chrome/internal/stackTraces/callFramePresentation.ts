@@ -8,7 +8,6 @@ import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame } from './callFrame';
 import { CallFramePresentationHint, IStackTracePresentationRow } from './stackTracePresentationRow';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { IScript } from '../scripts/script';
 
 export type SourcePresentationHint = 'normal' | 'emphasize' | 'deemphasize';
 
@@ -48,7 +47,7 @@ export class CallFramePresentation implements IStackTracePresentationRow {
     public get description(): string {
         const location = this.callFrame.location;
 
-        let formattedDescription = functionDescription(this.callFrame.codeFlow.functionName, location.source.script);
+        let formattedDescription = functionDescription(this.callFrame.codeFlow.functionName, location.source);
 
         if (this._descriptionFormatArgs) {
             if (this._descriptionFormatArgs.module) {
@@ -71,10 +70,10 @@ export class CallFramePresentation implements IStackTracePresentationRow {
     }
 }
 
-export function functionDescription(functionName: string | undefined, functionModule: IScript): string {
+export function functionDescription(functionName: string | undefined, functionModule: ILoadedSource): string {
     if (functionName) {
         return functionName;
-    } else if (functionModule.runtimeSource.doesScriptHasUrl()) {
+    } else if (functionModule.doesScriptHasUrl()) {
         return '(anonymous function)';
     } else {
         return '(eval code)';

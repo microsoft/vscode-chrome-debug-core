@@ -10,10 +10,11 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { IScript } from '../scripts/script';
 
-// TODO: Delete this and use the proper interface
+// TODO: Remove next line and use the import instead
 interface IScriptParsedEvent {
-    script: IScript;
+    readonly script: IScript;
 }
+// import { IScriptParsedEvent } from '../../cdtpDebuggee/eventsProviders/cdtpOnScriptParsedEventProvider';
 
 export interface IEventsConsumedBySourceResolver {
     onScriptParsed(listener: (scriptEvent: IScriptParsedEvent) => Promise<void>): void;
@@ -50,7 +51,8 @@ export class SourceResolver implements IComponent {
     public install(): this {
         this._dependencies.onScriptParsed(async params => {
             params.script.allSources.forEach(source => {
-                this._pathToSource.set(source.identifier, source);
+                // The same file can be loaded as a script twice, and different scripts can share the same mapped source, so we ignore exact duplicates
+                this._pathToSource.setAndIgnoreDuplicates(source.identifier, source, (left, right) => left.isEquivalentTo(right));
             });
         });
 

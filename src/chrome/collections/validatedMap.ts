@@ -5,10 +5,14 @@
 import { printMap } from './printing';
 import { breakWhileDebugging } from '../../validation';
 
+export type ValueComparerFunction<V> = (left: V, right: V) => boolean;
+
 export interface IValidatedMap<K, V> extends Map<K, V> {
     tryGetting(key: K): V | undefined;
+    getOr(key: K, elementDoesntExistAction: () => V): V;
     getOrAdd(key: K, obtainValueToAdd: () => V): V;
     setAndReplaceIfExist(key: K, value: V): this;
+    setAndIgnoreDuplicates(key: K, value: V, comparer?: ValueComparerFunction<V>): this;
 }
 
 /** A map that throws exceptions instead of returning error codes. */
@@ -55,15 +59,21 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
         return value;
     }
 
-    public getOrAdd(key: K, obtainValueToAdd: () => V): V {
+    public getOr(key: K, elementDoesntExistAction: () => V): V {
         const existingValue = this.tryGetting(key);
         if (existingValue !== undefined) {
             return existingValue;
         } else {
+            return elementDoesntExistAction();
+        }
+    }
+
+    public getOrAdd(key: K, obtainValueToAdd: () => V): V {
+        return this.getOr(key, () => {
             const newValue = obtainValueToAdd();
             this.set(key, newValue);
             return newValue;
-        }
+        });
     }
 
     public has(key: K): boolean {
@@ -82,6 +92,16 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public setAndReplaceIfExist(key: K, value: V): this {
         this._wrappedMap.set(key, value);
         return this;
+    }
+
+    public setAndIgnoreDuplicates(key: K, value: V, comparer: ValueComparerFunction<V> = (left, right) => left === right) {
+        const existingValueOrUndefined = this.tryGetting(key);
+        if (existingValueOrUndefined !== undefined && !comparer(existingValueOrUndefined, value)) {
+            breakWhileDebugging();
+            throw new Error(`Cannot set key ${key} for value ${value} because it already exists and it's associated to a different value: ${existingValueOrUndefined}`);
+        }
+
+        return this.setAndReplaceIfExist(key, value);
     }
 
     [Symbol.iterator](): IterableIterator<[K, V]> {
@@ -107,5 +127,9 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     public toString(): string {
         return printMap('ValidatedMap', this);
+    }
+
+    public static with<K, V>(key: K, value: V): ValidatedMap<K, V> {
+        return new ValidatedMap<K, V>([[key, value]]);
     }
 }

@@ -5,6 +5,7 @@
 import * as assert from 'assert';
 import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';
+import { breakWhileDebugging } from '../../validation';
 
 /** A map where we can efficiently get the key from the value or the value from the key */
 export class BidirectionalMap<Left, Right> {
@@ -74,10 +75,12 @@ export class BidirectionalMap<Left, Right> {
         const existingLeftForRight = this._rightToLeft.tryGetting(right);
 
         if (existingRightForLeft !== undefined) {
+            breakWhileDebugging();
             throw new Error(`Can't set the pair left (${left}) and right (${right}) because there is already a right element (${existingRightForLeft}) associated with the left element`);
         }
 
         if (existingLeftForRight !== undefined) {
+            breakWhileDebugging();
             throw new Error(`Can't set the pair left (${left}) and right (${right}) because there is already a left element (${existingLeftForRight}) associated with the right element`);
         }
 

@@ -44,6 +44,10 @@ export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
     public get columnNumber(): number {
         return this.location.position.columnNumber;
     }
+
+    public toString(): string {
+        return `${this.functionName} at ${this.location}`;
+    }
 }
 
 /**
@@ -107,6 +111,10 @@ export class ScriptCallFrame extends BaseCallFrame<IScript> {
     public mappedToSource(): LoadedSourceCallFrame {
         const codeFlow = new CodeFlowFrame<ILoadedSource>(this.index, this.codeFlow.functionName, this.location.mappedToSource());
         return new LoadedSourceCallFrame(this, codeFlow);
+    }
+
+    public toString(): string {
+        return `${this.codeFlow}`;
     }
 }
 
