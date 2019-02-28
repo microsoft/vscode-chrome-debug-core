@@ -116,7 +116,7 @@ export async function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapp
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
         const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
-        if (await utils.exists(clientPath)) {
+        if (clientPath && await utils.exists(clientPath)) {
             return utils.canonicalizeUrl(clientPath);
         }
 
