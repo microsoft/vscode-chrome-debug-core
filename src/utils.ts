@@ -43,7 +43,7 @@ export function existsSync(path: string): boolean {
 }
 
 /**
- * Node's fs.exists is deprecated, implement it in terms of statSync
+ * Node's fs.exists is deprecated, implement it in terms of stat
  */
 export async function exists(path: string): Promise<boolean> {
     try {
