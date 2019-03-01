@@ -22,8 +22,10 @@ export interface IDebugeeRuntimeVersionProvider {
     componentVersions(): Promise<CDTPComponentsVersions>;
 }
 
-/// TODO: Move this to a browser-shared package
-/// TODO: Update this so we automatically try to use ChromeConnection.version first, and then fallback to this if neccesary
+/**
+ * TODO: Move this to a browser-shared package
+ * TODO: Update this so we automatically try to use ChromeConnection.version first, and then fallback to this if neccesary
+ */
 @injectable()
 export class CDTPDebugeeRuntimeVersionProvider implements IDebugeeRuntimeVersionProvider {
     protected api = this._protocolApi.Browser;

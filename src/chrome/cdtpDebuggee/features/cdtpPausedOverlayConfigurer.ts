@@ -12,7 +12,9 @@ export interface IPausedOverlayConfigurer {
     setPausedInDebuggerMessage(params: CDTP.Overlay.SetPausedInDebuggerMessageRequest): Promise<void>;
 }
 
-// TODO: Move this to a browser shared package
+/**
+ * TODO: Move this to a browser shared package
+ */
 export class CDTPPausedOverlayConfigurer extends CDTPEnableableDiagnosticsModule<CDTP.OverlayApi> implements IPausedOverlayConfigurer {
     protected readonly api = this._protocolApi.Overlay;
 

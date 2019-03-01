@@ -14,6 +14,8 @@ import { asyncMap } from '../../collections/async';
 export class CDTPStackTraceParser {
     private readonly _cdtpLocationParser = new CDTPLocationParser(this._scriptsRegistry);
 
+    constructor(private _scriptsRegistry: CDTPScriptsRegistry) { }
+
     public async toStackTraceCodeFlow(stackTrace: CDTP.Runtime.StackTrace): Promise<CodeFlowStackTrace> {
         return {
             codeFlowFrames: await asyncMap(stackTrace.callFrames, (callFrame, index) => this.runtimeCallFrameToCodeFlowFrame(index, callFrame)),
@@ -30,6 +32,4 @@ export class CDTPStackTraceParser {
         const scriptLocation = await this._cdtpLocationParser.getLocationInScript(location);
         return new CodeFlowFrame(index, callFrame.functionName, scriptLocation);
     }
-
-    constructor(private _scriptsRegistry: CDTPScriptsRegistry) { }
 }

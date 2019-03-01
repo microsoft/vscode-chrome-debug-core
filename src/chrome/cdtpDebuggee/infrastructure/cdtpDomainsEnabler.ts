@@ -35,6 +35,8 @@ class EnableDomainFunctionAndResultPromise<EnableResponse> {
 class GatheringDomainsToEnableDuringStartup implements IState {
     private readonly _registeredDomains = new ValidatedMap<IEnableableApi<unknown, unknown>, EnableDomainFunctionAndResultPromise<any>>();
 
+    constructor(@inject(TYPES.CDTPClient) protected readonly protocolApi: CDTP.ProtocolApi) { }
+
     public async enableDomains(): Promise<IState> {
         const entries = Array.from(this._registeredDomains.entries());
         await asyncMap(entries, async pair => this.executeEnable(pair[0], pair[1]));
@@ -75,8 +77,6 @@ class GatheringDomainsToEnableDuringStartup implements IState {
     private getDomainName(api: IEnableableApi<unknown, unknown>): string {
         return _.findKey(this.protocolApi, api);
     }
-
-    constructor(@inject(TYPES.CDTPClient) protected readonly protocolApi: CDTP.ProtocolApi) { }
 }
 
 class DomainsAlreadyEnabledAfterStartup implements IState {
@@ -94,6 +94,8 @@ class DomainsAlreadyEnabledAfterStartup implements IState {
 export class CDTPDomainsEnabler implements IDomainsEnabler {
     private _state: IState = new GatheringDomainsToEnableDuringStartup(this._protocolApi);
 
+    constructor(@inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi) { }
+
     public registerToEnable<T extends IEnableableApi<EnableParameters, EnableResponse>, EnableParameters, EnableResponse>
         (api: T, parameters: EnableParameters): Promise<EnableResponse> {
         return this._state.registerToEnable(api, parameters);
@@ -102,6 +104,4 @@ export class CDTPDomainsEnabler implements IDomainsEnabler {
     public async enableDomains(): Promise<void> {
         this._state = await this._state.enableDomains();
     }
-
-    constructor(@inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi) { }
 }

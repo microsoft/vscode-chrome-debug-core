@@ -16,13 +16,13 @@ export interface IEnableableApi<EnableParameters = void, EnableResponse = void> 
 export abstract class CDTPEnableableDiagnosticsModule<T extends IEnableableApi<EnableParameters, EnableResponse>, EnableParameters = void, EnableResponse = void> {
     protected abstract get api(): T;
 
+    constructor(private readonly _domainsEnabler: CDTPDomainsEnabler) { }
+
     public enable(): EnableParameters extends void ? Promise<EnableResponse> : never;
     public enable(parameters: EnableParameters): Promise<EnableResponse>;
     public async enable(parameters?: EnableParameters): Promise<EnableResponse> {
         return await this._domainsEnabler.registerToEnable<T, EnableParameters, EnableResponse>(this.api, parameters);
     }
-
-    constructor(private readonly _domainsEnabler: CDTPDomainsEnabler) { }
 }
 
 @injectable()

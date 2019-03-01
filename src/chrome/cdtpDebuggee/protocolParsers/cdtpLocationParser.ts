@@ -19,6 +19,8 @@ interface IHasScript {
 export interface IHasScriptLocation extends IHasCoordinates, IHasScript { }
 
 export class CDTPLocationParser {
+    constructor(private _scriptsRegistry: CDTPScriptsRegistry) { }
+
     public async getLocationInScript(crdpObjectWithScriptLocation: IHasScriptLocation): Promise<LocationInScript> {
         return new LocationInScript(await this._scriptsRegistry.getScriptByCdtpId(crdpObjectWithScriptLocation.scriptId),
             this.getCoordinates(crdpObjectWithScriptLocation));
@@ -27,6 +29,4 @@ export class CDTPLocationParser {
     private getCoordinates(crdpObjectWithCoordinates: IHasCoordinates): Position {
         return new Position(createLineNumber(crdpObjectWithCoordinates.lineNumber), createColumnNumber(crdpObjectWithCoordinates.columnNumber));
     }
-
-    constructor(private _scriptsRegistry: CDTPScriptsRegistry) { }
 }

@@ -10,10 +10,8 @@ import { createCDTPScriptUrl, CDTPScriptUrl } from '../../internal/sources/resou
 import { MappedSourcesMapper, IMappedSourcesMapper, NoMappedSourcesMapper } from '../../internal/scripts/sourcesMapper';
 import { IResourceIdentifier, ResourceName, parseResourceIdentifier } from '../../internal/sources/resourceIdentifier';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { CDTPStackTraceParser } from '../protocolParsers/cdtpStackTraceParser';
 import { inject } from 'inversify';
 import { integer } from '../cdtpPrimitives';
-import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrace';
 import { IExecutionContext } from '../../internal/scripts/executionContext';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { LoadedSourcesRegistry } from '../registries/loadedSourcesRegistry';
@@ -39,14 +37,12 @@ export interface IScriptParsedEvent {
     readonly endLine: integer;
     readonly endColumn: integer;
     readonly executionContext: IExecutionContext;
-    readonly hash: string;
     readonly executionContextAuxData?: any;
     readonly isLiveEdit?: boolean;
     readonly sourceMapURL?: string;
     readonly hasSourceURL?: boolean;
     readonly isModule?: boolean;
     readonly length?: integer;
-    readonly stackTrace?: CodeFlowStackTrace;
 }
 
 export class ScriptParsedEvent implements IScriptParsedEvent {
@@ -57,14 +53,12 @@ export class ScriptParsedEvent implements IScriptParsedEvent {
     public readonly endLine: integer;
     public readonly endColumn: integer;
     public readonly executionContext: IExecutionContext;
-    public readonly hash: string;
     public readonly executionContextAuxData?: any;
     public readonly isLiveEdit?: boolean;
     public readonly sourceMapURL?: string;
     public readonly hasSourceURL?: boolean;
     public readonly isModule?: boolean;
     public readonly length?: integer;
-    public readonly stackTrace?: CodeFlowStackTrace;
 
     public constructor(parsedEvent: IScriptParsedEvent) {
         this.script = parsedEvent.script;
@@ -74,14 +68,12 @@ export class ScriptParsedEvent implements IScriptParsedEvent {
         this.endLine = parsedEvent.endLine;
         this.endColumn = parsedEvent.endColumn;
         this.executionContext = parsedEvent.executionContext;
-        this.hash = parsedEvent.hash;
         this.executionContextAuxData = parsedEvent.executionContextAuxData;
         this.isLiveEdit = parsedEvent.isLiveEdit;
         this.sourceMapURL = parsedEvent.sourceMapURL;
         this.hasSourceURL = parsedEvent.hasSourceURL;
         this.isModule = parsedEvent.isModule;
         this.length = parsedEvent.length;
-        this.stackTrace = parsedEvent.stackTrace;
     }
 
     public toString() {
@@ -98,13 +90,7 @@ export interface IScriptParsedProvider {
 export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.DebuggerApi, void, CDTP.Debugger.EnableResponse> implements IScriptParsedProvider {
     protected readonly api = this._protocolApi.Debugger;
 
-    private readonly _stackTraceParser = new CDTPStackTraceParser(this._scriptsRegistry);
-
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: CDTP.Debugger.ScriptParsedEvent) => {
-        // The stack trace and hash can be large and the DA doesn't need it.
-        delete params.stackTrace;
-        delete params.hash;
-
         const creator = !!params.url ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
         await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
 
@@ -125,6 +111,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     private async toScriptParsedEvent(params: CDTP.Debugger.ScriptParsedEvent): Promise<IScriptParsedEvent> {
         const executionContext = this._scriptsRegistry.getExecutionContextById(params.executionContextId);
 
+        // The stack trace and hash can be large and the DA doesn't need it, so we don't use those properties
         return new ScriptParsedEvent(
             {
                 url: params.url,
@@ -133,15 +120,13 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
                 endLine: params.endLine,
                 endColumn: params.endColumn,
                 executionContext: executionContext,
-                hash: params.hash,
                 executionContextAuxData: params.executionContextAuxData,
                 isLiveEdit: params.isLiveEdit,
                 sourceMapURL: params.sourceMapURL,
                 hasSourceURL: params.hasSourceURL,
                 isModule: params.isModule,
                 length: params.length,
-                script: await this._scriptsRegistry.getScriptByCdtpId(params.scriptId),
-                stackTrace: params.stackTrace && await this._stackTraceParser.toStackTraceCodeFlow(params.stackTrace)
+                script: await this._scriptsRegistry.getScriptByCdtpId(params.scriptId)
             });
     }
 }
@@ -162,8 +147,8 @@ abstract class ScriptCreator {
 
         const script = await this._scriptsRegistry.registerScript(this._scriptParsedEvent.scriptId, async () => {
             const sourceMap = await this.sourceMap();
-            const sourceMapperProvider = _.memoize(script => this.sourceMapper(script, sourceMap));
-            const mappedSourcesProvider = _.memoize(script => this.mappedSources(sourceMapperProvider(script)));
+            const sourceMapperProvider = script => this.sourceMapper(script, sourceMap);
+            const mappedSourcesProvider = script => this.mappedSources(sourceMapperProvider(script));
 
             return this.createScript(executionContext, sourceMapperProvider, mappedSourcesProvider);
         });

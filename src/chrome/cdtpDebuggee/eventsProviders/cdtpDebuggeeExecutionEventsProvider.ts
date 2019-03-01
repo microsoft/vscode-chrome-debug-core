@@ -63,7 +63,7 @@ export class CDTDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagnos
 
     public readonly onResumed = this.addApiListener('resumed', (params: void) => params);
 
-    public readonly onScriptFailedToParse = this.addApiListener('resumed', (params: CDTP.Debugger.ScriptFailedToParseEvent) => params);
+    public readonly onScriptFailedToParse = this.addApiListener('scriptFailedToParse', (params: CDTP.Debugger.ScriptFailedToParseEvent) => params);
 
     constructor(
         @inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi,
