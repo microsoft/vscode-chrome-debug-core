@@ -25,9 +25,12 @@ export interface IEventsConsumedBySourceResolver {
  * and use it when it tries to resolve the path to a loaded source
  */
 
- @injectable()
+@injectable()
 export class SourceResolver implements IComponent {
     private _pathToSource = newResourceIdentifierMap<ILoadedSource>();
+
+    constructor(
+        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: IEventsConsumedBySourceResolver) { }
 
     public tryResolving<R>(sourceIdentifier: IResourceIdentifier,
         succesfulAction: (resolvedSource: ILoadedSource) => R,
@@ -58,7 +61,4 @@ export class SourceResolver implements IComponent {
 
         return this;
     }
-
-    constructor(
-        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: IEventsConsumedBySourceResolver) { }
 }

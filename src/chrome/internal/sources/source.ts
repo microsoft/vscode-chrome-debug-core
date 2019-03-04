@@ -40,6 +40,10 @@ abstract class BaseSource implements ISource {
  * Find the related source by using the source's path
  */
 export class SourceToBeResolvedViaPath extends BaseSource implements ISource {
+    constructor(public readonly sourceIdentifier: IResourceIdentifier, private readonly _sourceResolver: SourceResolver) {
+        super();
+    }
+
     public tryResolving<R>(succesfulAction: (resolvedSource: ILoadedSource) => R, failedAction: (sourceIdentifier: IResourceIdentifier) => R) {
         return this._sourceResolver.tryResolving(this.sourceIdentifier, succesfulAction, failedAction);
     }
@@ -47,16 +51,16 @@ export class SourceToBeResolvedViaPath extends BaseSource implements ISource {
     public toString(): string {
         return `${this.sourceIdentifier}`;
     }
-
-    constructor(public readonly sourceIdentifier: IResourceIdentifier, private readonly _sourceResolver: SourceResolver) {
-        super();
-    }
 }
 
 /**
  * This source was already loaded, so we store it in this class
  */
 export class SourceAlreadyResolvedToLoadedSource extends BaseSource implements ISource {
+    constructor(public readonly loadedSource: ILoadedSource) {
+        super();
+    }
+
     public tryResolving<R>(succesfulAction: (resolvedSource: ILoadedSource) => R, _failedAction: (sourceIdentifier: IResourceIdentifier) => R) {
         return succesfulAction(this.loadedSource);
     }
@@ -67,9 +71,5 @@ export class SourceAlreadyResolvedToLoadedSource extends BaseSource implements I
 
     public toString(): string {
         return `${this.loadedSource}`;
-    }
-
-    constructor(public readonly loadedSource: ILoadedSource) {
-        super();
     }
 }

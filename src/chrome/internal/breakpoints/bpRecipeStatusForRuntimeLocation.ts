@@ -12,6 +12,12 @@ export interface IBPRecipeSingleLocationStatus {
 export class BPRecipeIsUnboundInRuntimeLocation implements IBPRecipeSingleLocationStatus {
     [ImplementsBPRecipeSingleLocationStatus] = 'IBPRecipeSingleLocationStatus';
 
+    constructor(
+        public readonly recipe: BPRecipeInSource,
+        public readonly locationInRuntimeSource: LocationInLoadedSource,
+        public readonly error: Error) {
+    }
+
     public isVerified(): boolean {
         return false;
     }
@@ -20,24 +26,10 @@ export class BPRecipeIsUnboundInRuntimeLocation implements IBPRecipeSingleLocati
         // `The JavaScript code associated with this source file hasn't been loaded into the debuggee yet`
         return `${this.recipe} at ${this.locationInRuntimeSource} is unbound because ${this.error}`;
     }
-
-    constructor(
-        public readonly recipe: BPRecipeInSource,
-        public readonly locationInRuntimeSource: LocationInLoadedSource,
-        public readonly error: Error) {
-    }
 }
 
 export class BPRecipeIsBoundInRuntimeLocation implements IBPRecipeSingleLocationStatus {
     [ImplementsBPRecipeSingleLocationStatus] = 'IBPRecipeSingleLocationStatus';
-
-    public isVerified(): boolean {
-        return true;
-    }
-
-    public toString(): string {
-        return `${this.recipe} is bound at ${this.locationInRuntimeSource} with ${this.breakpoints.join(', ')}`;
-    }
 
     constructor(
         public readonly recipe: BPRecipeInSource,
@@ -46,5 +38,13 @@ export class BPRecipeIsBoundInRuntimeLocation implements IBPRecipeSingleLocation
         if (this.breakpoints.length === 0) {
             throw new Error(`At least a single breakpoint was expected`);
         }
+    }
+
+    public isVerified(): boolean {
+        return true;
+    }
+
+    public toString(): string {
+        return `${this.recipe} is bound at ${this.locationInRuntimeSource} with ${this.breakpoints.join(', ')}`;
     }
 }

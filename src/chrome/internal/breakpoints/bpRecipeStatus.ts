@@ -22,6 +22,10 @@ export interface IBPRecipeStatus {
 export class BPRecipeIsUnboundDueToNoSubstatuses implements IBPRecipeStatus {
     [ImplementsBPRecipeStatus] = 'IBPRecipeStatus';
 
+    constructor(
+        public readonly recipe: BPRecipeInSource) {
+    }
+
     public isVerified(): boolean {
         return false;
     }
@@ -33,14 +37,20 @@ export class BPRecipeIsUnboundDueToNoSubstatuses implements IBPRecipeStatus {
     public toString(): string {
         return `${this.recipe} is ${this.statusDescription}`;
     }
-
-    constructor(
-        public readonly recipe: BPRecipeInSource) {
-    }
 }
 
 export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
     [ImplementsBPRecipeStatus] = 'IBPRecipeStatus';
+
+    constructor(
+        public readonly recipe: BPRecipeInSource,
+        public readonly boundSubstatuses: BPRecipeIsBoundInRuntimeLocation[],
+        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
+        if (this.boundSubstatuses.length === 0) {
+            breakWhileDebugging();
+            throw new Error(`At least one bound substatus was expected`);
+        }
+    }
 
     public get actualLocationInSource(): LocationInLoadedSource {
         // TODO: Figure out what is the right way to decide the actual location when we have multiple breakpoints
@@ -58,20 +68,19 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
     public toString(): string {
         return `${this.recipe} is ${this.statusDescription}`;
     }
-
-    constructor(
-        public readonly recipe: BPRecipeInSource,
-        public readonly boundSubstatuses: BPRecipeIsBoundInRuntimeLocation[],
-        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
-        if (this.boundSubstatuses.length === 0) {
-            breakWhileDebugging();
-            throw new Error(`At least one bound substatus was expected`);
-        }
-    }
 }
 
 export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
     [ImplementsBPRecipeStatus] = 'IBPRecipeStatus';
+
+    constructor(
+        public readonly recipe: BPRecipeInSource,
+        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
+        if (this.unboundSubstatuses.length === 0) {
+            breakWhileDebugging();
+            throw new Error(`At least the substatus for a single runtime source was expected`);
+        }
+    }
 
     public isVerified(): boolean {
         return true;
@@ -83,15 +92,6 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
 
     public toString(): string {
         return `${this.recipe} is ${this.statusDescription}`;
-    }
-
-    constructor(
-        public readonly recipe: BPRecipeInSource,
-        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
-        if (this.unboundSubstatuses.length === 0) {
-            breakWhileDebugging();
-            throw new Error(`At least the substatus for a single runtime source was expected`);
-        }
     }
 }
 

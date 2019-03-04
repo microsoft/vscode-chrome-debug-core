@@ -48,6 +48,8 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
 }
 
 export class ChromeDebugSession extends LoggingDebugSession implements IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter> {
+    public static readonly FinishedStartingUpEventName = 'finishedStartingUp';
+
     private readonly _readyForUserTimeoutInMilliseconds = 5 * 60 * 1000; // 5 Minutes = 5 * 60 seconds = 5 * 60 * 1000 milliseconds
 
     private _debugAdapter: IDebugAdapter & IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>;
@@ -55,24 +57,6 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     public readonly events: StepProgressEventsEmitter;
     private reporter = new ExecutionTimingsReporter();
     private haveTimingsWhileStartingUpBeenReported = false;
-
-    public static readonly FinishedStartingUpEventName = 'finishedStartingUp';
-
-    /**
-     * This needs a bit of explanation -
-     * The Session is reinstantiated for each session, but consumers need to configure their instance of
-     * ChromeDebugSession. Consumers should call getSession with their config options, then call
-     * DebugSession.run with the result. Alternatively they could subclass ChromeDebugSession and pass
-     * their options to the super constructor, but I think this is easier to follow.
-     */
-    public static getSession(opts: IChromeDebugSessionOpts): typeof ChromeDebugSession {
-        // class expression!
-        return class extends ChromeDebugSession {
-            constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean) {
-                super(debuggerLinesAndColumnsStartAt1, isServer, opts);
-            }
-        };
-    }
 
     public constructor(obsolete_debuggerLinesAndColumnsStartAt1?: boolean, obsolete_isServer?: boolean, opts?: IChromeDebugSessionOpts) {
         super(opts.logFilePath, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
@@ -124,6 +108,22 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             // Node tests are watching for the ********, so fix the tests if it's changed
             logger.error(`******** Unhandled error in debug adapter - Unhandled promise rejection: ${safeGetErrDetails(err)}`);
         });
+    }
+
+    /**
+     * This needs a bit of explanation -
+     * The Session is reinstantiated for each session, but consumers need to configure their instance of
+     * ChromeDebugSession. Consumers should call getSession with their config options, then call
+     * DebugSession.run with the result. Alternatively they could subclass ChromeDebugSession and pass
+     * their options to the super constructor, but I think this is easier to follow.
+     */
+    public static getSession(opts: IChromeDebugSessionOpts): typeof ChromeDebugSession {
+        // class expression!
+        return class extends ChromeDebugSession {
+            constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean) {
+                super(debuggerLinesAndColumnsStartAt1, isServer, opts);
+            }
+        };
     }
 
     /**

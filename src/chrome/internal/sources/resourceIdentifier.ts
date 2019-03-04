@@ -82,6 +82,12 @@ export interface IURL<TString extends string = string> extends IResourceLocation
 export class LocalFileURL<TString extends string = string> extends IsEquivalentCommonLogic implements IURL<TString> {
     private _localResourcePath: ILocalFilePath;
 
+    constructor(fileUrl: TString) {
+        super();
+        let filePath = decodeURIComponent(fileUrl.replace(/^file:\/\/\//, ''));
+        this._localResourcePath = parseLocalResourcePath(filePath);
+    }
+
     public static isValid(path: string) {
         return path.startsWith('file:///');
     }
@@ -100,12 +106,6 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
 
     public toString(): string {
         return path.basename(this.textRepresentation);
-    }
-
-    constructor(fileUrl: TString) {
-        super();
-        let filePath = decodeURIComponent(fileUrl.replace(/^file:\/\/\//, ''));
-        this._localResourcePath = parseLocalResourcePath(filePath);
     }
 }
 
@@ -126,6 +126,11 @@ export interface ILocalFilePath<TString extends string = string> extends IResour
 abstract class LocalFilePathCommonLogic<TString extends string = string> extends IsEquivalentAndConstructorCommonLogic<TString> {
     private _canonicalized: string;
 
+    constructor(textRepresentation: TString) {
+        super(textRepresentation);
+        this._canonicalized = this.generateCanonicalized();
+    }
+
     public get canonicalized(): string {
         return this._canonicalized;
     }
@@ -139,36 +144,31 @@ abstract class LocalFilePathCommonLogic<TString extends string = string> extends
     public toString(): string {
         return `res:${this.textRepresentation}`;
     }
-
-    constructor(textRepresentation: TString) {
-        super(textRepresentation);
-        this._canonicalized = this.generateCanonicalized();
-    }
 }
 
 // A unix local resource location is a *nix path
 // e.g.: /home/user/proj/myfile.js
 export class UnixLocalFilePath<TString extends string = string> extends LocalFilePathCommonLogic<TString> implements ILocalFilePath<TString> {
+    public static isValid(path: string) {
+        return path.startsWith('/');
+    }
+
     protected generateCanonicalized(): string {
         const normalized = path.normalize(this.textRepresentation); // Remove ../s
         return normalized.replace(/(?:\\\/|\/)+/, '/');
-    }
-
-    public static isValid(path: string) {
-        return path.startsWith('/');
     }
 }
 
 // A windows local file path
 // e.g.: C:\proj\myfile.js
 export class WindowLocalFilePath<TString extends string = string> extends LocalFilePathCommonLogic<TString> implements ILocalFilePath<TString> {
+    public static isValid(path: string) {
+        return path.match(/^[A-Za-z]:/);
+    }
+
     protected generateCanonicalized(): string {
         const normalized = path.normalize(this.textRepresentation); // Remove ../s
         return normalized.toLowerCase().replace(/[\\\/]+/, '\\');
-    }
-
-    public static isValid(path: string) {
-        return path.match(/^[A-Za-z]:/);
     }
 }
 

@@ -27,6 +27,10 @@ export interface IMappedSourcesMapper extends ISourceMapper {
 export class MappedSourcesMapper implements IMappedSourcesMapper {
     private readonly _rangeInSources: Map<IResourceIdentifier, SourceRange>;
 
+    constructor(private readonly _script: IScript, private readonly _sourceMap: SourceMap) {
+        this._rangeInSources = this._sourceMap.rangesInSources();
+    }
+
     public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource | null {
         const scriptPositionInResource = this._script.rangeInSource.start.position;
 
@@ -82,10 +86,6 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         return this._sourceMap.authoredSources || [];
     }
 
-    constructor(private readonly _script: IScript, private readonly _sourceMap: SourceMap) {
-        this._rangeInSources = this._sourceMap.rangesInSources();
-    }
-
     public toString(): string {
         return `Mapped sources mapper of ${this._script} into ${this._script.mappedSources}`;
     }
@@ -118,6 +118,8 @@ export class NoMappedSourcesMapper implements IMappedSourcesMapper {
 }
 
 export class UnmappedSourceMapper implements ISourceMapper {
+    constructor(private readonly _script: IScript, private readonly _source: ILoadedSource) { }
+
     public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource {
         return new LocationInLoadedSource(this._source, positionInScript.position);
     }
@@ -125,8 +127,6 @@ export class UnmappedSourceMapper implements ISourceMapper {
     public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript {
         return new LocationInScript(this._script, positionInSource.position);
     }
-
-    constructor(private readonly _script: IScript, private readonly _source: ILoadedSource) { }
 
     public toString(): string {
         return `Unmapped sources mapper of ${this._script}`;
