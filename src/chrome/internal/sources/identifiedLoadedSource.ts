@@ -24,6 +24,16 @@ export class IdentifiedLoadedSource<TString extends string = string> implements 
         private readonly _scriptMapperProvider: IScriptMapperProvider,
         public readonly contentsLocation: ContentsLocation) { }
 
+    public static create<TString extends string>(identifier: IResourceIdentifier<TString>, sourceScriptRelationship: SourceScriptRelationship,
+        currentScriptRelationshipsProvider: IScriptMapperProvider): IdentifiedLoadedSource<TString> {
+
+        // TODO: Figure out how to make this method async. The challenge is that this method is indirectly called by the Script class constructor,
+        // and we need to figure out how to make the constructor async, given that to preserve immutability we can only assign member variables in
+        // the constructor
+        const contentsLocation = fs.existsSync(identifier.textRepresentation) ? ContentsLocation.PersistentStorage : ContentsLocation.DynamicMemory;
+        return new IdentifiedLoadedSource<TString>(identifier, sourceScriptRelationship, currentScriptRelationshipsProvider, contentsLocation);
+    }
+
     public get url(): TString {
         return this.identifier.textRepresentation;
     }
@@ -47,25 +57,15 @@ export class IdentifiedLoadedSource<TString extends string = string> implements 
     public toString(): string {
         return `src:${this.identifier}`;
     }
-
-    public static create<TString extends string>(identifier: IResourceIdentifier<TString>, sourceScriptRelationship: SourceScriptRelationship,
-        currentScriptRelationshipsProvider: IScriptMapperProvider): IdentifiedLoadedSource<TString> {
-
-        // TODO: Figure out how to make this method async. The challenge is that this method is indirectly called by the Script class constructor,
-        // and we need to figure out how to make the constructor async, given that to preserve immutability we can only assign member variables in
-        // the constructor
-        const contentsLocation = fs.existsSync(identifier.textRepresentation) ? ContentsLocation.PersistentStorage : ContentsLocation.DynamicMemory;
-        return new IdentifiedLoadedSource<TString>(identifier, sourceScriptRelationship, currentScriptRelationshipsProvider, contentsLocation);
-    }
 }
 
 export class ScriptMapper implements IScriptMapper {
+    constructor(public readonly relationships: ILoadedSourceToScriptRelationship[]) { }
+
     public mapToScripts(locationToMap: LocationInLoadedSource): LocationInScript[] {
         return this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
             .filter(location => location !== null);
     }
-
-    constructor(public readonly relationships: ILoadedSourceToScriptRelationship[]) { }
 
     public get scripts(): IScript[] {
         return _.uniq(_.flatten(this.relationships.map(relationship => relationship.script)));

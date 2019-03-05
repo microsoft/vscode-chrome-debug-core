@@ -15,6 +15,8 @@ import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
 export class Version {
+    constructor(private _major: number, private _minor: number) {}
+
     static parse(versionString: string): Version {
         const majorAndMinor = versionString.split('.');
         const major = parseInt(majorAndMinor[0], 10);
@@ -25,8 +27,6 @@ export class Version {
     public static unknownVersion(): Version {
         return new Version(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
     }
-
-    constructor(private _major: number, private _minor: number) {}
 
     public isAtLeastVersion(major: number, minor: number): boolean {
         return this._major > major || (this._major === major && this._minor >= minor);

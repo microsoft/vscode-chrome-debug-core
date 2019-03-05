@@ -26,6 +26,18 @@ export class Position implements IEquivalenceComparable {
         }
     }
 
+    public static appearingLastOf(...positions: Position[]): Position {
+        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? right : left);
+    }
+
+    public static appearingFirstOf(...positions: Position[]): Position {
+        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? left : right);
+    }
+
+    public static isBetween(start: Position, maybeInBetween: Position, end: Position): boolean {
+        return !maybeInBetween.doesAppearBefore(start) && !end.doesAppearBefore(maybeInBetween);
+    }
+
     public isEquivalentTo(location: Position): boolean {
         return this.lineNumber === location.lineNumber
             && this.columnNumber === location.columnNumber;
@@ -44,18 +56,6 @@ export class Position implements IEquivalenceComparable {
         return this.columnNumber !== undefined
             ? `${this.lineNumber}:${this.columnNumber}`
             : `${this.lineNumber}`;
-    }
-
-    public static appearingLastOf(...positions: Position[]): Position {
-        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? right : left);
-    }
-
-    public static appearingFirstOf(...positions: Position[]): Position {
-        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? left : right);
-    }
-
-    public static isBetween(start: Position, maybeInBetween: Position, end: Position): boolean {
-        return !maybeInBetween.doesAppearBefore(start) && !end.doesAppearBefore(maybeInBetween);
     }
 }
 

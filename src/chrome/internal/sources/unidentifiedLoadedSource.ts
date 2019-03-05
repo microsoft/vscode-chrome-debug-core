@@ -7,16 +7,16 @@ import { UnmappedSourceMapper } from '../scripts/sourcesMapper';
 import { LocationInLoadedSource, LocationInScript } from '../locations/location';
 
 export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
+    // TODO DIEGO: Move these two properties to the client layer
+    public static EVAL_FILENAME_PREFIX = 'VM';
+    public static EVAL_PSEUDO_FOLDER = '<eval>';
+    public static EVAL_PSEUDO_PREFIX = `${UnidentifiedLoadedSource.EVAL_PSEUDO_FOLDER}\\${UnidentifiedLoadedSource.EVAL_FILENAME_PREFIX}`;
+
     public [ImplementsLoadedSource]: 'ILoadedSource' = 'ILoadedSource';
 
     public contentsLocation = ContentsLocation.PersistentStorage;
 
     public readonly sourceScriptRelationship = SourceScriptRelationship.SourceIsSingleScript;
-
-    // TODO DIEGO: Move these two properties to the client layer
-    public static EVAL_FILENAME_PREFIX = 'VM';
-    public static EVAL_PSEUDO_FOLDER = '<eval>';
-    public static EVAL_PSEUDO_PREFIX = `${UnidentifiedLoadedSource.EVAL_PSEUDO_FOLDER}\\${UnidentifiedLoadedSource.EVAL_FILENAME_PREFIX}`;
 
     constructor(public readonly script: IScript, public readonly name: ResourceName<CDTPScriptUrl>, public readonly origin: string) { }
 
@@ -50,6 +50,8 @@ export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
 }
 
 export class CurrentUnidentifiedSourceScriptRelationships implements IScriptMapper {
+    constructor(private readonly _source: UnidentifiedLoadedSource, private readonly _script: IScript) { }
+
     public mapToScripts(position: LocationInLoadedSource): LocationInScript[] {
         return [new LocationInScript(this._script, position.position)];
     }
@@ -69,6 +71,4 @@ export class CurrentUnidentifiedSourceScriptRelationships implements IScriptMapp
     public toString(): string {
         return `This unidentified source is it's own runtime and development script`;
     }
-
-    constructor(private readonly _source: UnidentifiedLoadedSource, private readonly _script: IScript) { }
 }

@@ -19,18 +19,22 @@ export interface IValidatedMap<K, V> extends Map<K, V> {
 export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     private readonly _wrappedMap: Map<K, V>;
 
+    constructor(initialContents?: Map<K, V> | Iterable<[K, V]> | ReadonlyArray<[K, V]>) {
+        this._wrappedMap = initialContents instanceof Map
+            ? new Map<K, V>(initialContents.entries())
+            : new Map<K, V>(initialContents);
+    }
+
+    public static with<K, V>(key: K, value: V): ValidatedMap<K, V> {
+        return new ValidatedMap<K, V>([[key, value]]);
+    }
+
     public get size(): number {
         return this._wrappedMap.size;
     }
 
     public get [Symbol.toStringTag](): 'Map' {
         return 'ValidatedMap' as 'Map';
-    }
-
-    constructor(initialContents?: Map<K, V> | Iterable<[K, V]> | ReadonlyArray<[K, V]>) {
-        this._wrappedMap = initialContents instanceof Map
-            ? new Map<K, V>(initialContents.entries())
-            : new Map<K, V>(initialContents);
     }
 
     public clear(): void {
@@ -127,9 +131,5 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     public toString(): string {
         return printMap('ValidatedMap', this);
-    }
-
-    public static with<K, V>(key: K, value: V): ValidatedMap<K, V> {
-        return new ValidatedMap<K, V>([[key, value]]);
     }
 }

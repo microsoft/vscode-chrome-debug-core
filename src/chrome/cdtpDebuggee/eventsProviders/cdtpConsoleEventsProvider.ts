@@ -70,13 +70,13 @@ export class CDTPConsoleEventsProvider implements IConsoleEventsProvider {
     private readonly _consoleEventsFromConsoleProvider = new CDTPConsoleEventsFromConsoleProvider(this._protocolApi, this._domainsEnabler);
     private readonly _consoleEventsFromRuntimeProvider = new CDTPConsoleEventsFromRuntimeProvider(this._protocolApi, this._scriptsRegistry, this._domainsEnabler);
 
-    public readonly onMessageAdded = (listener: onMessageAddedListener) => this._consoleEventsFromConsoleProvider.onMessageAdded(listener);
-    public readonly onConsoleAPICalled = (listener: onConsoleAPICalled) => this._consoleEventsFromRuntimeProvider.onConsoleAPICalled(listener);
-
     constructor(
         @inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi,
         @inject(TYPES.CDTPScriptsRegistry) private _scriptsRegistry: CDTPScriptsRegistry,
         @inject(TYPES.IDomainsEnabler) private readonly _domainsEnabler: CDTPDomainsEnabler,
     ) {
     }
+
+    public readonly onMessageAdded = (listener: onMessageAddedListener) => this._consoleEventsFromConsoleProvider.onMessageAdded(listener);
+    public readonly onConsoleAPICalled = (listener: onConsoleAPICalled) => this._consoleEventsFromRuntimeProvider.onConsoleAPICalled(listener);
 }

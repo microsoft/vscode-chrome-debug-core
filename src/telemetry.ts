@@ -127,36 +127,6 @@ export class BatchTelemetryReporter {
         this.setup();
     }
 
-    public reportEvent(name: string, data?: any): void {
-        if (!this._eventBuckets[name]) {
-            this._eventBuckets[name] = [];
-        }
-
-        this._eventBuckets[name].push(data);
-    }
-
-    public finalize(): void {
-        this.send();
-        clearInterval(this._timer);
-    }
-
-    private setup(): void {
-        this._timer = setInterval(() => this.send(), this._cadenceInMilliseconds);
-    }
-
-    private reset(): void {
-        this._eventBuckets = {};
-    }
-
-    private send(): void {
-        for (const eventName in this._eventBuckets) {
-            const bucket = this._eventBuckets[eventName];
-            let properties = BatchTelemetryReporter.transfromBucketData(bucket);
-            this._telemetryReporter.reportEvent(eventName, properties);
-        }
-
-        this.reset();
-    }
     /**
      * Transfrom the bucket of events data from the form:
      * [{
@@ -227,6 +197,37 @@ export class BatchTelemetryReporter {
             }
         }
         return Object.keys(propertyNamesSet);
+    }
+
+    public reportEvent(name: string, data?: any): void {
+        if (!this._eventBuckets[name]) {
+            this._eventBuckets[name] = [];
+        }
+
+        this._eventBuckets[name].push(data);
+    }
+
+    public finalize(): void {
+        this.send();
+        clearInterval(this._timer);
+    }
+
+    private setup(): void {
+        this._timer = setInterval(() => this.send(), this._cadenceInMilliseconds);
+    }
+
+    private reset(): void {
+        this._eventBuckets = {};
+    }
+
+    private send(): void {
+        for (const eventName in this._eventBuckets) {
+            const bucket = this._eventBuckets[eventName];
+            let properties = BatchTelemetryReporter.transfromBucketData(bucket);
+            this._telemetryReporter.reportEvent(eventName, properties);
+        }
+
+        this.reset();
     }
 }
 

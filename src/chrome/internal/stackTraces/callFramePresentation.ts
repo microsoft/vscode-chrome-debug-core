@@ -17,6 +17,13 @@ export interface ICallFramePresentationDetails {
 }
 
 export class CallFramePresentation implements IStackTracePresentationRow {
+    constructor(
+        public readonly callFrame: CallFrame<ILoadedSource>,
+        private readonly _descriptionFormatArgs?: DebugProtocol.StackFrameFormat,
+        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
+        public readonly presentationHint?: CallFramePresentationHint) {
+    }
+
     public get source(): ILoadedSource {
         return this.codeFlow.source;
     }
@@ -60,13 +67,6 @@ export class CallFramePresentation implements IStackTracePresentationRow {
         }
 
         return formattedDescription;
-    }
-
-    constructor(
-        public readonly callFrame: CallFrame<ILoadedSource>,
-        private readonly _descriptionFormatArgs?: DebugProtocol.StackFrameFormat,
-        public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
-        public readonly presentationHint?: CallFramePresentationHint) {
     }
 }
 

@@ -29,7 +29,17 @@
     "member-access": false,
     "member-ordering": [
       true,
-      "variables-before-functions"
+      {
+        "order": [
+            "static-field",
+            "static-field",
+            "instance-field",
+
+            "constructor",
+            "static-method",
+            "instance-method"
+         ]
+      }
     ],
     "quotemark": [true, "single", "avoid-escape"],
     "no-any": false,

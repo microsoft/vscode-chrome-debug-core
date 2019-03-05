@@ -70,6 +70,17 @@ export class Script implements IScript {
     public readonly developmentSource: ILoadedSource;
     public readonly sourceMapper: ISourceMapper;
 
+    constructor(public readonly executionContext: IExecutionContext, runtimeSourceProvider: (script: IScript) => ILoadedSource<CDTPScriptUrl>, developmentSourceProvider: (script: IScript) => ILoadedSource,
+        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], sourceMapperProvider: (script: IScript) => ISourceMapper,
+        rangeInSourceProvider: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>) {
+        this.runtimeSource = runtimeSourceProvider(this);
+        this.developmentSource = developmentSourceProvider(this);
+        this.rangeInSource = rangeInSourceProvider(this.runtimeSource);
+        this.sourceMapper = sourceMapperProvider(this);
+        const pathsAndMappedSources = mappedSourcesProvider(this).map(mappedSource => [mappedSource.identifier, mappedSource] as [IResourceIdentifier, IdentifiedLoadedSource]);
+        this._compiledSources = newResourceIdentifierMap(pathsAndMappedSources);
+    }
+
     public static create(executionContext: IExecutionContext, runtimeSource: ILoadedSource<CDTPScriptUrl>, developmentSource: ILoadedSource,
         sourcesMapperProvider: (script: IScript) => ISourceMapper, mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
         return new Script(executionContext, () => runtimeSource, () => developmentSource, mappedSourcesProvider, sourcesMapperProvider, () => rangeInSource);
@@ -81,17 +92,6 @@ export class Script implements IScript {
         // We use memoize to ensure that the function returns always the same instance for the same script, so the runtime source and the development source will be the same object/identity
         const sourceProvider = _.memoize((script: IScript) => new UnidentifiedLoadedSource(script, name, "source for the script from the debugging engine, because the script doesn't have an url"));
         return new Script(executionContext, sourceProvider, sourceProvider, mappedSourcesProvider, sourcesMapperProvider, rangeInSource);
-    }
-
-    constructor(public readonly executionContext: IExecutionContext, runtimeSourceProvider: (script: IScript) => ILoadedSource<CDTPScriptUrl>, developmentSourceProvider: (script: IScript) => ILoadedSource,
-        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], sourceMapperProvider: (script: IScript) => ISourceMapper,
-        rangeInSourceProvider: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>) {
-        this.runtimeSource = runtimeSourceProvider(this);
-        this.developmentSource = developmentSourceProvider(this);
-        this.rangeInSource = rangeInSourceProvider(this.runtimeSource);
-        this.sourceMapper = sourceMapperProvider(this);
-        const pathsAndMappedSources = mappedSourcesProvider(this).map(mappedSource => [mappedSource.identifier, mappedSource] as [IResourceIdentifier, IdentifiedLoadedSource]);
-        this._compiledSources = newResourceIdentifierMap(pathsAndMappedSources);
     }
 
     public get mappedSources(): IdentifiedLoadedSource[] {

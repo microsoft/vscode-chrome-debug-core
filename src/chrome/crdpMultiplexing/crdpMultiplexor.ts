@@ -57,6 +57,10 @@ function throwCriticalError(message: string): void {
 export class CRDPMultiplexor {
     private _channels: CRDPChannel[] = [];
 
+    constructor(private _wrappedLikeSocket: LikeSocket) {
+        this._wrappedLikeSocket.on('message', data => this.onMessage(data));
+    }
+
     private onMessage(data: string): void {
         const message = JSON.parse(data);
         if (message.id !== undefined) {
@@ -86,10 +90,6 @@ export class CRDPMultiplexor {
         for (const channel of this._channels) {
             channel.callDomainMessageCallbacks(domain, data);
         }
-    }
-
-    constructor(private _wrappedLikeSocket: LikeSocket) {
-        this._wrappedLikeSocket.on('message', data => this.onMessage(data));
     }
 
     public addChannel(channelName: string): CRDPChannel {
@@ -129,6 +129,8 @@ export class CRDPChannel implements LikeSocket {
     private _enabledDomains: { [domain: string]: boolean } = {};
     private _pendingMessagesForDomain: { [domain: string]: string[] } = {};
 
+    constructor(public name: string, public id: number, private _multiplexor: CRDPMultiplexor) { }
+
     public callMessageCallbacks(messageData: string): void {
         this._messageCallbacks.forEach(callback => callback(messageData));
     }
@@ -153,8 +155,6 @@ export class CRDPChannel implements LikeSocket {
         // logger.log(`CRDP Multiplexor - Storing message to channel ${this.name} for ${domain} for later: ${messageData}`);
         messagesForDomain.push(messageData);
     }
-
-    constructor(public name: string, public id: number, private _multiplexor: CRDPMultiplexor) { }
 
     public send(messageData: string): void {
         const message = JSON.parse(messageData);
