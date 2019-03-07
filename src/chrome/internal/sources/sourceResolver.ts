@@ -6,8 +6,7 @@ import { ILoadedSource } from './loadedSource';
 import { ISource, SourceToBeResolvedViaPath } from './source';
 import { newResourceIdentifierMap, IResourceIdentifier } from './resourceIdentifier';
 import { IComponent } from '../features/feature';
-import { injectable, inject } from 'inversify';
-import { TYPES } from '../../dependencyInjection.ts/types';
+import { injectable } from 'inversify';
 import { IScript } from '../scripts/script';
 
 // TODO: Remove next line and use the import instead
@@ -30,7 +29,7 @@ export class SourceResolver implements IComponent {
     private _pathToSource = newResourceIdentifierMap<ILoadedSource>();
 
     constructor(
-        @inject(TYPES.EventsConsumedByConnectedCDA) private readonly _dependencies: IEventsConsumedBySourceResolver) { }
+        private readonly _dependencies: IEventsConsumedBySourceResolver) { }
 
     public tryResolving<R>(sourceIdentifier: IResourceIdentifier,
         succesfulAction: (resolvedSource: ILoadedSource) => R,

@@ -95,7 +95,11 @@ function doBuild(buildNls, failOnError) {
         });
 }
 
-gulp.task('build', ['clean'], () => {
+gulp.task('clean', () => {
+    return del(['out', 'lib']);
+});
+
+gulp.task('build', gulp.series('clean'), () => {
     return doBuild(true, true);
 });
 
@@ -103,16 +107,12 @@ gulp.task('_dev-build', () => {
     return doBuild(false, false);
 });
 
-gulp.task('clean', () => {
-    return del(['out', 'lib']);
-});
-
-gulp.task('watch', ['clean'], () => {
+gulp.task('watch', gulp.series('clean'), () => {
     log('Watching build sources...');
     return runSequence('_dev-build', () => gulp.watch(sources, ['_dev-build']));
 });
 
-gulp.task('default', ['build']);
+gulp.task('default', gulp.series('build'));
 
 gulp.task('tslint', () => {
       return gulp.src(lintSources, { base: '.' })
@@ -120,13 +120,13 @@ gulp.task('tslint', () => {
         .pipe(tslint.report());
 });
 
-gulp.task('transifex-push', ['build'], function () {
+gulp.task('transifex-push', gulp.series('build'), function () {
     return gulp.src(['out/nls.metadata.header.json', 'out/nls.metadata.json'])
         .pipe(nls.createXlfFiles(transifexProjectName, transifexExtensionName))
         .pipe(nls.pushXlfFiles(transifexApiHostname, transifexApiName, transifexApiToken));
 });
 
-gulp.task('transifex-push-test', ['build'], function () {
+gulp.task('transifex-push-test', gulp.series('build'), function () {
     return gulp.src(['out/nls.metadata.header.json', 'out/nls.metadata.json'])
         .pipe(nls.createXlfFiles(transifexProjectName, transifexExtensionName))
         .pipe(gulp.dest(path.join('..', `${transifexExtensionName}-push-test`)));
