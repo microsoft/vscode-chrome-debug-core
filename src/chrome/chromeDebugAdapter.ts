@@ -2976,3 +2976,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._committedBreakpointsByUrl.set(canonicalizedUrl, value);
     }
 }
+
+// TODO: Placeholder until we can merge the real class
+export class ChromeDebugLogic {
+    public disconnect(): void {}
+    public shutdown(): void {}
+    public install(): void {}
+}

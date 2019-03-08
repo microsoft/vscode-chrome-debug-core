@@ -7,7 +7,6 @@ import 'reflect-metadata';
 // TODO: Add all necesary types so we can use inversifyjs to create our components
 const TYPES = {
     ISession: Symbol.for('ISession'),
-    communicator: Symbol.for('communicator'),
     CDTPClient: Symbol.for('chromeConnection.api'),
     IDOMInstrumentationBreakpoints: Symbol.for('IDOMInstrumentationBreakpoints'),
     IEventsToClientReporter: Symbol.for('IEventsToClientReporter'),
@@ -17,8 +16,7 @@ const TYPES = {
     IAsyncDebuggingConfiguration: Symbol.for('IAsyncDebuggingConfiguration'),
     IStackTracePresentationLogicProvider: Symbol.for('IStackTracePresentationLogicProvider'),
     IScriptSources: Symbol.for('IScriptSources'),
-    EventsConsumedByConnectedCDA: Symbol.for('EventsConsumedByConnectedCDA'),
-    ICDTPDebuggerEventsProvider: Symbol.for('ICDTPDebuggerEventsProvider'),
+    ICDTPDebuggeeExecutionEventsProvider: Symbol.for('ICDTPDebuggeeExecutionEventsProvider'),
     IDebugeeSteppingController: Symbol.for('IDebugeeSteppingController'),
     IDebuggeeLauncher: Symbol.for('IDebuggeeLauncher'),
     ChromeDebugLogic: Symbol.for('ChromeDebugLogic'),
@@ -56,6 +54,9 @@ const TYPES = {
     ILogEventsProvider: Symbol.for('ILogEventsProvider'),
     IBlackboxPatternsConfigurer: Symbol.for('IBlackboxPatternsConfigurer'),
     IDomainsEnabler: Symbol.for('IDomainsEnabler'),
+    ILogger: Symbol.for('ILogger'),
+    ICommandHandlerDeclarer: Symbol.for('ICommandHandlerDeclarer'),
+    IDebuggeePausedHandler: Symbol.for('IDebuggeePausedHandler'),
 };
 
 export { TYPES };
