@@ -37,13 +37,13 @@ export class PausedEvent {
     }
 }
 
-export interface ICDTDebuggeeExecutionEventsProvider {
+export interface ICDTPDebuggeeExecutionEventsProvider {
     onPaused(listener: (event: PausedEvent) => void): void;
     onResumed(listener: () => void): void;
 }
 
 @injectable()
-export class CDTDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.DebuggerApi, void, CDTP.Debugger.EnableResponse> implements ICDTDebuggeeExecutionEventsProvider {
+export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.DebuggerApi, void, CDTP.Debugger.EnableResponse> implements ICDTPDebuggeeExecutionEventsProvider {
     protected readonly api = this._protocolApi.Debugger;
 
     private readonly _cdtpLocationParser = new CDTPLocationParser(this._scriptsRegistry);
