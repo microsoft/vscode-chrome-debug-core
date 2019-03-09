@@ -15,7 +15,6 @@ const del = require('del');
 const plumber = require('gulp-plumber');
 const nls = require('vscode-nls-dev');
 const es = require('event-stream');
-const runSequence = require('run-sequence');
 const minimist = require('minimist');
 
 const translationProjectName = 'vscode-extensions';
@@ -93,24 +92,22 @@ function doBuild(buildNls, failOnError) {
         });
 }
 
-gulp.task('build', ['clean'], () => {
-    return doBuild(true, true);
+gulp.task('clean', () => {
+	return del(['out', 'lib']);
 });
+
+gulp.task('build', gulp.series('clean', () => {
+    return doBuild(true, true);
+}));
 
 gulp.task('_dev-build', () => {
     return doBuild(false, false);
 });
 
-gulp.task('clean', () => {
-    return del(['out', 'lib']);
-});
-
-gulp.task('watch', ['clean'], () => {
+gulp.task('watch', gulp.series('clean', '_dev-build', () => {
     log('Watching build sources...');
-    return runSequence('_dev-build', () => gulp.watch(sources, ['_dev-build']));
-});
-
-gulp.task('default', ['build']);
+    return gulp.watch(sources, gulp.series('_dev-build'));
+}));
 
 gulp.task('tslint', () => {
       return gulp.src(lintSources, { base: '.' })
@@ -118,20 +115,20 @@ gulp.task('tslint', () => {
         .pipe(tslint.report());
 });
 
-gulp.task('translations-export', ['build'], function() {
-    return gulp.src(['package.nls.json', 'out/nls.metadata.header.json','out/nls.metadata.json'])
+gulp.task('translations-export', gulp.series('build', () => {
+    return gulp.src(['out/nls.metadata.header.json','out/nls.metadata.json'])
         .pipe(nls.createXlfFiles(translationProjectName, translationExtensionName))
         .pipe(gulp.dest(path.join('..', 'vscode-translations-export')));
-});
+}));
 
-gulp.task('translations-import', function () {
+gulp.task('translations-import', () => {
     var options = minimist(process.argv.slice(2), {
         string: 'location',
         default: {
             location: '../vscode-translations-import'
         }
     });
-    return es.merge(defaultLanguages.map(function (language) {
+    return es.merge(defaultLanguages.map(language => {
         let id = language.transifexId || language.id;
         console.log(path.join(options.location, id, 'vscode-extensions', `${translationExtensionName}.xlf`));
         return gulp.src(path.join(options.location, id, 'vscode-extensions', `${translationExtensionName}.xlf`))
@@ -140,8 +137,8 @@ gulp.task('translations-import', function () {
     }));
 });
 
-gulp.task('i18n-import', function () {
-    return es.merge(defaultLanguages.map(function (language) {
+gulp.task('i18n-import', () => {
+    return es.merge(defaultLanguages.map(language => {
         return gulp.src(`../${translationExtensionName}-localization/${language.folderName}/**/*.xlf`)
             .pipe(nls.prepareJsonFiles())
             .pipe(gulp.dest(path.join('./i18n', language.folderName)));

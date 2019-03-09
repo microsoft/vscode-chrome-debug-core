@@ -33,7 +33,7 @@
     "@types/ws": "^6.0.0",
     "del": "^2.2.2",
     "event-stream": "^3.3.4",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.0",
     "gulp-debug": "^2.1.2",
     "gulp-plumber": "^1.1.0",
     "gulp-sourcemaps": "^1.6.0",
