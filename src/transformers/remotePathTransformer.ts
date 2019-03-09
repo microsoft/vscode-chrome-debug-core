@@ -63,7 +63,10 @@ export class RemotePathTransformer extends UrlPathTransformer {
     }
 
     public async scriptParsed(scriptPath: string): Promise<string> {
-        scriptPath = await super.scriptParsed(scriptPath);
+        if (!this.shouldMapPaths(scriptPath)) {
+            scriptPath = await super.scriptParsed(scriptPath);
+        }
+
         scriptPath = this.getClientPathFromTargetPath(scriptPath) || scriptPath;
 
         return scriptPath;
@@ -89,7 +92,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
 
     private shouldMapPaths(remotePath: string): boolean {
         // Map paths only if localRoot/remoteRoot are set, and the remote path is absolute on some system
-        return !!this._localRoot && !!this._remoteRoot && (path.posix.isAbsolute(remotePath) || path.win32.isAbsolute(remotePath));
+        return !!this._localRoot && !!this._remoteRoot && (path.posix.isAbsolute(remotePath) || path.win32.isAbsolute(remotePath) || utils.isFileUrl(remotePath));
     }
 
     public getClientPathFromTargetPath(remotePath: string): string {

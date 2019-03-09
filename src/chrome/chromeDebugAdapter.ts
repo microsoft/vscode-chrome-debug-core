@@ -1986,7 +1986,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             stackFrames,
             totalFrames
         };
-        this._pathTransformer.stackTraceResponse(stackTraceResponse);
+        await this._pathTransformer.stackTraceResponse(stackTraceResponse);
         await this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
 
         await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
