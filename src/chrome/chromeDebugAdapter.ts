@@ -2979,8 +2979,21 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
 // TODO: Placeholder until we can merge the real class
 export class ChromeDebugLogic {
-    static THREAD_ID: number = 0;
+    static THREAD_ID = 0;
     public disconnect(): void {}
     public shutdown(): void {}
     public install(): void {}
+
+    public evaluate(args: any): IEvaluateResponseBody {
+        return null;
+    }
+    public scopes(args: any): IScopesResponseBody {
+        return null;
+    }
+    public variables(args: any): IVariablesResponseBody {
+        return null;
+    }
+    public threads(): IThreadsResponseBody {
+        return null;
+    }
 }
