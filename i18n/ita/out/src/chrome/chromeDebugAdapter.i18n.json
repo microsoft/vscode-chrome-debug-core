@@ -6,13 +6,13 @@
 {
 	"exceptions.all": "Tutte le eccezioni",
 	"exceptions.uncaught": "Eccezioni non rilevate",
-	"exceptions.promise_rejects": "Promise rifiutate",
-	"setBPTimedOut": "La richiesta di impostazione punti di interruzione è scaduta",
-	"bp.fail.unbound": "Punto di interruzione impostato ma non ancora associato",
-	"bp.fail.noscript": "Impossibile trovare script per la richiesta di un punto di interruzione",
+	"exceptions.promise_rejects": "Rifiuti promessa",
+	"setBPTimedOut": "Timeout della richiesta di impostazione punti di interruzione",
+	"bp.fail.unbound": "Il punto di interruzione è stato impostato ma non ancora associato",
+	"bp.fail.noscript": "Non è possibile trovare lo script per la richiesta del punto di interruzione",
 	"validateBP.sourcemapFail": "Il punto di interruzione è stato ignorato perché il codice generato non è stato trovato. È possibile che si sia verificato un problema di mapping di origine.",
-	"validateBP.notFound": "Punto di interruzione ignorato perché non è stato trovato il percorso di destinazione",
-	"invalidHitCondition": "La condizione incontrata è invalida: {0}",
-	"skipReason": "(ignorata da '{0}')",
+	"validateBP.notFound": "Il punto di interruzione è stato ignorato perché il percorso di destinazione non è stato trovato",
+	"invalidHitCondition": "La condizione raggiunta non è valida: {0}",
+	"skipReason": "(ignorato da '{0}')",
 	"scope.exception": "Eccezione"
 }

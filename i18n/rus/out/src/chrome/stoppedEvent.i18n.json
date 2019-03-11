@@ -13,5 +13,5 @@
 	"reason.description.entry": "Приостановлено на записи",
 	"reason.description.debugger_statement": "Приостановлено на операторе отладчика",
 	"reason.description.restart": "Приостановлено на записи кадра",
-	"reason.description.promiseRejection": "Приостановлено в момент резервирования отклонения"
+	"reason.description.promiseRejection": "Приостановлено на отклонении обещания"
 }

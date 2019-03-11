@@ -6,12 +6,12 @@
 {
 	"reason.description.step": "Adımda duraklatıldı",
 	"reason.description.breakpoint": "Kesme noktasında duraklatıldı",
-	"reason.description.exception": "İstisnada duraklatıldı",
-	"reason.description.uncaughtException": "Yakalanmamış istisnada duraklatıldı",
-	"reason.description.caughtException": "Yakalanmış istisnada duraklatıldı",
-	"reason.description.user_request": "Kullanıcı isteği üzerine duraklatıldı",
-	"reason.description.entry": "Girdide duraklatıldı",
-	"reason.description.debugger_statement": "Hata ayıklayıcı ifadesinde duraklatıldı",
-	"reason.description.restart": "Kare girişinde duraklatıldı",
-	"reason.description.promiseRejection": "Promise reddinde duraklatıldı"
+	"reason.description.exception": "Özel durumda duraklatıldı",
+	"reason.description.uncaughtException": "Yakalanmayan özel durumda duraklatıldı",
+	"reason.description.caughtException": "Yakalanan özel durumda duraklatıldı",
+	"reason.description.user_request": "Kullanıcı isteğinde duraklatıldı",
+	"reason.description.entry": "Girişte duraklatıldı",
+	"reason.description.debugger_statement": "Hata ayıklayıcısı deyiminde duraklatıldı",
+	"reason.description.restart": "Çerçeve girişinde duraklatıldı",
+	"reason.description.promiseRejection": "Promise reddetmesinde duraklatıldı"
 }

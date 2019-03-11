@@ -6,13 +6,13 @@
 {
 	"exceptions.all": "所有异常",
 	"exceptions.uncaught": "未捕获的异常",
-	"exceptions.promise_rejects": "Promise 拒绝",
-	"setBPTimedOut": "设置断点命令超时。",
-	"bp.fail.unbound": "已设置断点但还未绑定",
-	"bp.fail.noscript": "无法找到断点命令的脚本。",
-	"validateBP.sourcemapFail": "由于未找到生成的代码，已忽略断点(是否是源映射问题?)。",
-	"validateBP.notFound": "断点已忽略，因为未找到目标路径",
-	"invalidHitCondition": "无效的触发断点的条件: {0}",
-	"skipReason": "（跳过理由： '{0}'）",
+	"exceptions.promise_rejects": "承诺拒绝",
+	"setBPTimedOut": "设置断点请求超时",
+	"bp.fail.unbound": "已设置断点，但尚未绑定",
+	"bp.fail.noscript": "找不到用于断点请求的脚本",
+	"validateBP.sourcemapFail": "找不到生成的代码，已忽略断点(源映射问题?)。",
+	"validateBP.notFound": "找不到目标路径，已忽略断点",
+	"invalidHitCondition": "命中条件无效: {0}",
+	"skipReason": "(由于“{0}”已跳过)",
 	"scope.exception": "异常"
 }

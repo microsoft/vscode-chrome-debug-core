@@ -7,11 +7,11 @@
 	"reason.description.step": "En pausa por un paso",
 	"reason.description.breakpoint": "En pausa por un punto de interrupción",
 	"reason.description.exception": "En pausa por una excepción",
-	"reason.description.uncaughtException": "Pausado en excepción no detectada",
-	"reason.description.caughtException": "Pausado en excepción detectada",
+	"reason.description.uncaughtException": "En pausa por una excepción no detectada",
+	"reason.description.caughtException": "En pausa por una excepción detectada",
 	"reason.description.user_request": "En pausa por una solicitud de usuario",
 	"reason.description.entry": "En pausa por una entrada",
 	"reason.description.debugger_statement": "En pausa por una instrucción del depurador",
 	"reason.description.restart": "En pausa por una entrada de marco",
-	"reason.description.promiseRejection": "Pausado por un rechazo de promesa"
+	"reason.description.promiseRejection": "En pausa por rechazo de una promesa"
 }

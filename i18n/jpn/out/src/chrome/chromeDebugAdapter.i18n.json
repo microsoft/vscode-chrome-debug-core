@@ -6,13 +6,13 @@
 {
 	"exceptions.all": "すべての例外",
 	"exceptions.uncaught": "キャッチされない例外",
-	"exceptions.promise_rejects": "Promise が失敗",
-	"setBPTimedOut": "ブレークポイントのリクエスト タイム アウトを設定する ",
-	"bp.fail.unbound": "ブレークポイントを設定しましたが、まだバインドされていません",
-	"bp.fail.noscript": "ブレークポイントを要求するスクリプトが見つかりません",
-	"validateBP.sourcemapFail": "生成されたコードが見つからないので、ブレークポイントが無視されました (ソース マップの問題?)。",
-	"validateBP.notFound": "ターゲットのパスが見つからないため、ブレークポイントが無視されました",
-	"invalidHitCondition": "正しくないヒット条件: {0}",
-	"skipReason": "('{0}' によりスキップされました)",
-	"scope.exception": "例外"
+	"exceptions.promise_rejects": "Promise の拒否",
+	"setBPTimedOut": "ブレークポイントの設定要求がタイムアウトになりました",
+	"bp.fail.unbound": "ブレークポイントは設定されていますが、まだバインドされていません",
+	"bp.fail.noscript": "ブレークポイント要求用のスクリプトが見つかりません",
+	"validateBP.sourcemapFail": "生成コードが見つからなかったため、ブレークポイントは無視されました (ソース マップに問題がありますか?)。",
+	"validateBP.notFound": "ターゲット パスが見つからないため、ブレークポイントは無視されました",
+	"invalidHitCondition": "次のヒット条件が無効です: {0}",
+	"skipReason": "('{0}' によってスキップされました)",
+	"scope.exception": "Exception"
 }

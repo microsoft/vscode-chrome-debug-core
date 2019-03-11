@@ -6,13 +6,13 @@
 {
 	"exceptions.all": "Alle Ausnahmen",
 	"exceptions.uncaught": "Nicht abgefangene Ausnahmen",
-	"exceptions.promise_rejects": "Zusageablehnungen",
-	"setBPTimedOut": "Bei der Anforderung der festgelegten Haltepunkte ist ein Timeout aufgetreten.",
-	"bp.fail.unbound": "Haltepunkte wurden gesetzt, aber noch nicht gebunden.",
-	"bp.fail.noscript": "Es wurde kein Skript für die Haltepunktanforderung gefunden.",
-	"validateBP.sourcemapFail": "Der Haltepunkt wird ignoriert, weil der generierte Code nicht gefunden wurde (Quellzuordnungsproblem?).",
-	"validateBP.notFound": "Der Haltepunkt wurde ignoriert, weil kein Ziel Pfad gefunden wurde.",
-	"invalidHitCondition": "Ungültige Trefferbedingung: {0} ",
-	"skipReason": "(übersprungen durch \"{0}\")",
+	"exceptions.promise_rejects": "Promise-Ablehnungen",
+	"setBPTimedOut": "Timeout bei Anforderung zum Festlegen von Haltepunkten.",
+	"bp.fail.unbound": "Haltepunkt festgelegt, aber noch nicht gebunden.",
+	"bp.fail.noscript": "Das Skript für die Haltepunktanforderung wurde nicht gefunden.",
+	"validateBP.sourcemapFail": "Der Haltepunkt wurde ignoriert, weil der generierte Code nicht gefunden wurde (Quellzuordnungsproblem?).",
+	"validateBP.notFound": "Der Haltepunkt wurde ignoriert, weil der Zielpfad nicht gefunden wurde.",
+	"invalidHitCondition": "Ungültige Trefferbedingung: {0}",
+	"skipReason": "(durch \"{0}\" übersprungen)",
 	"scope.exception": "Ausnahme"
 }
