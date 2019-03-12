@@ -27,7 +27,7 @@ import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
 
 /**
- * A new JavaScript Script has been parsed by the debugee and it's about to be executed
+ * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
  */
 export interface IScriptParsedEvent {
     readonly script: IScript;

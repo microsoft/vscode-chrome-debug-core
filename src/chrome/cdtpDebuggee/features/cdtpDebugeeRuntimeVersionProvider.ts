@@ -17,7 +17,7 @@ export interface CDTPComponentsVersions {
     v8: string;
 }
 
-export interface IDebugeeRuntimeVersionProvider {
+export interface IDebuggeeRuntimeVersionProvider {
     version(): Promise<Version>;
     componentVersions(): Promise<CDTPComponentsVersions>;
 }
@@ -27,7 +27,7 @@ export interface IDebugeeRuntimeVersionProvider {
  * TODO: Update this so we automatically try to use ChromeConnection.version first, and then fallback to this if neccesary
  */
 @injectable()
-export class CDTPDebugeeRuntimeVersionProvider implements IDebugeeRuntimeVersionProvider {
+export class CDTPDebuggeeRuntimeVersionProvider implements IDebuggeeRuntimeVersionProvider {
     protected api = this._protocolApi.Browser;
     private readonly _componentsVersions = _.memoize(() => this.api.getVersion());
 

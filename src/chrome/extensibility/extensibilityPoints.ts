@@ -15,8 +15,8 @@ import { ComponentCustomizationCallback } from '../dependencyInjection.ts/di';
 export interface IExtensibilityPoints {
     componentCustomizationCallback: ComponentCustomizationCallback;
     isPromiseRejectExceptionFilterEnabled: boolean;
-    debugeeLauncher: interfaces.Newable<IDebuggeeLauncher>;
-    debugeeRunner: interfaces.Newable<IDebuggeeRunner>;
+    debuggeeLauncher: interfaces.Newable<IDebuggeeLauncher>;
+    debuggeeRunner: interfaces.Newable<IDebuggeeRunner>;
 
     targetFilter?: ITargetFilter;
     logFilePath: string;
@@ -40,8 +40,8 @@ export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibil
 
     constructor(
         public readonly logFilePath: string,
-        public readonly debugeeLauncher: interfaces.Newable<IDebuggeeLauncher>,
-        public readonly debugeeRunner: interfaces.Newable<IDebuggeeRunner>,
+        public readonly debuggeeLauncher: interfaces.Newable<IDebuggeeLauncher>,
+        public readonly debuggeeRunner: interfaces.Newable<IDebuggeeRunner>,
         public readonly componentCustomizationCallback: ComponentCustomizationCallback) {
     }
 
