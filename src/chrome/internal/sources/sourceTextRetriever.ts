@@ -4,7 +4,7 @@
 
 import { ILoadedSource, ContentsLocation, SourceScriptRelationship } from './loadedSource';
 import { ValidatedMap } from '../../collections/validatedMap';
-import { printIterable } from '../../collections/printting';
+import { printIterable } from '../../collections/printing';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { IScriptSourcesRetriever } from '../../cdtpDebuggee/features/CDTPScriptSourcesRetriever';

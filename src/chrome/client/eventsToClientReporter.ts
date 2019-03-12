@@ -14,7 +14,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../dependencyInjection.ts/types';
 import { Protocol as CDTP } from 'devtools-protocol';
 import { ChromeDebugLogic } from '../chromeDebugAdapter';
-import { ExceptionStackTracePrintter } from '../internal/exceptions/exceptionStackTracePrintter';
+import { ExceptionStackTracePrinter } from '../internal/exceptions/exceptionStackTracePrinter';
 import { LocationInSourceToClientConverter } from './locationInSourceToClientConverter';
 import { HandlesRegistry } from './handlesRegistry';
 import { SourceToClientConverter } from './sourceToClientConverter';
@@ -45,7 +45,7 @@ export interface IExceptionThrownParameters {
     readonly location?: LocationInLoadedSource;
 }
 
-export interface IDebugeeIsStoppedParameters {
+export interface IDebuggeeIsStoppedParameters {
     reason: ReasonType;
     exception?: CDTP.Runtime.RemoteObject;
 }
@@ -55,7 +55,7 @@ export interface IEventsToClientReporter {
     sendSourceWasLoaded(params: ISourceWasLoadedParameters): Promise<void>;
     sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void>;
     sendExceptionThrown(params: IExceptionThrownParameters): Promise<void>;
-    sendDebugeeIsStopped(params: IDebugeeIsStoppedParameters): Promise<void>;
+    sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void>;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface IEventsToClientReporter {
  */
 @injectable()
 export class EventsToClientReporter implements IEventsToClientReporter {
-    private readonly _exceptionStackTracePrintter = new ExceptionStackTracePrintter(this._configuration);
+    private readonly _exceptionStackTracePrinter = new ExceptionStackTracePrinter(this._configuration);
     private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
     private readonly _sourceToClientConverter = new SourceToClientConverter(this._handlesRegistry);
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
@@ -97,7 +97,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
     }
 
     public async sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void> {
-        const breakpointStatus = await this._bpRecipieStatusToClientConverter.toBPRecipeStatus(params.bpRecipeStatus);
+        const breakpointStatus = await this._bpRecipieStatusToClientConverter.toBreakpoint(params.bpRecipeStatus);
         const event = new BreakpointEvent(params.reason, breakpointStatus);
 
         this._session.sendEvent(event);
@@ -105,13 +105,13 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     public async sendExceptionThrown(params: IExceptionThrownParameters): Promise<void> {
         return this.sendOutput({
-            output: this._exceptionStackTracePrintter.toExceptionStackTracePrintted(params.exceptionStackTrace),
+            output: this._exceptionStackTracePrinter.toStackTraceString(params.exceptionStackTrace),
             category: params.category,
             location: params.location
         });
     }
 
-    public async sendDebugeeIsStopped(params: IDebugeeIsStoppedParameters): Promise<void> {
+    public async sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void> {
         return this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
     }
 }

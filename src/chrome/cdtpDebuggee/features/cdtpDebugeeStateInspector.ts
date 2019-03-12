@@ -21,7 +21,7 @@ export interface IEvaluateOnCallFrameRequest {
     readonly timeout?: CDTP.Runtime.TimeDelta;
 }
 
-export interface IDebugeeStateInspector {
+export interface IDebuggeeStateInspector {
     callFunctionOn(params: CDTP.Runtime.CallFunctionOnRequest): Promise<CDTP.Runtime.CallFunctionOnResponse>;
     getProperties(params: CDTP.Runtime.GetPropertiesRequest): Promise<CDTP.Runtime.GetPropertiesResponse>;
     evaluate(params: CDTP.Runtime.EvaluateRequest): Promise<CDTP.Runtime.EvaluateResponse>;
@@ -45,7 +45,7 @@ export class AddSourceUriToExpession {
 }
 
 @injectable()
-export class CDTPDebugeeStateInspector implements IDebugeeStateInspector {
+export class CDTPDebuggeeStateInspector implements IDebuggeeStateInspector {
     private addSourceUriToEvaluates = new AddSourceUriToExpession('evaluateOnFrame');
 
     constructor(

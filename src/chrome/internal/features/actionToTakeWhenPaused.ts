@@ -1,4 +1,7 @@
-import { IDebugeeExecutionController } from '../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+import { IDebuggeeExecutionController } from '../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
 import { ReasonType } from '../../stoppedEvent';
 import { IEventsToClientReporter } from '../../client/eventsToClientReporter';
 import { PausedEvent } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
@@ -40,10 +43,10 @@ export class NoActionIsNeededForThisPause extends BaseActionToTakeWhenPaused {
  * Base action to be used when a component is going to suggest auto-resume the pause
  */
 export abstract class BasePauseShouldBeAutoResumed extends BaseActionToTakeWhenPaused {
-    protected readonly abstract _debugeeExecutionControl: IDebugeeExecutionController;
+    protected readonly abstract _debuggeeExecutionControl: IDebuggeeExecutionController;
 
     public async execute(): Promise<void> {
-        this._debugeeExecutionControl.resume();
+        await this._debuggeeExecutionControl.resume();
     }
 }
 
@@ -56,7 +59,7 @@ export abstract class BaseNotifyClientOfPause extends BaseActionToTakeWhenPaused
     protected readonly abstract _eventsToClientReporter: IEventsToClientReporter;
 
     public async execute(): Promise<void> {
-        this._eventsToClientReporter.sendDebugeeIsStopped({ reason: this.reason, exception: this.exception });
+        this._eventsToClientReporter.sendDebuggeeIsStopped({ reason: this.reason, exception: this.exception });
     }
 }
 

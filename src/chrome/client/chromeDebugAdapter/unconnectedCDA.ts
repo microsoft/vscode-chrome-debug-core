@@ -82,12 +82,12 @@ export class UnconnectedCDA implements IDebugAdapterState {
 
         const diContainer = this.getDIContainer(di, chromeConnection, args, scenarioType);
 
-        const debugeeLauncher = diContainer.createComponent<IDebuggeeLauncher>(TYPES.IDebuggeeLauncher);
+        const debuggeeLauncher = diContainer.createComponent<IDebuggeeLauncher>(TYPES.IDebuggeeLauncher);
 
         diContainer.unconfigure(TYPES.IDebuggeeLauncher); // TODO: Remove this line and do this properly
-        diContainer.configureValue(TYPES.IDebuggeeLauncher, debugeeLauncher); // TODO: Remove this line and do this properly
+        diContainer.configureValue(TYPES.IDebuggeeLauncher, debuggeeLauncher); // TODO: Remove this line and do this properly
 
-        const result = await debugeeLauncher.launch(args, telemetryPropertyCollector);
+        const result = await debuggeeLauncher.launch(args, telemetryPropertyCollector);
         await chromeConnection.attach(result.address, result.port, result.url, args.timeout, args.extraCRDPChannelPort);
 
         if (chromeConnection.api === undefined) {
@@ -128,8 +128,8 @@ export class UnconnectedCDA implements IDebugAdapterState {
         const loggingConfiguration = new MethodsCalledLoggerConfiguration(replacements);
         return diContainer
             .bindAll(loggingConfiguration)
-            .configureClass(TYPES.IDebugeeRunner, this._extensibilityPoints.debugeeRunner)
-            .configureClass(TYPES.IDebuggeeLauncher, this._extensibilityPoints.debugeeLauncher)
+            .configureClass(TYPES.IDebuggeeRunner, this._extensibilityPoints.debuggeeRunner)
+            .configureClass(TYPES.IDebuggeeLauncher, this._extensibilityPoints.debuggeeLauncher)
             .configureValue(TYPES.ISession, this._session)
             .configureValue(TYPES.ConnectedCDAConfiguration, configuration);
     }

@@ -1,3 +1,6 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
 import { IBPRecipeStatus, BPRecipeHasBoundSubstatuses } from '../bpRecipeStatus';
 
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -19,7 +22,7 @@ export class BPRecipieStatusToClientConverter {
         @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
-    public async toBPRecipeStatus(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
+    public async toBreakpoint(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
         const clientStatus = {
             id: this.toBreakpointId(bpRecipeStatus.recipe),
             verified: bpRecipeStatus.isVerified(),

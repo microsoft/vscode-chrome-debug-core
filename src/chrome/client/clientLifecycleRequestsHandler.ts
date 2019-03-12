@@ -12,7 +12,7 @@ export class ClientLifecycleRequestsHandler implements ICommandHandlerDeclarer {
 
     constructor(
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic,
-        @inject(TYPES.IDebugeeRunner) public readonly _debugeeRunner: IDebuggeeRunner,
+        @inject(TYPES.IDebuggeeRunner) public readonly _debuggeeRunner: IDebuggeeRunner,
     ) {
     }
 
@@ -24,7 +24,7 @@ export class ClientLifecycleRequestsHandler implements ICommandHandlerDeclarer {
         });
     }
     public async configurationDone(): Promise<void> {
-        await this._debugeeRunner.run(new TelemetryPropertyCollector());
+        await this._debuggeeRunner.run(new TelemetryPropertyCollector());
         this.events.emitMilestoneReached('RequestedNavigateToUserPage'); // TODO DIEGO: Make sure this is reported
     }
 }

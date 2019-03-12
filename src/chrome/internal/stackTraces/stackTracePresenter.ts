@@ -103,7 +103,7 @@ export class StackTracePresenter implements IComponentWithAsyncInitialization {
         const allAdditionalSourceOrigins = await asyncMap(actualDetails, detail => detail.additionalSourceOrigins);
 
         const presentationDetails: ICallFramePresentationDetails = {
-            additionalSourceOrigins: [getSkipReason(allAdditionalSourceOrigins.join(','))],
+            additionalSourceOrigins: allAdditionalSourceOrigins.length > 0 ? [getSkipReason(allAdditionalSourceOrigins.join(','))] : [],
             sourcePresentationHint: actualDetails[0].sourcePresentationHint // We know that actualDetails.length > 0
         };
 

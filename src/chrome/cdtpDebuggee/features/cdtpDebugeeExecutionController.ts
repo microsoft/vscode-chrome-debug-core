@@ -6,13 +6,13 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 
-export interface IDebugeeExecutionController {
+export interface IDebuggeeExecutionController {
     resume(): Promise<void>;
     pause(): Promise<void>;
 }
 
 @injectable()
-export class CDTPDebugeeExecutionController implements IDebugeeExecutionController {
+export class CDTPDebuggeeExecutionController implements IDebuggeeExecutionController {
     constructor(
         @inject(TYPES.CDTPClient) protected readonly api: CDTP.ProtocolApi) {
     }

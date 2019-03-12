@@ -8,7 +8,7 @@ import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 
-export interface IDebugeeSteppingController {
+export interface IDebuggeeSteppingController {
     stepOver(): Promise<void>;
     stepInto(params: { breakOnAsyncCall: boolean }): Promise<void>;
     stepOut(): Promise<void>;
@@ -17,7 +17,7 @@ export interface IDebugeeSteppingController {
 }
 
 @injectable()
-export class CDTPDebugeeSteppingController implements IDebugeeSteppingController {
+export class CDTPDebuggeeSteppingController implements IDebuggeeSteppingController {
     constructor(
         @inject(TYPES.CDTPClient)
         protected readonly api: CDTP.ProtocolApi,

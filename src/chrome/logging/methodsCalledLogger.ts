@@ -89,12 +89,12 @@ export class MethodsCalledLogger<T extends object> {
 
     private printObject(objectToPrint: unknown): string {
         const description = printTopLevelObjectDescription(objectToPrint);
-        const printtedReduced = _.reduce(Array.from(this._configuration.replacements),
+        const printedReduced = _.reduce(Array.from(this._configuration.replacements),
             (text, replacement) =>
                 text.replace(replacement.pattern, replacement.replacement),
             description);
 
-        return printtedReduced;
+        return printedReduced;
     }
 }
 

@@ -16,12 +16,12 @@ export interface ISetVariableValueRequest {
     readonly frame: ScriptCallFrame;
 }
 
-export interface IDebugeeStateSetter {
+export interface IDebuggeeStateSetter {
     setVariableValue(params: ISetVariableValueRequest): Promise<void>;
 }
 
 @injectable()
-export class CDTPDebugeeStateSetter implements IDebugeeStateSetter {
+export class CDTPDebuggeeStateSetter implements IDebuggeeStateSetter {
     constructor(
         @inject(TYPES.CDTPClient) private readonly api: CDTP.ProtocolApi,
         private readonly _callFrameRegistry: CDTPCallFrameRegistry) {
