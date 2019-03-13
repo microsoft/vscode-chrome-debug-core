@@ -4,13 +4,15 @@
 
 import * as url from 'url';
 import * as path from 'path';
-import { Protocol as Crdp } from 'devtools-protocol';
+import { Protocol as CDTP } from 'devtools-protocol';
 import { logger } from 'vscode-debugadapter';
 
 import * as utils from '../utils';
 import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
+import { LocationInScript } from './internal/locations/location';
+import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -130,7 +132,7 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
  * Convert a RemoteObject to a value+variableHandleRef for the client.
  * TODO - Delete after Microsoft/vscode#12019!!
  */
-export function remoteObjectToValue(object: Crdp.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
+export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
     let value = '';
     let variableHandleRef: string;
 
@@ -230,7 +232,7 @@ export function compareVariableNames(var1: string, var2: string): number {
     return var1.localeCompare(var2);
 }
 
-export function remoteObjectToCallArgument(object: Crdp.Runtime.RemoteObject): Crdp.Runtime.CallArgument {
+export function remoteObjectToCallArgument(object: CDTP.Runtime.RemoteObject): CDTP.Runtime.CallArgument {
     return {
         objectId: object.objectId,
         unserializableValue: object.unserializableValue,
@@ -243,7 +245,7 @@ export function remoteObjectToCallArgument(object: Crdp.Runtime.RemoteObject): C
  * protocol differences in the future.
  * This includes the error message and full stack
  */
-export function descriptionFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
+export function descriptionFromExceptionDetails(exceptionDetails: CDTP.Runtime.ExceptionDetails): string {
     let description: string;
     if (exceptionDetails.exception) {
         // Take exception object description, or if a value was thrown, the value
@@ -259,7 +261,7 @@ export function descriptionFromExceptionDetails(exceptionDetails: Crdp.Runtime.E
 /**
  * Get just the error message from the exception details - the first line without the full stack
  */
-export function errorMessageFromExceptionDetails(exceptionDetails: Crdp.Runtime.ExceptionDetails): string {
+export function errorMessageFromExceptionDetails(exceptionDetails: CDTP.Runtime.ExceptionDetails): string {
     let description = descriptionFromExceptionDetails(exceptionDetails);
     const newlineIdx = description.indexOf('\n');
     if (newlineIdx >= 0) {
@@ -284,9 +286,9 @@ export function getEvaluateName(parentEvaluateName: string, name: string): strin
     return parentEvaluateName + nameAccessor;
 }
 
-export function selectBreakpointLocation(lineNumber: number, columnNumber: number, locations: Crdp.Debugger.BreakLocation[]): Crdp.Debugger.BreakLocation {
+export function selectBreakpointLocation(_lineNumber: number, columnNumber: number, locations: LocationInScript[]): LocationInScript {
     for (let i = locations.length - 1; i >= 0; i--) {
-        if (locations[i].columnNumber <= columnNumber) {
+        if (locations[i].position.columnNumber <= columnNumber) {
             return locations[i];
         }
     }
@@ -296,15 +298,15 @@ export function selectBreakpointLocation(lineNumber: number, columnNumber: numbe
 
 export const EVAL_NAME_PREFIX = 'VM';
 
-export function isEvalScript(scriptPath: string): boolean {
-    return scriptPath.startsWith(EVAL_NAME_PREFIX);
+export function isEvalScript(scriptPath: IResourceIdentifier): boolean {
+    return scriptPath.canonicalized.startsWith(EVAL_NAME_PREFIX);
 }
 
 /* Constructs the regex for files to enable break on load
 For example, for a file index.js the regex will match urls containing index.js, index.ts, abc/index.ts, index.bin.js etc
 It won't match index100.js, indexabc.ts etc */
-export function getUrlRegexForBreakOnLoad(url: string): string {
-    const fileNameWithoutFullPath = path.parse(url).base;
+export function getUrlRegexForBreakOnLoad(url: IResourceIdentifier): string {
+    const fileNameWithoutFullPath = path.parse(url.canonicalized).base;
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
     const escapedFileName = pathToRegex(fileNameWithoutExtension);
     return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
