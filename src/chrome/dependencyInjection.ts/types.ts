@@ -57,6 +57,7 @@ const TYPES = {
     ILogger: Symbol.for('ILogger'),
     ICommandHandlerDeclarer: Symbol.for('ICommandHandlerDeclarer'),
     IDebuggeePausedHandler: Symbol.for('IDebuggeePausedHandler'),
+    ISchemaProvider: Symbol.for('ISchemaProvider'),
 };
 
 export { TYPES };
