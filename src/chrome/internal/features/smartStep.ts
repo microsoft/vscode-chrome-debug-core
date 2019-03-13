@@ -17,20 +17,20 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 import * as utils from '../../../utils';
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
+import { IDebuggeeSteppingController } from '../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
 const localize = nls.loadMessageBundle();
 
 export interface ISmartStepLogicConfiguration {
     isEnabled: boolean;
 }
 
-export interface IShouldStepInToAvoidSkippedSourceDependencies {
-    stepIntoDebugee(): Promise<void>;
-}
 export class ShouldStepInToAvoidSkippedSource extends BaseActionToTakeWhenPaused {
-    private readonly _dependencies: IShouldStepInToAvoidSkippedSourceDependencies;
+    public constructor(private readonly _debuggeeSteppingController: IDebuggeeSteppingController) {
+        super();
+    }
 
     public async execute(): Promise<void> {
-        return this._dependencies.stepIntoDebugee();
+        return this._debuggeeSteppingController.stepInto({ breakOnAsyncCall: true });
     }
 }
 
@@ -43,7 +43,8 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
         @inject(TYPES.BasePathTransformer) private readonly _pathTransformer: BasePathTransformer,
         @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
-        @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration
+        @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
+        @inject(TYPES.IDebuggeeSteppingController) private readonly _debuggeeSteppingController: IDebuggeeSteppingController
     ) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.onProvideActionForWhenPaused(paused));
         this.configure();
@@ -69,7 +70,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (this.isEnabled() && await this.shouldSkip(paused.callFrames[0])) {
             this._smartStepCount++;
-            return new ShouldStepInToAvoidSkippedSource();
+            return new ShouldStepInToAvoidSkippedSource(this._debuggeeSteppingController);
         } else {
             if (this._smartStepCount > 0) {
                 logger.log(`SmartStep: Skipped ${this._smartStepCount} steps`);

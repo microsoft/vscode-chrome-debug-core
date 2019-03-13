@@ -9,10 +9,6 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPSchemaProvider } from '../../cdtpDebuggee/features/cdtpSchemaProvider';
 
-export interface ISupportedDomainsDependencies {
-    getTargetDebuggerDomainsSchemas(): Promise<CDTP.Schema.Domain[]>;
-}
-
 export interface ISupportedDomains {
     isSupported(domainName: string): boolean;
 }

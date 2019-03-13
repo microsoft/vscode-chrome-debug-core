@@ -7,7 +7,7 @@ export interface ISchemaProvider {
     getDomains(): Promise<CDTP.Schema.Domain[]>;
 }
 
-export class CDTPSchemaProvider {
+export class CDTPSchemaProvider implements ISchemaProvider {
     constructor(protected api: CDTP.SchemaApi) { }
 
     public async getDomains(): Promise<CDTP.Schema.Domain[]> {
