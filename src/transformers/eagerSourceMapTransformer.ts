@@ -46,7 +46,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
         }
     }
 
-    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void | SourceMap> {
+    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void> {
         return this.findSourceMapUrlInFile(generatedScriptPath)
             .then(async uri => {
                 if (uri) {
@@ -54,7 +54,6 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
                     await this._sourceMaps.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
                 } else {
                     logger.log(`SourceMaps: no sourcemap url found in generated script: ${generatedScriptPath}`);
-                    return undefined;
                 }
             })
             .catch(err => {
