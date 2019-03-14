@@ -2,11 +2,14 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { Protocol as Crdp } from 'devtools-protocol';
+import { Protocol as CDTP } from 'devtools-protocol';
 import * as Color from 'color';
 import * as variables from './variables';
+import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
+import { IExceptionDetails } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
+import { functionDescription } from './internal/stackTraces/callFramePresentation';
 
-export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string {
+export function formatExceptionDetails(e: IExceptionDetails): string {
     if (!e.exception) {
         return `${e.text || 'Uncaught Error'}\n${stackTraceToString(e.stackTrace)}`;
     }
@@ -17,7 +20,7 @@ export function formatExceptionDetails(e: Crdp.Runtime.ExceptionDetails): string
 
 export const clearConsoleCode = '\u001b[2J';
 
-export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent['type'], args: Crdp.Runtime.RemoteObject[], stackTrace?: Crdp.Runtime.StackTrace): { args: Crdp.Runtime.RemoteObject[], isError: boolean } {
+export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent['type'], args: CDTP.Runtime.RemoteObject[], stackTrace?: CodeFlowStackTrace): { args: CDTP.Runtime.RemoteObject[], isError: boolean } {
     switch (type) {
         case 'log':
         case 'debug':
@@ -50,7 +53,7 @@ export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent[
                 startMsg += ': ' + formattedGroupParams.shift().value;
             }
 
-            args = [{ type: 'string', value: startMsg}, ...formattedGroupParams];
+            args = [{ type: 'string', value: startMsg }, ...formattedGroupParams];
             break;
         case 'endGroup':
             args = [{ type: 'string', value: '‹End group›' }];
@@ -73,7 +76,7 @@ export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent[
 /**
  * Collapse non-object arguments, and apply format specifiers (%s, %d, etc). Return a reduced a formatted list of RemoteObjects.
  */
-function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?: boolean): Crdp.Runtime.RemoteObject[] {
+function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?: boolean): CDTP.Runtime.RemoteObject[] {
     if (!args.length || args[0].objectId) {
         // If the first arg is not text, nothing is going to happen here
         return args;
@@ -92,7 +95,7 @@ function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?:
         formatSpecifiers = [];
     }
 
-    const processedArgs: Crdp.Runtime.RemoteObject[] = [];
+    const processedArgs: CDTP.Runtime.RemoteObject[] = [];
     const pushStringArg = (strArg: string) => {
         if (typeof strArg === 'string') {
             processedArgs.push({ type: 'string', value: strArg });
@@ -137,7 +140,7 @@ function resolveParams(args: Crdp.Runtime.RemoteObject[], skipFormatSpecifiers?:
     return processedArgs;
 }
 
-function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string | Crdp.Runtime.RemoteObject {
+function formatArg(formatSpec: string, arg: CDTP.Runtime.RemoteObject): string | CDTP.Runtime.RemoteObject {
     const paramValue = String(typeof arg.value !== 'undefined' ? arg.value : arg.description);
 
     if (formatSpec === 's') {
@@ -206,15 +209,15 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
     }
 }
 
-function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
+function stackTraceToString(stackTrace: CodeFlowStackTrace): string {
     if (!stackTrace) {
         return '';
     }
 
-    return stackTrace.callFrames
+    return stackTrace.codeFlowFrames
         .map(frame => {
-            const fnName = frame.functionName || (frame.url ? '(anonymous)' : '(eval)');
-            const fileName = frame.url ? frame.url : 'eval';
+            const fnName = functionDescription(frame.functionName, frame.script.runtimeSource);
+            const fileName = frame.script.developmentSource.identifier.textRepresentation;
             return `    at ${fnName} (${fileName}:${frame.lineNumber + 1}:${frame.columnNumber})`;
         })
         .join('\n');

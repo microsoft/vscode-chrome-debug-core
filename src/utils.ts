@@ -12,6 +12,7 @@ import * as http from 'http';
 import * as https from 'https';
 
 import { IExecutionResultTelemetryProperties } from './telemetry';
+import { ValidatedSet } from './chrome/collections/validatedSet';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -662,7 +663,7 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
 }
 
 export function makeUnique<T>(elements: T[]): T[] {
-    return Array.from(new Set(elements));
+    return Array.from(new ValidatedSet(elements));
 }
 
 export function defaultIfUndefined<T>(value: T | undefined, defaultValue: T): T {

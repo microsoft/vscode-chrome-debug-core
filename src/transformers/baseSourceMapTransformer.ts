@@ -11,10 +11,12 @@ import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
 import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
-import { IComponent } from '../chrome/internal/features/feature';
+import { IComponentWithAsyncInitialization } from '../chrome/internal/features/components';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 // import { injectable, inject } from 'inversify';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
+import { ConnectedCDAConfiguration } from '..';
+import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 
 interface ISavedSetBreakpointsArgs {
     generatedPath: string;
@@ -29,16 +31,11 @@ export interface ISourceLocation {
     isSourceMapped?: boolean; // compat with stack frame
 }
 
-// TODO: Remove Configuration and use IConnectedCDAConfiguration instead
-interface Configuration {
-     args: ILaunchRequestArgs | IAttachRequestArgs;
-     _clientCapabilities: {clientID: string};
-}
-
 /**
  * If sourcemaps are enabled, converts from source files on the client side to runtime files on the target side
  */
-export class BaseSourceMapTransformer implements IComponent {
+@injectable()
+export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps;
     private _enableSourceMapCaching: boolean;
 
@@ -52,14 +49,10 @@ export class BaseSourceMapTransformer implements IComponent {
 
     protected _isVSClient = false;
 
-    constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: Configuration) {
+    constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
         this._enableSourceMapCaching = configuration.args.enableSourceMapCaching;
         this.init(configuration.args);
-        this.isVSClient = configuration._clientCapabilities.clientID === 'visualstudio';
-    }
-
-    public install(_configuration: Configuration): this {
-        return this;
+        this.isVSClient = configuration.clientCapabilities.clientID === 'visualstudio';
     }
 
     public get sourceMaps(): SourceMaps {

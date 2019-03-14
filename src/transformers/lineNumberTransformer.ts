@@ -4,25 +4,23 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
-import { ChromeDebugSession } from '../chrome/chromeDebugSession';
-import { IDebugTransformer, ISetBreakpointsResponseBody, IStackTraceResponseBody, IScopesResponseBody } from '../debugAdapterInterfaces';
+import { IDebugTransformer, ISetBreakpointsResponseBody, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
+import { inject, injectable } from 'inversify';
+import { TYPES } from '../chrome/dependencyInjection.ts/types';
+import { ConnectedCDAConfiguration } from '..';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
  */
-export class LineColTransformer implements IDebugTransformer  {
-    columnBreakpointsEnabled: boolean;
+@injectable()
+export class LineColTransformer implements IDebugTransformer {
+    private columnBreakpointsEnabled: boolean;
+    private _clientToDebuggerLineNumberDifference: number; // Client line number - debugger line number. 0 if client line number is 0-based, 1 otherwise
+    private _clientToDebuggerColumnsDifference: number; // Similar to line numbers
 
-    constructor(private _session: ChromeDebugSession) {
-    }
-
-    public setBreakpoints(args: DebugProtocol.SetBreakpointsArguments): DebugProtocol.SetBreakpointsArguments {
-        args.breakpoints.forEach(bp => this.convertClientLocationToDebugger(bp));
-        if (!this.columnBreakpointsEnabled) {
-            args.breakpoints.forEach(bp => bp.column = undefined);
-        }
-
-        return args;
+    constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: ConnectedCDAConfiguration) {
+        this._clientToDebuggerLineNumberDifference = configuration.clientCapabilities.linesStartAt1 ? 1 : 0;
+        this._clientToDebuggerColumnsDifference = configuration.clientCapabilities.columnsStartAt1 ? 1 : 0;
     }
 
     public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
@@ -45,10 +43,6 @@ export class LineColTransformer implements IDebugTransformer  {
 
     public scopeResponse(scopeResponse: IScopesResponseBody): void {
         scopeResponse.scopes.forEach(scope => this.mapScopeLocations(scope));
-    }
-
-    public mappedExceptionStack(location: { line: number; column: number }): void {
-        this.convertDebuggerLocationToClient(location);
     }
 
     private mapScopeLocations(scope: DebugProtocol.Scope): void {
@@ -83,18 +77,18 @@ export class LineColTransformer implements IDebugTransformer  {
     }
 
     public convertClientLineToDebugger(line: number): number {
-        return (<any>this._session).convertClientLineToDebugger(line);
+        return line - this._clientToDebuggerLineNumberDifference;
     }
 
     public convertDebuggerLineToClient(line: number): number {
-        return (<any>this._session).convertDebuggerLineToClient(line);
+        return line + this._clientToDebuggerLineNumberDifference;
     }
 
     public convertClientColumnToDebugger(column: number): number {
-        return (<any>this._session).convertClientColumnToDebugger(column);
+        return column - this._clientToDebuggerColumnsDifference;
     }
 
     public convertDebuggerColumnToClient(column: number): number {
-        return (<any>this._session).convertDebuggerColumnToClient(column);
+        return column + this._clientToDebuggerColumnsDifference;
     }
 }
