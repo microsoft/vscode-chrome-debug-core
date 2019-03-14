@@ -9,7 +9,7 @@ import { IResourceIdentifier, newResourceIdentifierMap, ResourceName } from '../
 import { IExecutionContext } from './executionContext';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import { RangeInResource } from '../locations/rangeInScript';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 /**
  * Multiplicity:

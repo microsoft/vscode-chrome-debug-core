@@ -147,8 +147,8 @@ abstract class ScriptCreator {
 
         const script = await this._scriptsRegistry.registerScript(this._scriptParsedEvent.scriptId, async () => {
             const sourceMap = await this.sourceMap();
-            const sourceMapperProvider = script => this.sourceMapper(script, sourceMap);
-            const mappedSourcesProvider = script => this.mappedSources(sourceMapperProvider(script));
+            const sourceMapperProvider = (script: IScript) => this.sourceMapper(script, sourceMap);
+            const mappedSourcesProvider = (script: IScript) => this.mappedSources(sourceMapperProvider(script));
 
             return this.createScript(executionContext, sourceMapperProvider, mappedSourcesProvider);
         });
@@ -215,11 +215,10 @@ class IdentifiedScriptCreator extends ScriptCreator {
     }
 
     private async obtainDevelopmentSource(): Promise<IdentifiedLoadedSource> {
-        // TODO: Remove .textRepresentation and use resource identifier instead
-        const developmentSourceLocation = await this._pathTransformer.scriptParsed(this.runtimeSourcePath.textRepresentation);
+        const developmentSourceLocation = await this._pathTransformer.scriptParsed(this.runtimeSourcePath);
 
         // The development file should have the same contents, so it should have the same source script relationship as the runtime file
-        return this.obtainLoadedSource(parseResourceIdentifier(developmentSourceLocation), this.runtimeSource().sourceScriptRelationship);
+        return this.obtainLoadedSource(developmentSourceLocation, this.runtimeSource().sourceScriptRelationship);
     }
 
     protected async registerRuntimeAndDevelopmentSourcesRelationships(script: IScript): Promise<void> {
