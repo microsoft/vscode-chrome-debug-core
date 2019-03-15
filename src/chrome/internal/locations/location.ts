@@ -10,7 +10,7 @@ import { ColumnNumber, LineNumber, URLRegexp, createURLRegexp, createLineNumber,
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import { IResourceIdentifier, IURL, isResourceIdentifier } from '../sources/resourceIdentifier';
 import { IEquivalenceComparable } from '../../utils/equivalence';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export type integer = number;
 

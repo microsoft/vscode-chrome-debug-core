@@ -111,11 +111,15 @@ export class UnconnectedCDA implements IDebugAdapterState {
 
     private getDIContainer(diContainer: DependencyInjection, chromeConnection: ChromeConnection, args: ILaunchRequestArgs | IAttachRequestArgs, scenarioType: ScenarioType): DependencyInjection {
         const configuration = this.createConfiguration(args, scenarioType);
-        const workspace = args.pathMapping['/'];
-        const workspaceRegexp = utils.pathToRegex(workspace);
-        const replacements = [
-            new ReplacementInstruction(new RegExp(workspaceRegexp, 'gi'), '%ws%'),
-        ];
+        const replacements = [];
+
+        if (args.pathMapping && args.pathMapping['/']) {
+            // replace the workspace path with 'ws' in the logs to avoid long lines
+            const workspace = args.pathMapping['/'];
+            const workspaceRegexp = utils.pathToRegex(workspace);
+            replacements.push(new ReplacementInstruction(new RegExp(workspaceRegexp, 'gi'), '%ws%'));
+        }
+
         const chromeUrl = (<any>args).url;
         if (chromeUrl) {
             replacements.push(new ReplacementInstruction(new RegExp((<any>args).url, 'gi'), '%url%'));
