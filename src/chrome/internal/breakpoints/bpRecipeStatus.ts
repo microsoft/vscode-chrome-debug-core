@@ -4,7 +4,7 @@
 
 import { LocationInLoadedSource } from '../locations/location';
 import { printArray } from '../../collections/printing';
-import { BPRecipeIsBoundInRuntimeLocation, BPRecipeIsUnboundInRuntimeLocation } from './bpRecipeStatusForRuntimeLocation';
+import { BPRecipeIsBoundInRuntimeLocation, BPRecipeIsUnbound } from './bpRecipeStatusForRuntimeLocation';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { breakWhileDebugging } from '../../../validation';
 
@@ -45,7 +45,7 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
     constructor(
         public readonly recipe: BPRecipeInSource,
         public readonly boundSubstatuses: BPRecipeIsBoundInRuntimeLocation[],
-        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
+        public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.boundSubstatuses.length === 0) {
             breakWhileDebugging();
             throw new Error(`At least one bound substatus was expected`);
@@ -75,7 +75,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
 
     constructor(
         public readonly recipe: BPRecipeInSource,
-        public readonly unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]) {
+        public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.unboundSubstatuses.length === 0) {
             breakWhileDebugging();
             throw new Error(`At least the substatus for a single runtime source was expected`);
@@ -95,7 +95,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
     }
 }
 
-export function createBPRecipieStatus(recipe: BPRecipeInSource, boundSubstatuses: BPRecipeIsBoundInRuntimeLocation[], unboundSubstatuses: BPRecipeIsUnboundInRuntimeLocation[]): IBPRecipeStatus {
+export function createBPRecipieStatus(recipe: BPRecipeInSource, boundSubstatuses: BPRecipeIsBoundInRuntimeLocation[], unboundSubstatuses: BPRecipeIsUnbound[]): IBPRecipeStatus {
     if (boundSubstatuses.length > 0) {
         return new BPRecipeHasBoundSubstatuses(recipe, boundSubstatuses, unboundSubstatuses);
     } else if (unboundSubstatuses.length > 0) {

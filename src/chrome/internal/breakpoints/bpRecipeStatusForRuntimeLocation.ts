@@ -9,12 +9,11 @@ export interface IBPRecipeSingleLocationStatus {
     isVerified(): boolean;
 }
 
-export class BPRecipeIsUnboundInRuntimeLocation implements IBPRecipeSingleLocationStatus {
+export class BPRecipeIsUnbound implements IBPRecipeSingleLocationStatus {
     [ImplementsBPRecipeSingleLocationStatus] = 'IBPRecipeSingleLocationStatus';
 
     constructor(
         public readonly recipe: BPRecipeInSource,
-        public readonly locationInRuntimeSource: LocationInLoadedSource,
         public readonly error: Error) {
     }
 
@@ -24,7 +23,7 @@ export class BPRecipeIsUnboundInRuntimeLocation implements IBPRecipeSingleLocati
 
     public toString(): string {
         // `The JavaScript code associated with this source file hasn't been loaded into the debuggee yet`
-        return `${this.recipe} at ${this.locationInRuntimeSource} is unbound because ${this.error}`;
+        return `${this.recipe} is unbound because ${this.error}`;
     }
 }
 
