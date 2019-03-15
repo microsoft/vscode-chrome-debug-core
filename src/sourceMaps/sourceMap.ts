@@ -7,12 +7,12 @@ import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import { logger } from 'vscode-debugadapter';
+import { logger, Source } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { Position } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
 import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export type MappedPosition = MappedPosition;
 

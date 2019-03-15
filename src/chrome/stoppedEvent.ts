@@ -5,7 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StoppedEvent } from 'vscode-debugadapter';
 
-import { Protocol as Crdp } from 'devtools-protocol';
+import { Protocol as CDTP } from 'devtools-protocol';
 import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
@@ -14,7 +14,7 @@ const localize = nls.loadMessageBundle();
 export type ReasonType = 'step' | 'breakpoint' | 'exception' | 'pause' | 'entry' | 'debugger_statement' | 'frame_entry' | 'promise_rejection';
 
 export class StoppedEvent2 extends StoppedEvent {
-    constructor(reason: ReasonType, threadId: number, exception?: Crdp.Runtime.RemoteObject) {
+    constructor(reason: ReasonType, threadId: number, exception?: CDTP.Runtime.RemoteObject) {
         const exceptionText = exception && exception.description && utils.firstLine(exception.description);
         super(reason, threadId, exceptionText);
 

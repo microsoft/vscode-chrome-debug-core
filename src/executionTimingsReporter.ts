@@ -4,6 +4,7 @@
 
 import { HighResTimer, calculateElapsedTime } from './utils';
 import { EventEmitter } from 'events';
+import { notNullNorUndefinedElements } from './validation';
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 
@@ -41,14 +42,14 @@ export interface IStepStartedEventsEmitter {
     removeListener(event: 'milestoneReached', listener: (args: IMilestoneReachedEventArguments) => void): this;
 }
 
-export interface FinishedStartingUpEventArguments {
+export interface IFinishedStartingUpEventArguments {
     requestedContentWasDetected: boolean;
     reasonForNotDetected: string;
 }
 
 export interface IFinishedStartingUpEventsEmitter {
-    on(event: 'finishedStartingUp', listener: (args: FinishedStartingUpEventArguments) => void): this;
-    once(event: 'finishedStartingUp', listener: (args: FinishedStartingUpEventArguments) => void): this;
+    on(event: 'finishedStartingUp', listener: (args: IFinishedStartingUpEventArguments) => void): this;
+    once(event: 'finishedStartingUp', listener: (args: IFinishedStartingUpEventArguments) => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
     removeListener(event: 'finishedStartingUp', listener: () => void): this;
 }
@@ -56,6 +57,7 @@ export interface IFinishedStartingUpEventsEmitter {
 export class StepProgressEventsEmitter extends EventEmitter implements IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter {
     constructor(private readonly _nestedEmitters: IStepStartedEventsEmitter[] = [] as IStepStartedEventsEmitter[]) {
         super();
+        notNullNorUndefinedElements('_nestedEmitters', this._nestedEmitters);
     }
 
     public emitStepStarted(stepName: string): void {

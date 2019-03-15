@@ -9,14 +9,12 @@ import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ChromeTargetDiscovery, TargetVersions, Version } from './chromeTargetDiscoveryStrategy';
+import { ChromeTargetDiscovery, TargetVersions } from './chromeTargetDiscoveryStrategy';
+import { Version } from './utils/version';
 
-import { Client, LikeSocket } from 'noice-json-rpc';
+import { Client } from 'noice-json-rpc';
 
-import { Protocol as Crdp } from 'devtools-protocol';
-
-import { CRDPMultiplexor } from './crdpMultiplexing/crdpMultiplexor';
-import { WebSocketToLikeSocketProxy } from './crdpMultiplexing/webSocketToLikeSocketProxy';
+import { Protocol as CDTP } from 'devtools-protocol';
 
 export interface ITarget {
     description: string;
@@ -73,7 +71,7 @@ class LoggingSocket extends WebSocket {
         });
     }
 
-    public send(data: any, opts?: any, cb?: (err: Error) => void): void {
+    public send(data: any, _opts?: any, _?: (err: Error) => void): void {
         const msgStr = JSON.stringify(data);
         if (this.readyState !== WebSocket.OPEN) {
             logger.log(`→ Warning: Target not open! Message: ${msgStr}`);
@@ -98,9 +96,8 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     private static ATTACH_TIMEOUT = 10000; // ms
 
     private _socket: WebSocket;
-    private _crdpSocketMultiplexor: CRDPMultiplexor;
     private _client: Client;
-    private _targetFilter: ITargetFilter;
+    private _targetFilter: ITargetFilter | undefined;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>;
     private _attachedTarget: ITarget;
     public readonly events: StepProgressEventsEmitter;
@@ -113,7 +110,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
 
     public get isAttached(): boolean { return !!this._client; }
 
-    public get api(): Crdp.ProtocolApi {
+    public get api(): CDTP.ProtocolApi {
         return this._client && this._client.api();
     }
 
@@ -133,7 +130,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             .then(() => { });
     }
 
-    public attachToWebsocketUrl(wsUrl: string, extraCRDPChannelPort?: number): void {
+    public attachToWebsocketUrl(wsUrl: string, _extraCRDPChannelPort?: number): void {
         /* __GDPR__FRAGMENT__
            "StepNames" : {
               "Attach.AttachToTargetDebuggerWebsocket" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
@@ -141,15 +138,9 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
          */
         this.events.emitStepStarted('Attach.AttachToTargetDebuggerWebsocket');
         this._socket = new LoggingSocket(wsUrl, undefined, { headers: { Host: 'localhost' }});
-        if (extraCRDPChannelPort) {
-            this._crdpSocketMultiplexor = new CRDPMultiplexor(this._socket as any as LikeSocket);
-            new WebSocketToLikeSocketProxy(extraCRDPChannelPort, this._crdpSocketMultiplexor.addChannel('extraCRDPEndpoint')).start();
-            this._client = new Client(this._crdpSocketMultiplexor.addChannel('debugger'));
-        } else {
-            this._client = new Client(<WebSocket>this._socket as any);
-        }
+        this._client = new Client(<WebSocket>this._socket as any);
 
-        this._client.on('error', e => logger.error('Error handling message from target: ' + e.message));
+        this._client.on('error', (e: any) => logger.error('Error handling message from target: ' + e.message));
     }
 
     public getAllTargets(address = '127.0.0.1', port = 9222, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget[]> {
@@ -166,16 +157,6 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             }).then(() => {
                 this._attachedTarget = selectedTarget;
             });
-    }
-
-    public run(): Promise<void> {
-        // This is a CDP version difference which will have to be handled more elegantly with others later...
-        // For now, we need to send both messages and ignore a failing one.
-        return Promise.all([
-            this.api.Runtime.runIfWaitingForDebugger(),
-            (<any>this.api.Runtime).run()
-        ])
-        .then(() => { }, () => { });
     }
 
     public close(): void {

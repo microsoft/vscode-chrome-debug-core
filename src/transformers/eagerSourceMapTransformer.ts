@@ -10,17 +10,21 @@ import { ILaunchRequestArgs, IAttachRequestArgs } from '../debugAdapterInterface
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { SourceMap } from '../sourceMaps/sourceMap';
+import { inject, injectable } from 'inversify';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because
  * if you wait until the script is loaded as in LazySMT, you get that info from the runtime.
  */
+@injectable()
 export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
     private static SOURCE_MAPPING_MATCHER = new RegExp('^//[#@] ?sourceMappingURL=(.+)$');
 
     protected init(args: ILaunchRequestArgs | IAttachRequestArgs): void {
         super.init(args);
-        if (args.sourceMaps) {
+        // Enable sourcemaps and async callstacks by default
+        const areSourceMapsEnabled = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
+        if (areSourceMapsEnabled) {
             const generatedCodeGlobs = args.outFiles ?
                 args.outFiles :
                 args.outDir ?
@@ -42,15 +46,14 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
         }
     }
 
-    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void | SourceMap> {
+    private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void> {
         return this.findSourceMapUrlInFile(generatedScriptPath)
-            .then(uri => {
+            .then(async uri => {
                 if (uri) {
                     logger.log(`SourceMaps: sourcemap url parsed from end of generated content: ${uri}`);
-                    return this._sourceMaps.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
+                    await this._sourceMaps.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
                 } else {
                     logger.log(`SourceMaps: no sourcemap url found in generated script: ${generatedScriptPath}`);
-                    return undefined;
                 }
             })
             .catch(err => {

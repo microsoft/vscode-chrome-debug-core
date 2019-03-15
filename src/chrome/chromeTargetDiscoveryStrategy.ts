@@ -12,26 +12,8 @@ import * as chromeUtils from './chromeUtils';
 import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnection';
 
 import * as nls from 'vscode-nls';
+import { Version } from './utils/version';
 const localize = nls.loadMessageBundle();
-
-export class Version {
-    constructor(private _major: number, private _minor: number) {}
-
-    static parse(versionString: string): Version {
-        const majorAndMinor = versionString.split('.');
-        const major = parseInt(majorAndMinor[0], 10);
-        const minor = parseInt(majorAndMinor[1], 10);
-        return new Version(major, minor);
-    }
-
-    public static unknownVersion(): Version {
-        return new Version(0, 0); // Using 0.0 will make behave isAtLeastVersion as if this was the oldest possible version
-    }
-
-    public isAtLeastVersion(major: number, minor: number): boolean {
-        return this._major > major || (this._major === major && this._minor >= minor);
-    }
-}
 
 export class TargetVersions {
     constructor(public readonly protocol: Version, public readonly browser: Version) {}
@@ -105,11 +87,11 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                 let browserVersion = Version.unknownVersion();
                 if (browserWithPrefixVersionString.startsWith(chromePrefix)) {
                     const browserVersionString = browserWithPrefixVersionString.substr(chromePrefix.length);
-                    browserVersion = Version.parse(browserVersionString);
+                    browserVersion = Version.coerce(browserVersionString);
                 }
 
                 this.telemetry.reportEvent('targetDebugProtocolVersion', { debugProtocolVersion: response['Protcol-Version'] });
-                return new TargetVersions(Version.parse(protocolVersionString), browserVersion);
+                return new TargetVersions(Version.coerce(protocolVersionString), browserVersion);
             }
         } catch (e) {
             this.logger.log(`Didn't get a valid response for /json/version call. Error: ${e.message}. Response: ${jsonResponse}`);

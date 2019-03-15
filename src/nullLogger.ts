@@ -8,19 +8,19 @@ import { Logger } from 'vscode-debugadapter';
  * Implements ILogger as a no-op
  */
 export class NullLogger implements Logger.ILogger {
-    log(msg: string, level?: Logger.LogLevel): void {
+    log(_msg: string, _level?: Logger.LogLevel): void {
         // no-op
     }
 
-    verbose(msg: string): void {
+    verbose(_msg: string): void {
         // no-op
     }
 
-    warn(msg: string): void {
+    warn(_msg: string): void {
         // no-op
     }
 
-    error(msg: string): void {
+    error(_msg: string): void {
         // no-op
     }
 
