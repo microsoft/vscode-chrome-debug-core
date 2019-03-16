@@ -14,7 +14,7 @@ import { IScript } from '../scripts/script';
 import { CodeFlowFrame, ScriptCallFrame, CallFrame } from './callFrame';
 import { LocationInLoadedSource } from '../locations/location';
 import { CallFramePresentation, SourcePresentationHint, ICallFramePresentationDetails } from './callFramePresentation';
-import { IComponentWithAsyncInitialization } from '../features/components';
+import { IInstallableComponent } from '../features/components';
 import { asyncMap } from '../../collections/async';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { IAsyncDebuggingConfigurer } from '../../cdtpDebuggee/features/cdtpAsyncDebuggingConfigurer';
@@ -32,7 +32,7 @@ export interface IStackTracePresentationDetailsProvider {
  * Prepares the current stack trace to be presented to the client/user
  */
 @injectable()
-export class StackTracePresenter implements IComponentWithAsyncInitialization {
+export class StackTracePresenter implements IInstallableComponent {
     public static DEFAULT_ASYNC_CALL_STACK_MAX_DEPTH = 4;
 
     private readonly _currentStackStraceProvider = new CurrentStackTraceProvider(this._cdtpDebuggeeExecutionEventsProvider);

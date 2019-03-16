@@ -4,7 +4,7 @@
 
 import { Container, interfaces } from 'inversify';
 import { bindAll } from './bind';
-import { MethodsCalledLoggerConfiguration } from '../logging/methodsCalledLogger';
+import { MethodsCalledLoggerConfiguration, ReplacementInstruction } from '../logging/methodsCalledLogger';
 
 export type GetComponentByID = <T>(identifier: interfaces.ServiceIdentifier<T>) => T;
 export type ComponentCustomizationCallback = <T>(identifier: interfaces.ServiceIdentifier<T>, injectable: T, getComponentById: GetComponentByID) => T;
@@ -12,12 +12,18 @@ export type ComponentCustomizationCallback = <T>(identifier: interfaces.ServiceI
 // Hides the current DI framework from the rest of our implementation
 export class DependencyInjection {
     private readonly _container = new Container({ autoBindInjectable: true, defaultScope: 'Singleton' });
+    private readonly _loggingConfiguration = new MethodsCalledLoggerConfiguration([]);
 
     constructor(private readonly _componentCustomizationCallback: ComponentCustomizationCallback) {
     }
 
     public configureClass<T>(interfaceClass: interfaces.Newable<T> | symbol, value: interfaces.Newable<T>): this {
         this._container.bind(interfaceClass).to(value).inSingletonScope();
+        return this;
+    }
+
+    public configureFactory<T>(interfaceClass: interfaces.Newable<T> | symbol, dynamicValueProvider: (context: interfaces.Context) => T): this {
+        this._container.bind(interfaceClass).toDynamicValue(dynamicValueProvider).inSingletonScope();
         return this;
     }
 
@@ -39,8 +45,12 @@ export class DependencyInjection {
         return this._container.get(componentIdentifier);
     }
 
-    public bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration): this {
-        bindAll(loggingConfiguration, this._container, this._componentCustomizationCallback);
+    public bindAll(): this {
+        bindAll(this._loggingConfiguration, this._container, this._componentCustomizationCallback);
         return this;
+    }
+
+    public updateLoggingReplacements(replacements: ReplacementInstruction[]): void {
+        this._loggingConfiguration.updateReplacements(replacements);
     }
 }

@@ -36,9 +36,9 @@ import { parseResourceIdentifier, IResourceIdentifier } from './chrome/internal/
 import { ChromeDebugAdapter } from './chrome/client/chromeDebugAdapter/chromeDebugAdapterV2';
 import { IExtensibilityPoints, OnlyProvideCustomLauncherExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
 import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner } from './chrome/debugeeStartup/debugeeLauncher';
-import { inject, injectable, postConstruct, interfaces } from 'inversify';
+import { inject, injectable, postConstruct, interfaces, multiInject } from 'inversify';
 import { ConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
-import { IComponentWithAsyncInitialization } from './chrome/internal/features/components';
+import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent } from './chrome/internal/features/components';
 import { TYPES } from './chrome/dependencyInjection.ts/types';
 import { IDebuggeeStateInspector } from './chrome/cdtpDebuggee/features/cdtpDebugeeStateInspector';
 import { CDTPEventsEmitterDiagnosticsModule, CDTPEnableableDiagnosticsModule } from './chrome/cdtpDebuggee/infrastructure/cdtpDiagnosticsModule';
@@ -49,13 +49,18 @@ import { IPausedOverlayConfigurer } from './chrome/cdtpDebuggee/features/cdtpPau
 import { INetworkCacheConfigurer } from './chrome/cdtpDebuggee/features/cdtpNetworkCacheConfigurer';
 import { IDebuggeeRuntimeVersionProvider } from './chrome/cdtpDebuggee/features/cdtpDebugeeRuntimeVersionProvider';
 import { IBrowserNavigator } from './chrome/cdtpDebuggee/features/cdtpBrowserNavigator';
-import { ISourcesLogic } from './chrome/internal/sources/sourcesRetriever';
+import { ISourcesRetriever } from './chrome/internal/sources/sourcesRetriever';
 import { ISource } from './chrome/internal/sources/source';
 import { ILoadedSourceTreeNode, SourceScriptRelationship } from './chrome/internal/sources/loadedSource';
 import { IScript } from './chrome/internal/scripts/script';
 import * as utilities from './chrome/collections/utilities';
 import { CDTPDomainsEnabler } from './chrome/cdtpDebuggee/infrastructure/cdtpDomainsEnabler';
-import { GetComponentByID } from './chrome/dependencyInjection.ts/di';
+import { GetComponentByID, DependencyInjection } from './chrome/dependencyInjection.ts/di';
+import { BaseCDAState } from './chrome/client/chromeDebugAdapter/baseCDAState';
+import { UninitializedCDA } from './chrome/client/chromeDebugAdapter/uninitializedCDA';
+import { SourceResolver } from './chrome/internal/sources/sourceResolver';
+import { ICDTPDebuggeeExecutionEventsProvider } from './chrome/cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
+import { ScenarioType } from './chrome/client/chromeDebugAdapter/unconnectedCDA';
 
 export {
     chromeConnection,
@@ -80,7 +85,9 @@ export {
     ConnectedCDAConfiguration,
     inject,
     injectable,
-    IComponentWithAsyncInitialization as IComponent,
+    multiInject,
+    UninitializedCDA,
+    IInstallableComponent as IComponentWithAsyncInitialization,
 
     postConstruct,
 
@@ -97,31 +104,31 @@ export {
     executionTimingsReporter,
 
     ISupportedDomains,
-    IPausedOverlayConfigurer as IPausedOverlay,
+    IPausedOverlayConfigurer,
 
     Version,
     TargetVersions,
 
     ICommunicator,
 
-    INetworkCacheConfigurer as INetworkCacheConfiguration,
-    IDebuggeeRuntimeVersionProvider as IDebuggeeVersionProvider,
+    INetworkCacheConfigurer,
+    IDebuggeeRuntimeVersionProvider,
 
     parseResourceIdentifier,
-    IBrowserNavigator as IBrowserNavigation,
+    IBrowserNavigator,
 
     ISession,
     TYPES,
 
-    IDebuggeeStateInspector as IInspectDebuggeeState,
+    IDebuggeeStateInspector,
 
     CDTP,
-
-    ISourcesLogic,
 
     interfaces,
 
     IResourceIdentifier,
+
+    ISourcesRetriever,
 
     ISource,
 
@@ -131,9 +138,25 @@ export {
 
     SourceScriptRelationship,
 
+    SourceResolver,
+
     utilities,
 
     CDTPEnableableDiagnosticsModule,
     CDTPDomainsEnabler,
     GetComponentByID,
+
+    BaseCDAState,
+
+    IInstallableComponent,
+
+    IServiceComponent,
+
+    ICommandHandlerDeclarer,
+
+    ICDTPDebuggeeExecutionEventsProvider,
+
+    DependencyInjection,
+
+    ScenarioType
 };

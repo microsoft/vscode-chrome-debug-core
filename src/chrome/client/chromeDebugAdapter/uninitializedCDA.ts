@@ -3,33 +3,25 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-import { ChromeConnection } from '../../chromeConnection';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { UnconnectedCDA } from './unconnectedCDA';
-import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
-import { ChromeDebugSession } from '../../chromeDebugSession';
-import { CommandText } from '../requests';
+import { UnconnectedCDAProvider } from './unconnectedCDA';
+import { IChromeDebugSessionOpts } from '../../chromeDebugSession';
 import { IDebugAdapterState, IInitializeRequestArgs, ITelemetryPropertyCollector } from '../../../debugAdapterInterfaces';
+import { BaseCDAState } from './baseCDAState';
+import { TYPES } from '../../dependencyInjection.ts/types';
+import { inject, injectable } from 'inversify';
 let localize = nls.loadMessageBundle(); // Initialize to an unlocalized version until we know which locale to use
 
-export class UninitializedCDA implements IDebugAdapterState {
+@injectable()
+export class UninitializedCDA extends BaseCDAState {
     constructor(
-        private readonly _extensibilityPoints: IExtensibilityPoints,
-        private readonly _session: ChromeDebugSession,
-        private readonly _chromeConnectionClass: typeof ChromeConnection
+        @inject(TYPES.UnconnectedCDAProvider) private readonly _unconnectedCDAProvider: UnconnectedCDAProvider,
+        @inject(TYPES.IChromeDebugSessionOpts) private readonly _debugSessionOptions: IChromeDebugSessionOpts
     ) {
+        super([], { 'initialize': (args, telemetryPropertyCollector) => this.initialize(<IInitializeRequestArgs>args, telemetryPropertyCollector) });
     }
 
-    public processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<unknown> {
-        switch (requestName) {
-            case 'initialize':
-                return this.initialize(<IInitializeRequestArgs>args, telemetryPropertyCollector);
-            default:
-                throw new Error(`The uninitialized debug adapter is not prepared to respond to the request ${requestName}`);
-        }
-    }
-
-    public async initialize(args: IInitializeRequestArgs, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<{ capabilities: DebugProtocol.Capabilities, newState: IDebugAdapterState }> {
+    public async initialize(args: IInitializeRequestArgs, _telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<{ capabilities: DebugProtocol.Capabilities, newState: IDebugAdapterState }> {
         if (args.locale) {
             localize = nls.config({ locale: args.locale })(); // Replace with the proper locale
         }
@@ -47,7 +39,7 @@ export class UninitializedCDA implements IDebugAdapterState {
             }
         ];
 
-        if (this._extensibilityPoints.isPromiseRejectExceptionFilterEnabled) {
+        if (this._debugSessionOptions.extensibilityPoints.isPromiseRejectExceptionFilterEnabled) {
             exceptionBreakpointFilters.push({
                 label: localize('exceptions.promise_rejects', 'Promise Rejects'),
                 filter: 'promise_reject',
@@ -71,7 +63,7 @@ export class UninitializedCDA implements IDebugAdapterState {
             supportsLoadedSourcesRequest: true
         };
 
-        const newState = new UnconnectedCDA(this._extensibilityPoints, this._session, args, this._chromeConnectionClass);
+        const newState = this._unconnectedCDAProvider(args);
         return { capabilities, newState };
     }
 }

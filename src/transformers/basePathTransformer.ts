@@ -6,7 +6,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { IStackTracePresentation } from '../chrome/internal/stackTraces/stackTracePresentation';
-import { IComponentWithAsyncInitialization } from '../chrome/internal/features/components';
+import { IInstallableComponent } from '../chrome/internal/features/components';
 import { injectable } from 'inversify';
 
 /**

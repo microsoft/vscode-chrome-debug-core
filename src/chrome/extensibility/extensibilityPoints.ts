@@ -2,6 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import { Protocol as CDTP } from 'devtools-protocol';
 import { ChromeConnection, ITargetFilter } from '../chromeConnection';
 import { BasePathTransformer } from '../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../transformers/baseSourceMapTransformer';
@@ -10,7 +11,11 @@ import { ILaunchRequestArgs, IAttachRequestArgs } from '../../debugAdapterInterf
 import { interfaces } from 'inversify';
 import { IDebuggeeLauncher, IDebuggeeRunner } from '../debugeeStartup/debugeeLauncher';
 import { IConnectedCDAConfiguration } from '../client/chromeDebugAdapter/cdaConfiguration';
-import { ComponentCustomizationCallback } from '../dependencyInjection.ts/di';
+import { ComponentCustomizationCallback, DependencyInjection } from '../dependencyInjection.ts/di';
+import { CommandText } from '../client/requests';
+import { ScenarioType } from '../client/chromeDebugAdapter/unconnectedCDA';
+
+export type RequestProcessorFunction = (args: unknown) => Promise<unknown>;
 
 export interface IExtensibilityPoints {
     componentCustomizationCallback: ComponentCustomizationCallback;
@@ -21,19 +26,23 @@ export interface IExtensibilityPoints {
     targetFilter?: ITargetFilter;
     logFilePath: string;
 
-    chromeConnection?: typeof ChromeConnection;
+    chromeConnection: typeof ChromeConnection;
     pathTransformer?: { new(configuration: IConnectedCDAConfiguration): BasePathTransformer };
     sourceMapTransformer?: { new(configuration: IConnectedCDAConfiguration): BaseSourceMapTransformer };
     lineColTransformer?: { new(configuration: IConnectedCDAConfiguration): LineColTransformer };
 
-    updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(argumentsFromClient: T): T;
+    bindAdditionalComponents(diContainer: DependencyInjection): void;
+    customizeProtocolApi(protocolApi: CDTP.ProtocolApi): CDTP.ProtocolApi;
+    updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(scenarioType: ScenarioType, argumentsFromClient: T): T;
+
+    processRequest(requestName: CommandText, args: unknown, defaultRequestProcessor: RequestProcessorFunction): Promise<unknown>;
 }
 
 export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibilityPoints {
     public readonly isPromiseRejectExceptionFilterEnabled = false;
 
     targetFilter?: ITargetFilter;
-    chromeConnection?: typeof ChromeConnection;
+    chromeConnection: typeof ChromeConnection = ChromeConnection;
     pathTransformer?: new (configuration: IConnectedCDAConfiguration) => BasePathTransformer;
     sourceMapTransformer?: new (configuration: IConnectedCDAConfiguration) => BaseSourceMapTransformer;
     lineColTransformer?: new (configuration: IConnectedCDAConfiguration) => LineColTransformer;
@@ -45,7 +54,17 @@ export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibil
         public readonly componentCustomizationCallback: ComponentCustomizationCallback) {
     }
 
-    public updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(argumentsFromClient: T): T {
+    public customizeProtocolApi(protocolApi: CDTP.ProtocolApi): CDTP.ProtocolApi {
+        return protocolApi;
+    }
+
+    public bindAdditionalComponents(_diContainer: DependencyInjection): void {}
+
+    public updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(scenarioType: ScenarioType, argumentsFromClient: T): T {
         return argumentsFromClient;
+    }
+
+    public processRequest(_requestName: CommandText, args: unknown, defaultRequestProcessor: RequestProcessorFunction): Promise<unknown> {
+        return defaultRequestProcessor(args);
     }
 }

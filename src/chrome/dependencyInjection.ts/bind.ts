@@ -53,9 +53,17 @@ import { EvaluateRequestHandler } from '../internal/variables/evaluateRequestHan
 import { ScopesRequestHandler } from '../internal/variables/scopesRequestHandler';
 import { VariablesRequestHandler } from '../internal/variables/variablesRequestHandler';
 import { DebuggeePausedHandler } from '../internal/features/debuggeePausedHandler';
-import { BaseSourceMapTransformer, BasePathTransformer } from '../..';
 import { EagerSourceMapTransformer } from '../../transformers/eagerSourceMapTransformer';
 import { ConfigurationBasedPathTransformer } from '../../transformers/configurationBasedPathTransformer';
+import { EventsToClientReporter } from '../client/eventsToClientReporter';
+import { CDTPRuntimeStarter } from '../cdtpDebuggee/features/cdtpRuntimeStarter';
+import { UninitializedCDA } from '../client/chromeDebugAdapter/uninitializedCDA';
+import { UnconnectedCDA } from '../client/chromeDebugAdapter/unconnectedCDA';
+import { ConnectingCDA } from '../client/chromeDebugAdapter/connectingCDA';
+import { ConnectedCDA } from '../client/chromeDebugAdapter/connectedCDA';
+import { CDTPPausedOverlayConfigurer } from '../cdtpDebuggee/features/cdtpPausedOverlayConfigurer';
+import { SupportedDomains } from '../internal/domains/supportedDomains';
+import { CDTPSchemaProvider } from '../cdtpDebuggee/features/cdtpSchemaProvider';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 
@@ -65,23 +73,22 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind<IScriptSourcesRetriever>(loggingConfiguration, di, TYPES.IScriptSources, CDTPScriptSourcesRetriever, callback);
     bind<IStackTracePresentationDetailsProvider>(loggingConfiguration, di, TYPES.IStackTracePresentationLogicProvider, SmartStepLogic, callback);
     bind<IStackTracePresentationDetailsProvider>(loggingConfiguration, di, TYPES.IStackTracePresentationLogicProvider, SkipFilesLogic, callback);
-    bind(loggingConfiguration, di, TYPES.IEventsToClientReporter, EventSender, callback);
+    bind(loggingConfiguration, di, TYPES.IEventsToClientReporter, EventsToClientReporter, callback);
     bind(loggingConfiguration, di, TYPES.ChromeDebugLogic, ChromeDebugLogic, callback);
-    bind(loggingConfiguration, di, TYPES.SourcesLogic, SourcesRetriever, callback);
+    bind(loggingConfiguration, di, TYPES.ISourcesRetriever, SourcesRetriever, callback);
     bind(loggingConfiguration, di, TYPES.CDTPScriptsRegistry, CDTPScriptsRegistry, callback);
     bind(loggingConfiguration, di, TYPES.StackTracesLogic, StackTracePresenter, callback);
     bind(loggingConfiguration, di, TYPES.BreakpointsLogic, BreakpointsUpdater, callback);
     bind(loggingConfiguration, di, TYPES.PauseOnExceptionOrRejection, PauseOnExceptionOrRejection, callback);
     bind(loggingConfiguration, di, TYPES.DotScriptCommand, DotScriptCommand, callback);
     bind(loggingConfiguration, di, ExistingBPsForJustParsedScriptSetter, ExistingBPsForJustParsedScriptSetter, callback);
-    bind(loggingConfiguration, di, TYPES.DeleteMeScriptsRegistry, DeleteMeScriptsRegistry, callback);
     //  bind<BaseSourceMapTransformer>(configuration, di, TYPES.BaseSourceMapTransformer, BaseSourceMapTransformer, callback);
     //  bind<BasePathTransformer>(configuration, di, TYPES.BasePathTransformer, BasePathTransformer, callback);
     //  bind<IStackTracePresentationLogicProvider>(configuration, di, TYPES.IStackTracePresentationLogicProvider, SkipFilesLogic, callback);
     bind(loggingConfiguration, di, TYPES.IDebuggeeExecutionControl, CDTPDebuggeeExecutionController, callback);
     bind(loggingConfiguration, di, TYPES.IPauseOnExceptions, CDTPPauseOnExceptionsConfigurer, callback);
     bind(loggingConfiguration, di, TYPES.IBreakpointFeaturesSupport, CDTPBreakpointFeaturesSupport, callback);
-    bind(loggingConfiguration, di, TYPES.IInspectDebuggeeState, CDTPDebuggeeStateInspector, callback);
+    bind(loggingConfiguration, di, TYPES.IDebuggeeStateInspector, CDTPDebuggeeStateInspector, callback);
     bind(loggingConfiguration, di, TYPES.IUpdateDebuggeeState, CDTPDebuggeeStateSetter, callback);
     bind(loggingConfiguration, di, TYPES.SyncStepping, SyncStepping, callback);
     bind(loggingConfiguration, di, TYPES.AsyncStepping, AsyncStepping, callback);
@@ -92,7 +99,7 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.IBrowserNavigation, CDTPBrowserNavigator, callback);
     bind(loggingConfiguration, di, TYPES.IScriptParsedProvider, CDTPOnScriptParsedEventProvider, callback);
     bind(loggingConfiguration, di, TYPES.ICDTPDebuggeeExecutionEventsProvider, CDTPDebuggeeExecutionEventsProvider, callback);
-    bind(loggingConfiguration, di, TYPES.IDebuggeeVersionProvider, CDTPDebuggeeRuntimeVersionProvider, callback);
+    bind(loggingConfiguration, di, TYPES.IDebuggeeRuntimeVersionProvider, CDTPDebuggeeRuntimeVersionProvider, callback);
     bind(loggingConfiguration, di, TYPES.ITargetBreakpoints, CDTPDebuggeeBreakpointsSetter, callback);
     bind(loggingConfiguration, di, TYPES.IConsoleEventsProvider, CDTPConsoleEventsProvider, callback);
     bind(loggingConfiguration, di, TYPES.ILogEventsProvider, CDTPLogEventsProvider, callback);
@@ -118,6 +125,14 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
 
     bind(loggingConfiguration, di, TYPES.BaseSourceMapTransformer, EagerSourceMapTransformer, callback);
     bind(loggingConfiguration, di, TYPES.BasePathTransformer, ConfigurationBasedPathTransformer, callback);
+    bind(loggingConfiguration, di, TYPES.UninitializedCDA, UninitializedCDA, callback);
+    bind(loggingConfiguration, di, TYPES.UnconnectedCDA, UnconnectedCDA, callback);
+    bind(loggingConfiguration, di, TYPES.ConnectingCDA, ConnectingCDA, callback);
+    bind(loggingConfiguration, di, TYPES.ConnectedCDA, ConnectedCDA, callback);
+    bind(loggingConfiguration, di, TYPES.IRuntimeStarter, CDTPRuntimeStarter, callback);
+    bind(loggingConfiguration, di, TYPES.IPausedOverlayConfigurer, CDTPPausedOverlayConfigurer, callback);
+    bind(loggingConfiguration, di, TYPES.ISupportedDomains, SupportedDomains, callback);
+    bind(loggingConfiguration, di, TYPES.ISchemaProvider, CDTPSchemaProvider, callback);
 }
 
 function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration, container: Container, serviceIdentifier: interfaces.ServiceIdentifier<T>, newable: interfaces.Newable<T>, callback: ComponentCustomizationCallback): void {

@@ -65,7 +65,7 @@ export class BreakpointsUpdater {
         @inject(TYPES.IEventsToClientReporter) protected readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
         @inject(TYPES.ITargetBreakpoints) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
-        @inject(TYPES.IDebuggeeVersionProvider) protected readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider) {
+        @inject(TYPES.IDebuggeeRuntimeVersionProvider) protected readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider) {
         this._bpsWhileLoadingLogic.install();
         this._debuggeeBreakpoints.onBreakpointResolvedSyncOrAsync(breakpoint => this._publishBreakpointIsBound(breakpoint));
         this.configure();

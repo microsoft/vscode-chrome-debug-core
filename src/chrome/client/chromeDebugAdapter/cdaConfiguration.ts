@@ -18,7 +18,6 @@ export interface IConnectedCDAConfiguration {
     loggingConfiguration: ILoggingConfiguration;
     session: ISession;
     clientCapabilities: IClientCapabilities;
-    chromeConnectionClass: typeof ChromeConnection;
     scenarioType: ScenarioType;
 }
 
@@ -33,10 +32,9 @@ export class ConnectedCDAConfiguration implements IConnectedCDAConfiguration {
         public readonly loggingConfiguration: ILoggingConfiguration,
         public readonly session: ISession,
         public readonly clientCapabilities: IClientCapabilities,
-        public readonly chromeConnectionClass: typeof ChromeConnection,
         public readonly scenarioType: ScenarioType,
         private readonly originalArgs: ILaunchRequestArgs | IAttachRequestArgs) {
-        this.args = this.extensibilityPoints.updateArguments(this.originalArgs);
+        this.args = this.extensibilityPoints.updateArguments(this.scenarioType, this.originalArgs);
 
         if (this.args.pathMapping) {
             for (const urlToMap in this.args.pathMapping) {

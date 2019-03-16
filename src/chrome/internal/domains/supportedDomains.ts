@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { IComponentWithAsyncInitialization } from '../features/components';
+import { IInstallableComponent } from '../features/components';
 import { Protocol as CDTP } from 'devtools-protocol';
 
 import { injectable, inject } from 'inversify';
@@ -14,7 +14,7 @@ export interface ISupportedDomains {
 }
 
 @injectable()
-export class SupportedDomains implements IComponentWithAsyncInitialization, ISupportedDomains {
+export class SupportedDomains implements IInstallableComponent, ISupportedDomains {
     private readonly _domains = new Map<string, CDTP.Schema.Domain>();
 
     constructor(@inject(TYPES.ISchemaProvider) private readonly _cdtpSchemaProvider: CDTPSchemaProvider) { }

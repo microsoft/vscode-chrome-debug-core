@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IDebugTransformer, ISetBreakpointsResponseBody, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
-import { ConnectedCDAConfiguration } from '..';
+import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side

@@ -11,11 +11,10 @@ import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
 import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
-import { IComponentWithAsyncInitialization } from '../chrome/internal/features/components';
+import { IInstallableComponent } from '../chrome/internal/features/components';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 // import { injectable, inject } from 'inversify';
 import { inject, injectable } from 'inversify';
-import { ConnectedCDAConfiguration } from '..';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 
 interface ISavedSetBreakpointsArgs {
