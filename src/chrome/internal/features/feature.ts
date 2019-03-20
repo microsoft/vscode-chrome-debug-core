@@ -2,9 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-// TODO: Remove the next line and use the import instead
-export interface ConnectedCDAConfiguration {}
-// import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
+import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 
 import { PromiseOrNot } from '../../utils/promises';
 

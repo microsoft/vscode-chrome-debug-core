@@ -3,14 +3,16 @@
  *--------------------------------------------------------*/
 
  import { Protocol as CDTP } from 'devtools-protocol';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export interface IRuntimeStarter {
     runIfWaitingForDebugger(): Promise<void>;
 }
 
+@injectable()
 export class CDTPRuntimeStarter implements IRuntimeStarter {
-    constructor(
-        protected readonly api: CDTP.RuntimeApi) {
+    constructor(@inject(TYPES.CDTPClient) protected readonly api: CDTP.ProtocolApi) {
     }
 
     public async runIfWaitingForDebugger(): Promise<void> {
@@ -18,8 +20,8 @@ export class CDTPRuntimeStarter implements IRuntimeStarter {
         // For now, we need to send both messages and ignore a failing one.
         try {
             await Promise.all([
-                this.api.runIfWaitingForDebugger(),
-                (this.api as any).run()
+                this.api.Runtime.runIfWaitingForDebugger(),
+                (this.api.Runtime as any).run()
             ]);
         } catch (exception) {
             // TODO: Make sure that at least one of the two calls succeeded

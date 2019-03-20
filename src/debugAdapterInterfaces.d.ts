@@ -228,3 +228,15 @@ export interface IDebugTransformer {
 
     scriptParsed?(event: DebugProtocol.Event): any;
 }
+
+export interface ISetExpressionArgs {
+    expression: string;
+    value: string;
+    frameId: number;
+    format?: DebugProtocol.ValueFormat;
+    timeout?: number;
+}
+
+export interface ISetExpressionResponseBody {
+    value: string;
+}

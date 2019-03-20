@@ -3,22 +3,33 @@
  *--------------------------------------------------------*/
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from '../../chromeDebugSession';
-import { ChromeConnection } from '../../chromeConnection';
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../../../executionTimingsReporter';
 import { UninitializedCDA } from './uninitializedCDA';
 import { IDebugAdapter, IDebugAdapterState, ITelemetryPropertyCollector } from '../../../debugAdapterInterfaces';
 import { CommandText } from '../requests';
+import { createDIContainer } from './cdaDIContainerCreator';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
+    private readonly _diContainer = createDIContainer(this._rawDebugSession, this._debugSessionOptions).bindAll();
+
+    // TODO: Find a better way to initialize the component instead of using waitUntilInitialized
+    private waitUntilInitialized = Promise.resolve(<UninitializedCDA>null);
+
     private _state: IDebugAdapterState;
 
-    constructor(args: IChromeDebugSessionOpts, originalSession: ChromeDebugSession) {
-        this._state = new UninitializedCDA(args.extensibilityPoints, originalSession, args.extensibilityPoints.chromeConnection || ChromeConnection);
+    constructor(private readonly _debugSessionOptions: IChromeDebugSessionOpts, private readonly _rawDebugSession: ChromeDebugSession) {
+        const uninitializedCDA = this._diContainer.createComponent<UninitializedCDA>(TYPES.UninitializedCDA);
+        this.waitUntilInitialized = uninitializedCDA.install();
+        this._state = uninitializedCDA;
     }
 
     public async processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<unknown> {
-        const response = await this._state.processRequest(requestName, args, telemetryPropertyCollector);
+        await this.waitUntilInitialized;
+
+        const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs =>
+            this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector));
         switch (requestName) {
             case 'initialize':
                 const { capabilities, newState } = <{ capabilities: DebugProtocol.Capabilities, newState: IDebugAdapterState }>response;

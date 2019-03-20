@@ -9,14 +9,14 @@ import { ISource } from './source';
 import { IScript } from '../scripts/script';
 import { injectable } from 'inversify';
 
-export interface ISourcesLogic {
+export interface ISourcesRetriever {
     loadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]>;
     loadedSourcesTreeForScript(script: IScript): ILoadedSourceTreeNode;
     text(source: ISource): Promise<string>;
 }
 
 @injectable()
-export class SourcesRetriever implements ISourcesLogic {
+export class SourcesRetriever implements ISourcesRetriever {
     constructor(
         private readonly _sourceTextRetriever: SourceTextRetriever,
         private readonly _sourceTreeNodeLogic: LoadedSourcesTreeRetriever) {

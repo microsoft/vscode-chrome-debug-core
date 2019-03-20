@@ -22,7 +22,15 @@ export class ReplacementInstruction {
 }
 
 export class MethodsCalledLoggerConfiguration {
-    public constructor(readonly replacements: ReplacementInstruction[]) { }
+    public constructor(private _replacements: ReplacementInstruction[]) { }
+
+    public get replacements(): ReplacementInstruction[] {
+        return this._replacements;
+    }
+
+    public updateReplacements(replacements: ReplacementInstruction[]): void {
+        this._replacements = replacements;
+    }
 }
 
 export class MethodsCalledLogger<T extends object> {

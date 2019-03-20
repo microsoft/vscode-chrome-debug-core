@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { IComponentWithAsyncInitialization } from '../../features/components';
+import { IInstallableComponent } from '../../features/components';
 import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldBeAutoResumed } from '../../features/actionToTakeWhenPaused';
 import { ReasonType } from '../../../stoppedEvent';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
@@ -35,7 +35,7 @@ export class PausedWhileLoadingScriptToResolveBreakpoints extends BasePauseShoul
  * thus eliminating the race condition we'd have without this feature, and warranting that all breakpoint recipes for a source will be hit
  * (Currently this only works for scripts that are added to the DOM)
  */
-export class PauseScriptLoadsToSetBPs implements IComponentWithAsyncInitialization {
+export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
     private readonly stopsWhileScriptsLoadInstrumentationName = 'scriptFirstStatement';
     private _isInstrumentationEnabled = false;
     private _scriptFirstStatementStopsBeforeFile: boolean;

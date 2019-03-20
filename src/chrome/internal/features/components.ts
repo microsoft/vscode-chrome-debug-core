@@ -5,9 +5,15 @@
 import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 import { PromiseOrNot } from '../../utils/promises';
 import { CommandText } from '../../client/requests';
+import { ITelemetryPropertyCollector } from '../../../telemetry';
 
-export interface IComponentWithAsyncInitialization {
-    install(): Promise<this>;
+export type RequestHandlerMappings = { [requestName: string]: RequestHandler };
+
+export interface IInstallableComponent {
+    install(): PromiseOrNot<this>;
+}
+
+export interface IServiceComponent extends IInstallableComponent {
 }
 
 export interface IConfigurableComponent {
@@ -19,14 +25,14 @@ export interface ICommandHandlerDeclaration {
     readonly commandHandler: RequestHandler;
 }
 
-export type RequestHandler = (args: any) => PromiseOrNot<unknown>;
+export type RequestHandler = (args: any, telemetryPropertyCollector?: ITelemetryPropertyCollector) => PromiseOrNot<unknown>;
 export class CommandHandlerDeclaration implements ICommandHandlerDeclaration {
     public constructor(
         public readonly commandName: CommandText,
         public readonly commandHandler: RequestHandler
     ) { }
 
-    public static fromLiteralObject(mappings: { [requestName: string]: RequestHandler }): CommandHandlerDeclaration[] {
+    public static fromLiteralObject(mappings: RequestHandlerMappings): CommandHandlerDeclaration[] {
         return Object.keys(mappings).map(requestName => new CommandHandlerDeclaration(<CommandText>requestName, mappings[requestName]));
     }
 }

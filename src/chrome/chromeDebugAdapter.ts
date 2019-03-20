@@ -28,7 +28,6 @@ import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 import { LineColTransformer } from '../transformers/lineNumberTransformer';
 import { BasePathTransformer } from '../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
-import { BreakOnLoadHelper } from './breakOnLoadHelper';
 import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 
 import * as nls from 'vscode-nls';
@@ -53,6 +52,7 @@ import { IDebuggeeStateSetter } from './cdtpDebuggee/features/cdtpDebugeeStateSe
 import { IEvaluateOnCallFrameRequest, IDebuggeeStateInspector } from './cdtpDebuggee/features/cdtpDebugeeStateInspector';
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { EventsToClientReporter } from './client/eventsToClientReporter';
 
 let localize = nls.loadMessageBundle();
 
@@ -118,8 +118,6 @@ export class ChromeDebugLogic {
 
     public readonly events: StepProgressEventsEmitter;
 
-    protected _breakOnLoadHelper: BreakOnLoadHelper | null;
-
     private readonly _chromeConnection: ChromeConnection;
     private readonly _sourceMapTransformer: BaseSourceMapTransformer;
     public _promiseRejectExceptionFilterEnabled = false;
@@ -132,10 +130,10 @@ export class ChromeDebugLogic {
         @inject(TYPES.ISession) session: ISession,
         @inject(TYPES.ChromeConnection) chromeConnection: ChromeConnection,
         private readonly _scriptsLogic: CDTPScriptsRegistry,
-        @inject(TYPES.IEventsToClientReporter) private readonly _eventSender: EventSender,
+        @inject(TYPES.IEventsToClientReporter) private readonly _eventSender: EventsToClientReporter,
         @inject(TYPES.ExceptionThrownEventProvider) private readonly _exceptionThrownEventProvider: CDTPExceptionThrownEventsProvider,
         @inject(TYPES.ExecutionContextEventsProvider) private readonly _executionContextEventsProvider: CDTPExecutionContextEventsProvider,
-        @inject(TYPES.IInspectDebuggeeState) private readonly _inspectDebuggeeState: IDebuggeeStateInspector,
+        @inject(TYPES.IDebuggeeStateInspector) private readonly _inspectDebuggeeState: IDebuggeeStateInspector,
         @inject(TYPES.IUpdateDebuggeeState) private readonly _updateDebuggeeState: IDebuggeeStateSetter,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _debuggerEvents: ICDTPDebuggeeExecutionEventsProvider,
@@ -184,10 +182,6 @@ export class ChromeDebugLogic {
     */
     public configurationDone(): Promise<void> {
         return Promise.resolve();
-    }
-
-    public get breakOnLoadActive(): boolean {
-        return !!this._breakOnLoadHelper;
     }
 
     public shutdown(): void {
