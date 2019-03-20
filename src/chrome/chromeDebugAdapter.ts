@@ -45,7 +45,7 @@ import { TYPES } from './dependencyInjection.ts/types';
 import { ICDTPDebuggeeExecutionEventsProvider, PausedEvent } from './cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { ILogEntry, CDTPLogEventsProvider } from './cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
 import { IConsoleEventsProvider, IConsoleAPICalledEvent } from './cdtpDebuggee/eventsProviders/cdtpConsoleEventsProvider';
-import { IPauseOnExceptionsConfigurer } from './cdtpDebuggee/features/CDTPPauseOnExceptionsConfigurer';
+import { IPauseOnExceptionsConfigurer } from './cdtpDebuggee/features/cdtpPauseOnExceptionsConfigurer';
 import { CDTPExceptionThrownEventsProvider, IExceptionThrownEvent } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
 import { CDTPExecutionContextEventsProvider } from './cdtpDebuggee/eventsProviders/cdtpExecutionContextEventsProvider';
 import { IDebuggeeStateSetter } from './cdtpDebuggee/features/cdtpDebugeeStateSetter';
