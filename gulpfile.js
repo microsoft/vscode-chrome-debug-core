@@ -99,9 +99,8 @@ gulp.task('clean', () => {
     return del(['out', 'lib']);
 });
 
-gulp.task('build', gulp.series('clean'), () => {
-    return doBuild(true, true);
-});
+gulp.task('build', gulp.series('clean', () =>
+    doBuild(true, true)));
 
 gulp.task('_dev-build', () => {
     return doBuild(false, false);
