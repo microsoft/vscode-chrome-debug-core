@@ -43,7 +43,7 @@ export class StackTracePresenter implements IInstallableComponent {
         @multiInject(TYPES.IStackTracePresentationLogicProvider) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationDetailsProvider[],
         @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfigurer) {}
 
-    public async stackTrace(formatOrNull: DebugProtocol.StackFrameFormat | null, firstFrameIndex: number, framesCountOrNull?: number): Promise<IStackTracePresentation> {
+    public async stackTrace(formatOrNull: DebugProtocol.StackFrameFormat | null, firstFrameIndex: number, framesCountOrNull: number | null): Promise<IStackTracePresentation> {
         if (!this._currentStackStraceProvider.isPaused()) {
             return Promise.reject(errors.noCallStackAvailable());
         }
@@ -76,7 +76,7 @@ export class StackTracePresenter implements IInstallableComponent {
         return [/* Description of this section of async frames */<IStackTracePresentationRow>new StackTraceLabel(stackTrace.description)].concat(thisSectionAsyncFrames, parentAsyncFrames);
     }
 
-    private framesRange(allStackFrames: IStackTracePresentationRow[], firstFrameIndex: number, framesCountOrNull?: number) {
+    private framesRange(allStackFrames: IStackTracePresentationRow[], firstFrameIndex: number, framesCountOrNull: number | null) {
         const framesCount = framesCountOrNull !== null ? firstFrameIndex + framesCountOrNull : allStackFrames.length - firstFrameIndex;
         return allStackFrames.slice(firstFrameIndex, framesCount);
     }
