@@ -76,8 +76,9 @@ export class StackTracePresenter implements IInstallableComponent {
         return [/* Description of this section of async frames */<IStackTracePresentationRow>new StackTraceLabel(stackTrace.description)].concat(thisSectionAsyncFrames, parentAsyncFrames);
     }
 
-    private framesRange(allStackFrames: IStackTracePresentationRow[], firstFrameIndex: number, framesCount?: number) {
-        return allStackFrames.slice(firstFrameIndex, firstFrameIndex + framesCount);
+    private framesRange(allStackFrames: IStackTracePresentationRow[], firstFrameIndex: number, framesCountOrNull?: number) {
+        const framesCount = framesCountOrNull !== null ? firstFrameIndex + framesCountOrNull : allStackFrames.length - firstFrameIndex;
+        return allStackFrames.slice(firstFrameIndex, framesCount);
     }
 
     private codeFlowToCallFrame(frame: CodeFlowFrame<IScript>): ScriptCallFrame {
