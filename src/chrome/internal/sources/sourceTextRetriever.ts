@@ -7,7 +7,7 @@ import { ValidatedMap } from '../../collections/validatedMap';
 import { printIterable } from '../../collections/printing';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { IScriptSourcesRetriever } from '../../cdtpDebuggee/features/CDTPScriptSourcesRetriever';
+import { IScriptSourcesRetriever } from '../../cdtpDebuggee/features/cdtpScriptSourcesRetriever';
 import { singleElementOfArray } from '../../collections/utilities';
 import * as utils from '../../../utils';
 import { logger } from 'vscode-debugadapter';
