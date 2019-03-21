@@ -9,10 +9,12 @@ import { IDebugAdapter, IDebugAdapterState, ITelemetryPropertyCollector } from '
 import { CommandText } from '../requests';
 import { createDIContainer } from './cdaDIContainerCreator';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { TerminatingCDA } from './terminatingCDA';
+import { logger } from '../../..';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
-    private readonly _diContainer = createDIContainer(this._rawDebugSession, this._debugSessionOptions).bindAll();
+    private readonly _diContainer = createDIContainer(this, this._rawDebugSession, this._debugSessionOptions).bindAll();
 
     // TODO: Find a better way to initialize the component instead of using waitUntilInitialized
     private waitUntilInitialized = Promise.resolve(<UninitializedCDA>null);
@@ -43,5 +45,10 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
                 // For all other messages where the state doesn't change, we don't need to do anything
                 return response;
         }
+    }
+
+    public async disconnect(terminatingCDA: TerminatingCDA): Promise<void> {
+        this._state = terminatingCDA;
+        this._state = await terminatingCDA.disconnect(); // This should change the state to TerminatedCDA
     }
 }

@@ -28,7 +28,6 @@ import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 import { LineColTransformer } from '../transformers/lineNumberTransformer';
 import { BasePathTransformer } from '../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
-import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 
 import * as nls from 'vscode-nls';
 import { ISession } from './client/session';
@@ -92,7 +91,6 @@ export class ChromeDebugLogic {
 
     public _session: ISession;
     public _domains = new Map<CrdpDomain, CDTP.Schema.Domain>();
-    private _clientAttached: boolean;
     private _exception: CDTP.Runtime.RemoteObject | undefined;
     private _expectingResumedEvent: boolean;
     public _expectingStopReason: ReasonType | undefined;
@@ -104,13 +102,10 @@ export class ChromeDebugLogic {
     protected _chromeConmer: BaseSourceMapTransformer;
     public _pathTransformer: BasePathTransformer;
 
-    public _hasTerminated: boolean;
-    public _inShutdown: boolean;
     public _attachMode: boolean;
     public readonly _launchAttachArgs: ICommonRequestArgs = this._configuration.args;
     public _port: number;
 
-    private _currentStep = Promise.resolve();
     private _currentLogMessage = Promise.resolve();
     privaRejectExceptionFilterEnabled = false;
 
@@ -184,39 +179,6 @@ export class ChromeDebugLogic {
         return Promise.resolve();
     }
 
-    public shutdown(): void {
-        this._batchTelemetryReporter.finalize();
-        this._inShutdown = true;
-        this._session.shutdown();
-    }
-
-    public async terminateSession(reason: string, restart?: IRestartRequestArgs): Promise<void> {
-        logger.log(`Terminated: ${reason}`);
-
-        if (!this._hasTerminated) {
-            logger.log(`Waiting for any pending steps or log messages.`);
-            await this._currentStep;
-            await this._currentLogMessage;
-            logger.log(`Current step and log messages complete`);
-
-            /* __GDPR__
-               "debugStopped" : {
-                  "reason" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
-                  "${include}": [ "${DebugCommonProperties}" ]
-               }
-             */
-            telemetry.reportEvent('debugStopped', { reason });
-            this._hasTerminated = true;
-            if (this._clientAttached || (this._launchAttachArgs && (<ILaunchRequestArgs>this._launchAttachArgs).noDebug)) {
-                this._session.sendEvent(new TerminatedEvent(restart));
-            }
-
-            if (this._chromeConnection.isAttached) {
-                this._chromeConnection.close();
-            }
-        }
-    }
-
     /**
      * Hook up all connection events
      */
@@ -228,8 +190,6 @@ export class ChromeDebugLogic {
         this._exceptionThrownEventProvider.onExceptionThrown(params => this.onExceptionThrown(params));
         this._executionContextEventsProvider.onExecutionContextsCleared(() => this.clearTargetContext());
         this._logEventsProvider.onEntryAdded(entry => this.onLogEntryAdded(entry));
-
-        this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
 
         return this;
     }
@@ -384,20 +344,6 @@ export class ChromeDebugLogic {
             };
             this.onConsoleAPICalled(onConsoleAPICalledParams);
         }
-    }
-
-    /* __GDPR__
-        "ClientRequest/disconnect" : {
-            "${include}": [
-                "${IExecutionResultTelemetryProperties}",
-                "${DebugCommonProperties}"
-            ]
-        }
-    */
-    public disconnect(): void {
-        telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
-        this.shutdown();
-        this.terminateSession('Got disconnect request');
     }
 
     /* __GDPR__

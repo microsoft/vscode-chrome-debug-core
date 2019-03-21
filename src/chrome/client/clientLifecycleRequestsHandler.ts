@@ -18,11 +18,10 @@ export class ClientLifecycleRequestsHandler implements ICommandHandlerDeclarer {
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {
         return CommandHandlerDeclaration.fromLiteralObject({
-            configurationDone: () => this.configurationDone(),
-            shutdown: () => this._chromeDebugAdapter.shutdown(),
-            disconnect: () => this._chromeDebugAdapter.disconnect(),
+            configurationDone: () => this.configurationDone()
         });
     }
+
     public async configurationDone(): Promise<void> {
         await this._debuggeeRunner.run(new TelemetryPropertyCollector());
         this.events.emitMilestoneReached('RequestedNavigateToUserPage'); // TODO DIEGO: Make sure this is reported

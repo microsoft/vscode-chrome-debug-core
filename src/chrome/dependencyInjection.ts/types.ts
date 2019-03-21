@@ -7,6 +7,8 @@ import 'reflect-metadata';
 // TODO: Add all necesary types so we can use inversifyjs to create our components
 const TYPES = {
     ISession: Symbol.for('ISession'),
+    ChromeDebugAdapter: Symbol.for('ChromeDebugAdapter'),
+    TerminatingReason: Symbol.for('TerminatingReason'),
     CDTPClient: Symbol.for('chromeConnection.api'),
     IDOMInstrumentationBreakpoints: Symbol.for('IDOMInstrumentationBreakpoints'),
     IEventsToClientReporter: Symbol.for('IEventsToClientReporter'),
@@ -64,8 +66,10 @@ const TYPES = {
     UnconnectedCDA: Symbol.for('UnconnectedCDA'),
     ConnectingCDA: Symbol.for('ConnectingCDA'),
     ConnectedCDA: Symbol.for('ConnectedCDA'),
+    TerminatingCDA: Symbol.for('TerminatingCDA'),
     UnconnectedCDAProvider: Symbol.for('UnconnectedCDAProvider'),
     ConnectedCDAProvider: Symbol.for('ConnectedCDAProvider'),
+    TerminatingCDAProvider: Symbol.for('TerminatingCDAProvider'),
     ConnectingCDAProvider: Symbol.for('ConnectingCDAProvider'),
     IChromeDebugSessionOpts: Symbol.for('IChromeDebugSessionOpts'),
     IClientCapabilities: Symbol.for('IClientCapabilities'),

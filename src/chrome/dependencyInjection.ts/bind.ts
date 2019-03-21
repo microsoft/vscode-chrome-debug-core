@@ -64,6 +64,8 @@ import { ConnectedCDA } from '../client/chromeDebugAdapter/connectedCDA';
 import { CDTPPausedOverlayConfigurer } from '../cdtpDebuggee/features/cdtpPausedOverlayConfigurer';
 import { SupportedDomains } from '../internal/domains/supportedDomains';
 import { CDTPSchemaProvider } from '../cdtpDebuggee/features/cdtpSchemaProvider';
+import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
+import { DisconnectedCDA } from '../client/chromeDebugAdapter/disconnectedCDA';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 
@@ -133,6 +135,7 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.IPausedOverlayConfigurer, CDTPPausedOverlayConfigurer, callback);
     bind(loggingConfiguration, di, TYPES.ISupportedDomains, SupportedDomains, callback);
     bind(loggingConfiguration, di, TYPES.ISchemaProvider, CDTPSchemaProvider, callback);
+    bind(loggingConfiguration, di, TYPES.TerminatingCDA, TerminatingCDA, callback);
 }
 
 function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration, container: Container, serviceIdentifier: interfaces.ServiceIdentifier<T>, newable: interfaces.Newable<T>, callback: ComponentCustomizationCallback): void {
