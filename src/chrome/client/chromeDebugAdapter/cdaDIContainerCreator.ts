@@ -12,17 +12,20 @@ import { IClientCapabilities, IAttachRequestArgs, ILaunchRequestArgs } from '../
 import { ConnectingCDA } from './connectingCDA';
 import { ConnectedCDA } from './connectedCDA';
 import { ConnectedCDAConfiguration } from './cdaConfiguration';
-import { ReplacementInstruction, MethodsCalledLoggerConfiguration } from '../../logging/methodsCalledLogger';
+import { ReplacementInstruction } from '../../logging/methodsCalledLogger';
 import { debug } from 'util';
 import { Logging } from '../../internal/services/logging';
+import { ChromeDebugAdapter } from './chromeDebugAdapterV2';
+import { TerminatingCDA, TerminatingReason } from './terminatingCDA';
 
-export function createDIContainer(rawDebugSession: ChromeDebugSession, debugSessionOptions: IChromeDebugSessionOpts): DependencyInjection {
+export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDebugSession: ChromeDebugSession, debugSessionOptions: IChromeDebugSessionOpts): DependencyInjection {
     const session = new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(rawDebugSession));
 
     const diContainer = new DependencyInjection(debugSessionOptions.extensibilityPoints.componentCustomizationCallback);
 
     return diContainer
         .configureValue(TYPES.ISession, session)
+        .configureValue(TYPES.ChromeDebugAdapter, chromeDebugAdapter)
         .configureValue(TYPES.IChromeDebugSessionOpts, debugSessionOptions)
         .configureValue(TYPES.UnconnectedCDAProvider, (clientCapabilities: IClientCapabilities) => {
             diContainer.configureValue<IClientCapabilities>(TYPES.IClientCapabilities, clientCapabilities);
@@ -45,6 +48,10 @@ export function createDIContainer(rawDebugSession: ChromeDebugSession, debugSess
             const customizedProtocolApi = debugSessionOptions.extensibilityPoints.customizeProtocolApi(protocolApi);
             diContainer.configureValue<CDTP.ProtocolApi>(TYPES.CDTPClient, customizedProtocolApi);
             return diContainer.createComponent<ConnectedCDA>(TYPES.ConnectedCDA);
+        })
+        .configureValue(TYPES.TerminatingCDAProvider, (reason: TerminatingReason) => {
+            diContainer.configureValue<TerminatingReason>(TYPES.TerminatingReason, reason);
+            return diContainer.createComponent<TerminatingCDA>(TYPES.TerminatingCDA);
         });
 }
 

@@ -11,10 +11,12 @@ export interface ILaunchResult {
     url?: string;
 }
 
-export interface IDebuggeeLauncher  {
+export interface IDebuggeeLauncher {
     launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ILaunchResult>;
+    stop(): Promise<void>;
 }
 
-export interface IDebuggeeRunner  {
+export interface IDebuggeeRunner {
     run(telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<void>;
+    stop(): Promise<void>;
 }
