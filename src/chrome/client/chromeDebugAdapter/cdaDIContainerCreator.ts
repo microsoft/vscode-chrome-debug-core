@@ -21,7 +21,7 @@ import { TerminatingCDA, TerminatingReason } from './terminatingCDA';
 export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDebugSession: ChromeDebugSession, debugSessionOptions: IChromeDebugSessionOpts): DependencyInjection {
     const session = new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(rawDebugSession));
 
-    const diContainer = new DependencyInjection(debugSessionOptions.extensibilityPoints.componentCustomizationCallback);
+    const diContainer = new DependencyInjection('ChromeDebugAdapter', debugSessionOptions.extensibilityPoints.componentCustomizationCallback);
 
     return diContainer
         .configureValue(TYPES.ISession, session)

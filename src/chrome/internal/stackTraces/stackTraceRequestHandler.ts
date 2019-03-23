@@ -23,7 +23,8 @@ import { LineColTransformer } from '../../../transformers/lineNumberTransformer'
 export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
     private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
 
-    public constructor(@inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+    public constructor(
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.StackTracesLogic) private readonly _stackTraceLogic: StackTracePresenter,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic) { }

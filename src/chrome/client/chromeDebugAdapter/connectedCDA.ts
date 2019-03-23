@@ -51,9 +51,9 @@ export class ConnectedCDA extends BaseCDAState {
     }
 
     public async install(): Promise<this> {
-        await super.install();
-        await this._chromeDebugAdapterLogic.install();
         await this._domainsEnabler.enableDomains(); // Enables all the domains that were registered
+        await super.install(); // Some of the components make CDTP calls on their install methods. We need to call this after enabling domings, to prevent a component hanging this method
+        await this._chromeDebugAdapterLogic.install();
 
         for (const serviceComponent of this._serviceComponents) {
             await serviceComponent.install();

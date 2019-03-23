@@ -8,24 +8,25 @@ import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { ValidatedMap, IValidatedMap } from '../../../collections/validatedMap';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipeIsUnbound, BPRecipeIsBoundInRuntimeLocation } from '../bpRecipeStatusForRuntimeLocation';
-import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
+import { IBreakpointsEventsListener, BreakpointsEventSystem } from '../features/breakpointsEventSystem';
 import { printMap } from '../../../collections/printing';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
-
-export interface IBPRecipeStatusCalculatorGeneratedEventsListener {
-    onBPRecipeStatusChanged(bpRecipeInSource: BPRecipeInSource): void;
-}
+import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { Listeners } from '../../../communication/listeners';
+import { PrivateTypes } from '../diTypes';
 
 /**
  * Calculates the status (Bound vs Unbound) for a BPRecipe. This class needs to be aware that a Client BP Recipe might generate multiple Debuggee BP Recipes
  */
+@injectable()
 export class BPRecipeStatusCalculator {
+    public readonly bpRecipeStatusChangedListeners = new Listeners<BPRecipeInSource, void>();
+
     private readonly _recipeToStatusAtLocation = new ValidatedMap<BPRecipeInSource, IValidatedMap<LocationInLoadedSource, BPRecipeIsBoundInRuntimeLocation>>();
     private readonly _recipeToUnboundStatus = new ValidatedMultiMap<BPRecipeInSource, BPRecipeIsUnbound>();
 
     public constructor(
-        breakpointsEventsListener: IBreakpointsEventsListener,
-        private readonly _generatedEventsListener: IBPRecipeStatusCalculatorGeneratedEventsListener) {
+        @inject(PrivateTypes.IBreakpointsEventsListener) breakpointsEventsListener: IBreakpointsEventsListener) {
         breakpointsEventsListener.listenForOnClientBPRecipeAdded(clientBPRecipe => this.onClientBPRecipeAdded(clientBPRecipe));
         breakpointsEventsListener.listenForOnClientBPRecipeRemoved(clientBPRecipe => this.onClientBPRecipeRemoved(clientBPRecipe));
         breakpointsEventsListener.listenForOnBreakpointIsBound(breakpoint => this.onBreakpointIsBound(breakpoint));
@@ -50,12 +51,12 @@ export class BPRecipeStatusCalculator {
         const runtimeSourceToBPRStatus = this._recipeToStatusAtLocation.get(bpRecipe);
 
         runtimeSourceToBPRStatus.set(locationInRuntimeSource, new BPRecipeIsBoundInRuntimeLocation(bpRecipe, locationInRuntimeSource, [breakpoint.mappedToSource()]));
-        this._generatedEventsListener.onBPRecipeStatusChanged(bpRecipe);
+        this.bpRecipeStatusChangedListeners.call(bpRecipe);
     }
 
     private onBPRecipeIsUnbound(bpRecipeIsUnbound: BPRecipeIsUnbound): void {
         this._recipeToUnboundStatus.add(bpRecipeIsUnbound.recipe, bpRecipeIsUnbound);
-        this._generatedEventsListener.onBPRecipeStatusChanged(bpRecipeIsUnbound.recipe);
+        this.bpRecipeStatusChangedListeners.call(bpRecipeIsUnbound.recipe);
     }
 
     private onClientBPRecipeRemoved(bpRecipe: BPRecipeInSource): void {

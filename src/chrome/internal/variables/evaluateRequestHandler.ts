@@ -11,7 +11,7 @@ import { DotScriptsRequestHandler } from './dotScriptsRequestHandler';
 @injectable()
 export class EvaluateRequestHandler implements ICommandHandlerDeclarer {
     public constructor(
-        @inject(DotScriptsRequestHandler) public readonly _dotScriptsRequestHandler: DotScriptsRequestHandler,
+        public readonly _dotScriptsRequestHandler: DotScriptsRequestHandler,
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic) { }
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {

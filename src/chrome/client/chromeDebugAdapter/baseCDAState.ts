@@ -22,4 +22,8 @@ export abstract class BaseCDAState implements IDebugAdapterState {
     public async processRequest(requestName: CommandText, args: unknown): Promise<unknown> {
         return await this._requestProcessor.processRequest(requestName, args);
     }
+
+    public toString(): string {
+        return this.constructor.name;
+    }
 }

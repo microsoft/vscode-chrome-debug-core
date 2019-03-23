@@ -17,7 +17,7 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
     private readonly _sourceToClientConverter = new SourceToClientConverter(this._handlesRegistry);
 
     public constructor(
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        private readonly _handlesRegistry: HandlesRegistry,
         private readonly _sourcesResolver: SourceResolver,
         private readonly _sourcesLogic: SourcesRetriever) { }
 

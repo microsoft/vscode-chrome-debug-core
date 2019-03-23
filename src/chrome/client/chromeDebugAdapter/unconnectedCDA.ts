@@ -70,10 +70,15 @@ export class UnconnectedCDA implements IDebugAdapterState {
         const logging = new Logging().install(this._debugSessionOptions.extensibilityPoints, this.parseLoggingConfiguration(args));
         this._loggerSetter(logging);
 
-        return await (await this._connectingCDAProvider(this.createConfiguration(args, scenarioType)).install()).connect(telemetryPropertyCollector);
+        const state = (await this._connectingCDAProvider(this.createConfiguration(args, scenarioType)).install());
+        return await state.connect(telemetryPropertyCollector);
     }
 
     private createConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs, scenarioType: ScenarioType): ConnectedCDAConfiguration {
         return new ConnectedCDAConfiguration(this._debugSessionOptions.extensibilityPoints, this.parseLoggingConfiguration(args), this._session, this._clientCapabilities, scenarioType, args);
+    }
+
+    public toString(): string {
+        return 'UnconnectedCDA';
     }
 }

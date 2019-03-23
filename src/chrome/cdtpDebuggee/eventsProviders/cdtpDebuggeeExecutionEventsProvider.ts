@@ -68,8 +68,8 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
     constructor(
         @inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi,
         @inject(TYPES.CDTPScriptsRegistry) private _scriptsRegistry: CDTPScriptsRegistry,
-        @inject(CDTPBreakpointIdsRegistry) private readonly _breakpointIdRegistry: CDTPBreakpointIdsRegistry,
-        @inject(CDTPCallFrameRegistry) private readonly _callFrameRegistry: CDTPCallFrameRegistry,
+        private readonly _breakpointIdRegistry: CDTPBreakpointIdsRegistry,
+        private readonly _callFrameRegistry: CDTPCallFrameRegistry,
         @inject(TYPES.IDomainsEnabler) domainsEnabler: CDTPDomainsEnabler,
     ) {
         super(domainsEnabler);

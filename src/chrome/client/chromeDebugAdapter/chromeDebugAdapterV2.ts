@@ -11,6 +11,7 @@ import { createDIContainer } from './cdaDIContainerCreator';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { TerminatingCDA } from './terminatingCDA';
 import { logger } from '../../..';
+import { BaseCDAState } from './baseCDAState';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -24,22 +25,26 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     constructor(private readonly _debugSessionOptions: IChromeDebugSessionOpts, private readonly _rawDebugSession: ChromeDebugSession) {
         const uninitializedCDA = this._diContainer.createComponent<UninitializedCDA>(TYPES.UninitializedCDA);
         this.waitUntilInitialized = uninitializedCDA.install();
-        this._state = uninitializedCDA;
+        this.changeStateTo(uninitializedCDA);
     }
 
     public async processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<unknown> {
         await this.waitUntilInitialized;
 
-        const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs =>
-            this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector));
+        const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs => {
+            if (!this._state.processRequest) {
+                throw new Error(`Invalid state: ${this._state}`);
+            }
+            return this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector);
+        });
         switch (requestName) {
             case 'initialize':
                 const { capabilities, newState } = <{ capabilities: DebugProtocol.Capabilities, newState: IDebugAdapterState }>response;
-                this._state = newState;
+                this.changeStateTo(newState);
                 return capabilities;
             case 'launch':
             case 'attach':
-                this._state = <IDebugAdapterState>response;
+            this.changeStateTo(<IDebugAdapterState>response);
                 return {};
             default:
                 // For all other messages where the state doesn't change, we don't need to do anything
@@ -48,7 +53,15 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     }
 
     public async disconnect(terminatingCDA: TerminatingCDA): Promise<void> {
-        this._state = terminatingCDA;
-        this._state = await terminatingCDA.disconnect(); // This should change the state to TerminatedCDA
+        this.changeStateTo(terminatingCDA);
+        this.changeStateTo(await terminatingCDA.disconnect()); // This should change the state to TerminatedCDA
     }
+
+    private changeStateTo(newState: IDebugAdapterState) {
+        logger.log(`Changing ChromeDebugAdapter state to ${newState}`);
+        this._state = newState;
+        if (!this._state.processRequest) {
+            throw new Error(`Invalid state: ${this._state}`);
+        }
+}
 }

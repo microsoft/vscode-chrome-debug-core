@@ -8,10 +8,10 @@ import { asyncMap } from '../../../collections/async';
 import { IBPRecipeStatus } from '../bpRecipeStatus';
 import { CurrentBPRecipesForSourceRegistry } from '../registries/currentBPRecipesForSourceRegistry';
 import { BreakpointsSetForScriptFinder } from '../registries/breakpointsSetForScriptFinder';
-import { BPRecipeAtLoadedSourceLogic } from './bpRecipeAtLoadedSourceLogic';
+import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { PauseScriptLoadsToSetBPs } from './pauseScriptLoadsToSetBPs';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, LazyServiceIdentifer } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { IDebuggeeBreakpointsSetter } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { BPRsDeltaInRequestedSource } from './bpsDeltaCalculator';
@@ -28,46 +28,39 @@ import { ITelemetryPropertyCollector } from '../../../../telemetry';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { BreakpointsEventSystem } from './breakpointsEventSystem';
 import { BPRecipeStatusCalculator } from '../registries/bpRecipeStatusCalculator';
+import { TransformedListenerRegistry } from '../../../communication/transformedListenerRegistry';
+import { Listeners } from '../../../communication/listeners';
+import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
+import { PrivateTypes } from '../diTypes';
 
 /**
  * Update the breakpoint recipes for a particular source
  */
 @injectable()
 export class BreakpointsUpdater {
-    private readonly _breakpointsEventSystem = new BreakpointsEventSystem();
-    private readonly _publishClientBPRecipeAdded = this._breakpointsEventSystem.publisherForClientBPRecipeAdded();
-    private readonly _publishClientBPRecipeRemoved = this._breakpointsEventSystem.publisherForClientBPRecipeRemoved();
-    private readonly _publishBreakpointIsBound = this._breakpointsEventSystem.publisherForBreakpointIsBound();
-
-    private readonly _clientCurrentBPRecipesRegistry = wrapWithMethodLogger(new CurrentBPRecipesForSourceRegistry(), 'ClientCurrentBPRecipesRegistry');
-    private readonly _debuggeeBPRsSetForClientBPRFinder = wrapWithMethodLogger(new DebuggeeBPRsSetForClientBPRFinder(this._breakpointsEventSystem), 'DebuggeeBPRsSetForClientBPRFinder');
-    private readonly _breakpointsSetForScriptFinder = wrapWithMethodLogger(new BreakpointsSetForScriptFinder(this._breakpointsEventSystem), 'BreakpointsSetForScriptFinder');
-    private readonly _bpRecipeStatusCalculator = wrapWithMethodLogger(new BPRecipeStatusCalculator(this._breakpointsEventSystem,
-        { onBPRecipeStatusChanged: bpRecipe => this.onBPRecipeStatusChanged(bpRecipe) }), 'BPRecipeStatusCalculator');
-
-    private readonly _breakpointsInLoadedSource = new BPRecipeAtLoadedSourceLogic(this._breakpointsEventSystem, this._breakpointFeaturesSupport, this._debuggeeBPRsSetForClientBPRFinder,
-        this._targetBreakpoints, this._eventsToClientReporter, this._debuggeePausedHandler).withLogging;
-
-    private readonly _existingBPsForJustParsedScriptSetter = new ExistingBPsForJustParsedScriptSetter(this._scriptParsedProvider, this._debuggeeBPRsSetForClientBPRFinder, this._clientCurrentBPRecipesRegistry, this._breakpointsInLoadedSource).withLogging;
-
-    private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs = new PauseScriptLoadsToSetBPs(this._debuggeePausedHandler, this._domInstrumentationBreakpoints, this._debugeeExecutionControl, this._eventsToClientReporter,
-        this._debugeeVersionProvider, this._existingBPsForJustParsedScriptSetter, this._breakpointsSetForScriptFinder).withLogging;
+    public readonly clientBPRecipeAddedListeners = new Listeners<BPRecipeInSource, void>();
+    public readonly clientBPRecipeRemovedListeners = new Listeners<BPRecipeInSource, void>();
+    public readonly breakpointIsBoundListeners = new Listeners<CDTPBreakpoint, void>();
 
     private _isBpsWhileLoadingEnable: boolean;
 
     constructor(
-        @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
-        @inject(TYPES.ITargetBreakpoints) private readonly _debuggeeBreakpoints: IDebuggeeBreakpointsSetter,
+        @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _debuggeeBreakpoints: IDebuggeeBreakpointsSetter,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
-        @inject(TYPES.IScriptParsedProvider) private readonly _scriptParsedProvider: IScriptParsedProvider,
-        @inject(TYPES.IDOMInstrumentationBreakpoints) private readonly _domInstrumentationBreakpoints: IDOMInstrumentationBreakpointsSetter,
-        @inject(TYPES.IDebuggeeExecutionControl) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
         @inject(TYPES.IEventsToClientReporter) protected readonly _eventsToClientReporter: IEventsToClientReporter,
-        @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
-        @inject(TYPES.ITargetBreakpoints) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
-        @inject(TYPES.IDebuggeeRuntimeVersionProvider) protected readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider) {
+        @inject(PrivateTypes.BPRecipeAtLoadedSourceSetter) private readonly _breakpointsInLoadedSource: BPRecipeAtLoadedSourceSetter,
+        @inject(TYPES.IDebuggeeRuntimeVersionProvider) protected readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider,
+        private readonly _bpRecipeStatusCalculator: BPRecipeStatusCalculator,
+        private readonly _bpRecipeAtLoadedSourceLogic: BPRecipeAtLoadedSourceSetter,
+        private readonly _clientCurrentBPRecipesRegistry: CurrentBPRecipesForSourceRegistry,
+        @inject(PrivateTypes.IBreakpointsEventsListener) private readonly _breakpointsEventSystem: BreakpointsEventSystem,
+        private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs) {
+
+        this._breakpointsEventSystem.setDependencies(this, this._bpRecipeStatusCalculator, this._bpRecipeAtLoadedSourceLogic);
+
         this._bpsWhileLoadingLogic.install();
-        this._debuggeeBreakpoints.onBreakpointResolvedSyncOrAsync(breakpoint => this._publishBreakpointIsBound(breakpoint));
+        this._bpRecipeStatusCalculator.bpRecipeStatusChangedListeners.add(bpRecipe => this.onBPRecipeStatusChanged(bpRecipe));
+        this._debuggeeBreakpoints.onBreakpointResolvedSyncOrAsync(breakpoint => this.breakpointIsBoundListeners.call(breakpoint));
         this.configure();
     }
 
@@ -80,7 +73,7 @@ export class BreakpointsUpdater {
         const bpsDelta = this._clientCurrentBPRecipesRegistry.updateBPRecipesAndCalculateDelta(requestedBPs);
         const requestedBPsToAdd = new BPRecipesInSource(bpsDelta.resource, bpsDelta.requestedToAdd);
         for (const requestedBP of bpsDelta.requestedToAdd) {
-            await this._publishClientBPRecipeAdded(requestedBP);
+            await this.clientBPRecipeAddedListeners.call(requestedBP);
         }
 
         await requestedBPsToAdd.tryResolving(
@@ -112,7 +105,7 @@ export class BreakpointsUpdater {
     private async removeDeletedBreakpointsFromFile(bpsDelta: BPRsDeltaInRequestedSource) {
         await asyncMap(bpsDelta.existingToRemove, async (existingBPToRemove) => {
             await this._breakpointsInLoadedSource.removeDebuggeeBPRs(existingBPToRemove);
-            this._publishClientBPRecipeRemoved(existingBPToRemove);
+            this.clientBPRecipeRemovedListeners.call(existingBPToRemove);
         });
     }
 
