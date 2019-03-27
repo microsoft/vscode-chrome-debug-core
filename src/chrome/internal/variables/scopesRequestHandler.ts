@@ -22,10 +22,10 @@ export class ScopesRequestHandler implements ICommandHandlerDeclarer {
 
     public scopes(args: DebugProtocol.ScopesArguments): IScopesResponseBody {
         const frame = this.getCallFrameById(args.frameId);
-        if (frame instanceof CallFramePresentation) {
+        if (frame instanceof CallFramePresentation && frame.callFrame.hasState()) {
             return this._chromeDebugAdapter.scopes(frame.callFrame);
         } else {
-            throw new Error(`Can't get scopes for the frame because a label frame is only a description of the different sections of the call stack`);
+            throw new Error(`Can't get scopes for a frame that has no associated state`);
         }
     }
 

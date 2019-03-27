@@ -45,7 +45,7 @@ export class DotScriptCommand {
         }
 
         return outputStringP.then(scriptsStr => {
-            this._eventsToClientReporter.sendOutput({ output: scriptsStr, category: null });
+            this._eventsToClientReporter.sendOutput({ output: scriptsStr, category: 'stdout' });
         });
     }
 

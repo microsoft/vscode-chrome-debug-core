@@ -39,6 +39,10 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     }
 
     private toBPRecipes(args: DebugProtocol.SetBreakpointsArguments): BPRecipesInSource {
+        if (args.breakpoints === undefined) {
+            throw new Error(`Expected the set breakpoints arguments to include a breakpoints list on the 'breakpoints' variable. The arguments are: ${JSON.stringify(args)}`);
+        }
+
         const source = this._clientSourceParser.toSource(args.source);
         const breakpoints = args.breakpoints.map(breakpoint => this.toBPRecipe(source, breakpoint));
         return new BPRecipesInSource(source, breakpoints);
@@ -74,7 +78,9 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
 
     private toLocation(location: { line: number; column?: number; }): Position {
         const lineNumber = createLineNumber(this._lineColTransformer.convertClientLineToDebugger(location.line));
-        const columnNumber = location.column !== undefined ? createColumnNumber(this._lineColTransformer.convertClientColumnToDebugger(location.column)) : undefined;
+        const columnNumber = location.column !== undefined
+            ? createColumnNumber(this._lineColTransformer.convertClientColumnToDebugger(location.column))
+            : createColumnNumber(0); // If no column number is specified, we default to assuming the column number is zero
         return new Position(lineNumber, columnNumber);
     }
 

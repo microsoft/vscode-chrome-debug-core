@@ -5,7 +5,7 @@
 import * as path from 'path';
 import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
-import { CodeFlowFrame, ICallFrame, CallFrame } from './callFrame';
+import { CodeFlowFrame, ICallFrame, CallFrame, ICallFrameState } from './callFrame';
 import { CallFramePresentationHint, IStackTracePresentationRow } from './stackTracePresentationRow';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
@@ -18,7 +18,7 @@ export interface ICallFramePresentationDetails {
 
 export class CallFramePresentation implements IStackTracePresentationRow {
     constructor(
-        public readonly callFrame: CallFrame<ILoadedSource>,
+        public readonly callFrame: CallFrame<ILoadedSource, ICallFrameState>,
         private readonly _descriptionFormatArgs?: DebugProtocol.StackFrameFormat,
         public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
         public readonly presentationHint?: CallFramePresentationHint) {

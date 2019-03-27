@@ -13,6 +13,7 @@ import { Position } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
 import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
+import { IValidatedMap } from '../chrome/collections/validatedMap';
 
 export type MappedPosition = MappedPosition;
 
@@ -248,7 +249,7 @@ export class SourceMap {
         return (<any>this._smc).sourceContentFor(authoredSourcePath, /*returnNullOnMissing=*/true);
     }
 
-    public rangesInSources(): Map<IResourceIdentifier, SourceRange> {
+    public rangesInSources(): IValidatedMap<IResourceIdentifier, SourceRange> {
         const sourceToRange = newResourceIdentifierMap<SourceRange>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
         this._smc.eachMapping(mapping => {

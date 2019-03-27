@@ -8,6 +8,7 @@ import { breakWhileDebugging } from '../../validation';
 export type ValueComparerFunction<V> = (left: V, right: V) => boolean;
 
 export interface IValidatedMap<K, V> extends Map<K, V> {
+    get(key: K): V;
     tryGetting(key: K): V | undefined;
     getOr(key: K, elementDoesntExistAction: () => V): V;
     getOrAdd(key: K, obtainValueToAdd: () => V): V;
@@ -19,10 +20,17 @@ export interface IValidatedMap<K, V> extends Map<K, V> {
 export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     private readonly _wrappedMap: Map<K, V>;
 
+    constructor(initialContents?: Map<K, V>);
+    constructor(iterable: Iterable<[K, V]>);
+    constructor(array: ReadonlyArray<[K, V]>);
     constructor(initialContents?: Map<K, V> | Iterable<[K, V]> | ReadonlyArray<[K, V]>) {
-        this._wrappedMap = initialContents instanceof Map
+        if (initialContents !== undefined) {
+            this._wrappedMap = initialContents instanceof Map
             ? new Map<K, V>(initialContents.entries())
             : new Map<K, V>(initialContents);
+        } else {
+            this._wrappedMap = new Map<K, V>();
+        }
     }
 
     public static with<K, V>(key: K, value: V): ValidatedMap<K, V> {

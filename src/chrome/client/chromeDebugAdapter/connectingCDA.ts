@@ -24,7 +24,7 @@ export class ConnectingCDA extends BaseCDAState {
         super([], {});
     }
 
-    public async connect(telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<ConnectedCDA> {
+    public async connect(telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ConnectedCDA> {
         const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
         await this._chromeConnection.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
         if (this._chromeConnection.api === undefined) {

@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { ScriptCallFrame } from '../../stackTraces/callFrame';
+import { ScriptCallFrame, CallFrameWithState } from '../../stackTraces/callFrame';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../../features/actionToTakeWhenPaused';
 import { injectable, inject } from 'inversify';
 import { IDebuggeeExecutionController } from '../../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
@@ -60,7 +60,7 @@ export class SyncStepping {
         return new NoActionIsNeededForThisPause(this);
     }
 
-    public async restartFrame(callFrame: ScriptCallFrame): Promise<void> {
+    public async restartFrame(callFrame: ScriptCallFrame<CallFrameWithState>): Promise<void> {
         this._status = this._status.startStepping();
         await this._debugeeStepping.restartFrame(callFrame);
         await this._debugeeStepping.stepInto({ breakOnAsyncCall: true });

@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 import * as path from 'path';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { ScriptCallFrame } from './callFrame';
+import { ScriptCallFrame, CallFrameWithState } from './callFrame';
 
 /** The clients can requests the stack traces frames descriptions in different formats.
  * We use this class to create the description for the call frame according to the parameters supplied by the client.
@@ -37,5 +37,5 @@ export class CustomCallFrameDescriptionFormatter implements ICallFrameDescriptio
         return formattedDescription;
     }
 
-    constructor(private readonly _callFrame: ScriptCallFrame, private readonly _formatArgs?: DebugProtocol.StackFrameFormat) { }
+    constructor(private readonly _callFrame: ScriptCallFrame<CallFrameWithState>, private readonly _formatArgs?: DebugProtocol.StackFrameFormat) { }
 }

@@ -11,7 +11,7 @@ import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { IScript } from '../scripts/script';
-import { CodeFlowFrame, ScriptCallFrame, CallFrame } from './callFrame';
+import { CodeFlowFrame, ScriptCallFrame, CallFrame, CallFrameWithoutState, ICallFrameState } from './callFrame';
 import { LocationInLoadedSource } from '../locations/location';
 import { CallFramePresentation, SourcePresentationHint, ICallFramePresentationDetails } from './callFramePresentation';
 import { IInstallableComponent } from '../features/components';
@@ -23,9 +23,21 @@ import { StackTraceLabel, CallFramePresentationHint, IStackTracePresentationRow 
 import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 import { CurrentStackTraceProvider } from './currentStackTraceProvider';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
+import _ = require('lodash');
 
 export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];
+}
+
+export interface IStackTraceFormat {
+
+}
+
+export class StackTraceCustomFormat implements IStackTraceFormat {
+    public constructor(public readonly formatOptions: DebugProtocol.StackFrameFormat) { }
+}
+
+export class StackTraceDefaultFormat implements IStackTraceFormat {
 }
 
 /**
@@ -41,16 +53,17 @@ export class StackTracePresenter implements IInstallableComponent {
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggeeExecutionEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
         @multiInject(TYPES.IStackTracePresentationLogicProvider) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationDetailsProvider[],
-        @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfigurer) {}
+        @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfigurer) { }
 
-    public async stackTrace(formatOrNull: DebugProtocol.StackFrameFormat | null, firstFrameIndex: number, framesCountOrNull: number | null): Promise<IStackTracePresentation> {
+    public async stackTrace(format: IStackTraceFormat, firstFrameIndex: number, framesCountOrNull: number | null): Promise<IStackTracePresentation> {
         if (!this._currentStackStraceProvider.isPaused()) {
             return Promise.reject(errors.noCallStackAvailable());
         }
 
-        const syncFrames: IStackTracePresentationRow[] = await this.syncCallFrames(formatOrNull);
-        const asyncFrames = !!this._currentStackStraceProvider.asyncStackTrace()
-            ? await this.asyncCallFrames(this._currentStackStraceProvider.asyncStackTrace(), formatOrNull)
+        const syncFrames: IStackTracePresentationRow[] = await this.syncCallFrames(format);
+        const asyncStackTraceOrUndefined = this._currentStackStraceProvider.asyncStackTrace();
+        const asyncFrames = !!asyncStackTraceOrUndefined
+            ? await this.asyncCallFrames(asyncStackTraceOrUndefined, format)
             : [];
         const allStackFrames = syncFrames.concat(asyncFrames);
 
@@ -64,16 +77,19 @@ export class StackTracePresenter implements IInstallableComponent {
         return stackTraceResponse;
     }
 
-    private async syncCallFrames(format: DebugProtocol.StackFrameFormat): Promise<IStackTracePresentationRow[]> {
+    private async syncCallFrames(format: IStackTraceFormat): Promise<IStackTracePresentationRow[]> {
         return await asyncMap(this._currentStackStraceProvider.syncStackFrames(), frame => this.toPresentation(frame, format));
     }
 
-    private async asyncCallFrames(stackTrace: CodeFlowStackTrace, formatArgs?: DebugProtocol.StackFrameFormat): Promise<IStackTracePresentationRow[]> {
+    private async asyncCallFrames(stackTrace: CodeFlowStackTrace, formatArgs?: IStackTraceFormat): Promise<IStackTracePresentationRow[]> {
         const thisSectionAsyncFrames = await asyncMap(stackTrace.codeFlowFrames,
             frame => this.toPresentation(this.codeFlowToCallFrame(frame), formatArgs));
         const parentAsyncFrames = stackTrace.parent ? await this.asyncCallFrames(stackTrace.parent, formatArgs) : [];
 
-        return [/* Description of this section of async frames */<IStackTracePresentationRow>new StackTraceLabel(stackTrace.description)].concat(thisSectionAsyncFrames, parentAsyncFrames);
+        return (stackTrace.description
+            ? [/* Description of this section of async frames */<IStackTracePresentationRow>new StackTraceLabel(stackTrace.description)]
+            : [])
+            .concat(thisSectionAsyncFrames, parentAsyncFrames);
     }
 
     private framesRange(allStackFrames: IStackTracePresentationRow[], firstFrameIndex: number, framesCountOrNull: number | null) {
@@ -81,11 +97,11 @@ export class StackTracePresenter implements IInstallableComponent {
         return allStackFrames.slice(firstFrameIndex, framesCount);
     }
 
-    private codeFlowToCallFrame(frame: CodeFlowFrame<IScript>): ScriptCallFrame {
-        return new ScriptCallFrame(frame, [], undefined, undefined);
+    private codeFlowToCallFrame(frame: CodeFlowFrame<IScript>): ScriptCallFrame<CallFrameWithoutState> {
+        return new ScriptCallFrame(frame, new CallFrameWithoutState());
     }
 
-    private async toPresentation(frame: CallFrame<IScript>, formatArgs?: DebugProtocol.StackFrameFormat): Promise<CallFramePresentation> {
+    private async toPresentation(frame: CallFrame<IScript, ICallFrameState>, formatArgs?: IStackTraceFormat): Promise<CallFramePresentation> {
         // TODO: Make getReadonlyOrigin work again
         // this.getReadonlyOrigin(frame.location.script.runtimeSource.identifier.textRepresentation)
         let presentationHint: CallFramePresentationHint = 'normal';
@@ -93,7 +109,7 @@ export class StackTracePresenter implements IInstallableComponent {
         // Apply hints to skipped frames
         const getSkipReason = (reason: string) => localize('skipReason', "(skipped by '{0}')", reason);
         const locationInLoadedSource = frame.location.mappedToSource();
-        const providedDetails: ICallFramePresentationDetails[] = [].concat(await asyncMap(this._stackTracePresentationLogicProviders, provider =>
+        const providedDetails: ICallFramePresentationDetails[] = _.flatten(await asyncMap(this._stackTracePresentationLogicProviders, provider =>
             provider.callFrameAdditionalDetails(locationInLoadedSource)));
         const actualDetails = providedDetails.length === 0
             ? [{

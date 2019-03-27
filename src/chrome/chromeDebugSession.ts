@@ -115,7 +115,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         // class expression!
         return class extends ChromeDebugSession {
             constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean) {
-                super(debuggerLinesAndColumnsStartAt1, isServer, opts);
+                super(!!debuggerLinesAndColumnsStartAt1, !!isServer, opts);
             }
         };
     }

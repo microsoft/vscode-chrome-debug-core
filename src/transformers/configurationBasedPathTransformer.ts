@@ -46,7 +46,7 @@ export class ConfigurationBasedPathTransformer extends BasePathTransformer {
         return this._pathTransformer.getTargetPathFromClientPath(clientPath);
     }
 
-    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier {
+    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier | undefined {
         return this._pathTransformer.getClientPathFromTargetPath(targetPath);
     }
 }

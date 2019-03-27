@@ -18,7 +18,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     private readonly _diContainer = createDIContainer(this, this._rawDebugSession, this._debugSessionOptions).bindAll();
 
     // TODO: Find a better way to initialize the component instead of using waitUntilInitialized
-    private waitUntilInitialized = Promise.resolve(<UninitializedCDA>null);
+    private waitUntilInitialized = Promise.resolve(<UninitializedCDA><unknown>null);
 
     private _state: IDebugAdapterState;
 

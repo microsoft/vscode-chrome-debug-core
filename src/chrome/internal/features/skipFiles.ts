@@ -187,7 +187,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                     isSkippedFile = parentIsSkipped;
                 }
 
-                this._skipFileStatuses.setAndReplaceIfExist(s.identifier, isSkippedFile);
+                this._skipFileStatuses.setAndReplaceIfExist(s.identifier, !!isSkippedFile);
 
                 if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
                     const sourcesMapper = script.sourceMapper;

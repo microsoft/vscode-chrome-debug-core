@@ -7,3 +7,11 @@
  */
 export type MakePropertyRequired<T, K extends keyof T> = T & { [P in K]-?: T[K] };
 export type RemoveProperty<T, K> = Pick<T, Exclude<keyof T, K>>;
+
+export function isNotUndefined<T>(object: T | undefined): object is T {
+    return object !== undefined;
+}
+
+export interface Array<T> {
+    filter<U extends T>(predicate: (element: T) => element is U): U[];
+}

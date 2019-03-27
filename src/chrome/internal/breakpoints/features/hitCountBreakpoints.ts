@@ -15,6 +15,7 @@ import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { ScriptOrSourceOrURLOrURLRegexp } from '../../locations/location';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
+import { isNotUndefined } from '../../../../typeUtils';
 
 export interface IHitCountBreakpointsDependencies {
     registerAddBPRecipeHandler(handlerRequirements: (bpRecipe: BPRecipeInSource) => boolean,
@@ -78,8 +79,8 @@ export class HitCountBreakpoints {
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        const hitCountBPData = paused.hitBreakpoints.map(hitBPRecipe =>
-            this.underlyingToBPRecipe.tryGetting(hitBPRecipe.unmappedBPRecipe)).filter(bpRecipe => bpRecipe !== undefined);
+        const hitCountBPData: HitCountBPData[] = <HitCountBPData[]>paused.hitBreakpoints.map(hitBPRecipe =>
+            this.underlyingToBPRecipe.tryGetting(hitBPRecipe.unmappedBPRecipe)).filter(bpRecipe => isNotUndefined(bpRecipe));
 
         const individualDecisions = hitCountBPData.map(data => data.notifyBPHit());
         return individualDecisions.some(v => !(v instanceof NoActionIsNeededForThisPause))

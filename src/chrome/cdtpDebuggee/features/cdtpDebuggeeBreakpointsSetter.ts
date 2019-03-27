@@ -25,7 +25,7 @@ import { BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp, IBPRecipeForRunti
 import { ConditionalPause } from '../../internal/breakpoints/bpActionWhenHit';
 import { singleElementOfArray } from '../../collections/utilities';
 
-type SetBPInCDTPCall<TResource extends CDTPSupportedResources> = (resource: TResource, position: Position, cdtpConditionField: string) => Promise<CDTP.Debugger.SetBreakpointByUrlResponse>;
+type SetBPInCDTPCall<TResource extends CDTPSupportedResources> = (resource: TResource, position: Position, cdtpConditionField?: string) => Promise<CDTP.Debugger.SetBreakpointByUrlResponse>;
 export type OnBreakpointResolvedListener = (breakpoint: CDTPBreakpoint) => void;
 
 export interface IDebuggeeBreakpointsSetter {

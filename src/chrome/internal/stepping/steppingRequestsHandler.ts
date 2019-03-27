@@ -21,7 +21,7 @@ export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
 
     public async restartFrame(args: DebugProtocol.RestartFrameRequest): Promise<void> {
         const callFrame = this._handlesRegistry.frames.getObjectById(args.arguments.frameId);
-        if (callFrame instanceof CallFramePresentation) {
+        if (callFrame instanceof CallFramePresentation && callFrame.callFrame.hasState()) {
             return this._syncStepping.restartFrame(callFrame.callFrame.unmappedCallFrame);
         } else {
             throw new Error(`Cannot restart to a frame that doesn't have state information`);

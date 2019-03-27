@@ -8,7 +8,7 @@ import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
 export interface ILoggingConfiguration {
     logLevel?: Logger.LogLevel;
     shouldLogTimestamps: boolean;
-    logFilePath: string;
+    logFilePath?: string;
 }
 
 export class Logging {

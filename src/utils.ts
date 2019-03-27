@@ -280,7 +280,7 @@ export function getURL(aUrl: string, options: https.RequestOptions = {}): Promis
                 if (response.statusCode === 200) {
                     resolve(responseData);
                 } else {
-                    logger.log('HTTP GET failed with: ' + response.statusCode.toString() + ' ' + response.statusMessage.toString());
+                    logger.log(`HTTP GET failed with: ${response.statusCode} ${response.statusMessage}`);
                     reject(new Error(responseData.trim()));
                 }
             });
@@ -295,7 +295,7 @@ export function getURL(aUrl: string, options: https.RequestOptions = {}): Promis
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
 export function isURL(urlOrPath: string): boolean {
-    return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
+    return !!urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
 }
 
 export function isAbsolute(_path: string): boolean {
@@ -456,37 +456,6 @@ export function multiGlob(patterns: string[], opts?: any): Promise<string[]> {
 }
 
 /**
- * A reversable subclass of the Handles helper
- */
-export class ReverseHandles<T> extends Handles<T> {
-    private _reverseMap = new Map<T, number>();
-
-    public create(value: T): number {
-        const handle = super.create(value);
-        this._reverseMap.set(value, handle);
-
-        return handle;
-    }
-
-    public lookup(value: T): number {
-        return this._reverseMap.get(value);
-    }
-
-    public lookupF(idFn: (value: T) => boolean): number {
-        for (let key of this._reverseMap.keys()) {
-            if (idFn(key)) return this._reverseMap.get(key);
-        }
-
-        return undefined;
-    }
-
-    public set(handle: number, value: T): void {
-        (<any>this)._handleMap.set(handle, value);
-        this._reverseMap.set(value, handle);
-    }
-}
-
-/**
  * Return a regex for the given path to set a breakpoint on
  */
 export function pathToRegex(aPath: string, guid = ''): string {
@@ -608,15 +577,20 @@ export function toVoidP(p: Promise<any>): Promise<void> {
     return p.then(() => { });
 }
 
+type ResolveType<T> = (value?: T | PromiseLike<T>) => void;
+type RejectType = (reason?: any) => void;
+
 export interface IPromiseDefer<T> {
     readonly promise: Promise<T>;
-    resolve: (value?: T | PromiseLike<T>) => void;
-    reject: (reason?: any) => void;
+    resolve: ResolveType<T>;
+    reject: RejectType;
 }
 
 export function promiseDefer<T>(): IPromiseDefer<T> {
-    let resolveCallback;
-    let rejectCallback;
+    // If we hit any of these two functions, it means that the variables weren't initialized inside the new Promise(){ ... }
+    let resolveCallback: ResolveType<T> = () => { throw new Error(`promiseDefer is not initializing resolveCallback properly`); };
+    let rejectCallback: RejectType = () => { throw new Error(`promiseDefer is not initializing rejectCallback properly`); };
+
     const promise = new Promise<T>((resolve, reject) => {
         resolveCallback = resolve;
         rejectCallback = reject;

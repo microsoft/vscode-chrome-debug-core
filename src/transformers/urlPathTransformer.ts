@@ -19,7 +19,7 @@ import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/
  */
 @injectable()
 export class UrlPathTransformer extends BasePathTransformer {
-    private _pathMapping: IPathMapping;
+    private _pathMapping: IPathMapping | undefined;
     private _clientPathToTargetUrl = newResourceIdentifierMap<IResourceIdentifier>();
     private _targetUrlToClientPath = newResourceIdentifierMap<IResourceIdentifier>();
 
@@ -62,7 +62,7 @@ export class UrlPathTransformer extends BasePathTransformer {
             clientPath;
     }
 
-    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier {
+    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier | undefined {
         return this._targetUrlToClientPath.tryGetting(targetPath);
     }
 

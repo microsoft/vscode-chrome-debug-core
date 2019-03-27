@@ -75,7 +75,12 @@ class GatheringDomainsToEnableDuringStartup implements IState {
     }
 
     private getDomainName(api: IEnableableApi<unknown, unknown>): string {
-        return _.findKey(this.protocolApi, api);
+        const name = _.findKey(this.protocolApi, api);
+        if (name !== undefined) {
+            return name;
+        } else {
+            throw new Error(`Couldn't get the domain name for ${api}`);
+        }
     }
 }
 
@@ -97,7 +102,7 @@ export class CDTPDomainsEnabler implements IDomainsEnabler {
     constructor(@inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi) { }
 
     public registerToEnable<T extends IEnableableApi<EnableParameters, EnableResponse>, EnableParameters, EnableResponse>
-        (api: T, parameters: EnableParameters): Promise<EnableResponse> {
+        (api: T, parameters?: EnableParameters): Promise<EnableResponse> {
         return this._state.registerToEnable(api, parameters);
     }
 

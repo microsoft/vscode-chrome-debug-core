@@ -14,8 +14,8 @@ export function createLineNumber(numberRepresentation: number): LineNumber {
 const columnIndexSymbol = Symbol();
 export type ColumnNumber = number & { [columnIndexSymbol]: true };
 
-export function createColumnNumber(numberRepresentation: number): ColumnNumber {
-    return <ColumnNumber>numberRepresentation;
+export function createColumnNumber<T extends number | undefined>(numberRepresentation: T): ColumnNumber & T {
+    return <ColumnNumber & T>numberRepresentation;
 }
 
 const URLRegexpSymbol = Symbol();

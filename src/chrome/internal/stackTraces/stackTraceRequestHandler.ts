@@ -10,7 +10,7 @@ import { IStackTraceResponseBody } from '../../../debugAdapterInterfaces';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
 import { IStackTracePresentationRow, StackTraceLabel } from '../stackTraces/stackTracePresentationRow';
 import { HandlesRegistry } from '../../client/handlesRegistry';
-import { StackTracePresenter } from './stackTracePresenter';
+import { StackTracePresenter, StackTraceDefaultFormat, StackTraceCustomFormat } from './stackTracePresenter';
 import { asyncMap } from '../../collections/async';
 import { RemoveProperty } from '../../../typeUtils';
 import { LocationInSourceToClientConverter } from '../../client/locationInSourceToClientConverter';
@@ -37,10 +37,14 @@ export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
     }
 
     public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
+        const format = args.format
+            ? new StackTraceCustomFormat(args.format)
+            : new StackTraceDefaultFormat();
+
         const firstFrameIndex = typeof args.startFrame === 'number' ? args.startFrame : 0;
         const framesCountOrNull = typeof args.levels === 'number' ? args.levels : null;
 
-        const stackTracePresentation = await this._stackTraceLogic.stackTrace(args.format, firstFrameIndex, framesCountOrNull);
+        const stackTracePresentation = await this._stackTraceLogic.stackTrace(format, firstFrameIndex, framesCountOrNull);
         const clientStackTracePresentation = {
             stackFrames: await this.toStackFrames(stackTracePresentation.stackFrames),
             totalFrames: stackTracePresentation.totalFrames

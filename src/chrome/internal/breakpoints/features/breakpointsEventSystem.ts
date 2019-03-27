@@ -36,7 +36,7 @@ export class BreakpointsEventSystem implements IBreakpointsEventsListener {
         this.bpRecipeStatusCalculator = bpRecipeStatusCalculator;
         this.bpRecipeAtLoadedSourceLogic = bpRecipeAtLoadedSourceLogic;
 
-        this._scheduledActions.forEach(action => action());
+        (this._scheduledActions || []).forEach(action => action());
         this._scheduledActions = null;
     }
 
