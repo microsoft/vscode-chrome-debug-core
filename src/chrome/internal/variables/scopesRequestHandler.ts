@@ -10,7 +10,8 @@ import { HandlesRegistry } from '../../client/handlesRegistry';
 
 @injectable()
 export class ScopesRequestHandler implements ICommandHandlerDeclarer {
-    public constructor(@inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+    public constructor(
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic) { }
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {

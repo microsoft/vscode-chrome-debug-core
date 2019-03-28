@@ -11,8 +11,8 @@ export class ToggleSkipFileStatusRequestHandler implements ICommandHandlerDeclar
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesLogic);
 
     public constructor(
-        @inject(SkipFilesLogic) public readonly _skipFilesLogic: SkipFilesLogic,
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        public readonly _skipFilesLogic: SkipFilesLogic,
+        private readonly _handlesRegistry: HandlesRegistry,
         private readonly _sourcesLogic: SourceResolver) { }
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {

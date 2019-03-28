@@ -8,7 +8,7 @@ import { IDebuggeeBreakpointsSetter } from '../../../cdtpDebuggee/features/cdtpD
 import { IBreakpointFeaturesSupport } from '../../../cdtpDebuggee/features/cdtpBreakpointFeaturesSupport';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { ReasonType } from '../../../stoppedEvent';
-import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
+import { CDTPBreakpoint, CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { DebuggeeBPRsSetForClientBPRFinder } from '../registries/debuggeeBPRsSetForClientBPRFinder';
 import { BPRecipeInLoadedSource } from '../BaseMappedBPRecipe';
 import { ConditionalPause, AlwaysPause } from '../bpActionWhenHit';
@@ -23,8 +23,11 @@ import { asyncMap } from '../../../collections/async';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../../features/actionToTakeWhenPaused';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
-import { IBreakpointsEventsPublisher } from './BreakpointsEventSystem';
 import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
+import { Listeners } from '../../../communication/listeners';
+import { inject, injectable, LazyServiceIdentifer } from 'inversify';
+import { TYPES } from '../../../dependencyInjection.ts/types';
+import { PrivateTypes } from '../diTypes';
 
 export class HitBreakpoint extends BaseNotifyClientOfPause {
     protected reason: ReasonType = 'breakpoint';
@@ -34,7 +37,7 @@ export class HitBreakpoint extends BaseNotifyClientOfPause {
     }
 }
 
-export interface IBreakpointsInLoadedSource {
+export interface IBPRecipeAtLoadedSourceSetter {
     addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>): Promise<CDTPBreakpoint[]>;
     removeDebuggeeBPRs(clientBPRecipe: BPRecipe<ISource>): Promise<void>;
 }
@@ -42,21 +45,21 @@ export interface IBreakpointsInLoadedSource {
 /**
  * Handles setting breakpoints on sources that are associated with scripts already loaded
  */
-export class BPRecipeAtLoadedSourceLogic implements IBreakpointsInLoadedSource {
+@injectable()
+export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSetter {
     private readonly doesTargetSupportColumnBreakpointsCached: Promise<boolean>;
-    private readonly _publishDebuggeeBPRecipeAdded = this._breakpointsEventsPublisher.publisherForDebuggeeBPRecipeAdded();
-    private readonly _publishDebuggeeBPRecipeRemoved = this._breakpointsEventsPublisher.publisherForDebuggeeBPRecipeRemoved();
-    private readonly _publishBPRecipeIsUnbound = this._breakpointsEventsPublisher.publisherForBPRecipeIsUnbound();
+    public readonly debuggeeBPRecipeAddedListeners = new Listeners<CDTPBPRecipe, void>();
+    public readonly debuggeeBPRecipeRemovedListeners = new Listeners<CDTPBPRecipe, void>();
+    public readonly bpRecipeIsUnboundListeners = new Listeners<BPRecipeIsUnbound, void>();
 
     public readonly withLogging = wrapWithMethodLogger(this);
 
     constructor(
-        private readonly _breakpointsEventsPublisher: IBreakpointsEventsPublisher,
-        private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
-        private readonly _bpRecipesRegistry: DebuggeeBPRsSetForClientBPRFinder,
-        private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
-        private readonly _eventsToClientReporter: IEventsToClientReporter,
-        private readonly _debuggeePausedHandler: IDebuggeePausedHandler) {
+        @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
+        @inject(new LazyServiceIdentifer(() => PrivateTypes.DebuggeeBPRsSetForClientBPRFinder)) private readonly _bpRecipesRegistry: DebuggeeBPRsSetForClientBPRFinder,
+        @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
+        @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
+        @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler) {
         this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints;
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
     }
@@ -96,7 +99,7 @@ export class BPRecipeAtLoadedSourceLogic implements IBreakpointsInLoadedSource {
 
                 for (const breakpoint of breakpoints) {
                     // The onBreakpointResolvedSyncOrAsync handler will notify us that a breakpoint was bound, and send the status update to the client if neccesary
-                    await this._publishDebuggeeBPRecipeAdded(breakpoint.recipe);
+                    await this.debuggeeBPRecipeAddedListeners.call(breakpoint.recipe);
                 }
 
                 return breakpoints;
@@ -104,7 +107,7 @@ export class BPRecipeAtLoadedSourceLogic implements IBreakpointsInLoadedSource {
             return breakpoints;
         }
         catch (exception) {
-            this._publishBPRecipeIsUnbound(new BPRecipeIsUnbound(bpRecipe.unmappedBPRecipe, exception)); // We publish it so the breakpoint itself will have this information in the tooltip
+            this.bpRecipeIsUnboundListeners.call(new BPRecipeIsUnbound(bpRecipe.unmappedBPRecipe, exception)); // We publish it so the breakpoint itself will have this information in the tooltip
             throw exception; // We throw the exceptio so the call that the client made will fail
         }
     }
@@ -113,7 +116,7 @@ export class BPRecipeAtLoadedSourceLogic implements IBreakpointsInLoadedSource {
         const debuggeeBPRecipes = this._bpRecipesRegistry.findDebuggeeBPRsSet(clientBPRecipe);
         await asyncMap(debuggeeBPRecipes, async bpr => {
             await this._targetBreakpoints.removeBreakpoint(bpr);
-            await this._publishDebuggeeBPRecipeRemoved(bpr);
+            await this.debuggeeBPRecipeRemovedListeners.call(bpr);
         });
     }
 

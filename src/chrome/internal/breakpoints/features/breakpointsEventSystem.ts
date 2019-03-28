@@ -1,9 +1,10 @@
 import { CDTPBPRecipe, CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { BPRecipeInSource } from '../bpRecipeInSource';
-import { Communicator } from '../../../communication/communicator';
-import { BreakpointsEvents } from './breakpointsEvents';
-import { PublisherWithParamsFunction } from '../../../communication/notificationsCommunicator';
 import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
+import { BreakpointsUpdater } from './breakpointsUpdater';
+import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
+import { BPRecipeStatusCalculator } from '../registries/bpRecipeStatusCalculator';
 
 export interface IBreakpointsEventsListener {
     listenForOnClientBPRecipeAdded(listener: (bpRecipie: BPRecipeInSource) => void): void;
@@ -14,66 +15,78 @@ export interface IBreakpointsEventsListener {
     listenForOnBPRecipeIsUnbound(listener: (bpRecipieIsUnbound: BPRecipeIsUnbound) => void): void;
 }
 
-export interface IBreakpointsEventsPublisher {
-    publisherForClientBPRecipeAdded(): void;
-    publisherForClientBPRecipeRemoved(): PublisherWithParamsFunction<BPRecipeInSource, void>;
-    publisherForDebuggeeBPRecipeAdded(): PublisherWithParamsFunction<CDTPBPRecipe, void>;
-    publisherForDebuggeeBPRecipeRemoved(): PublisherWithParamsFunction<CDTPBPRecipe, void>;
-    publisherForBreakpointIsBound(): PublisherWithParamsFunction<CDTPBreakpoint, void>;
-    publisherForBPRecipeIsUnbound(): PublisherWithParamsFunction<BPRecipeIsUnbound, void>;
-}
-
 /**
  * Make a nice interface for the event system for the breakpoints logic, so that code doesn't need to deal directly with the event system
  */
-export class BreakpointsEventSystem implements IBreakpointsEventsListener, IBreakpointsEventsPublisher {
-    private readonly _communicator = new Communicator();
+@injectable()
+export class BreakpointsEventSystem implements IBreakpointsEventsListener {
+    // TODO: Try to find a way to put these properties on the constructor (At the moment we get a circular reference error if we do that)
+    public breakpointsUpdater: BreakpointsUpdater;
+    public bpRecipeStatusCalculator: BPRecipeStatusCalculator;
+    public bpRecipeAtLoadedSourceLogic: BPRecipeAtLoadedSourceSetter;
+
+    // TODO: Try to find a way to remove this and use the DI framework instead
+    private _scheduledActions: (() => void)[] | null = [];
+
+    public setDependencies(
+        breakpointsUpdater: BreakpointsUpdater,
+        bpRecipeStatusCalculator: BPRecipeStatusCalculator,
+        bpRecipeAtLoadedSourceLogic: BPRecipeAtLoadedSourceSetter): void {
+        this.breakpointsUpdater = breakpointsUpdater;
+        this.bpRecipeStatusCalculator = bpRecipeStatusCalculator;
+        this.bpRecipeAtLoadedSourceLogic = bpRecipeAtLoadedSourceLogic;
+
+        this._scheduledActions.forEach(action => action());
+        this._scheduledActions = null;
+    }
+
+    schedule(action: () => void): void {
+        if (this._scheduledActions !== null) {
+            this._scheduledActions.push(action);
+        } else {
+            action();
+        }
+    }
 
     public listenForOnClientBPRecipeAdded(listener: (bpRecipie: BPRecipeInSource) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnClientBPRecipeAdded, listener);
+        this.schedule(() => {
+            this.breakpointsUpdater.clientBPRecipeAddedListeners.add(listener);
+        });
     }
 
     public listenForOnClientBPRecipeRemoved(listener: (bpRecipie: BPRecipeInSource) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnClientBPRecipeRemoved, listener);
+        this.schedule(() => {
+            this.breakpointsUpdater.clientBPRecipeRemovedListeners.add(listener);
+        });
     }
 
     public listenForOnDebuggeeBPRecipeAdded(listener: (bpRecipie: CDTPBPRecipe) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnDebuggeeBPRecipeAdded, listener);
+        this.schedule(() => {
+            this.bpRecipeAtLoadedSourceLogic.debuggeeBPRecipeAddedListeners.add(listener);
+        });
     }
 
     public listenForOnDebuggeeBPRecipeRemoved(listener: (bpRecipie: CDTPBPRecipe) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnDebuggeeBPRecipeRemoved, listener);
+        this.schedule(() => {
+            this.bpRecipeAtLoadedSourceLogic.debuggeeBPRecipeRemovedListeners.add(listener);
+        });
     }
 
     public listenForOnBreakpointIsBound(listener: (breakpoint: CDTPBreakpoint) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnBreakpointIsBound, listener);
+        this.schedule(() => {
+            this.breakpointsUpdater.breakpointIsBoundListeners.add(listener);
+        });
     }
 
     public listenForOnBPRecipeIsUnbound(listener: (bpRecipieIsUnbound: BPRecipeIsUnbound) => void): void {
-        this._communicator.subscribe(BreakpointsEvents.OnBPRecipeIsUnboundForRuntimeSource, listener);
+        this.schedule(() => {
+            this.bpRecipeAtLoadedSourceLogic.bpRecipeIsUnboundListeners.add(listener);
+        });
     }
 
-    public publisherForClientBPRecipeAdded(): PublisherWithParamsFunction<BPRecipeInSource, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnClientBPRecipeAdded);
-    }
-
-    public publisherForClientBPRecipeRemoved(): PublisherWithParamsFunction<BPRecipeInSource, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnClientBPRecipeRemoved);
-    }
-
-    public publisherForDebuggeeBPRecipeAdded(): PublisherWithParamsFunction<CDTPBPRecipe, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnDebuggeeBPRecipeAdded);
-    }
-
-    public publisherForDebuggeeBPRecipeRemoved(): PublisherWithParamsFunction<CDTPBPRecipe, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnDebuggeeBPRecipeRemoved);
-    }
-
-    public publisherForBreakpointIsBound(): PublisherWithParamsFunction<CDTPBreakpoint, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnBreakpointIsBound);
-    }
-
-    public publisherForBPRecipeIsUnbound(): PublisherWithParamsFunction<BPRecipeIsUnbound, void> {
-        return this._communicator.getPublisher(BreakpointsEvents.OnBPRecipeIsUnboundForRuntimeSource);
+    public listenForOnBPRecipeStatusChanged(listener: (bpRecipie: BPRecipeInSource) => void): void {
+        this.schedule(() => {
+            this.bpRecipeStatusCalculator.bpRecipeStatusChangedListeners.add(listener);
+        });
     }
 }

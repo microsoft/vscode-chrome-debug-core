@@ -42,7 +42,6 @@ import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent } fro
 import { TYPES } from './chrome/dependencyInjection.ts/types';
 import { IDebuggeeStateInspector } from './chrome/cdtpDebuggee/features/cdtpDebugeeStateInspector';
 import { CDTPEventsEmitterDiagnosticsModule, CDTPEnableableDiagnosticsModule } from './chrome/cdtpDebuggee/infrastructure/cdtpDiagnosticsModule';
-import { ICommunicator } from './chrome/communication/communicator';
 import { ISupportedDomains } from './chrome/internal/domains/supportedDomains';
 import { ISession } from './chrome/client/session';
 import { IPausedOverlayConfigurer } from './chrome/cdtpDebuggee/features/cdtpPausedOverlayConfigurer';
@@ -108,8 +107,6 @@ export {
 
     Version,
     TargetVersions,
-
-    ICommunicator,
 
     INetworkCacheConfigurer,
     IDebuggeeRuntimeVersionProvider,

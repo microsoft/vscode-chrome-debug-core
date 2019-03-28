@@ -55,7 +55,7 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
 
     constructor(
         @inject(TYPES.CDTPClient) protected readonly protocolApi: CDTP.ProtocolApi,
-        @inject(CDTPBreakpointIdsRegistry) private readonly _breakpointIdRegistry: CDTPBreakpointIdsRegistry,
+        private readonly _breakpointIdRegistry: CDTPBreakpointIdsRegistry,
         @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry,
         @inject(TYPES.IDomainsEnabler) domainsEnabler: CDTPDomainsEnabler,
     ) {

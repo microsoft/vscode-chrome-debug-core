@@ -23,8 +23,8 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
 
     public constructor(
-        @inject(TYPES.BreakpointsLogic) protected readonly _breakpointsLogic: BreakpointsUpdater,
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        @inject(TYPES.IBreakpointsUpdater) protected readonly _breakpointsLogic: BreakpointsUpdater,
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
         private readonly _sourcesResolver: SourceResolver) { }
 

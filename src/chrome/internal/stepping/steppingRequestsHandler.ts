@@ -16,7 +16,7 @@ export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
     constructor(
         @inject(TYPES.SyncStepping) private readonly _syncStepping: SyncStepping,
         @inject(TYPES.AsyncStepping) _asyncStepping: AsyncStepping, // We need this for the side-effects
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        private readonly _handlesRegistry: HandlesRegistry,
     ) { }
 
     public async restartFrame(args: DebugProtocol.RestartFrameRequest): Promise<void> {

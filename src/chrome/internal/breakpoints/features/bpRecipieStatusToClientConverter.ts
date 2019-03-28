@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IBPRecipe } from '../bpRecipe';
 import { HandlesRegistry } from '../../../client/handlesRegistry';
 import { LocationInSourceToClientConverter } from '../../../client/locationInSourceToClientConverter';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { LineColTransformer } from '../../../../transformers/lineNumberTransformer';
 import { ISource } from '../../sources/source';
@@ -15,11 +15,12 @@ import { ISource } from '../../sources/source';
 /**
  * Convert the status of a breakpoint recipe to a format that the client can understand
  */
+@injectable()
 export class BPRecipieStatusToClientConverter {
     private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
 
     constructor(
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
     public async toBreakpoint(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {

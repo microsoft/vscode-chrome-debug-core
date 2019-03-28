@@ -20,7 +20,7 @@ export class PausedBecauseAsyncCallWasScheduled extends BasePauseShouldBeAutoRes
 export class AsyncStepping {
     constructor(
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
-        @inject(TYPES.IDebuggeeExecutionControl) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
+        @inject(TYPES.IDebuggeeExecutionController) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
         @inject(TYPES.IDebuggeeSteppingController) private readonly _debugeeStepping: IDebuggeeSteppingController) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.onProvideActionForWhenPaused(paused));
     }

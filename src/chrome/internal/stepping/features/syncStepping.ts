@@ -44,7 +44,7 @@ export class SyncStepping {
     constructor(
         @inject(TYPES.IDebuggeeSteppingController) private readonly _debugeeStepping: IDebuggeeSteppingController,
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
-        @inject(TYPES.IDebuggeeExecutionControl) private readonly _debugeeExecutionControl: IDebuggeeExecutionController) {
+        @inject(TYPES.IDebuggeeExecutionController) private readonly _debugeeExecutionControl: IDebuggeeExecutionController) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.onProvideActionForWhenPaused(paused));
     }
 

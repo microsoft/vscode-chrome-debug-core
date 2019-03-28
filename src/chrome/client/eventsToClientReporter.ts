@@ -72,7 +72,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
         @inject(TYPES.ISession) private readonly _session: ISession,
-        @inject(HandlesRegistry) private readonly _handlesRegistry: HandlesRegistry,
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
     public sendOutput(params: IOutputParameters): void {

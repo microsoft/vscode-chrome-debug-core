@@ -14,6 +14,8 @@ import { IDebuggeeRuntimeVersionProvider } from '../../../cdtpDebuggee/features/
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../../dependencyInjection.ts/types';
 
 export class HitStillPendingBreakpoint extends BaseNotifyClientOfPause {
     protected reason: ReasonType = 'breakpoint';
@@ -35,6 +37,7 @@ export class PausedWhileLoadingScriptToResolveBreakpoints extends BasePauseShoul
  * thus eliminating the race condition we'd have without this feature, and warranting that all breakpoint recipes for a source will be hit
  * (Currently this only works for scripts that are added to the DOM)
  */
+@injectable()
 export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
     private readonly stopsWhileScriptsLoadInstrumentationName = 'scriptFirstStatement';
     private _isInstrumentationEnabled = false;
@@ -43,11 +46,11 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
     public readonly withLogging = wrapWithMethodLogger(this);
 
     constructor(
-        private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
-        private readonly _domInstrumentationBreakpoints: IDOMInstrumentationBreakpointsSetter,
-        private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
-        private readonly _eventsToClientReporter: IEventsToClientReporter,
-        private readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider,
+        @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
+        @inject(TYPES.IDOMInstrumentationBreakpointsSetter) private readonly _domInstrumentationBreakpoints: IDOMInstrumentationBreakpointsSetter,
+        @inject(TYPES.IDebuggeeExecutionController) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
+        @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
+        @inject(TYPES.IDebuggeeRuntimeVersionProvider) private readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider,
         private readonly _existingBPsForJustParsedScriptSetter: ExistingBPsForJustParsedScriptSetter,
         private readonly _breakpointsRegistry: BreakpointsSetForScriptFinder,
     ) {

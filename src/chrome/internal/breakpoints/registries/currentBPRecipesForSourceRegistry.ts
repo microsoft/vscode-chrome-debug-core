@@ -6,10 +6,12 @@ import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipesInSource } from '../bpRecipes';
 import { BPRsDeltaCalculator, BPRsDeltaInRequestedSource } from '../features/bpsDeltaCalculator';
 import { newResourceIdentifierMap, IResourceIdentifier } from '../../sources/resourceIdentifier';
+import { injectable } from 'inversify';
 
 /**
  * Store the current list of breakpoint recipes for a particular source
  */
+@injectable()
 export class CurrentBPRecipesForSourceRegistry {
     private readonly _requestedSourcePathToCurrentBPRecipes = newResourceIdentifierMap<BPRecipeInSource[]>();
 

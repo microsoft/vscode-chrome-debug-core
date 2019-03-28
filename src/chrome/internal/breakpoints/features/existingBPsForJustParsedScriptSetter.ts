@@ -5,7 +5,7 @@
 import { ILoadedSource } from '../../sources/loadedSource';
 import { asyncMap } from '../../../collections/async';
 import { promiseDefer, IPromiseDefer } from '../../../../utils';
-import { IBreakpointsInLoadedSource } from './bpRecipeAtLoadedSourceLogic';
+import { IBPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { IScriptParsedProvider } from '../../../cdtpDebuggee/eventsProviders/cdtpOnScriptParsedEventProvider';
 import { DebuggeeBPRsSetForClientBPRFinder } from '../registries/debuggeeBPRsSetForClientBPRFinder';
 import { CurrentBPRecipesForSourceRegistry } from '../registries/currentBPRecipesForSourceRegistry';
@@ -16,20 +16,24 @@ import { IBPActionWhenHit } from '../bpActionWhenHit';
 import { BPRecipeInScript } from '../baseMappedBPRecipe';
 import { LocationInLoadedSource } from '../../locations/location';
 import { IScript } from '../../scripts/script';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../../dependencyInjection.ts/types';
+import { PrivateTypes } from '../diTypes';
 
 /**
  * Set all the neccesary debuggee breakpoint recipes for a script that was just parsed
  */
+@injectable()
 export class ExistingBPsForJustParsedScriptSetter {
     private readonly _scriptToBPsAreSetDefer = new ValidatedMap<IScript, IPromiseDefer<void>>();
 
     public readonly withLogging = wrapWithMethodLogger(this);
 
     constructor(
-        private readonly _scriptParsedProvider: IScriptParsedProvider,
+        @inject(TYPES.IScriptParsedProvider) private readonly _scriptParsedProvider: IScriptParsedProvider,
         private readonly _debuggeeBPRsSetForClientBPRFinder: DebuggeeBPRsSetForClientBPRFinder,
         private readonly _clientCurrentBPRecipesRegistry: CurrentBPRecipesForSourceRegistry,
-        private readonly _breakpointsInLoadedSource: IBreakpointsInLoadedSource) {
+        @inject(PrivateTypes.BPRecipeAtLoadedSourceSetter) private readonly _breakpointsInLoadedSource: IBPRecipeAtLoadedSourceSetter) {
         this._scriptParsedProvider.onScriptParsed(scriptParsed => this.withLogging.setBPsForScript(scriptParsed.script));
     }
 

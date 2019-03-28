@@ -6,7 +6,9 @@ import { ISource } from '../../sources/source';
 import { IBPRecipe } from '../bpRecipe';
 import { CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
-import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
+import { IBreakpointsEventsListener, BreakpointsEventSystem } from '../features/breakpointsEventSystem';
+import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { PrivateTypes } from '../diTypes';
 
 type ClientBPRecipe = IBPRecipe<ISource>;
 type DebuggeeBPRecipe = CDTPBPRecipe;
@@ -14,10 +16,11 @@ type DebuggeeBPRecipe = CDTPBPRecipe;
 /**
  * Find all the debuggee breakpoint recipes we set for a particular client breakpoint recipe
  */
+@injectable()
 export class DebuggeeBPRsSetForClientBPRFinder {
     private readonly _clientBPRToDebuggeeBPRItSet = new ValidatedMultiMap<ClientBPRecipe, DebuggeeBPRecipe>();
 
-    public constructor(breakpointsEventsListener: IBreakpointsEventsListener) {
+    public constructor(@inject(new LazyServiceIdentifer(() => PrivateTypes.IBreakpointsEventsListener)) breakpointsEventsListener: IBreakpointsEventsListener) {
         breakpointsEventsListener.listenForOnClientBPRecipeAdded(clientBPRecipe => this.clientBPRWasAdded(clientBPRecipe));
         breakpointsEventsListener.listenForOnDebuggeeBPRecipeAdded(debuggeeBPRecipe => this.debuggeeBPRsWasAdded(debuggeeBPRecipe));
         breakpointsEventsListener.listenForOnDebuggeeBPRecipeRemoved(debuggeeBPRecipe => this.debuggeeBPRsWasRemoved(debuggeeBPRecipe));
