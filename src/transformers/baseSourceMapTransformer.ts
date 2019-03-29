@@ -4,24 +4,15 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
-import { ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IScopesResponseBody } from '../debugAdapterInterfaces';
+import { ILaunchRequestArgs, IAttachRequestArgs, IScopesResponseBody } from '../debugAdapterInterfaces';
 import { MappedPosition, ISourcePathDetails, SourceMap } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
 import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
-import { IInstallableComponent } from '../chrome/internal/features/components';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
-// import { injectable, inject } from 'inversify';
 import { inject, injectable } from 'inversify';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
-
-interface ISavedSetBreakpointsArgs {
-    generatedPath: string;
-    authoredPath: string;
-    originalBPs: DebugProtocol.Breakpoint[];
-}
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -35,16 +26,15 @@ export interface ISourceLocation {
  */
 @injectable()
 export class BaseSourceMapTransformer {
-    protected _sourceMaps: SourceMaps;
+    protected _sourceMaps: SourceMaps | undefined = undefined;
     private _enableSourceMapCaching: boolean;
 
-    private _requestSeqToSetBreakpointsArgs: Map<number, ISavedSetBreakpointsArgs>;
-    private _allRuntimeScriptPaths: Set<string>;
+    private _allRuntimeScriptPaths = new Set<string>();
 
     protected _preLoad = Promise.resolve();
     private _processingNewSourceMap: Promise<any> = Promise.resolve();
 
-    public caseSensitivePaths: boolean;
+    public caseSensitivePaths = false;
 
     protected _isVSClient = false;
 
@@ -64,7 +54,6 @@ export class BaseSourceMapTransformer {
         if (areSourceMapsEnabled) {
             this._enableSourceMapCaching = !!args.enableSourceMapCaching;
             this._sourceMaps = new SourceMaps(args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
-            this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
         }
     }
@@ -110,19 +99,19 @@ export class BaseSourceMapTransformer {
             return;
         }
 
-        let mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line, scope.column);
+        let mappedStart = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.line, scope.column);
         let shiftedScopeStartForward = false;
 
         // If the scope is an async function, then the function declaration line may be missing a source mapping.
         // So if we failed, try to get the next line.
         if (!mappedStart) {
-            mappedStart = this._sourceMaps.mapToAuthored(pathToGenerated, scope.line + 1, scope.column);
+            mappedStart = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.line + 1, scope.column);
             shiftedScopeStartForward = true;
         }
 
         if (mappedStart) {
             // Only apply changes if both mappings are found
-            const mappedEnd = this._sourceMaps.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
+            const mappedEnd = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
             if (mappedEnd) {
                 scope.line = mappedStart.line;
                 if (shiftedScopeStartForward) {

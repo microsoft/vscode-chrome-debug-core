@@ -41,7 +41,7 @@ export class PausedWhileLoadingScriptToResolveBreakpoints extends BasePauseShoul
 export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
     private readonly stopsWhileScriptsLoadInstrumentationName = 'scriptFirstStatement';
     private _isInstrumentationEnabled = false;
-    private _scriptFirstStatementStopsBeforeFile: boolean;
+    private _scriptFirstStatementStopsBeforeFile = false;
 
     public readonly withLogging = wrapWithMethodLogger(this);
 

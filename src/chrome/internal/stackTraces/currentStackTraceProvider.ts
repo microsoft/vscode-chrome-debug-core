@@ -71,7 +71,7 @@ class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProvid
         return this.throwItIsNotPaused();
     }
 
-    public isSourceInCurrentStack(source: ILoadedSource<string>): boolean {
+    public isSourceInCurrentStack(_source: ILoadedSource<string>): boolean {
         return this.throwItIsNotPaused();
     }
 

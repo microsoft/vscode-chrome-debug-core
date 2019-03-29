@@ -3,9 +3,8 @@
  *--------------------------------------------------------*/
 
 import * as sourceMapUtils from '../../../sourceMaps/sourceMapUtils';
-import { inject, injectable, multiInject } from 'inversify';
+import { inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { ICommandHandlerDeclarer, CommandHandlerDeclaration, IServiceComponent } from '../../internal/features/components';
 import { BaseCDAState } from './baseCDAState';
 import { logger, TerminatedEvent } from 'vscode-debugadapter';
 import { ISession } from '../session';

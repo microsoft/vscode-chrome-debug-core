@@ -1,13 +1,15 @@
+import { ILogger, ILoggingConfiguration } from './chrome/internal/services/logging';
+import { Logger } from 'vscode-debugadapter';
+import { IExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { Logger } from 'vscode-debugadapter';
-
 /**
  * Implements ILogger as a no-op
  */
-export class NullLogger implements Logger.ILogger {
+export class NullLogger implements ILogger {
     log(_msg: string, _level?: Logger.LogLevel): void {
         // no-op
     }
@@ -24,4 +26,7 @@ export class NullLogger implements Logger.ILogger {
         // no-op
     }
 
+    install(_extensibilityPoints: IExtensibilityPoints, _configuration: ILoggingConfiguration): this {
+        return this;
+    }
 }

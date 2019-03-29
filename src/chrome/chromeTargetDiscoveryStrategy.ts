@@ -2,9 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { Logger } from 'vscode-debugadapter';
 import * as utils from '../utils';
-import * as telemetry from '../telemetry';
 import { IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents } from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
@@ -13,21 +11,23 @@ import { ITargetDiscoveryStrategy, ITargetFilter, ITarget } from './chromeConnec
 
 import * as nls from 'vscode-nls';
 import { Version } from './utils/version';
+import { ITelemetryReporter } from '../telemetry';
+import { injectable, inject } from 'inversify';
+import { TYPES } from './dependencyInjection.ts/types';
+import { ILogger } from './internal/services/logging';
 const localize = nls.loadMessageBundle();
 
 export class TargetVersions {
     constructor(public readonly protocol: Version, public readonly browser: Version) {}
 }
 
+@injectable()
 export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObservableEvents<IStepStartedEventsEmitter> {
-    private logger: Logger.ILogger;
-    private telemetry: telemetry.ITelemetryReporter;
     public readonly events = new StepProgressEventsEmitter();
 
-    constructor(_logger: Logger.ILogger, _telemetry: telemetry.ITelemetryReporter) {
-        this.logger = _logger;
-        this.telemetry = _telemetry;
-    }
+    public constructor(
+        @inject(TYPES.ILogger) private logger: ILogger,
+        @inject(TYPES.ITelemetryReporter) private readonly telemetry: ITelemetryReporter) {}
 
     async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
         const targets = await this.getAllTargets(address, port, targetFilter, targetUrl);

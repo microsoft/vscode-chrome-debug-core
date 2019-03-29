@@ -35,10 +35,11 @@ export interface  IExecutionResultTelemetryProperties {
 export interface ITelemetryReporter {
     reportEvent(name: string, data?: any): void;
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void;
+    addCustomGlobalProperty(additionalGlobalTelemetryProperties: any): void;
 }
 
 export class TelemetryReporter implements ITelemetryReporter {
-    private _sendEvent: (event: DebugProtocol.Event) => void;
+    private _sendEvent: ((event: DebugProtocol.Event) => void) | undefined = undefined;
     private _globalTelemetryProperties: any = {};
 
     reportEvent(name: string, data?: any): void {
@@ -113,18 +114,19 @@ export class NullTelemetryReporter implements ITelemetryReporter {
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void {
         // no-op
     }
-
+    addCustomGlobalProperty(_additionalGlobalTelemetryProperties: any): void {
+        // no-op
+    }
 }
 
 export const DefaultTelemetryIntervalInMilliseconds = 10000;
 
 export class BatchTelemetryReporter {
-    private _eventBuckets: {[eventName: string]: any};
-    private _timer: NodeJS.Timer;
+    private _eventBuckets: {[eventName: string]: any} = {};
+    private _timer = this.setupTimer();
 
     public constructor(private _telemetryReporter: ITelemetryReporter, private _cadenceInMilliseconds: number = DefaultTelemetryIntervalInMilliseconds) {
         this.reset();
-        this.setup();
     }
 
     /**
@@ -214,8 +216,8 @@ export class BatchTelemetryReporter {
         clearInterval(this._timer);
     }
 
-    private setup(): void {
-        this._timer = setInterval(() => this.send(), this._cadenceInMilliseconds);
+    private setupTimer(): NodeJS.Timer {
+        return setInterval(() => this.send(), this._cadenceInMilliseconds);
     }
 
     private reset(): void {
@@ -250,4 +252,4 @@ export class TelemetryPropertyCollector implements ITelemetryPropertyCollector {
     }
 }
 
-export const telemetry = new AsyncGlobalPropertiesTelemetryReporter(new TelemetryReporter());
+export const telemetry: ITelemetryReporter = new AsyncGlobalPropertiesTelemetryReporter(new TelemetryReporter());

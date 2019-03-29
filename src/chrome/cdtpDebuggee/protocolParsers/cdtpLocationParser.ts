@@ -27,6 +27,7 @@ export class CDTPLocationParser {
     }
 
     private getCoordinates(crdpObjectWithCoordinates: IHasCoordinates): Position {
-        return new Position(createLineNumber(crdpObjectWithCoordinates.lineNumber), createColumnNumber(crdpObjectWithCoordinates.columnNumber));
+        // If the colum number is not specified, we assume it's referring to column 0
+        return new Position(createLineNumber(crdpObjectWithCoordinates.lineNumber), createColumnNumber(crdpObjectWithCoordinates.columnNumber || 0));
     }
 }

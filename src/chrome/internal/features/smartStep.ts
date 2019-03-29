@@ -80,8 +80,9 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         }
     }
 
-    public stepInIfOnSkippedSource(): void {
-        throw new Error('Not implemented TODO DIEGO');
+    public async stepInIfOnSkippedSource(): Promise<void> {
+        // Reprocess the latest pause event to adjust for any changes in our configuration
+        await this._debuggeePausedHandler.reprocessLatestPause();
     }
 
     public async shouldSkip(frame: ScriptCallFrame<CallFrameWithState>): Promise<boolean> {

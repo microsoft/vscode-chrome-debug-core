@@ -11,18 +11,13 @@
         ],
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "noImplicitThis": true,
+
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
-        "strictFunctionTypes": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "strictPropertyInitialization": false,
-
-
-        "noUnusedLocals": false,
-        "noUnusedParameters": false,
-
+        "forceConsistentCasingInFileNames": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strict": true,
 
         "lib": [
             "es6"

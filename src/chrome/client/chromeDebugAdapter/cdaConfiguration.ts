@@ -4,7 +4,6 @@
 
 import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
 import { IClientCapabilities, ILaunchRequestArgs, IAttachRequestArgs } from '../../../debugAdapterInterfaces';
-import { ChromeConnection } from '../../chromeConnection';
 import { ILoggingConfiguration } from '../../internal/services/logging';
 import { ScenarioType } from './unconnectedCDA';
 import { injectable } from 'inversify';

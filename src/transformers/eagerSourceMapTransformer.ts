@@ -9,8 +9,7 @@ import { BaseSourceMapTransformer } from './baseSourceMapTransformer';
 import { ILaunchRequestArgs, IAttachRequestArgs } from '../debugAdapterInterfaces';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { SourceMap } from '../sourceMaps/sourceMap';
-import { inject, injectable } from 'inversify';
+import { injectable } from 'inversify';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because
@@ -51,7 +50,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
             .then(async uri => {
                 if (uri) {
                     logger.log(`SourceMaps: sourcemap url parsed from end of generated content: ${uri}`);
-                    await this._sourceMaps.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
+                    await this._sourceMaps!.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
                 } else {
                     logger.log(`SourceMaps: no sourcemap url found in generated script: ${generatedScriptPath}`);
                 }

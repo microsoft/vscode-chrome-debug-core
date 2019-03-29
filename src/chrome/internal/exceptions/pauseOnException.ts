@@ -5,7 +5,7 @@
 import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../features/actionToTakeWhenPaused';
 import * as errors from '../../../errors';
 import { FormattedExceptionParser, IFormattedExceptionLineDescription } from '../formattedExceptionParser';
-import { IPauseOnPromiseRejectionsStrategy, IPauseOnExceptionsStrategy } from './strategies';
+import { IPauseOnPromiseRejectionsStrategy, IPauseOnExceptionsStrategy, DoNotPauseOnAnyRejections } from './strategies';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { IEventsToClientReporter } from '../../client/eventsToClientReporter';
@@ -52,7 +52,7 @@ export class PromiseWasRejected extends BaseNotifyClientOfPause {
  */
 @injectable()
 export class PauseOnExceptionOrRejection {
-    private _promiseRejectionsStrategy: IPauseOnPromiseRejectionsStrategy;
+    private _promiseRejectionsStrategy: IPauseOnPromiseRejectionsStrategy = new DoNotPauseOnAnyRejections();
 
     private _lastException: any;
 

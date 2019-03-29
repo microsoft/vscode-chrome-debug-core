@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as semver from 'semver';
-import { version } from 'punycode';
 
 export class Version {
     constructor(private readonly _semverVersion: semver.SemVer) { }

@@ -7,7 +7,7 @@ import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
-import { logger, Source } from 'vscode-debugadapter';
+import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { Position } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
@@ -42,7 +42,7 @@ export class SourceMap {
     private _smc: SourceMapConsumer; // the source map
     private _authoredPathCaseMap = new Map<string, string>(); // Maintain pathCase map because VSCode is case sensitive
 
-    private _allSourcePathDetails: ISourcePathDetails[]; // A list of all original paths from the sourcemap, and their inferred local paths
+    private _allSourcePathDetails: ISourcePathDetails[] | undefined; // A list of all original paths from the sourcemap, and their inferred local paths
 
     // Original sourcemap details
     private _originalSources: string[];

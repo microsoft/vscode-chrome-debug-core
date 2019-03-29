@@ -6,7 +6,7 @@ import { ISource } from '../../sources/source';
 import { IBPRecipe } from '../bpRecipe';
 import { CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
-import { IBreakpointsEventsListener, BreakpointsEventSystem } from '../features/breakpointsEventSystem';
+import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { injectable, inject, LazyServiceIdentifer } from 'inversify';
 import { PrivateTypes } from '../diTypes';
 

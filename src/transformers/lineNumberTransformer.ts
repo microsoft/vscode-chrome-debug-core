@@ -4,7 +4,7 @@
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 
-import { IDebugTransformer, ISetBreakpointsResponseBody, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
+import { IDebugTransformer, IScopesResponseBody, IStackTraceResponseBody } from '../debugAdapterInterfaces';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
@@ -14,7 +14,6 @@ import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/c
  */
 @injectable()
 export class LineColTransformer implements IDebugTransformer {
-    private columnBreakpointsEnabled: boolean;
     private _clientToDebuggerLineNumberDifference: number; // Client line number - debugger line number. 0 if client line number is 0-based, 1 otherwise
     private _clientToDebuggerColumnsDifference: number; // Similar to line numbers
 
@@ -23,22 +22,8 @@ export class LineColTransformer implements IDebugTransformer {
         this._clientToDebuggerColumnsDifference = configuration.clientCapabilities.columnsStartAt1 ? 1 : 0;
     }
 
-    public setBreakpointsResponse(response: ISetBreakpointsResponseBody): void {
-        response.breakpoints.forEach(bp => this.convertDebuggerLocationToClient(bp));
-        if (!this.columnBreakpointsEnabled) {
-            response.breakpoints.forEach(bp => bp.column = 1);
-        }
-    }
-
     public stackTraceResponse(response: IStackTraceResponseBody): void {
         response.stackFrames.forEach(frame => this.convertDebuggerLocationToClient(frame));
-    }
-
-    public breakpointResolved(bp: DebugProtocol.Breakpoint): void {
-        this.convertDebuggerLocationToClient(bp);
-        if (!this.columnBreakpointsEnabled) {
-            bp.column = undefined;
-        }
     }
 
     public scopeResponse(scopeResponse: IScopesResponseBody): void {

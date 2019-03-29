@@ -1,9 +1,7 @@
 import { Protocol as CDTP } from 'devtools-protocol';
 import { IScript } from '../internal/scripts/script';
 
-import { ScriptOrSourceOrURLOrURLRegexp } from '../internal/locations/location';
 import { ICallFrame, ScriptOrLoadedSource } from '../internal/stackTraces/callFrame';
-import { IBPRecipe } from '../internal/breakpoints/bpRecipe';
 import { CodeFlowStackTrace } from '../internal/stackTraces/codeFlowStackTrace';
 
 export type integer = number;
