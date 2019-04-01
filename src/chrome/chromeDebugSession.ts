@@ -132,8 +132,15 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             try {
                 logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
                 telemetryPropertyCollector.addTelemetryProperty('requestType', request.type);
+                // Disconnect request is a special case--the response needs to be sent before
+                // we do our "shutdown" processing.
+                if (request.command === 'disconnect') {
+                    this.sendResponse(response);
+                }
                 response.body = await this._debugAdapter.processRequest(<CommandText>request.command, request.arguments, telemetryPropertyCollector);
-                this.sendResponse(response);
+                if (request.command !== 'disconnect') {
+                    this.sendResponse(response);
+                }
             } catch (e) {
                 if (!this.isEvaluateRequest(request.command, e)) {
                     reportFailure(e);
