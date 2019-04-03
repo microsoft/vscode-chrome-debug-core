@@ -76,6 +76,6 @@ export class ConnectedCDA extends BaseCDAState {
     public async disconnect(reason: TerminatingReason): Promise<void> {
         const terminatingCDA = this._terminatingCDAProvider(reason);
         await terminatingCDA.install();
-        this._chromeDebugAdapter.disconnect(terminatingCDA);
+        await this._chromeDebugAdapter.disconnect(terminatingCDA);
     }
 }
