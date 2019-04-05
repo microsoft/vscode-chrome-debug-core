@@ -26,7 +26,7 @@ export class SourceTextRetriever {
     public async text(loadedSource: ILoadedSource): Promise<string> {
         let text = this._sourceToText.tryGetting(loadedSource);
 
-        if (text === null) {
+        if (text === undefined) {
             const scripts = loadedSource.scriptMapper().scripts;
             if (loadedSource.sourceScriptRelationship === SourceScriptRelationship.SourceIsSingleScript && scripts.length === 1) {
                 text = await this._scriptSources.getScriptSource(singleElementOfArray(scripts));

@@ -2,11 +2,11 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { LoadedSourceCallFrame } from './stackTraces/callFrame';
+import { LoadedSourceCallFrame, CallFrameWithState } from './stackTraces/callFrame';
 
 export interface IEvaluateArguments {
     readonly expression: string;
-    readonly frame?: LoadedSourceCallFrame;
+    readonly frame?: LoadedSourceCallFrame<CallFrameWithState>;
     readonly context?: string;
     readonly format?: {
         /** Display the value in hex. */
@@ -15,7 +15,7 @@ export interface IEvaluateArguments {
 }
 
 export interface ICompletionsArguments {
-    readonly frame?: LoadedSourceCallFrame;
+    readonly frame?: LoadedSourceCallFrame<CallFrameWithState>;
     readonly text: string;
     readonly column: number;
     readonly line?: number;

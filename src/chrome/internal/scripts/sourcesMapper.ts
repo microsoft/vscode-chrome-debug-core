@@ -8,13 +8,14 @@ import { LocationInLoadedSource, LocationInScript, Position } from '../locations
 import { ILoadedSource } from '../sources/loadedSource';
 import { IResourceIdentifier, parseResourceIdentifier } from '../sources/resourceIdentifier';
 import { IScript } from './script';
+import { IValidatedMap } from '../../collections/validatedMap';
 
 export interface ISourceToScriptMapper {
     getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null;
 }
 
 export interface IScriptToSourceMapper {
-    getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource | null;
+    getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource;
 }
 
 export interface ISourceMapper extends ISourceToScriptMapper, IScriptToSourceMapper { }
@@ -25,13 +26,13 @@ export interface IMappedSourcesMapper extends ISourceMapper {
 
 /** This class maps locations from a script into the sources form which it was compiled, and back. */
 export class MappedSourcesMapper implements IMappedSourcesMapper {
-    private readonly _rangeInSources: Map<IResourceIdentifier, SourceRange>;
+    private readonly _rangeInSources: IValidatedMap<IResourceIdentifier, SourceRange>;
 
     constructor(private readonly _script: IScript, private readonly _sourceMap: SourceMap) {
         this._rangeInSources = this._sourceMap.rangesInSources();
     }
 
-    public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource | null {
+    public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource {
         const scriptPositionInResource = this._script.rangeInSource.start.position;
 
         // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
@@ -60,10 +61,6 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
 
         const mappedPositionRelativeToScript = this._sourceMap.generatedPositionFor(positionInSource.source.identifier.textRepresentation,
             positionInSource.position.lineNumber, positionInSource.position.columnNumber || 0);
-        const positionInSourceForMapping = this._sourceMap.authoredPositionFor(mappedPositionRelativeToScript.line, mappedPositionRelativeToScript.column);
-        if (positionInSourceForMapping.line !== positionInSource.position.lineNumber) {
-
-        }
 
         if (mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number') {
 

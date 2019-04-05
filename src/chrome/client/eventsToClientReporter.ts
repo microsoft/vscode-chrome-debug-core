@@ -4,7 +4,7 @@
 
 import { ILoadedSource } from '../internal/sources/loadedSource';
 import { ISession } from './session';
-import { LoadedSourceEvent, OutputEvent, BreakpointEvent } from 'vscode-debugadapter';
+import { LoadedSourceEvent, OutputEvent, BreakpointEvent, Source } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LocationInLoadedSource } from '../internal/locations/location';
 import { IBPRecipeStatus } from '../internal/breakpoints/bpRecipeStatus';
@@ -42,7 +42,7 @@ export interface IBPStatusChangedParameters {
 export interface IExceptionThrownParameters {
     readonly exceptionStackTrace: IFormattedExceptionLineDescription[];
     readonly category: string;
-    readonly location?: LocationInLoadedSource;
+    readonly location: LocationInLoadedSource | undefined;
 }
 
 export interface IDebuggeeIsStoppedParameters {
@@ -91,7 +91,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     public async sendSourceWasLoaded(params: ISourceWasLoadedParameters): Promise<void> {
         const clientSource = await this._sourceToClientConverter.toSource(params.source);
-        const event = new LoadedSourceEvent(params.reason, clientSource);
+        const event = new LoadedSourceEvent(params.reason, <Source>clientSource); // TODO: Update source to have an optional sourceReference so we don't need to do this cast
 
         this._session.sendEvent(event);
     }

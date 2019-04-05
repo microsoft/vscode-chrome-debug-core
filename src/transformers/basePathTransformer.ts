@@ -35,7 +35,7 @@ export class BasePathTransformer {
         return clientPath;
     }
 
-    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier {
+    public getClientPathFromTargetPath(targetPath: IResourceIdentifier): IResourceIdentifier | undefined {
         return targetPath;
     }
 }

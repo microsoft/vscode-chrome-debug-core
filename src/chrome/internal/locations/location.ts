@@ -19,7 +19,7 @@ export class Position implements IEquivalenceComparable {
 
     constructor(
         public readonly lineNumber: LineNumber,
-        public readonly columnNumber?: ColumnNumber) {
+        public readonly columnNumber: ColumnNumber) {
         Validation.zeroOrPositive('Line number', lineNumber);
         if (columnNumber !== undefined) {
             Validation.zeroOrPositive('Column number', columnNumber);
@@ -27,11 +27,21 @@ export class Position implements IEquivalenceComparable {
     }
 
     public static appearingLastOf(...positions: Position[]): Position {
-        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? right : left);
+        const lastPosition = _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? right : left);
+        if (lastPosition !== undefined) {
+            return lastPosition;
+        } else {
+            throw new Error(`Couldn't find the position appearing last from the list: ${positions}. Is it possible the list was empty?`);
+        }
     }
 
     public static appearingFirstOf(...positions: Position[]): Position {
-        return _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? left : right);
+        const firstPosition =  _.reduce(positions, (left, right) => left.doesAppearBefore(right) ? left : right);
+        if (firstPosition !== undefined) {
+            return firstPosition;
+        } else {
+            throw new Error(`Couldn't find the position appearing first from the list: ${positions}. Is it possible the list was empty?`);
+        }
     }
 
     public static isBetween(start: Position, maybeInBetween: Position, end: Position): boolean {

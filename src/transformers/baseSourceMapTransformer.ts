@@ -49,13 +49,9 @@ export class BaseSourceMapTransformer {
     protected _isVSClient = false;
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
-        this._enableSourceMapCaching = configuration.args.enableSourceMapCaching;
+        this._enableSourceMapCaching = !!configuration.args.enableSourceMapCaching;
         this.init(configuration.args);
         this.isVSClient = configuration.clientCapabilities.clientID === 'visualstudio';
-    }
-
-    public get sourceMaps(): SourceMaps {
-        return this._sourceMaps;
     }
 
     public set isVSClient(newValue: boolean) {
@@ -66,7 +62,7 @@ export class BaseSourceMapTransformer {
         // Enable sourcemaps and async callstacks by default
         const areSourceMapsEnabled = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
         if (areSourceMapsEnabled) {
-            this._enableSourceMapCaching = args.enableSourceMapCaching;
+            this._enableSourceMapCaching = !!args.enableSourceMapCaching;
             this._sourceMaps = new SourceMaps(args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._requestSeqToSetBreakpointsArgs = new Map<number, ISavedSetBreakpointsArgs>();
             this._allRuntimeScriptPaths = new Set<string>();
@@ -77,35 +73,7 @@ export class BaseSourceMapTransformer {
         this._allRuntimeScriptPaths = new Set<string>();
     }
 
-    /**
-     * Apply sourcemapping back to authored files from the response
-     */
-    public setBreakpointsResponse(response: ISetBreakpointsResponseBody, requestSeq: number): void {
-        if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
-            const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
-            if (args.authoredPath) {
-                // authoredPath is set, so the file was mapped to source.
-                // Remove breakpoints from files that map to the same file, and map back to source.
-                response.breakpoints = response.breakpoints.filter((_, i) => i < args.originalBPs.length);
-                response.breakpoints.forEach((bp, i) => {
-                    const mapped = this._sourceMaps.mapToAuthored(args.generatedPath, bp.line, bp.column);
-                    if (mapped) {
-                        logger.log(`SourceMaps.setBP: Mapped ${args.generatedPath}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
-                        bp.line = mapped.line;
-                        bp.column = mapped.column;
-                    } else {
-                        logger.log(`SourceMaps.setBP: Can't map ${args.generatedPath}:${bp.line + 1}:${bp.column + 1}, keeping original line numbers.`);
-                        bp.line = args.originalBPs[i].line;
-                        bp.column = args.originalBPs[i].column;
-                    }
-
-                    this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
-                });
-            }
-        }
-    }
-
-    public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap> {
+    public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap | null> {
         if (this._sourceMaps) {
             this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
 
@@ -129,17 +97,6 @@ export class BaseSourceMapTransformer {
         }
     }
 
-    public breakpointResolved(bp: DebugProtocol.Breakpoint, scriptPath: string): void {
-        if (this._sourceMaps) {
-            const mapped = this._sourceMaps.mapToAuthored(scriptPath, bp.line, bp.column);
-            if (mapped) {
-                // No need to send back the path, the bp can only move within its script
-                bp.line = mapped.line;
-                bp.column = mapped.column;
-            }
-        }
-    }
-
     public scopesResponse(pathToGenerated: string, scopesResponse: IScopesResponseBody): void {
         if (this._sourceMaps) {
             scopesResponse.scopes.forEach(scope => this.mapScopeLocations(pathToGenerated, scope));
@@ -148,7 +105,8 @@ export class BaseSourceMapTransformer {
 
     private mapScopeLocations(pathToGenerated: string, scope: DebugProtocol.Scope): void {
         // The runtime can return invalid scope locations. Just skip those scopes. https://github.com/Microsoft/vscode-chrome-debug-core/issues/333
-        if (typeof scope.line !== 'number' || scope.line < 0 || scope.endLine < 0 || scope.column < 0 || scope.endColumn < 0) {
+        if (typeof scope.line !== 'number' || typeof scope.column !== 'number' || typeof scope.endLine !== 'number' || typeof scope.endColumn !== 'number'
+            || scope.line < 0 || scope.endLine < 0 || scope.column < 0 || scope.endColumn < 0) {
             return;
         }
 
@@ -178,28 +136,11 @@ export class BaseSourceMapTransformer {
         }
     }
 
-    public async mapToGenerated(authoredPath: string, line: number, column: number): Promise<MappedPosition> {
-        if (!this._sourceMaps) return null;
-
-        await this.wait();
-        return this._sourceMaps.mapToGenerated(authoredPath, line, column);
-    }
-
-    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition> {
+    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition | null> {
         if (!this._sourceMaps) return null;
 
         await this.wait();
         return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
-    }
-
-    public async getGeneratedPathFromAuthoredPath(authoredPath: string): Promise<string> {
-        if (!this._sourceMaps) return authoredPath;
-
-        await this.wait();
-
-        // Find the generated path, or check whether this script is actually a runtime path - if so, return that
-        return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
-            (this.isRuntimeScript(authoredPath) ? authoredPath : null);
     }
 
     public async allSources(pathToGenerated: string): Promise<string[]> {
@@ -218,10 +159,6 @@ export class BaseSourceMapTransformer {
 
     private wait(): Promise<any> {
         return Promise.all([this._preLoad, this._processingNewSourceMap]);
-    }
-
-    private isRuntimeScript(scriptPath: string): boolean {
-        return this._allRuntimeScriptPaths.has(this.fixPathCasing(scriptPath));
     }
 
     private fixPathCasing(str: string): string {

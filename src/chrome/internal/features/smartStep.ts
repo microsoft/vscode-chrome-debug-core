@@ -4,7 +4,7 @@
 
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
-import { ScriptCallFrame } from '../stackTraces/callFrame';
+import { ScriptCallFrame, CallFrameWithState } from '../stackTraces/callFrame';
 import { PausedEvent } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseActionToTakeWhenPaused } from '../features/actionToTakeWhenPaused';
 import { logger } from 'vscode-debugadapter';
@@ -84,7 +84,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         throw new Error('Not implemented TODO DIEGO');
     }
 
-    public async shouldSkip(frame: ScriptCallFrame): Promise<boolean> {
+    public async shouldSkip(frame: ScriptCallFrame<CallFrameWithState>): Promise<boolean> {
         if (!this._isEnabled) return false;
 
         const clientPath = this._pathTransformer.getClientPathFromTargetPath(frame.location.script.runtimeSource.identifier)

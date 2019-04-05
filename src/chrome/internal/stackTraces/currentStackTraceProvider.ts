@@ -3,43 +3,38 @@
  *--------------------------------------------------------*/
 import { PausedEvent, ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../features/actionToTakeWhenPaused';
-import { ScriptCallFrame } from './callFrame';
+import { ScriptCallFrame, CallFrameWithState } from './callFrame';
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { ILoadedSource } from '../sources/loadedSource';
 
-/**
- * CDTP doesn't have a way to query for the current stack trace. We use this class to store
- * the latest stack trace that we got in the latest PausedEvent, in case some component needs to access it.
- */
-export class CurrentStackTraceProvider {
-    private _currentPauseEvent: PausedEvent | null = null; // Each time the debuggee pauses we store the latest PausedEvent in case the stack trace is requested
+interface ICurrentStackTraceProviderState {
+    isPaused(): boolean;
+    syncStackFrames(): ScriptCallFrame<CallFrameWithState>[];
+    asyncStackTrace(): CodeFlowStackTrace | undefined;
+    isSourceInCurrentStack(source: ILoadedSource): boolean;
+    onPaused(pausedEvent: PausedEvent, changeStateTo: (newState: ICurrentStackTraceProviderState) => void): Promise<IActionToTakeWhenPaused>;
+    onResumed(changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void;
+}
 
-    public constructor(private readonly _cdtpDebuggeeExecutionEventsProvider: ICDTPDebuggeeExecutionEventsProvider) {
-        this._cdtpDebuggeeExecutionEventsProvider.onResumed(() => this.onResumed());
-        this._cdtpDebuggeeExecutionEventsProvider.onPaused(params => this.onPaused(params));
-    }
+class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderState {
+    public constructor(private _currentPauseEvent: PausedEvent) { }
 
     public isPaused(): boolean {
-        return this._currentPauseEvent !== null;
+        return true;
     }
 
-    public syncStackFrames(): ScriptCallFrame[] {
-        this.validateItIsPaused();
-
+    public syncStackFrames(): ScriptCallFrame<CallFrameWithState>[] {
         return this._currentPauseEvent.callFrames;
     }
 
-    public asyncStackTrace(): CodeFlowStackTrace {
-        this.validateItIsPaused();
-
+    public asyncStackTrace(): CodeFlowStackTrace | undefined {
         return this._currentPauseEvent.asyncStackTrace;
     }
 
     public isSourceInCurrentStack(source: ILoadedSource): boolean {
-        this.validateItIsPaused();
-
+        const asyncStackTrace = this.asyncStackTrace();
         return this.isSourceInCurrentSyncStack(source)
-            || this.isSourceInAsyncStack(this.asyncStackTrace(), source);
+            || (asyncStackTrace ? this.isSourceInAsyncStack(asyncStackTrace, source) : false);
     }
 
     private isSourceInCurrentSyncStack(source: ILoadedSource<string>): boolean {
@@ -47,22 +42,86 @@ export class CurrentStackTraceProvider {
     }
 
     private isSourceInAsyncStack(asyncStackTrace: CodeFlowStackTrace, source: ILoadedSource<string>): boolean {
-        return asyncStackTrace.codeFlowFrames.some(frame => frame.location.mappedToSource().source.isEquivalentTo(source))
-            || (asyncStackTrace.parent && this.isSourceInAsyncStack(asyncStackTrace.parent, source));
+        return asyncStackTrace.codeFlowFrames.some(frame => {
+            const mappedSource = frame.location.mappedToSource();
+            return mappedSource ? mappedSource.source.isEquivalentTo(source) : false;
+        })
+            || (asyncStackTrace.parent ? this.isSourceInAsyncStack(asyncStackTrace.parent, source) : false);
     }
 
-    private validateItIsPaused() {
-        if (!this.isPaused()) {
-            throw new Error(`Can't obtain current stack strace when the debuggee is not paused`);
-        }
+    public async onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {
+        throw new Error(`It's not expected to receive a new pause event: ${pausedEvent} when the current stack trace provided is already in a paused state due to ${this._currentPauseEvent}`);
     }
 
-    private async onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        this._currentPauseEvent = pausedEvent;
+    public onResumed(changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
+        changeStateTo(new CurrentStackTraceProviderWhenNotPaused());
+    }
+}
+
+class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProviderState {
+    public isPaused(): boolean {
+        return false;
+    }
+
+    public syncStackFrames(): ScriptCallFrame<CallFrameWithState>[] {
+        return this.throwItIsNotPaused();
+    }
+
+    public asyncStackTrace(): CodeFlowStackTrace {
+        return this.throwItIsNotPaused();
+    }
+
+    public isSourceInCurrentStack(source: ILoadedSource<string>): boolean {
+        return this.throwItIsNotPaused();
+    }
+
+    public async onPaused(pausedEvent: PausedEvent, changeStateTo: (newState: ICurrentStackTraceProviderState) => void): Promise<IActionToTakeWhenPaused> {
+        changeStateTo(new CurrentStackTraceProviderWhenPaused(pausedEvent));
         return new NoActionIsNeededForThisPause(this);
     }
 
+    public onResumed(_changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
+        return this.throwItIsNotPaused();
+    }
+
+    private throwItIsNotPaused(): never {
+        throw new Error(`Can't obtain current stack strace when the debuggee is not paused`);
+    }
+}
+
+/**
+ * CDTP doesn't have a way to query for the current stack trace. We use this class to store
+ * the latest stack trace that we got in the latest PausedEvent, in case some component needs to access it.
+ */
+export class CurrentStackTraceProvider {
+    private _state: ICurrentStackTraceProviderState = new CurrentStackTraceProviderWhenNotPaused(); // Each time the debuggee pauses we store the latest PausedEvent in case the stack trace is requested
+
+    public constructor(private readonly _cdtpDebuggeeExecutionEventsProvider: ICDTPDebuggeeExecutionEventsProvider) {
+        this._cdtpDebuggeeExecutionEventsProvider.onResumed(() => this.onResumed());
+        this._cdtpDebuggeeExecutionEventsProvider.onPaused(params => this.onPaused(params));
+    }
+
+    public isPaused(): boolean {
+        return this._state.isPaused();
+    }
+
+    public syncStackFrames(): ScriptCallFrame<CallFrameWithState>[] {
+        return this._state.syncStackFrames();
+    }
+
+    public asyncStackTrace(): CodeFlowStackTrace | undefined {
+        return this._state.asyncStackTrace();
+    }
+
+    public isSourceInCurrentStack(source: ILoadedSource): boolean {
+        return this._state.isSourceInCurrentStack(source);
+    }
+
+    private onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {
+        return this._state.onPaused(pausedEvent, state => this._state = state);
+    }
+
     private onResumed(): void {
-        this._currentPauseEvent = null;
+        return this._state.onResumed(state => this._state = state);
     }
 }

@@ -128,7 +128,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
     return sourcePath;
 }
 
-export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMapping: IPathMapping): string {
+export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMapping: IPathMapping | undefined): string | null {
     if (!utils.isURL(mapPath)) {
         if (utils.isURL(pathToGenerated)) {
             const scriptUrl = url.parse(pathToGenerated);

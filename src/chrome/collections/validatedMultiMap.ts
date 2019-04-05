@@ -19,12 +19,12 @@ export class ValidatedMultiMap<K, V> {
     }
 
     constructor(initialContents?: Map<K, Set<V>> | Iterable<[K, Set<V>]> | ReadonlyArray<[K, Set<V>]>) {
-        const elements = initialContents
-            ? Array.from(initialContents).map(element => <[K, IValidatedSet<V>]>[element[0], new ValidatedSet(element[1])])
-            : null;
-        this._wrappedMap = initialContents instanceof Map
-            ? new ValidatedMap<K, IValidatedSet<V>>(elements)
-            : new ValidatedMap<K, IValidatedSet<V>>(elements);
+        if (initialContents !== undefined) {
+            const elements = Array.from(initialContents).map(element => <[K, IValidatedSet<V>]>[element[0], new ValidatedSet(element[1])]);
+            this._wrappedMap = new ValidatedMap<K, IValidatedSet<V>>(elements);
+        } else {
+            this._wrappedMap = new ValidatedMap<K, IValidatedSet<V>>();
+        }
     }
 
     public clear(): void {
@@ -115,7 +115,7 @@ export class ValidatedMultiMap<K, V> {
         return this._wrappedMap.values();
     }
 
-    public tryGetting(key: K): Set<V> | null {
+    public tryGetting(key: K): Set<V> | undefined {
         return this._wrappedMap.tryGetting(key);
     }
 

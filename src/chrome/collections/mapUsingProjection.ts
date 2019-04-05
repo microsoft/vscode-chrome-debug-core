@@ -15,7 +15,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
     private readonly _projectionToKeyAndvalue: IValidatedMap<P, KeyAndValue<K, V>>;
 
     constructor(private _projection: IProjection<K, P>, readonly initialContents?: Map<K, V> | Iterable<[K, V]> | ReadonlyArray<[K, V]>) {
-        const entries = Array.from(initialContents).map<[P, KeyAndValue<K, V>]>(pair => {
+        const entries = Array.from(initialContents || []).map<[P, KeyAndValue<K, V>]>(pair => {
             const projected = this._projection(pair[0]);
             return [projected, new KeyAndValue(pair[0], pair[1])];
         });
@@ -38,7 +38,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
         }, thisArg);
     }
 
-    public tryGetting(key: K): V {
+    public tryGetting(key: K): V | undefined {
         const keyProjected = this._projection(key);
         const keyAndValue = this._projectionToKeyAndvalue.tryGetting(keyProjected);
         return keyAndValue !== undefined ? keyAndValue.value : undefined;
@@ -46,7 +46,12 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
 
     public get(key: K): V {
         const keyProjected = this._projection(key);
-        return this._projectionToKeyAndvalue.get(keyProjected).value;
+        const underlyingValueOrUndefined = this._projectionToKeyAndvalue.get(keyProjected);
+        if (underlyingValueOrUndefined !== undefined) {
+            return underlyingValueOrUndefined.value;
+        } else {
+            throw new Error(`Couldn't get the value for key: ${key} because it doesn't exist on the map: ${this}`);
+        }
     }
 
     public getOr(key: K, noKeyAction: () => V): V {

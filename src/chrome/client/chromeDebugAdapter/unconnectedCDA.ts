@@ -34,7 +34,7 @@ export class UnconnectedCDA implements IDebugAdapterState {
         @inject(TYPES.ConnectingCDAProvider) private readonly _connectingCDAProvider: ConnectingCDAProvider,
         @inject(TYPES.IClientCapabilities) private readonly _clientCapabilities: IClientCapabilities) { }
 
-    public processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<unknown> {
+    public processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<unknown> {
         switch (requestName) {
             case 'launch':
                 return this.launch(<ILaunchRequestArgs>args, telemetryPropertyCollector);
@@ -45,11 +45,11 @@ export class UnconnectedCDA implements IDebugAdapterState {
         }
     }
 
-    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
+    public async launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
         return this.createConnection(ScenarioType.Launch, args, telemetryPropertyCollector);
     }
 
-    public async attach(args: IAttachRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
+    public async attach(args: IAttachRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
         const updatedArgs = Object.assign({}, { port: 9229 }, args);
         return this.createConnection(ScenarioType.Attach, updatedArgs, telemetryPropertyCollector);
     }
@@ -57,10 +57,10 @@ export class UnconnectedCDA implements IDebugAdapterState {
     private parseLoggingConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs): ILoggingConfiguration {
         const traceMapping: { [key: string]: Logger.LogLevel | undefined } = { true: Logger.LogLevel.Warn, verbose: Logger.LogLevel.Verbose };
         const traceValue = args.trace && traceMapping[args.trace.toString().toLowerCase()];
-        return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: args.logTimestamps };
+        return { logLevel: traceValue || undefined, logFilePath: args.logFilePath, shouldLogTimestamps: !!args.logTimestamps };
     }
 
-    private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
+    private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
         if (this._clientCapabilities.pathFormat !== 'path') {
             throw errors.pathFormat();
         }

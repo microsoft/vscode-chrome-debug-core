@@ -20,7 +20,8 @@ export function formatExceptionDetails(e: IExceptionDetails): string {
 
 export const clearConsoleCode = '\u001b[2J';
 
-export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent['type'], args: CDTP.Runtime.RemoteObject[], stackTrace?: CodeFlowStackTrace): { args: CDTP.Runtime.RemoteObject[], isError: boolean } {
+export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent['type'],
+ args: CDTP.Runtime.RemoteObject[], stackTrace?: CodeFlowStackTrace): { args: CDTP.Runtime.RemoteObject[], isError: boolean } | null {
     switch (type) {
         case 'log':
         case 'debug':
@@ -39,7 +40,7 @@ export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent[
                 [];
 
             const assertMsg = (formattedParams[0] && formattedParams[0].type === 'string') ?
-                formattedParams.shift().value :
+                formattedParams.shift()!.value :
                 '';
             let outputText = `Assertion failed: ${assertMsg}\n` + stackTraceToString(stackTrace);
 
@@ -50,7 +51,7 @@ export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent[
             let startMsg = '‹Start group›';
             const formattedGroupParams = resolveParams(args);
             if (formattedGroupParams.length && formattedGroupParams[0].type === 'string') {
-                startMsg += ': ' + formattedGroupParams.shift().value;
+                startMsg += ': ' + formattedGroupParams.shift()!.value;
             }
 
             args = [{ type: 'string', value: startMsg }, ...formattedGroupParams];
@@ -84,10 +85,10 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
 
     // Find all %s, %i, etc in the first argument, which is always the main text. Strip %
     let formatSpecifiers: string[];
-    const firstTextArg = args.shift();
+    const firstTextArg = args.shift()!;
 
     // currentCollapsedStringArg is the accumulated text
-    let currentCollapsedStringArg = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
+    let currentCollapsedStringArg: string | null = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
     if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
         formatSpecifiers = (currentCollapsedStringArg.match(/\%[sidfoOc]/g) || [])
             .map(spec => spec[1]);
@@ -96,7 +97,7 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
     }
 
     const processedArgs: CDTP.Runtime.RemoteObject[] = [];
-    const pushStringArg = (strArg: string) => {
+    const pushStringArg = (strArg: string | null) => {
         if (typeof strArg === 'string') {
             processedArgs.push({ type: 'string', value: strArg });
         }
@@ -140,12 +141,12 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
     return processedArgs;
 }
 
-function formatArg(formatSpec: string, arg: CDTP.Runtime.RemoteObject): string | CDTP.Runtime.RemoteObject {
+function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObject): string | CDTP.Runtime.RemoteObject {
     const paramValue = String(typeof arg.value !== 'undefined' ? arg.value : arg.description);
 
     if (formatSpec === 's') {
         return paramValue;
-    } else if (['i', 'd'].indexOf(formatSpec) >= 0) {
+    } else if (formatSpec !== undefined && ['i', 'd'].indexOf(formatSpec) >= 0) {
         return Math.floor(+paramValue) + '';
     } else if (formatSpec === 'f') {
         return +paramValue + '';
@@ -209,7 +210,7 @@ function formatArg(formatSpec: string, arg: CDTP.Runtime.RemoteObject): string |
     }
 }
 
-function stackTraceToString(stackTrace: CodeFlowStackTrace): string {
+function stackTraceToString(stackTrace?: CodeFlowStackTrace): string {
     if (!stackTrace) {
         return '';
     }
@@ -223,7 +224,7 @@ function stackTraceToString(stackTrace: CodeFlowStackTrace): string {
         .join('\n');
 }
 
-function getAnsi16Color(colorString: string): number {
+function getAnsi16Color(colorString: string): number | undefined {
     try {
       // Color can parse hex and color names
       const color = new Color(colorString);

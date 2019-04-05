@@ -35,7 +35,7 @@ import { IScript } from './internal/scripts/script';
 
 import { LocationInLoadedSource } from './internal/locations/location';
 import { IEvaluateArguments, ICompletionsArguments } from './internal/requests';
-import { LoadedSourceCallFrame } from './internal/stackTraces/callFrame';
+import { LoadedSourceCallFrame, CallFrameWithState } from './internal/stackTraces/callFrame';
 import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { IResourceIdentifier, parseResourceIdentifier } from './internal/sources/resourceIdentifier';
 import { FormattedExceptionParser } from './internal/formattedExceptionParser';
@@ -52,12 +52,13 @@ import { IEvaluateOnCallFrameRequest, IDebuggeeStateInspector } from './cdtpDebu
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
+import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, validateCDTPRemoteObjectOfTypeObject, CDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
 
 let localize = nls.loadMessageBundle();
 
 interface IPropCount {
-    indexedVariables: number;
-    namedVariables: number;
+    indexedVariables: number | undefined;
+    namedVariables: number | undefined;
 }
 
 /**
@@ -223,7 +224,7 @@ export class ChromeDebugLogic {
             this._expectingResumedEvent = false;
 
             // Need to wait to eval just a little after each step, because of #148
-            this._waitAfterStep = utils.promiseTimeout(null, 50);
+            this._waitAfterStep = utils.promiseTimeout(undefined, 50);
         } else {
             let resumedEvent = new ContinuedEvent(ChromeDebugLogic.THREAD_ID);
             this._session.sendEvent(resumedEvent);
@@ -236,7 +237,7 @@ export class ChromeDebugLogic {
         }
 
         const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
-        const stack = stackTraceWithoutLogpointFrame(event.stackTrace);
+        const stack = event.stackTrace ? stackTraceWithoutLogpointFrame(event.stackTrace) : undefined;
         if (result) {
             this.logObjects(result.args, result.isError, stack);
         }
@@ -282,7 +283,7 @@ export class ChromeDebugLogic {
             .then(async () => {
                 const category = isError ? 'stderr' : 'stdout';
 
-                let location: LocationInLoadedSource = null;
+                let location: LocationInLoadedSource | undefined = undefined;
                 if (stackTrace && stackTrace.codeFlowFrames.length) {
                     location = stackTrace.codeFlowFrames[0].location.mappedToSource();
                 }
@@ -318,7 +319,7 @@ export class ChromeDebugLogic {
             const formattedException = formatExceptionDetails(params.exceptionDetails);
             const exceptionStackTrace = await new FormattedExceptionParser(this._scriptsLogic, formattedException).parse();
 
-            let location: LocationInLoadedSource = null;
+            let location: LocationInLoadedSource | undefined = undefined;
             const stackTrace = params.exceptionDetails.stackTrace;
             if (stackTrace && stackTrace.codeFlowFrames.length) {
                 location = stackTrace.codeFlowFrames[0].location.mappedToSource();
@@ -394,7 +395,7 @@ export class ChromeDebugLogic {
                 () => { });
     }
 
-    public getReadonlyOrigin(): string {
+    public getReadonlyOrigin(): string | undefined {
         // To override
         return undefined;
     }
@@ -419,15 +420,15 @@ export class ChromeDebugLogic {
             ]
         }
     */
-    public scopes(currentFrame: LoadedSourceCallFrame): IScopesResponseBody {
+    public scopes(currentFrame: LoadedSourceCallFrame<CallFrameWithState>): IScopesResponseBody {
         if (!currentFrame || !currentFrame.location) {
             throw errors.stackFrameNotValid();
         }
 
-        const scopes = currentFrame.scopeChain.map((scope, i) => {
+        const scopes = currentFrame.state.scopeChain.map((scope, i) => {
             // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
-            const thisObj = i === 0 && currentFrame.frameThis;
-            const returnValue = i === 0 && currentFrame.returnValue;
+            const thisObj = i === 0 ? currentFrame.state.frameThis : undefined;
+            const returnValue = i === 0 ? currentFrame.state.returnValue : undefined;
             const variablesReference = this._variableHandles.create(
                 new ScopeContainer(currentFrame, i, scope.object.objectId, thisObj, returnValue));
 
@@ -471,10 +472,10 @@ export class ChromeDebugLogic {
             ]
         }
     */
-    public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
+    public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody | undefined> {
         const handle = this._variableHandles.get(args.variablesReference);
         if (!handle) {
-            return Promise.resolve<IVariablesResponseBody>(undefined);
+            return Promise.resolve(undefined);
         }
 
         return handle.expand(this, args.filter, args.start, args.count)
@@ -569,7 +570,7 @@ export class ChromeDebugLogic {
         });
     }
 
-    private getRuntimeProperties(params: CDTP.Runtime.GetPropertiesRequest): Promise<CDTP.Runtime.GetPropertiesResponse> {
+    private getRuntimeProperties(params: CDTP.Runtime.GetPropertiesRequest): Promise<CDTP.Runtime.GetPropertiesResponse | null> {
         return this._inspectDebuggeeState.getProperties(params)
             .catch(err => {
                 if (err.message.startsWith('Cannot find context with specified id')) {
@@ -581,11 +582,11 @@ export class ChromeDebugLogic {
             });
     }
 
-    private internalPropertyDescriptorToVariable(propDesc: CDTP.Runtime.InternalPropertyDescriptor, parentEvaluateName: string): Promise<DebugProtocol.Variable> {
+    private internalPropertyDescriptorToVariable(propDesc: CDTP.Runtime.InternalPropertyDescriptor, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
         return this.remoteObjectToVariable(propDesc.name, propDesc.value, parentEvaluateName);
     }
 
-    private getFilteredVariablesForObject(objectId: string, evaluateName: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
+    private getFilteredVariablesForObject(objectId: string, evaluateName: string | undefined, filter: string | undefined, start: number, count: number): Promise<DebugProtocol.Variable[]> {
         // No ES6, in case we talk to an old runtime
         const getIndexedVariablesFn = `
             function getIndexedVariables(start, count) {
@@ -606,7 +607,7 @@ export class ChromeDebugLogic {
         return this.getFilteredVariablesForObjectId(objectId, evaluateName, getVarsFn, filter, start, count);
     }
 
-    private getFilteredVariablesForObjectId(objectId: string, evaluateName: string, getVarsFn: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
+    private getFilteredVariablesForObjectId(objectId: string, evaluateName: string | undefined, getVarsFn: string, filter: string | undefined, start: number, count: number): Promise<DebugProtocol.Variable[]> {
         return this._inspectDebuggeeState.callFunctionOn({
             objectId,
             functionDeclaration: getVarsFn,
@@ -616,11 +617,13 @@ export class ChromeDebugLogic {
             if (evalResponse.exceptionDetails) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
                 return Promise.reject(errors.errorFromEvaluate(errMsg));
-            } else {
+            } else if (evalResponse.result.objectId) {
                 // The eval was successful and returned a reference to the array object. Get the props, then filter
                 // out everything except the index names.
                 return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
                     .then(variables => variables.filter(variable => isIndexedPropName(variable.name)));
+            } else {
+                throw new Error(`Expected the response to the evaluate to be an array with an objectId, yet the object it was missing. Response: ${JSON.stringify(evalResponse)}`);
             }
         },
             error => Promise.reject(errors.errorFromEvaluate(error.message)));
@@ -691,13 +694,13 @@ export class ChromeDebugLogic {
         return this._inspectDebuggeeState.evaluate(args);
     }
 
-    private async waitThenDoEvaluate(expression: string, frame?: LoadedSourceCallFrame, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
+    private async waitThenDoEvaluate(expression: string, frame?: LoadedSourceCallFrame<CallFrameWithState>, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
         const waitThenEval = this._waitAfterStep.then(() => this.doEvaluate(expression, frame, extraArgs));
         this._waitAfterStep = waitThenEval.then(() => { }, () => { }); // to Promise<void> and handle failed evals
         return waitThenEval;
     }
 
-    private async doEvaluate(expression: string, frame: LoadedSourceCallFrame, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
+    private async doEvaluate(expression: string, frame: LoadedSourceCallFrame<CallFrameWithState> | undefined, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
         if (frame) {
             if (!frame) {
                 return utils.errP(errors.evalNotAvailableMsg);
@@ -721,7 +724,7 @@ export class ChromeDebugLogic {
         }
     }
 
-    public async evaluateOnCallFrame(expression: string, frame: LoadedSourceCallFrame, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
+    public async evaluateOnCallFrame(expression: string, frame: LoadedSourceCallFrame<CallFrameWithState>, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
         let args: IEvaluateOnCallFrameRequest = {
             frame: frame.unmappedCallFrame,
             expression,
@@ -755,7 +758,7 @@ export class ChromeDebugLogic {
             .then(value => ({ value }));
     }
 
-    public setVariableValue(frame: LoadedSourceCallFrame, scopeNumber: number, variableName: string, value: string): Promise<string> {
+    public setVariableValue(frame: LoadedSourceCallFrame<CallFrameWithState>, scopeNumber: number, variableName: string, value: string): Promise<string> {
         let evalResultObject: CDTP.Runtime.RemoteObject;
         return this._inspectDebuggeeState.evaluateOnCallFrame({ frame: frame.unmappedCallFrame, expression: value, silent: true }).then(evalResponse => {
             if (evalResponse.exceptionDetails) {
@@ -789,13 +792,13 @@ export class ChromeDebugLogic {
             error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
     }
 
-    public async remoteObjectToVariable(name: string, object: CDTP.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
+    public async remoteObjectToVariable(name: string, object?: CDTP.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
         name = name || '""';
 
         if (object) {
-            if (object.type === 'object') {
+            if (object.type === 'object' && validateCDTPRemoteObjectOfTypeObject(object)) {
                 return this.createObjectVariable(name, object, parentEvaluateName, context);
-            } else if (object.type === 'function') {
+            } else if (object.type === 'function' && validateNonPrimitiveRemoteObject(object)) {
                 return this.createFunctionVariable(name, object, context, parentEvaluateName);
             } else {
                 return this.createPrimitiveVariable(name, object, parentEvaluateName, stringify);
@@ -805,7 +808,11 @@ export class ChromeDebugLogic {
         }
     }
 
-    public createFunctionVariable(name: string, object: CDTP.Runtime.RemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
+    public createFunctionVariable(name: string, object: CDTPNonPrimitiveRemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
+        if (object.description === undefined) {
+            throw new Error(`Expected to find a description property in the remote object of a function: ${JSON.stringify(object)}`);
+        }
+
         let value: string;
         const firstBraceIdx = object.description.indexOf('{');
         if (firstBraceIdx >= 0) {
@@ -827,7 +834,7 @@ export class ChromeDebugLogic {
         };
     }
 
-    public createObjectVariable(name: string, object: CDTP.Runtime.RemoteObject, parentEvaluateName: string, context: VariableContext): Promise<DebugProtocol.Variable> {
+    public createObjectVariable(name: string, object: CDTPRemoteObjectOfTypeObject, parentEvaluateName: string | undefined, context: VariableContext): Promise<DebugProtocol.Variable> {
         if ((<string>object.subtype) === 'internal#location') {
             // Could format this nicely later, see #110
             return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'internal#location', parentEvaluateName));
@@ -871,7 +878,7 @@ export class ChromeDebugLogic {
         }));
     }
 
-    protected createPropertyContainer(object: CDTP.Runtime.RemoteObject, evaluateName: string): IVariableContainer {
+    protected createPropertyContainer(object: CDTPRemoteObjectOfTypeObject, evaluateName: string): IVariableContainer {
         return new PropertyContainer(object.objectId, evaluateName);
     }
 
@@ -907,7 +914,7 @@ export class ChromeDebugLogic {
         // 1-indexed column
         const prefix = text.substring(0, column - 1);
 
-        let expression: string;
+        let expression: string | undefined = undefined;
         const dot = prefix.lastIndexOf('.');
         if (dot >= 0) {
             expression = prefix.substr(0, dot);
@@ -927,8 +934,8 @@ export class ChromeDebugLogic {
                 return { targets: [] };
             }
 
-            const scopeExpandPs = callFrame.scopeChain
-                .map(scope => new ScopeContainer(callFrame, undefined, scope.object.objectId).expand(this));
+            const scopeExpandPs = callFrame.state.scopeChain
+                .map((scope, i) => new ScopeContainer(callFrame, i, scope.object.objectId).expand(this));
             return Promise.all(scopeExpandPs)
                 .then((variableArrs: DebugProtocol.Variable[][]) => {
                     const targets = this.getFlatAndUniqueCompletionItems(
@@ -982,7 +989,12 @@ export class ChromeDebugLogic {
     }
 
     private getArrayNumPropsByPreview(object: CDTP.Runtime.RemoteObject): IPropCount {
+        if (object.preview === undefined) {
+            throw new Error(`Expected to find a preview property in the remote object of an array: ${JSON.stringify(object)}`);
+        }
+
         let indexedVariables = 0;
+
         const indexedProps = object.preview.properties
             .filter(prop => isIndexedPropName(prop.name));
         if (indexedProps.length) {
@@ -999,7 +1011,7 @@ export class ChromeDebugLogic {
         return this.getNumPropsByEval(objectId, getNumPropsFn);
     }
 
-    private getCollectionNumPropsByPreview(object: CDTP.Runtime.RemoteObject): IPropCount {
+    private getCollectionNumPropsByPreview(object: CDTPRemoteObjectOfTypeObject): IPropCount {
         let indexedVariables = 0;
         let namedVariables = object.preview.properties.length + 1; // +1 for [[Entries]];
 

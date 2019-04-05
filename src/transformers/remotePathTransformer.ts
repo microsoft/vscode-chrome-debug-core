@@ -17,15 +17,67 @@ import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 
+interface IRootsState {
+    getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier;
+    getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier;
+}
+
+class BothRootsAreSet implements IRootsState {
+    public constructor(
+        public readonly _localRoot: string,
+        public readonly _remoteRoot: string) { }
+
+    private shouldMapPaths(remotePath: IResourceIdentifier): boolean {
+        // Map paths only if localRoot/remoteRoot are set, and the remote path is absolute on some system
+        return path.posix.isAbsolute(remotePath.canonicalized) || path.win32.isAbsolute(remotePath.canonicalized);
+    }
+
+    public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier {
+        if (!this.shouldMapPaths(remotePath)) return parseResourceIdentifier('');
+
+        const relPath = relative(this._remoteRoot, remotePath.canonicalized);
+        let localPath = join(this._localRoot, relPath);
+
+        localPath = utils.fixDriveLetterAndSlashes(localPath);
+        logger.log(`Mapped remoteToLocal: ${remotePath} -> ${localPath}`);
+        return parseResourceIdentifier(localPath);
+    }
+
+    public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
+        if (!this.shouldMapPaths(localPath)) return localPath;
+
+        const relPath = relative(this._localRoot, localPath.canonicalized);
+        let remotePath = join(this._remoteRoot, relPath);
+
+        remotePath = utils.fixDriveLetterAndSlashes(remotePath, /*uppercaseDriveLetter=*/true);
+        logger.log(`Mapped localToRemote: ${localPath} -> ${remotePath}`);
+        return parseResourceIdentifier(remotePath);
+    }
+}
+
+class MissingRoots implements IRootsState {
+    public getClientPathFromTargetPath(_remotePath: IResourceIdentifier): IResourceIdentifier {
+        return parseResourceIdentifier('');
+    }
+
+    public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
+        return localPath;
+    }
+}
+
 /**
  * Converts a local path from Code to a path on the target.
  */
 export class RemotePathTransformer extends UrlPathTransformer {
     private _localRoot: string;
-    private _remoteRoot: string;
+    private _remoteRoot?: string;
+    private readonly _state: IRootsState;
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
         super(configuration);
+        this._state = !!this._localRoot && !!this._remoteRoot
+            ? new BothRootsAreSet(this._localRoot, this._remoteRoot)
+            : new MissingRoots();
         this.init(configuration.args);
     }
 
@@ -67,36 +119,17 @@ export class RemotePathTransformer extends UrlPathTransformer {
         return scriptPath;
     }
 
-    private shouldMapPaths(remotePath: IResourceIdentifier): boolean {
-        // Map paths only if localRoot/remoteRoot are set, and the remote path is absolute on some system
-        return !!this._localRoot && !!this._remoteRoot && (path.posix.isAbsolute(remotePath.canonicalized) || path.win32.isAbsolute(remotePath.canonicalized));
-    }
-
     public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier {
         remotePath = super.getClientPathFromTargetPath(remotePath) || remotePath;
 
         // Map as non-file-uri because remoteRoot won't expect a file uri
         remotePath = parseResourceIdentifier(utils.fileUrlToPath(remotePath.canonicalized));
-        if (!this.shouldMapPaths(remotePath)) return parseResourceIdentifier('');
-
-        const relPath = relative(this._remoteRoot, remotePath.canonicalized);
-        let localPath = join(this._localRoot, relPath);
-
-        localPath = utils.fixDriveLetterAndSlashes(localPath);
-        logger.log(`Mapped remoteToLocal: ${remotePath} -> ${localPath}`);
-        return parseResourceIdentifier(localPath);
+        return this._state.getClientPathFromTargetPath(remotePath);
     }
 
     public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
         localPath = super.getTargetPathFromClientPath(localPath) || localPath;
-        if (!this.shouldMapPaths(localPath)) return localPath;
-
-        const relPath = relative(this._localRoot, localPath.canonicalized);
-        let remotePath = join(this._remoteRoot, relPath);
-
-        remotePath = utils.fixDriveLetterAndSlashes(remotePath, /*uppercaseDriveLetter=*/true);
-        logger.log(`Mapped localToRemote: ${localPath} -> ${remotePath}`);
-        return parseResourceIdentifier(remotePath);
+        return this._state.getTargetPathFromClientPath(localPath);
     }
 }
 

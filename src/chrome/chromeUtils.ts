@@ -17,7 +17,7 @@ import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
  */
-export function applyPathMappingsToTargetUrlPath(scriptUrlPath: string, pathMapping: IPathMapping): string {
+export function applyPathMappingsToTargetUrlPath(scriptUrlPath: string | undefined, pathMapping: IPathMapping | undefined): string {
     if (!pathMapping) {
         return '';
     }
@@ -86,7 +86,7 @@ function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): 
  * http://localhost/scripts/code.js => d:/app/scripts/code.js
  * file:///d:/scripts/code.js => d:/scripts/code.js
  */
-export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): string {
+export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping | undefined): string {
     if (!aUrl) {
         return '';
     }
@@ -134,13 +134,17 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping): 
  */
 export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify = true): { value: string, variableHandleRef?: string } {
     let value = '';
-    let variableHandleRef: string;
+    let variableHandleRef: string | undefined;
 
     if (object) {
         if (object.type === 'object') {
             if (object.subtype === 'null') {
                 value = 'null';
             } else {
+                if (object.description === undefined) {
+                    throw new Error(`Expected an remote object of type object to have a description yet it didn't: ${JSON.stringify(object)}`);
+                }
+
                 // If it's a non-null object, create a variable reference so the client can ask for its props
                 variableHandleRef = object.objectId;
                 value = object.description;
@@ -148,6 +152,10 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
         } else if (object.type === 'undefined') {
             value = 'undefined';
         } else if (object.type === 'function') {
+            if (object.description === undefined) {
+                throw new Error(`Expected a function to have a description yet it didn't: ${JSON.stringify(object)}`);
+            }
+
             const firstBraceIdx = object.description.indexOf('{');
             if (firstBraceIdx >= 0) {
                 value = object.description.substring(0, firstBraceIdx) + '{ … }';
@@ -158,6 +166,10 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
                     object.description;
             }
         } else {
+            if (object.description === undefined) {
+                throw new Error(`Expected an object that is neither objecr, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
+            }
+
             // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
             if (typeof object.value === 'undefined') {
                 value = object.description;
@@ -199,7 +211,7 @@ export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string)
     targetUrlPattern = utils.escapeRegexSpecialChars(targetUrlPattern, '/*').replace(/\*/g, '.*');
 
     const targetUrlRegex = new RegExp('^' + targetUrlPattern + '$', 'g');
-    return targets.filter(target => !!standardizeMatch(target.url).match(targetUrlRegex));
+    return targets.filter(target => target.url !== undefined && !!standardizeMatch(target.url).match(targetUrlRegex));
 }
 
 const PROTO_NAME = '__proto__';
@@ -271,7 +283,7 @@ export function errorMessageFromExceptionDetails(exceptionDetails: CDTP.Runtime.
     return description;
 }
 
-export function getEvaluateName(parentEvaluateName: string, name: string): string {
+export function getEvaluateName(parentEvaluateName: string | undefined, name: string): string {
     if (!parentEvaluateName) return name;
 
     let nameAccessor: string;

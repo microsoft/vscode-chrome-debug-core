@@ -6,7 +6,7 @@ import { CDTPEventsEmitterDiagnosticsModule } from '../infrastructure/cdtpDiagno
 import { asyncMap } from '../../collections/async';
 import { CDTPStackTraceParser } from '../protocolParsers/cdtpStackTraceParser';
 import { CDTPBreakpointIdsRegistry } from '../registries/cdtpBreakpointIdsRegistry';
-import { ScriptCallFrame, CodeFlowFrame } from '../../internal/stackTraces/callFrame';
+import { ScriptCallFrame, CodeFlowFrame, CallFrameWithState } from '../../internal/stackTraces/callFrame';
 import { asyncUndefinedOnFailure } from '../../utils/failures';
 import { CDTPLocationParser } from '../protocolParsers/cdtpLocationParser';
 import { Scope } from '../../internal/stackTraces/scopes';
@@ -18,13 +18,13 @@ import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrac
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
-import { CDTPBPRecipe } from '../cdtpPrimitives';
+import { CDTPBPRecipe, validateCDTPRemoteObjectOfTypeObject } from '../cdtpPrimitives';
 
 export type PauseEventReason = 'XHR' | 'DOM' | 'EventListener' | 'exception' | 'assert' | 'debugCommand' | 'promiseRejection' | 'OOM' | 'other' | 'ambiguous';
 
 export class PausedEvent {
     constructor(
-        public readonly callFrames: ScriptCallFrame[],
+        public readonly callFrames: ScriptCallFrame<CallFrameWithState>[],
         public readonly reason: PauseEventReason,
         public readonly data: any,
         public readonly hitBreakpoints: CDTPBPRecipe[],
@@ -56,7 +56,7 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
 
         const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this.toCallFrame(index, callFrame));
 
-        return new PausedEvent(callFrames, params.reason, params.data, await asyncMap(params.hitBreakpoints, hbp => this.getBPFromID(hbp)),
+        return new PausedEvent(callFrames, params.reason, params.data, await asyncMap(params.hitBreakpoints || [], hbp => this.getBPFromID(hbp)),
             params.asyncStackTrace && await this._stackTraceParser.toStackTraceCodeFlow(params.asyncStackTrace),
             params.asyncStackTraceId, params.asyncCallStackTraceId);
     });
@@ -79,10 +79,10 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
         return this._breakpointIdRegistry.getRecipeByBreakpointId(hitBreakpoint);
     }
 
-    private async toCallFrame(index: number, callFrame: CDTP.Debugger.CallFrame): Promise<ScriptCallFrame> {
+    private async toCallFrame(index: number, callFrame: CDTP.Debugger.CallFrame): Promise<ScriptCallFrame<CallFrameWithState>> {
         const frame = new ScriptCallFrame(await this.toCodeFlowFrame(index, callFrame),
-            await asyncMap(callFrame.scopeChain, scope => this.toScope(scope)),
-            callFrame.this, callFrame.returnValue);
+            new CallFrameWithState(await asyncMap(callFrame.scopeChain, scope => this.toScope(scope)),
+                callFrame.this, callFrame.returnValue));
 
         this._callFrameRegistry.registerFrameId(callFrame.callFrameId, frame);
 
@@ -94,13 +94,16 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
     }
 
     private async toScope(scope: CDTP.Debugger.Scope): Promise<Scope> {
-        return {
-            type: scope.type,
-            object: scope.object,
-            name: scope.name,
-            // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
-            startLocation: await asyncUndefinedOnFailure(async () => scope.startLocation && await this._cdtpLocationParser.getLocationInScript(scope.startLocation)),
-            endLocation: await asyncUndefinedOnFailure(async () => scope.endLocation && await this._cdtpLocationParser.getLocationInScript(scope.endLocation))
-        };
+        if (validateCDTPRemoteObjectOfTypeObject(scope.object)) {
+            return new Scope(
+                scope.type,
+                scope.object,
+                scope.name,
+                // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
+                await asyncUndefinedOnFailure(async () => scope.startLocation && await this._cdtpLocationParser.getLocationInScript(scope.startLocation)),
+                await asyncUndefinedOnFailure(async () => scope.endLocation && await this._cdtpLocationParser.getLocationInScript(scope.endLocation)));
+        } else {
+            throw new Error(`Expected the remote object of a scope to be of type object yet it wasn't: ${JSON.stringify(scope.object)}`);
+        }
     }
 }

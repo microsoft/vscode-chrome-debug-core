@@ -7,10 +7,10 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { ScriptCallFrame } from '../../internal/stackTraces/callFrame';
+import { ScriptCallFrame, CallFrameWithState } from '../../internal/stackTraces/callFrame';
 
 export interface IEvaluateOnCallFrameRequest {
-    readonly frame: ScriptCallFrame;
+    readonly frame: ScriptCallFrame<CallFrameWithState>;
     readonly expression: string;
     readonly objectGroup?: string;
     readonly includeCommandLineAPI?: boolean;

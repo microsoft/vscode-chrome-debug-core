@@ -161,7 +161,7 @@ abstract class ScriptCreator {
         return script;
     }
 
-    private sourceMap(): Promise<SourceMap> {
+    private sourceMap(): Promise<SourceMap | null> {
         return this._sourceMapTransformer.scriptParsed(this.runtimeSourcePath.canonicalized, this._scriptParsedEvent.sourceMapURL);
     }
 
@@ -174,7 +174,7 @@ abstract class ScriptCreator {
         return sourceMapper.sources.map((path: string) => this.obtainLoadedSource(parseResourceIdentifier(path), SourceScriptRelationship.Unknown));
     }
 
-    private sourceMapper(script: IScript, sourceMap: SourceMap): IMappedSourcesMapper {
+    private sourceMapper(script: IScript, sourceMap: SourceMap | null): IMappedSourcesMapper {
         const sourceMapper = sourceMap
             ? new MappedSourcesMapper(script, sourceMap)
             : new NoMappedSourcesMapper(script);

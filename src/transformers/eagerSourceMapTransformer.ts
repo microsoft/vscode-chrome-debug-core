@@ -66,7 +66,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
      * Try to find the 'sourceMappingURL' in content or the file with the given path.
      * Returns null if no source map url is found or if an error occured.
      */
-    private findSourceMapUrlInFile(pathToGenerated: string, content?: string): Promise<string> {
+    private findSourceMapUrlInFile(pathToGenerated: string, content?: string): Promise<string | null> {
         if (content) {
             return Promise.resolve(this.findSourceMapUrl(content));
         }
@@ -80,7 +80,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
      * Relative file paths are converted into absolute paths.
      * Returns null if no source map url is found.
      */
-    private findSourceMapUrl(contents: string): string {
+    private findSourceMapUrl(contents: string): string | null {
         const lines = contents.split('\n');
         for (let l = lines.length - 1; l >= Math.max(lines.length - 10, 0); l--) {    // only search for url in the last 10 lines
             const line = lines[l].trim();

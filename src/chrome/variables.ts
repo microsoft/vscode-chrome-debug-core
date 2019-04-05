@@ -8,7 +8,8 @@ import { Handles } from 'vscode-debugadapter';
 import { ChromeDebugLogic, VariableContext } from './chromeDebugAdapter';
 import { Protocol as CDTP } from 'devtools-protocol';
 import * as utils from '../utils';
-import { LoadedSourceCallFrame } from './internal/stackTraces/callFrame';
+import { LoadedSourceCallFrame, CallFrameWithState } from './internal/stackTraces/callFrame';
+import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from './cdtpDebuggee/cdtpPrimitives';
 
 export interface IVariableContainer {
     expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
@@ -34,23 +35,25 @@ export class PropertyContainer extends BaseVariableContainer {
     }
 }
 
-export class LoggedObjects extends BaseVariableContainer {
-    constructor(private args: CDTP.Runtime.RemoteObject[]) {
-        super(undefined);
-    }
+export class LoggedObjects implements IVariableContainer {
+    constructor(private args: CDTP.Runtime.RemoteObject[]) {}
 
     public expand(adapter: ChromeDebugLogic, _filter?: string, _start?: number, _count?: number): Promise<DebugProtocol.Variable[]> {
         return Promise.all(this.args.map((arg, i) => adapter.remoteObjectToVariable('' + i, arg, undefined, /*stringify=*/false, 'repl')));
     }
+
+    public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
+        return utils.errP('setValue not supported by this variable type');
+    }
 }
 
 export class ScopeContainer extends BaseVariableContainer {
-    private _thisObj: CDTP.Runtime.RemoteObject;
-    private _returnValue: CDTP.Runtime.RemoteObject;
-    private _frameId: LoadedSourceCallFrame;
+    private _thisObj?: CDTP.Runtime.RemoteObject;
+    private _returnValue?: CDTP.Runtime.RemoteObject;
+    private _frameId: LoadedSourceCallFrame<CallFrameWithState>;
     private _origScopeIndex: number;
 
-    public constructor(frameId: LoadedSourceCallFrame, origScopeIndex: number, objectId: string, thisObj?: CDTP.Runtime.RemoteObject, returnValue?: CDTP.Runtime.RemoteObject) {
+    public constructor(frameId: LoadedSourceCallFrame<CallFrameWithState>, origScopeIndex: number, objectId: string, thisObj?: CDTP.Runtime.RemoteObject, returnValue?: CDTP.Runtime.RemoteObject) {
         super(objectId, '');
         this._thisObj = thisObj;
         this._returnValue = returnValue;
@@ -94,7 +97,7 @@ export class ScopeContainer extends BaseVariableContainer {
 export class ExceptionContainer extends PropertyContainer {
     protected _exception: CDTP.Runtime.RemoteObject;
 
-    protected constructor(_objectId: string, exception: CDTP.Runtime.RemoteObject) {
+    protected constructor(_objectId: string, exception: CDTPNonPrimitiveRemoteObject) {
         super(exception.objectId, undefined);
         this._exception = exception;
     }
@@ -102,8 +105,8 @@ export class ExceptionContainer extends PropertyContainer {
     /**
      * Expand the exception as if it were a Scope
      */
-    public static create(exception: CDTP.Runtime.RemoteObject): ExceptionContainer {
-        return exception.objectId ?
+    public static create(exception: CDTP.Runtime.RemoteObject): PropertyContainer {
+        return validateNonPrimitiveRemoteObject(exception) ?
             new ExceptionContainer(exception.objectId, exception) :
             new ExceptionValueContainer(exception);
     }
@@ -112,9 +115,9 @@ export class ExceptionContainer extends PropertyContainer {
 /**
  * For when a value is thrown instead of an object
  */
-export class ExceptionValueContainer extends ExceptionContainer {
-    public constructor(exception: CDTP.Runtime.RemoteObject) {
-        super('EXCEPTION_ID', exception);
+export class ExceptionValueContainer extends PropertyContainer {
+    public constructor(private _exception: CDTP.Runtime.RemoteObject) {
+        super('EXCEPTION_ID', undefined);
     }
 
     /**
@@ -135,7 +138,7 @@ const PREVIEW_PROPS_DEFAULT = 3;
 const PREVIEW_PROPS_CONSOLE = 8;
 const PREVIEW_PROP_LENGTH = 50;
 const ELLIPSIS = '…';
-function getArrayPreview(object: CDTP.Runtime.RemoteObject, context?: string): string {
+function getArrayPreview(object: CDTP.Runtime.RemoteObject, context?: string): string | undefined {
     let value = object.description;
     if (object.preview) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
@@ -175,7 +178,7 @@ function getArrayPreview(object: CDTP.Runtime.RemoteObject, context?: string): s
     return value;
 }
 
-function getObjectPreview(object: CDTP.Runtime.RemoteObject, context?: string): string {
+function getObjectPreview(object: CDTP.Runtime.RemoteObject, context?: string): string |  undefined {
     let value = object.description;
     if (object.preview) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
@@ -213,7 +216,7 @@ function trimProperty(value: string): string {
         value;
 }
 
-export function getRemoteObjectPreview(object: CDTP.Runtime.RemoteObject, stringify = true, context?: string): string {
+export function getRemoteObjectPreview(object: CDTP.Runtime.RemoteObject, stringify = true, context?: string): string | undefined {
     if (object) {
         if (object.type === 'object') {
             return getRemoteObjectPreview_object(object, context);
@@ -227,7 +230,7 @@ export function getRemoteObjectPreview(object: CDTP.Runtime.RemoteObject, string
     return '';
 }
 
-export function getRemoteObjectPreview_object(object: CDTP.Runtime.RemoteObject, context?: string): string {
+export function getRemoteObjectPreview_object(object: CDTP.Runtime.RemoteObject, context?: string): string | undefined {
     const objectDescription = object.description || '';
     if ((<string>object.subtype) === 'internal#location') {
         // Could format this nicely later, see #110
@@ -267,7 +270,11 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
     } else if (object.type === 'number') {
         // .value is truncated, so use .description, the full string representation
         // Should be like '3' or 'Infinity'.
-        return object.description;
+        if (object.description) {
+            return object.description;
+        } else {
+            throw new Error(`Expected a remote object representing a number to have a description, yet it didn't: ${JSON.stringify(object)}`);
+        }
     } else if (object.type === 'boolean') {
         // Never stringified
         return '' + object.value;
@@ -277,6 +284,10 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
 }
 
 export function getRemoteObjectPreview_function(object: CDTP.Runtime.RemoteObject, _context?: string): string {
+    if (object.description === undefined) {
+        throw new Error(`Expected to find a description property in the remote object of a function: ${JSON.stringify(object)}`);
+    }
+
     const firstBraceIdx = object.description.indexOf('{');
     if (firstBraceIdx >= 0) {
         return object.description.substring(0, firstBraceIdx) + '{ … }';

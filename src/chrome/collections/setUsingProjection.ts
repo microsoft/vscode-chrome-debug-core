@@ -36,7 +36,7 @@ export class SetUsingProjection<T, P> implements Set<T> {
         }, thisArg);
     }
 
-    public tryGetting(referenceElement: T): T {
+    public tryGetting(referenceElement: T): T | undefined {
         const projectedValue = this._projection(referenceElement);
         const elementInSet = this._projectionToElement.tryGetting(projectedValue);
         return elementInSet !== undefined ? elementInSet : undefined;

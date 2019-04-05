@@ -63,7 +63,7 @@ export class ScriptMapper implements IScriptMapper {
     constructor(public readonly relationships: ILoadedSourceToScriptRelationship[]) { }
 
     public mapToScripts(locationToMap: LocationInLoadedSource): LocationInScript[] {
-        return this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
+        return <LocationInScript[]>this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
             .filter(location => location !== null);
     }
 

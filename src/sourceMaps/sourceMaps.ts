@@ -17,59 +17,34 @@ export class SourceMaps {
         this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
-    /**
-     * Returns the generated script path for an authored source path
-     * @param pathToSource - The absolute path to the authored file
-     */
-    public getGeneratedPathFromAuthoredPath(authoredPath: string): string {
-        authoredPath = authoredPath.toLowerCase();
-        return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath).generatedPath() :
-            null;
-    }
-
-    public mapToGenerated(authoredPath: string, line: number, column: number): MappedPosition {
-        authoredPath = authoredPath.toLowerCase();
-        return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath)
-                .generatedPositionFor(authoredPath, line, column) :
-            null;
-    }
-
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): MappedPosition {
+    public mapToAuthored(pathToGenerated: string, line: number, column: number): MappedPosition | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        return this._generatedPathToSourceMap.has(pathToGenerated) ?
-            this._generatedPathToSourceMap.get(pathToGenerated)
-                .authoredPositionFor(line, column) :
+        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        return sourceMap !== undefined ?
+            sourceMap.authoredPositionFor(line, column) :
             null;
     }
 
-    public allMappedSources(pathToGenerated: string): string[] {
+    public allMappedSources(pathToGenerated: string): string[] | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        return this._generatedPathToSourceMap.has(pathToGenerated) ?
-            this._generatedPathToSourceMap.get(pathToGenerated).authoredSources :
+        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        return sourceMap !== undefined ?
+            sourceMap.authoredSources :
             null;
     }
 
-    public allSourcePathDetails(pathToGenerated: string): ISourcePathDetails[] {
+    public allSourcePathDetails(pathToGenerated: string): ISourcePathDetails[] | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        return this._generatedPathToSourceMap.has(pathToGenerated) ?
-            this._generatedPathToSourceMap.get(pathToGenerated).allSourcePathDetails :
-            null;
-    }
-
-    public sourceContentFor(authoredPath: string): string {
-        authoredPath = authoredPath.toLowerCase();
-        return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath)
-                .sourceContentFor(authoredPath) :
+        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        return sourceMap !== undefined ?
+            sourceMap.allSourcePathDetails :
             null;
     }
 
     /**
      * Given a new path to a new script file, finds and loads the sourcemap for that file
      */
-    public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string, isVSClient = false): Promise<SourceMap> {
+    public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string, isVSClient = false): Promise<SourceMap | null> {
         const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
         if (sourceMap) {
             this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);

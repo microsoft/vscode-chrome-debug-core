@@ -6,14 +6,14 @@
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { injectable, inject } from 'inversify';
-import { ScriptCallFrame } from '../../internal/stackTraces/callFrame';
+import { ScriptCallFrame, CallFrameWithState } from '../../internal/stackTraces/callFrame';
 import { integer } from '../cdtpPrimitives';
 
 export interface ISetVariableValueRequest {
     readonly scopeNumber: integer;
     readonly variableName: string;
     readonly newValue: CDTP.Runtime.CallArgument;
-    readonly frame: ScriptCallFrame;
+    readonly frame: ScriptCallFrame<CallFrameWithState>;
 }
 
 export interface IDebuggeeStateSetter {

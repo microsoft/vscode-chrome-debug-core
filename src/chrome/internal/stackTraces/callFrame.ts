@@ -26,7 +26,7 @@ export type ScriptOrLoadedSource = IScript | ILoadedSource;
 export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
     constructor(
         public readonly index: number,
-        public readonly functionName: string | undefined,
+        public readonly functionName: string,
         public readonly location: Location<TResource>) { }
 
     public get source(): TResource extends ILoadedSource ? TResource : never {
@@ -60,19 +60,17 @@ export interface ICallFrame<TResource extends ScriptOrLoadedSource> {
     readonly lineNumber: number;
     readonly columnNumber: number;
     readonly codeFlow: CodeFlowFrame<TResource>;
-    readonly scopeChain: Scope[];
-    readonly frameThis?: CDTP.Runtime.RemoteObject;
-    readonly returnValue?: CDTP.Runtime.RemoteObject;
+    readonly state: ICallFrameState;
 }
 
-export type CallFrame<TResource extends ScriptOrLoadedSource> =
-    TResource extends ILoadedSource ? LoadedSourceCallFrame :
-    TResource extends IScript ? ScriptCallFrame :
+export type CallFrame<TResource extends ScriptOrLoadedSource, TState extends ICallFrameState> =
+    TResource extends ILoadedSource ? LoadedSourceCallFrame<TState> :
+    TResource extends IScript ? ScriptCallFrame<TState> :
     ICallFrame<never>; // TODO: Figure out how to change this for never
 
 abstract class BaseCallFrame<TResource extends ScriptOrLoadedSource> implements ICallFrame<TResource> {
-    public abstract get scopeChain(): Scope[];
     public abstract get codeFlow(): CodeFlowFrame<TResource>;
+    public abstract get state(): ICallFrameState;
 
     public get source(): TResource extends ILoadedSource ? TResource : never {
         return this.codeFlow.source;
@@ -99,16 +97,25 @@ abstract class BaseCallFrame<TResource extends ScriptOrLoadedSource> implements 
     }
 }
 
-export class ScriptCallFrame extends BaseCallFrame<IScript> {
-    constructor(
-        public readonly codeFlow: CodeFlowFrame<IScript>,
+export interface ICallFrameState {}
+
+export class CallFrameWithState implements ICallFrameState {
+    public constructor(
         public readonly scopeChain: Scope[],
         public readonly frameThis: CDTP.Runtime.RemoteObject,
-        public readonly returnValue?: CDTP.Runtime.RemoteObject) {
+        public readonly returnValue?: CDTP.Runtime.RemoteObject) {}
+}
+
+export class CallFrameWithoutState implements ICallFrameState {}
+
+export class ScriptCallFrame<TState extends ICallFrameState> extends BaseCallFrame<IScript> {
+    constructor(
+        public readonly codeFlow: CodeFlowFrame<IScript>,
+        public readonly state: TState) {
         super();
     }
 
-    public mappedToSource(): LoadedSourceCallFrame {
+    public mappedToSource(): LoadedSourceCallFrame<TState> {
         const codeFlow = new CodeFlowFrame<ILoadedSource>(this.index, this.codeFlow.functionName, this.location.mappedToSource());
         return new LoadedSourceCallFrame(this, codeFlow);
     }
@@ -118,22 +125,18 @@ export class ScriptCallFrame extends BaseCallFrame<IScript> {
     }
 }
 
-export class LoadedSourceCallFrame extends BaseCallFrame<ILoadedSource> {
+export class LoadedSourceCallFrame<TState extends ICallFrameState> extends BaseCallFrame<ILoadedSource> {
     constructor(
-        public readonly unmappedCallFrame: ScriptCallFrame,
+        public readonly unmappedCallFrame: ScriptCallFrame<TState>,
         public readonly codeFlow: CodeFlowFrame<ILoadedSource>) {
         super();
     }
 
-    public get scopeChain(): Scope[] {
-        return this.unmappedCallFrame.scopeChain;
+    public get state(): TState {
+        return this.unmappedCallFrame.state;
     }
 
-    public get frameThis(): CDTP.Runtime.RemoteObject {
-        return this.unmappedCallFrame.frameThis;
-    }
-
-    public get returnValue(): CDTP.Runtime.RemoteObject {
-        return this.unmappedCallFrame.returnValue;
+    public hasState(): this is LoadedSourceCallFrame<CallFrameWithState> {
+        return this.state instanceof CallFrameWithState;
     }
 }

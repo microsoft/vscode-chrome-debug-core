@@ -4,18 +4,18 @@
 
  import { Protocol as CDTP } from 'devtools-protocol';
 import { ValidatedMap } from '../../collections/validatedMap';
-import { ScriptCallFrame } from '../../internal/stackTraces/callFrame';
+import { ScriptCallFrame, CallFrameWithState } from '../../internal/stackTraces/callFrame';
 import { injectable } from 'inversify';
 
 @injectable()
 export class CDTPCallFrameRegistry {
-    private readonly _callFrameToId = new ValidatedMap<ScriptCallFrame, CDTP.Debugger.CallFrameId>();
+    private readonly _callFrameToId = new ValidatedMap<ScriptCallFrame<CallFrameWithState>, CDTP.Debugger.CallFrameId>();
 
-    public registerFrameId(callFrameId: CDTP.Debugger.CallFrameId, frame: ScriptCallFrame): void {
+    public registerFrameId(callFrameId: CDTP.Debugger.CallFrameId, frame: ScriptCallFrame<CallFrameWithState>): void {
         this._callFrameToId.set(frame, callFrameId);
     }
 
-    public getFrameId(frame: ScriptCallFrame): CDTP.Debugger.CallFrameId {
+    public getFrameId(frame: ScriptCallFrame<CallFrameWithState>): CDTP.Debugger.CallFrameId {
         return this._callFrameToId.get(frame);
     }
 }

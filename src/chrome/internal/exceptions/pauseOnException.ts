@@ -28,7 +28,7 @@ export interface IExceptionInformation {
     readonly exceptionId: string;
     readonly description?: string;
     readonly breakMode: ExceptionBreakMode;
-    readonly details?: IExceptionInformationDetails;
+    readonly details: IExceptionInformationDetails;
 }
 
 export class ExceptionWasThrown extends BaseNotifyClientOfPause {

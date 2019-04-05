@@ -32,7 +32,7 @@ export class InternalSourceBreakpoint {
 }
 
 function isLogpointStack(stackTrace: CodeFlowStackTrace | null): boolean {
-    return stackTrace && stackTrace.codeFlowFrames.length > 0
+    return !!stackTrace && stackTrace.codeFlowFrames.length > 0
     && stackTrace.codeFlowFrames[0].script.runtimeSource.identifier.isEquivalentTo(parseResourceIdentifier(createCDTPScriptUrl(InternalSourceBreakpoint.LOGPOINT_URL)));
 }
 
