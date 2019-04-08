@@ -9,6 +9,7 @@ import { ILoadedSource } from '../sources/loadedSource';
 import { IResourceIdentifier, parseResourceIdentifier } from '../sources/resourceIdentifier';
 import { IScript } from './script';
 import { IValidatedMap } from '../../collections/validatedMap';
+import { logger } from 'vscode-debugadapter';
 
 export interface ISourceToScriptMapper {
     getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null;
@@ -43,12 +44,16 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
 
         const mappedPosition = this._sourceMap.authoredPositionFor(lineNumberRelativeToScript, columnNumberRelativeToScript);
 
-        if (mappedPosition && mappedPosition.source && typeof mappedPosition.line !== 'undefined') {
+        if (mappedPosition && mappedPosition.source && mappedPosition.line !== null && mappedPosition.column !== null) {
             const position = new Position(createLineNumber(mappedPosition.line), createColumnNumber(mappedPosition.column));
-            return new LocationInLoadedSource(positionInScript.script.getSource(parseResourceIdentifier(mappedPosition.source)), position);
+            const mappedResult = new LocationInLoadedSource(positionInScript.script.getSource(parseResourceIdentifier(mappedPosition.source)), position);
+            logger.log(`SourceMapper: ${positionInScript} mapped to source: ${mappedResult}`);
+            return mappedResult;
         } else {
             // If we couldn't map it, return the location in the development source
-            return new LocationInLoadedSource(positionInScript.script.developmentSource, positionInScript.position);
+            const mappedResult = new LocationInLoadedSource(positionInScript.script.developmentSource, positionInScript.position);
+            logger.log(`SourceMapper: ${positionInScript} couldn't be mapped to source so we'll return the development location: ${mappedResult}`);
+            return mappedResult;
         }
     }
 
@@ -56,13 +61,14 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         const range = this._rangeInSources.get(positionInSource.source.identifier);
         if (!Position.isBetween(range.start, positionInSource.position, range.end)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
+            logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
             return null;
         }
 
         const mappedPositionRelativeToScript = this._sourceMap.generatedPositionFor(positionInSource.source.identifier.textRepresentation,
             positionInSource.position.lineNumber, positionInSource.position.columnNumber || 0);
 
-        if (mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number') {
+        if (mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number' && typeof mappedPositionRelativeToScript.column === 'number') {
 
             const scriptPositionInResource = this._script.rangeInSource.start.position;
 
@@ -73,8 +79,11 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
             const columnNumberRelativeToEntireResource = createColumnNumber((mappedPositionRelativeToScript.line === 0 ? scriptPositionInResource.columnNumber : 0) + mappedPositionRelativeToScript.column);
 
             const position = new Position(createLineNumber(lineNumberRelativeToEntireResource), createColumnNumber(columnNumberRelativeToEntireResource));
-            return new LocationInScript(this._script, position);
+            const mappingResult = new LocationInScript(this._script, position);
+            logger.log(`SourceMapper: ${positionInSource} mapped to script: ${mappingResult}`);
+            return mappingResult;
         } else {
+            logger.log(`SourceMapper: ${positionInSource} didn't return a valid value from the source map: ${mappedPositionRelativeToScript} so for ${this._script} it doesn't map anywhere`);
             return null;
         }
     }

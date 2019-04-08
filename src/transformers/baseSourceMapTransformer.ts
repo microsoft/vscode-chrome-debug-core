@@ -5,7 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { ILaunchRequestArgs, IAttachRequestArgs, IScopesResponseBody } from '../debugAdapterInterfaces';
-import { MappedPosition, ISourcePathDetails, SourceMap } from '../sourceMaps/sourceMap';
+import { ISourcePathDetails, SourceMap } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
@@ -13,6 +13,7 @@ import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
+import { NullableMappedPosition } from 'source-map';
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -113,19 +114,19 @@ export class BaseSourceMapTransformer {
             // Only apply changes if both mappings are found
             const mappedEnd = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
             if (mappedEnd) {
-                scope.line = mappedStart.line;
-                if (shiftedScopeStartForward) {
+                scope.line = mappedStart.line || undefined;
+                if (shiftedScopeStartForward && typeof scope.line === 'number') {
                     scope.line--;
                 }
-                scope.column = mappedStart.column;
+                scope.column = mappedStart.column || undefined;
 
-                scope.endLine = mappedEnd.line;
-                scope.endColumn = mappedEnd.column;
+                scope.endLine = mappedEnd.line || undefined;
+                scope.endColumn = mappedEnd.column || undefined;
             }
         }
     }
 
-    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<MappedPosition | null> {
+    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<NullableMappedPosition | null> {
         if (!this._sourceMaps) return null;
 
         await this.wait();

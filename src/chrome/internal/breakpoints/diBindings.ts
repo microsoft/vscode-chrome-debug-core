@@ -9,17 +9,38 @@ import { BPRecipeAtLoadedSourceSetter } from './features/bpRecipeAtLoadedSourceL
 import { BreakpointsEventSystem } from './features/breakpointsEventSystem';
 import { PrivateTypes } from './diTypes';
 import { DebuggeeBPRsSetForClientBPRFinder } from './registries/debuggeeBPRsSetForClientBPRFinder';
+import { HitCountBreakpointsSetter } from './features/hitCountBreakpointsSetter';
+import { SingleBreakpointSetter } from './features/singleBreakpointSetter';
+import { SingleBreakpointSetterWithHitCountSupport } from './features/singleBreakpointSetterWithHitCountSupport';
+import { CurrentBPRecipeStatusRetriever } from './registries/currentBPRecipeStatusRetriever';
+import { ExistingBPsForJustParsedScriptSetter } from './features/existingBPsForJustParsedScriptSetter';
+import { BPRsDeltaCalculatorFromStoredBPRs } from './registries/bprsDeltaCalculatorFromStoredBPRs';
+import { BreakpointsSetForScriptFinder } from './registries/breakpointsSetForScriptFinder';
+import { PauseScriptLoadsToSetBPs } from './features/pauseScriptLoadsToSetBPs';
+import { BPRecipesForSourceRetriever } from './registries/bpRecipesForSourceRetriever';
 
-const exportedIdentifierToClasses: IdentifierToClassPairs = [
+const exportedIdentifierToClasses = new ValidatedMap<interfaces.ServiceIdentifier<any>, interfaces.Newable<any>>([
     [TYPES.IBreakpointsUpdater, BreakpointsUpdater],
-    [TYPES.ICommandHandlerDeclarer, SetBreakpointsRequestHandler]];
+    [TYPES.ICommandHandlerDeclarer, SetBreakpointsRequestHandler]]);
 
-const privatedentifierToClasses = new ValidatedMap<interfaces.ServiceIdentifier<any>, interfaces.Newable<any>>([
+const privatedentifierToClasses: IdentifierToClassPairs = [
     [PrivateTypes.BPRecipeStatusCalculator, BPRecipeStatusCalculator],
+    [PrivateTypes.SingleBreakpointSetter, SingleBreakpointSetter],
+    [PrivateTypes.SingleBreakpointSetterWithHitCountSupport, SingleBreakpointSetterWithHitCountSupport],
+    [PrivateTypes.CurrentBPRecipeStatusRetriever, CurrentBPRecipeStatusRetriever],
     [PrivateTypes.IBreakpointsEventsListener, BreakpointsEventSystem],
     [PrivateTypes.DebuggeeBPRsSetForClientBPRFinder, DebuggeeBPRsSetForClientBPRFinder],
-    [PrivateTypes.BPRecipeAtLoadedSourceSetter, BPRecipeAtLoadedSourceSetter]]);
+    [PrivateTypes.HitCountBreakpointsSetter, HitCountBreakpointsSetter],
+    [PrivateTypes.BreakpointsSetForScriptFinder, BreakpointsSetForScriptFinder],
+    [PrivateTypes.BPRecipesForSourceRetriever, BPRecipesForSourceRetriever],
+    [PrivateTypes.PauseScriptLoadsToSetBPs, PauseScriptLoadsToSetBPs],
+    [PrivateTypes.CurrentBPRecipesForSourceRegistry, BPRsDeltaCalculatorFromStoredBPRs],
+    [PrivateTypes.ExistingBPsForJustParsedScriptSetter, ExistingBPsForJustParsedScriptSetter],
+    [PrivateTypes.BPRecipeAtLoadedSourceSetter, BPRecipeAtLoadedSourceSetter]];
 
 export function addBreakpointsFeatureBindings(diContainer: DependencyInjection) {
-    diContainer.configureExportedAndPrivateClasses('Breakpoints', exportedIdentifierToClasses, privatedentifierToClasses);
+    const breakpointsContainer = diContainer.configureExportedAndPrivateClasses('Breakpoints', exportedIdentifierToClasses, privatedentifierToClasses);
+
+    const hitCountBreakpointsExported = new ValidatedMap([[PrivateTypes.SingleBreakpointSetterForHitCountBreakpoints, SingleBreakpointSetter]]);
+    breakpointsContainer.configureExportedAndPrivateClasses('HitCountBreakpoints', hitCountBreakpointsExported, privatedentifierToClasses);
 }

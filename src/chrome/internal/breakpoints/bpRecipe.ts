@@ -6,7 +6,7 @@ import { ISource } from '../sources/source';
 import { Location, ScriptOrSourceOrURLOrURLRegexp } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IScript } from '../scripts/script';
-import { IBPActionWhenHit, AlwaysPause, ConditionalPause } from './bpActionWhenHit';
+import { IBPActionWhenHit, AlwaysPause, ConditionalPause, PauseOnHitCount } from './bpActionWhenHit';
 import { IResourceIdentifier } from '../sources/resourceIdentifier';
 import { URLRegexp } from '../locations/subtypes';
 import { IEquivalenceComparable } from '../../utils/equivalence';
@@ -21,12 +21,18 @@ export interface IBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBP
     extends IEquivalenceComparable {
     readonly location: Location<TResource>;
     readonly bpActionWhenHit: TBPActionWhenHit;
+
+    isHitCountBreakpointRecipe(): this is IBPRecipe<TResource, PauseOnHitCount>;
 }
 
 export abstract class BaseBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit> implements IBPRecipe<TResource, TBPActionWhenHit> {
     public abstract get bpActionWhenHit(): TBPActionWhenHit;
     public abstract get location(): Location<TResource>;
     public abstract isEquivalentTo(right: this): boolean;
+
+    public isHitCountBreakpointRecipe(): this is BPRecipe<TResource, PauseOnHitCount> {
+        return this.bpActionWhenHit instanceof PauseOnHitCount;
+    }
 
     public toString(): string {
         return `BP @ ${this.location} do: ${this.bpActionWhenHit}`;

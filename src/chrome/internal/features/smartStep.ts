@@ -18,12 +18,14 @@ import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaCo
 import * as utils from '../../../utils';
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { IDebuggeeSteppingController } from '../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
+import { printClassDescription } from '../../utils/printing';
 const localize = nls.loadMessageBundle();
 
 export interface ISmartStepLogicConfiguration {
     isEnabled: boolean;
 }
 
+@printClassDescription
 export class ShouldStepInToAvoidSkippedSource extends BaseActionToTakeWhenPaused {
     public constructor(private readonly _debuggeeSteppingController: IDebuggeeSteppingController) {
         super();
@@ -31,6 +33,10 @@ export class ShouldStepInToAvoidSkippedSource extends BaseActionToTakeWhenPaused
 
     public async execute(): Promise<void> {
         return this._debuggeeSteppingController.stepInto({ breakOnAsyncCall: true });
+    }
+
+    public isAutoResuming(): boolean {
+        return false;
     }
 }
 

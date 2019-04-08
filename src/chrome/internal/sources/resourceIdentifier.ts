@@ -211,16 +211,20 @@ function parseURL<TString extends string = string>(textRepresentation: TString):
  * http://site.com/
  */
 export function parseResourceIdentifier<TString extends string = string>(textRepresentation: TString): IResourceIdentifier<TString> {
-    if (utils.isURL(textRepresentation)) {
-        return parseURL(textRepresentation);
-    } else { // It could be a file path or a name
-        const recognizedLocalResourcePath = parseWindowsOrUnixLocalResourcePath(textRepresentation);
-        if (recognizedLocalResourcePath !== null) {
-            return recognizedLocalResourcePath;
-        } else {
-            // If we don't recognize this as any known formats, we assume it's an opaque identifier (a name)
-            return new ResourceName(textRepresentation);
+    if (typeof textRepresentation === 'string') {
+        if (utils.isURL(textRepresentation)) {
+            return parseURL(textRepresentation);
+        } else { // It could be a file path or a name
+            const recognizedLocalResourcePath = parseWindowsOrUnixLocalResourcePath(textRepresentation);
+            if (recognizedLocalResourcePath !== null) {
+                return recognizedLocalResourcePath;
+            } else {
+                // If we don't recognize this as any known formats, we assume it's an opaque identifier (a name)
+                return new ResourceName(textRepresentation);
+            }
         }
+    } else {
+        throw new Error(`Can't parse the resource identifier because the text representation was expected to be a string yet it was: ${textRepresentation}`);
     }
 }
 

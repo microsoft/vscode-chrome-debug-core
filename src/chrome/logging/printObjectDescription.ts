@@ -53,7 +53,7 @@ export function printObjectDescription(objectToPrint: unknown, fallbackPrintDesc
 function isJSONObject(objectToPrint: any): boolean {
     if (objectToPrint.constructor === Object) {
         const values = _.values(objectToPrint);
-        return values.every(value => value.constructor === Object);
+        return values.every(value => !value || value.constructor === Object);
     } else {
         return false;
     }

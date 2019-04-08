@@ -1,16 +1,14 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-import { IBPRecipeStatus, BPRecipeHasBoundSubstatuses } from '../bpRecipeStatus';
+import { IBPRecipeStatus } from '../bpRecipeStatus';
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { IBPRecipe } from '../bpRecipe';
 import { HandlesRegistry } from '../../../client/handlesRegistry';
 import { LocationInSourceToClientConverter } from '../../../client/locationInSourceToClientConverter';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { LineColTransformer } from '../../../../transformers/lineNumberTransformer';
-import { ISource } from '../../sources/source';
 
 /**
  * Convert the status of a breakpoint recipe to a format that the client can understand
@@ -23,21 +21,27 @@ export class BPRecipieStatusToClientConverter {
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
+    public async toExistingBreakpoint(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
+        const breakpointId = this._handlesRegistry.breakpoints.getExistingIdByObject(bpRecipeStatus.recipe);
+        return await this.toBreakpointWithId(breakpointId, bpRecipeStatus);
+    }
+
     public async toBreakpoint(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
-        const clientStatus = {
-            id: this.toBreakpointId(bpRecipeStatus.recipe),
+        const breakpointId = this._handlesRegistry.breakpoints.getIdByObject(bpRecipeStatus.recipe);
+        return await this.toBreakpointWithId(breakpointId, bpRecipeStatus);
+    }
+
+    private async toBreakpointWithId(breakpointId: number, bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
+        const clientStatus: DebugProtocol.Breakpoint = {
+            id: breakpointId,
             verified: bpRecipeStatus.isVerified(),
             message: bpRecipeStatus.statusDescription
         };
 
-        if (bpRecipeStatus instanceof BPRecipeHasBoundSubstatuses) {
-            await this._locationInSourceToClientConverter.toLocationInSource(bpRecipeStatus.actualLocationInSource, clientStatus);
-        }
+        await bpRecipeStatus.ifHasActualLocation(async actualLocation => {
+            await this._locationInSourceToClientConverter.toLocationInSource(actualLocation, clientStatus);
+        }, () => { });
 
         return clientStatus;
-    }
-
-    public toBreakpointId(recipe: IBPRecipe<ISource>): number {
-        return this._handlesRegistry.breakpoints.getIdByObject(recipe);
     }
 }

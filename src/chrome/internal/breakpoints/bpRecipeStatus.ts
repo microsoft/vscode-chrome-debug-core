@@ -9,7 +9,7 @@ import { BPRecipeInSource } from './bpRecipeInSource';
 import { breakWhileDebugging } from '../../../validation';
 
 /** These interface and classes represent the status of a BP Recipe (Is it bound or not?) */
-const ImplementsBPRecipeStatus = Symbol();
+export const ImplementsBPRecipeStatus = Symbol();
 export interface IBPRecipeStatus {
     [ImplementsBPRecipeStatus]: string;
 
@@ -17,6 +17,7 @@ export interface IBPRecipeStatus {
     readonly statusDescription: string;
 
     isVerified(): boolean;
+    ifHasActualLocation<T>(ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T;
 }
 
 export class BPRecipeIsUnboundDueToNoSubstatuses implements IBPRecipeStatus {
@@ -32,6 +33,10 @@ export class BPRecipeIsUnboundDueToNoSubstatuses implements IBPRecipeStatus {
 
     public get statusDescription(): string {
         return `unbound because none of the scripts already loaded are associated with this source`;
+    }
+
+    public ifHasActualLocation<T>(_ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T {
+        return ifDoesNotHaveAction();
     }
 
     public toString(): string {
@@ -65,6 +70,10 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
         return `bound with ${printArray('', this.boundSubstatuses)}`;
     }
 
+    public ifHasActualLocation<T>(ifHasAction: (actualLocation: LocationInLoadedSource) => T, _ifDoesNotHaveAction: () => T): T {
+        return ifHasAction(this.actualLocationInSource);
+    }
+
     public toString(): string {
         return `${this.recipe} is ${this.statusDescription}`;
     }
@@ -88,6 +97,10 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
 
     public get statusDescription(): string {
         return `unbound because ${printArray('', this.unboundSubstatuses)}`;
+    }
+
+    public ifHasActualLocation<T>(_ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T {
+        return ifDoesNotHaveAction();
     }
 
     public toString(): string {

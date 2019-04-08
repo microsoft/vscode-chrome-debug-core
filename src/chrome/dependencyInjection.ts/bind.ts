@@ -40,6 +40,9 @@ import { SupportedDomains } from '../internal/domains/supportedDomains';
 import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
+interface IHasContainerName {
+    __containerName: string;
+}
 
 export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, di: Container, callback: ComponentCustomizationCallback) {
     bind<IStackTracePresentationDetailsProvider>(loggingConfiguration, di, TYPES.IStackTracePresentationLogicProvider, SmartStepLogic, callback);
@@ -83,16 +86,26 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.TerminatingCDA, TerminatingCDA, callback);
 }
 
-function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration, container: Container, serviceIdentifier: interfaces.ServiceIdentifier<T>, newable: interfaces.Newable<T>, callback: ComponentCustomizationCallback): void {
-    container.bind<T>(serviceIdentifier).to(newable).inSingletonScope().onActivation((_context, object) => {
-        const objectWithLogging = wrapWithLogging(configuration, object, serviceIdentifier);
-        const possibleOverwrittenComponent = callback(serviceIdentifier, objectWithLogging, identifier => _context.container.get(identifier));
+function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration, container: Container,
+    serviceIdentifier: interfaces.ServiceIdentifier<T>, newable: interfaces.Newable<T>, callback: ComponentCustomizationCallback): void {
+    container.bind<T>(serviceIdentifier).to(newable).inSingletonScope().onActivation(createWrapWithLoggerActivator(configuration, serviceIdentifier, callback));
+}
+
+export function createWrapWithLoggerActivator<T extends object>(configuration: MethodsCalledLoggerConfiguration,
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    callback?: ComponentCustomizationCallback) {
+    return (_context: interfaces.Context, injectable: object) => {
+        (<IHasContainerName>injectable).__containerName = configuration.containerName;
+        const objectWithLogging = wrapWithLogging(configuration, injectable, `${configuration.containerName}.${getName(serviceIdentifier)}`);
+        const possibleOverwrittenComponent = callback
+            ? callback(serviceIdentifier, objectWithLogging, identifier => _context.container.get(identifier))
+            : objectWithLogging;
         if (objectWithLogging === possibleOverwrittenComponent) {
             return objectWithLogging;
         } else {
-            return wrapWithLogging(configuration, possibleOverwrittenComponent, `${getName<T>(serviceIdentifier)}_Override`);
+            return wrapWithLogging(configuration, possibleOverwrittenComponent, `${configuration.containerName}.${getName<T>(serviceIdentifier)}_Override`);
         }
-    });
+    };
 }
 
 const prefixLength = 'Symbol('.length;
@@ -105,6 +118,7 @@ function getName<T extends object>(serviceIdentifier: string | symbol | interfac
     }
 }
 
-function wrapWithLogging<T extends object>(configuration: MethodsCalledLoggerConfiguration, object: T, serviceIdentifier: string | symbol | interfaces.Newable<T> | interfaces.Abstract<T>) {
-    return new MethodsCalledLogger<T>(configuration, object, getName(serviceIdentifier)).wrapped();
+function wrapWithLogging<T extends object>(configuration: MethodsCalledLoggerConfiguration,
+    object: T, objectName: string) {
+    return new MethodsCalledLogger<T>(configuration, object, objectName).wrapped();
 }

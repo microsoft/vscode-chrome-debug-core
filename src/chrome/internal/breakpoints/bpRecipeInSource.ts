@@ -1,7 +1,7 @@
 import { ISource } from '../sources/source';
 import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
-import { IBPActionWhenHit, AlwaysPause } from './bpActionWhenHit';
+import { IBPActionWhenHit, PauseOnHitCount, AlwaysPause } from './bpActionWhenHit';
 import { BPRecipeInLoadedSource } from './baseMappedBPRecipe';
 import { BaseBPRecipe, IBPRecipe } from './bpRecipe';
 
@@ -19,8 +19,8 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
      * Hit breakpoints are implemented by setting an always break breakpoint, and then auto-resuming until the hit condition is true.
      * We use this method to create the always break breakpoint for a hit count breakpoint
      */
-    public withAlwaysBreakAction(): BPRecipeInSource<AlwaysPause> {
-        return new BPRecipeInSource<AlwaysPause>(this.location, new AlwaysPause());
+    public withAlwaysPause(): BPRecipeInSource<AlwaysPause> {
+        return new BPRecipeInSource(this.location, new AlwaysPause());
     }
 
     public tryResolving<R>(succesfulAction: (breakpointInLoadedSource: BPRecipeInLoadedSource<TBPActionWhenHit>) => R,
@@ -39,5 +39,9 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
 
     public resolvedWithLoadedSource(source: ILoadedSource<string>): BPRecipeInLoadedSource<TBPActionWhenHit> {
         return new BPRecipeInLoadedSource(this, this.location.resolvedWith(source));
+    }
+
+    public isHitCountBreakpoint(): this is BPRecipeInSource<PauseOnHitCount> {
+        return this.bpActionWhenHit instanceof PauseOnHitCount;
     }
 }

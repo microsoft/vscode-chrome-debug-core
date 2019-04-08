@@ -25,17 +25,32 @@ import { BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp, IBPRecipeForRunti
 import { ConditionalPause } from '../../internal/breakpoints/bpActionWhenHit';
 import { singleElementOfArray } from '../../collections/utilities';
 
+export enum Synchronicity {
+    Sync,
+    Async
+}
+
+export class BPRecipeWasResolved {
+    public constructor(
+        public readonly breakpoint: MappableBreakpoint<CDTPSupportedResources>,
+        public readonly resolutionSynchronicity: Synchronicity) { }
+}
+
+export interface IEventsConsumer {
+    bpRecipeWasResolved(breakpoint: MappableBreakpoint<CDTPSupportedResources>, resolutionSynchronicity: Synchronicity): void;
+}
+
 type SetBPInCDTPCall<TResource extends CDTPSupportedResources> = (resource: TResource, position: Position, cdtpConditionField?: string) => Promise<CDTP.Debugger.SetBreakpointByUrlResponse>;
 export type OnBreakpointResolvedListener = (breakpoint: CDTPBreakpoint) => void;
 
 export interface IDebuggeeBreakpointsSetter {
-    setBreakpoint(bpRecipe: BPRecipeInScript): Promise<MappableBreakpoint<IScript>>;
-    setBreakpointByUrl(bpRecipe: BPRecipeInUrl): Promise<MappableBreakpoint<IURL<CDTPScriptUrl>>[]>;
-    setBreakpointByUrlRegexp(bpRecipe: BPRecipeInUrlRegexp): Promise<MappableBreakpoint<URLRegexp>[]>;
+    setBreakpoint(bpRecipe: BPRecipeInScript, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<IScript>>;
+    setBreakpointByUrl(bpRecipe: BPRecipeInUrl, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<IURL<CDTPScriptUrl>>[]>;
+    setBreakpointByUrlRegexp(bpRecipe: BPRecipeInUrlRegexp, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<URLRegexp>[]>;
     getPossibleBreakpoints(rangeInScript: RangeInScript): Promise<LocationInScript[]>;
     removeBreakpoint(bpRecipe: IBPRecipe<CDTPSupportedResources>): Promise<void>;
-    onBreakpointResolvedAsync(listener: OnBreakpointResolvedListener): void;
-    onBreakpointResolvedSyncOrAsync(listener: OnBreakpointResolvedListener): void;
+    // onBreakpointResolvedAsync(listener: OnBreakpointResolvedListener): void;
+    // onBreakpointResolvedSyncOrAsync(listener: OnBreakpointResolvedListener): void;
 }
 
 @injectable()
@@ -44,7 +59,7 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
 
     private readonly _cdtpLocationParser = new CDTPLocationParser(this._scriptsRegistry);
 
-    private readonly onBreakpointResolvedSyncOrAsyncListeners = new Listeners<CDTPBreakpoint, void>();
+    private readonly onBreakpointResolvedSyncOrAsyncListeners = new Listeners<BPRecipeWasResolved, void>();
 
     public readonly onBreakpointResolvedAsync = this.addApiListener('breakpointResolved', async (params: CDTP.Debugger.BreakpointResolvedEvent) => {
         const bpRecipe = this._breakpointIdRegistry.getRecipeByBreakpointId(params.breakpointId);
@@ -60,15 +75,19 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
         @inject(TYPES.IDomainsEnabler) domainsEnabler: CDTPDomainsEnabler,
     ) {
         super(domainsEnabler);
-        this.onBreakpointResolvedAsync(bp => this.onBreakpointResolvedSyncOrAsyncListeners.call(bp));
+        this.onBreakpointResolvedAsync(bp => this.onBreakpointResolvedSyncOrAsyncListeners.call(new BPRecipeWasResolved(bp, Synchronicity.Async)));
+        this.onBreakpointResolvedSyncOrAsyncListeners.add(bpRecipeWasResolved => {
+            const eventsConsumer = this._breakpointIdRegistry.getEventsConsumer(bpRecipeWasResolved.breakpoint.recipe);
+            eventsConsumer.bpRecipeWasResolved(bpRecipeWasResolved.breakpoint, bpRecipeWasResolved.resolutionSynchronicity);
+        });
     }
 
-    public onBreakpointResolvedSyncOrAsync(listener: (breakpoint: MappableBreakpoint<CDTPSupportedResources>) => void): void {
+    public onBreakpointResolvedSyncOrAsync(listener: (bpRecipeWasResolved: BPRecipeWasResolved) => void): void {
         this.onBreakpointResolvedSyncOrAsyncListeners.add(listener);
     }
 
-    public async setBreakpoint(bpRecipe: BPRecipeInScript): Promise<MappableBreakpoint<IScript>> {
-        const breakpoints = await this.setBreakpointHelper(bpRecipe, async (_resource, _position, cdtpConditionField) => {
+    public async setBreakpoint(bpRecipe: BPRecipeInScript, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<IScript>> {
+        const breakpoints = await this.setBreakpointHelper(bpRecipe, eventsConsumer, async (_resource, _position, cdtpConditionField) => {
             const response = await this.api.setBreakpoint({ location: this.toCrdpLocation(bpRecipe.location), condition: cdtpConditionField });
             return { breakpointId: response.breakpointId, locations: [response.actualLocation] };
         });
@@ -76,16 +95,16 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
         return singleElementOfArray(breakpoints);
     }
 
-    public async setBreakpointByUrl(bpRecipe: BPRecipeInUrl): Promise<MappableBreakpoint<IURL<CDTPScriptUrl>>[]> {
-        return this.setBreakpointHelper(bpRecipe, (resource, position, cdtpConditionField) =>
+    public async setBreakpointByUrl(bpRecipe: BPRecipeInUrl, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<IURL<CDTPScriptUrl>>[]> {
+        return this.setBreakpointHelper(bpRecipe, eventsConsumer, (resource, position, cdtpConditionField) =>
             this.api.setBreakpointByUrl({
                 url: resource.textRepresentation, lineNumber: position.lineNumber,
                 columnNumber: position.columnNumber, condition: cdtpConditionField
             }));
     }
 
-    public async setBreakpointByUrlRegexp(bpRecipe: BPRecipeInUrlRegexp): Promise<MappableBreakpoint<URLRegexp>[]> {
-        return this.setBreakpointHelper(bpRecipe, (resource, position, cdtpConditionField) =>
+    public async setBreakpointByUrlRegexp(bpRecipe: BPRecipeInUrlRegexp, eventsConsumer: IEventsConsumer): Promise<MappableBreakpoint<URLRegexp>[]> {
+        return this.setBreakpointHelper(bpRecipe, eventsConsumer, (resource, position, cdtpConditionField) =>
             this.api.setBreakpointByUrl({
                 urlRegex: resource, lineNumber: position.lineNumber,
                 columnNumber: position.columnNumber, condition: cdtpConditionField
@@ -93,7 +112,7 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
     }
 
     private async setBreakpointHelper<TResource extends IScript | IResourceIdentifier<CDTPScriptUrl> | URLRegexp, TBPActionWhenHit extends CDTPSupportedHitActions>
-        (bpRecipe: IBPRecipeForRuntimeSource<TResource, TBPActionWhenHit>,
+        (bpRecipe: IBPRecipeForRuntimeSource<TResource, TBPActionWhenHit>, eventsConsumer: IEventsConsumer,
             setBPInCDTPCall: SetBPInCDTPCall<TResource>): Promise<MappableBreakpoint<TResource>[]> {
         const cdtpConditionField = this.getCDTPConditionField(bpRecipe);
         const resource: TResource = bpRecipe.location.resource; // TODO: Figure out why the <TResource> is needed and remove it
@@ -105,10 +124,10 @@ export class CDTPDebuggeeBreakpointsSetter extends CDTPEventsEmitterDiagnosticsM
          * We need to call registerRecipe sync with the response, before any awaits so if we get an event with
          * a breakpointId we'll be able to resolve it properly
          */
-        this._breakpointIdRegistry.registerRecipe(response.breakpointId, bpRecipe);
+        this._breakpointIdRegistry.registerRecipe(response.breakpointId, bpRecipe, eventsConsumer);
 
         const breakpoints = await Promise.all(response.locations.map(cdtpLocation => this.toBreakpoinInResource(bpRecipe, cdtpLocation)));
-        breakpoints.forEach(bp => this.onBreakpointResolvedSyncOrAsyncListeners.call(bp));
+        breakpoints.forEach(bp => this.onBreakpointResolvedSyncOrAsyncListeners.call(new BPRecipeWasResolved(bp, Synchronicity.Sync)));
         return breakpoints;
     }
 

@@ -18,7 +18,7 @@ type DebuggeeBPRecipe = CDTPBPRecipe;
  */
 @injectable()
 export class DebuggeeBPRsSetForClientBPRFinder {
-    private readonly _clientBPRToDebuggeeBPRItSet = new ValidatedMultiMap<ClientBPRecipe, DebuggeeBPRecipe>();
+    private readonly _clientBPRToDebuggeeBPRItSet = ValidatedMultiMap.empty<ClientBPRecipe, DebuggeeBPRecipe>();
 
     public constructor(@inject(new LazyServiceIdentifer(() => PrivateTypes.IBreakpointsEventsListener)) breakpointsEventsListener: IBreakpointsEventsListener) {
         breakpointsEventsListener.listenForOnClientBPRecipeAdded(clientBPRecipe => this.clientBPRWasAdded(clientBPRecipe));
@@ -30,6 +30,10 @@ export class DebuggeeBPRsSetForClientBPRFinder {
     public findDebuggeeBPRsSet(clientBPRecipe: ClientBPRecipe): DebuggeeBPRecipe[] {
         // TODO: Review if it's okay to use getOr here, or if we should use get instead
         return Array.from(this._clientBPRToDebuggeeBPRItSet.getOr(clientBPRecipe, () => new Set()));
+    }
+
+    public containsBPRecipe(bpRecipe: ClientBPRecipe): boolean {
+        return this._clientBPRToDebuggeeBPRItSet.has(bpRecipe);
     }
 
     private clientBPRWasAdded(clientBPRecipe: ClientBPRecipe): void {

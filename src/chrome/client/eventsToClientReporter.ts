@@ -4,7 +4,7 @@
 
 import { ILoadedSource } from '../internal/sources/loadedSource';
 import { ISession } from './session';
-import { LoadedSourceEvent, OutputEvent, BreakpointEvent, Source } from 'vscode-debugadapter';
+import { LoadedSourceEvent, OutputEvent, BreakpointEvent, Source, ContinuedEvent } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LocationInLoadedSource } from '../internal/locations/location';
 import { IBPRecipeStatus } from '../internal/breakpoints/bpRecipeStatus';
@@ -56,6 +56,7 @@ export interface IEventsToClientReporter {
     sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void>;
     sendExceptionThrown(params: IExceptionThrownParameters): Promise<void>;
     sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void>;
+    sendDebuggeeIsResumed(): Promise<void>;
 }
 
 /**
@@ -97,7 +98,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
     }
 
     public async sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void> {
-        const breakpointStatus = await this._bpRecipieStatusToClientConverter.toBreakpoint(params.bpRecipeStatus);
+        const breakpointStatus = await this._bpRecipieStatusToClientConverter.toExistingBreakpoint(params.bpRecipeStatus);
         const event = new BreakpointEvent(params.reason, breakpointStatus);
 
         this._session.sendEvent(event);
@@ -113,5 +114,9 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     public async sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void> {
         return this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
+    }
+
+    public async sendDebuggeeIsResumed(): Promise<void> {
+        return this._session.sendEvent(new ContinuedEvent(ChromeDebugLogic.THREAD_ID));
     }
 }

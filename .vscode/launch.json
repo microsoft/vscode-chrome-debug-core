@@ -57,6 +57,9 @@
             "type": "node",
             "request": "launch",
             "protocol": "inspector",
+            "env": {
+                "BREAK_WHILE_DEBUGGING": "true"
+            },
 
             // These paths are only valid for my particular setup! You need to replace them with your own.
             "cwd": "${workspaceFolder}/../vscode-chrome-debug",
@@ -64,7 +67,16 @@
             "args": [ "--server=4712" ],
             "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
-            "smartStep": true
+            "smartStep": true,
+            "skipFiles": [
+                "async_hooks.js",
+                "methodsCalledLogger.ts",
+                "next_tick.js",
+                "inspector_async_hook.js",
+                "printObjectDescription.js",
+                "lodash.js",
+                "listeners.ts",
+            ]
         },
         {
             "name": "attach chrome-debug-core",

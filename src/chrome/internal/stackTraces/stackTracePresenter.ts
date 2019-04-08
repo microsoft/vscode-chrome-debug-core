@@ -29,9 +29,7 @@ export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];
 }
 
-export interface IStackTraceFormat {
-
-}
+export interface IStackTraceFormat {}
 
 export class StackTraceCustomFormat implements IStackTraceFormat {
     public constructor(public readonly formatOptions: DebugProtocol.StackFrameFormat) { }
