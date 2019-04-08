@@ -1,10 +1,10 @@
-import { ILogger, ILoggingConfiguration } from './chrome/internal/services/logging';
-import { Logger } from 'vscode-debugadapter';
-import { IExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
-
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import { ILogger, ILoggingConfiguration } from './chrome/internal/services/logging';
+import { Logger } from 'vscode-debugadapter';
+import { IExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
 
 /**
  * Implements ILogger as a no-op
