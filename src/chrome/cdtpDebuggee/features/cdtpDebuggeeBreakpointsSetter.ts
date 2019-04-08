@@ -21,7 +21,7 @@ import { IURL, IResourceIdentifier } from '../../internal/sources/resourceIdenti
 import { CDTPScriptUrl } from '../../internal/sources/resourceIdentifierSubtypes';
 import { URLRegexp } from '../../internal/locations/subtypes';
 import { MappableBreakpoint, ActualLocation } from '../../internal/breakpoints/breakpoint';
-import { BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp, IBPRecipeForRuntimeSource } from '../../internal/breakpoints/BaseMappedBPRecipe';
+import { BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp, IBPRecipeForRuntimeSource } from '../../internal/breakpoints/baseMappedBPRecipe';
 import { ConditionalPause } from '../../internal/breakpoints/bpActionWhenHit';
 import { singleElementOfArray } from '../../collections/utilities';
 

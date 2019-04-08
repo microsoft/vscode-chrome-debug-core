@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
  import { LocationInScript } from '../locations/location';
-import { Protocol as CDTP } from 'devtools-protocol';
 import { CDTPNonPrimitiveRemoteObject } from '../../cdtpDebuggee/cdtpPrimitives';
 
 /** This class represents a variable's scope (Globals, locals, block variables, etc...) */

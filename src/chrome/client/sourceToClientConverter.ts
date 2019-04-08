@@ -1,7 +1,6 @@
 import * as pathModule from 'path';
 import * as utils from '../../utils';
 import { ILoadedSource } from '../internal/sources/loadedSource';
-import { Source } from 'vscode-debugadapter';
 import { HandlesRegistry } from './handlesRegistry';
 import { DebugProtocol } from 'vscode-debugprotocol';
 

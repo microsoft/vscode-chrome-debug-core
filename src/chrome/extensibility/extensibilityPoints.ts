@@ -60,7 +60,7 @@ export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibil
 
     public bindAdditionalComponents(_diContainer: DependencyInjection): void {}
 
-    public updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(scenarioType: ScenarioType, argumentsFromClient: T): T {
+    public updateArguments<T extends ILaunchRequestArgs | IAttachRequestArgs>(_scenarioType: ScenarioType, argumentsFromClient: T): T {
         return argumentsFromClient;
     }
 

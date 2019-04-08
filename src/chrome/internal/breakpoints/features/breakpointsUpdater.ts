@@ -3,32 +3,22 @@
  *--------------------------------------------------------*/
 
 import { BPRecipesInSource, BPRecipesInLoadedSource } from '../bpRecipes';
-import { ExistingBPsForJustParsedScriptSetter } from './existingBPsForJustParsedScriptSetter';
 import { asyncMap } from '../../../collections/async';
 import { IBPRecipeStatus } from '../bpRecipeStatus';
 import { CurrentBPRecipesForSourceRegistry } from '../registries/currentBPRecipesForSourceRegistry';
-import { BreakpointsSetForScriptFinder } from '../registries/breakpointsSetForScriptFinder';
 import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { PauseScriptLoadsToSetBPs } from './pauseScriptLoadsToSetBPs';
-import { inject, injectable, LazyServiceIdentifer } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { IDebuggeeBreakpointsSetter } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { BPRsDeltaInRequestedSource } from './bpsDeltaCalculator';
 import { ConnectedCDAConfiguration } from '../../../client/chromeDebugAdapter/cdaConfiguration';
-import { IScriptParsedProvider } from '../../../cdtpDebuggee/eventsProviders/cdtpOnScriptParsedEventProvider';
-import { DebuggeeBPRsSetForClientBPRFinder } from '../registries/debuggeeBPRsSetForClientBPRFinder';
 import { BPRecipeInSource } from '../bpRecipeInSource';
-import { IDOMInstrumentationBreakpointsSetter } from '../../../cdtpDebuggee/features/cdtpDOMInstrumentationBreakpointsSetter';
-import { IDebuggeeExecutionController } from '../../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
 import { IDebuggeeRuntimeVersionProvider } from '../../../cdtpDebuggee/features/cdtpDebugeeRuntimeVersionProvider';
-import { IBreakpointFeaturesSupport } from '../../../cdtpDebuggee/features/cdtpBreakpointFeaturesSupport';
-import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { ITelemetryPropertyCollector } from '../../../../telemetry';
-import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { BreakpointsEventSystem } from './breakpointsEventSystem';
 import { BPRecipeStatusCalculator } from '../registries/bpRecipeStatusCalculator';
-import { TransformedListenerRegistry } from '../../../communication/transformedListenerRegistry';
 import { Listeners } from '../../../communication/listeners';
 import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { PrivateTypes } from '../diTypes';
@@ -42,7 +32,7 @@ export class BreakpointsUpdater {
     public readonly clientBPRecipeRemovedListeners = new Listeners<BPRecipeInSource, void>();
     public readonly breakpointIsBoundListeners = new Listeners<CDTPBreakpoint, void>();
 
-    private _isBpsWhileLoadingEnable: boolean;
+    private _isBpsWhileLoadingEnable = false;
 
     constructor(
         @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _debuggeeBreakpoints: IDebuggeeBreakpointsSetter,

@@ -7,6 +7,7 @@ import 'reflect-metadata';
 // TODO: Add all necesary types so we can use inversifyjs to create our components
 const TYPES = {
     ISession: Symbol.for('ISession'),
+    ITelemetryReporter: Symbol.for('ITelemetryReporter'),
     ChromeDebugAdapter: Symbol.for('ChromeDebugAdapter'),
     TerminatingReason: Symbol.for('TerminatingReason'),
     CDTPClient: Symbol.for('chromeConnection.api'),
@@ -33,6 +34,7 @@ const TYPES = {
     DotScriptCommand: Symbol.for('DotScriptCommand'),
     BaseSourceMapTransformer: Symbol.for('BaseSourceMapTransformer'),
     BasePathTransformer: Symbol.for('BasePathTransformer'),
+    ChromeTargetDiscovery: Symbol.for('ChromeTargetDiscovery'),
     IRuntimeStarter: Symbol.for('IRuntimeStarter'),
     SyncStepping: Symbol.for('SyncStepping'),
     AsyncStepping: Symbol.for('AsyncStepping'),

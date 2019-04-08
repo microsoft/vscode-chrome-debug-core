@@ -4,17 +4,19 @@
 
 import * as WebSocket from 'ws';
 
-import { telemetry } from '../telemetry';
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter } from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ChromeTargetDiscovery, TargetVersions } from './chromeTargetDiscoveryStrategy';
+import { TargetVersions } from './chromeTargetDiscoveryStrategy';
 import { Version } from './utils/version';
 
 import { Client } from 'noice-json-rpc';
 
 import { Protocol as CDTP } from 'devtools-protocol';
+import { TYPES } from './dependencyInjection.ts/types';
+import { inject, injectable } from 'inversify';
+import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
 
 export interface ITarget {
     description: string;
@@ -71,14 +73,14 @@ class LoggingSocket extends WebSocket {
         });
     }
 
-    public send(data: any, _opts?: any, _?: (err: Error) => void): void {
+    public send(data: any, _opts?: any, cb?: (err: Error) => void): void {
         const msgStr = JSON.stringify(data);
         if (this.readyState !== WebSocket.OPEN) {
             logger.log(`→ Warning: Target not open! Message: ${msgStr}`);
             return;
         }
 
-        super.send.apply(this, arguments);
+        super.send(data, _opts, cb);
         logger.verbose('→ To target: ' + msgStr);
     }
 }
@@ -92,19 +94,21 @@ export interface IChromeError {
 /**
  * Connects to a target supporting the Chrome Debug Protocol and sends and receives messages
  */
+@injectable()
 export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmitter> {
     private static ATTACH_TIMEOUT = 10000; // ms
 
-    private _socket: WebSocket;
-    private _client: Client;
+    private _socket: WebSocket | null = null;
+    private _client?: Client;
     private _targetFilter: ITargetFilter | undefined;
     private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>;
-    private _attachedTarget: ITarget;
+    private _attachedTarget: ITarget | undefined = undefined;
     public readonly events: StepProgressEventsEmitter;
 
-    constructor(targetDiscovery?: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>, targetFilter?: ITargetFilter) {
-        this._targetFilter = targetFilter;
-        this._targetDiscoveryStrategy = targetDiscovery || new ChromeTargetDiscovery(logger, telemetry);
+    constructor(@inject(TYPES.ChromeTargetDiscovery) targetDiscovery: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>,
+        @inject(TYPES.ConnectedCDAConfiguration) configuration: ConnectedCDAConfiguration) {
+        this._targetFilter = configuration.extensibilityPoints.targetFilter;
+        this._targetDiscoveryStrategy = targetDiscovery;
         this.events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.events]);
     }
 
@@ -112,10 +116,6 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
 
     public get api(): CDTP.ProtocolApi {
         return this._client && this._client.api();
-    }
-
-    public get attachedTarget(): ITarget {
-        return this._attachedTarget;
     }
 
     public setTargetFilter(targetFilter?: ITargetFilter) {
@@ -160,17 +160,30 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public close(): void {
-        this._socket.close();
+        this.validateConnectionIsOpen();
+        this._socket!.close();
+        this._socket = null;
     }
 
     public onClose(handler: () => void): void {
-        this._socket.on('close', handler);
+        this.validateConnectionIsOpen();
+        this._socket!.on('close', handler);
     }
 
     public get version(): Promise<TargetVersions> {
-        return this._attachedTarget.version
+        if (this._attachedTarget) {
+            return this._attachedTarget.version
             .then(version => {
                 return (version) ? version : new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
             });
+        } else {
+            throw new Error(`Can't request the version before we are attached to a target`);
+        }
+    }
+
+    private validateConnectionIsOpen(): void {
+        if (this._socket === null) {
+            throw new Error(`Can't perform this operation on a connection that is not opened`);
+        }
     }
 }

@@ -21,9 +21,7 @@ export class Position implements IEquivalenceComparable {
         public readonly lineNumber: LineNumber,
         public readonly columnNumber: ColumnNumber) {
         Validation.zeroOrPositive('Line number', lineNumber);
-        if (columnNumber !== undefined) {
-            Validation.zeroOrPositive('Column number', columnNumber);
-        }
+        Validation.zeroOrPositive('Column number', columnNumber);
     }
 
     public static appearingLastOf(...positions: Position[]): Position {
@@ -54,7 +52,7 @@ export class Position implements IEquivalenceComparable {
     }
 
     public isOrigin(): boolean {
-        return this.lineNumber === 0 && (this.columnNumber === undefined || this.columnNumber === 0);
+        return this.lineNumber === 0 && this.columnNumber === 0;
     }
 
     public doesAppearBefore(right: Position): boolean {
@@ -63,9 +61,7 @@ export class Position implements IEquivalenceComparable {
     }
 
     public toString(): string {
-        return this.columnNumber !== undefined
-            ? `${this.lineNumber}:${this.columnNumber}`
-            : `${this.lineNumber}`;
+        return `${this.lineNumber}:${this.columnNumber}`;
     }
 }
 

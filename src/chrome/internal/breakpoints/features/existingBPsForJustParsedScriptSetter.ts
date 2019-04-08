@@ -71,16 +71,16 @@ export class ExistingBPsForJustParsedScriptSetter {
         const runtimeLocationsWhichAlreadyHaveThisBPR = debuggeeBPRecipes.map(recipe => recipe.runtimeSourceLocation);
 
         const bprInScripts = bpRecepieResolved.mappedToScript().filter(b => b.location.script === justParsedScript);
-        await this.withLogging.setBPRsInScriptIfNeeded(bprInScripts, runtimeLocationsWhichAlreadyHaveThisBPR, bpRecipe);
+        await this.withLogging.setBPRsInScriptIfNeeded(bprInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
     }
 
-    private async setBPRsInScriptIfNeeded(bprInScripts: BPRecipeInScript[], runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[], bpRecipe: BPRecipeInSource<IBPActionWhenHit>) {
+    private async setBPRsInScriptIfNeeded(bprInScripts: BPRecipeInScript[], runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[]) {
         for (const bprInScript of bprInScripts) {
-            await this.withLogging.setBPRInScriptFromSourceIntoScriptIfNeeded(bprInScript, runtimeLocationsWhichAlreadyHaveThisBPR, bpRecipe);
+            await this.withLogging.setBPRInScriptFromSourceIntoScriptIfNeeded(bprInScript, runtimeLocationsWhichAlreadyHaveThisBPR);
         }
     }
 
-    private async setBPRInScriptFromSourceIntoScriptIfNeeded(bprInScript: BPRecipeInScript, runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[], bpRecipe: BPRecipeInSource<IBPActionWhenHit>): Promise<void> {
+    private async setBPRInScriptFromSourceIntoScriptIfNeeded(bprInScript: BPRecipeInScript, runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[]): Promise<void> {
         const bprInRuntimeSource = bprInScript.mappedToRuntimeSource();
 
         // Was the breakpoint already set for the runtime source of this script? (This will happen if we include the same script twice in the same debuggee)

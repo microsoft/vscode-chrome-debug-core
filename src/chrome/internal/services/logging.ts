@@ -11,9 +11,19 @@ export interface ILoggingConfiguration {
     logFilePath?: string;
 }
 
-export class Logging {
+export interface ILogger {
+    verbose(entry: string): void;
+    log(entry: string): void;
+    install(extensibilityPoints: IExtensibilityPoints, configuration: ILoggingConfiguration): this;
+}
+
+export class Logging implements ILogger {
     public verbose(entry: string): void {
         logger.verbose(entry);
+    }
+
+    public log(entry: string): void {
+        logger.log(entry);
     }
 
     public install(extensibilityPoints: IExtensibilityPoints, configuration: ILoggingConfiguration): this {

@@ -7,7 +7,6 @@ import { bindAll } from './bind';
 import { MethodsCalledLoggerConfiguration, ReplacementInstruction } from '../logging/methodsCalledLogger';
 import { addCDTPBindings } from '../cdtpDebuggee/cdtpDIContainer';
 import { addBreakpointsFeatureBindings } from '../internal/breakpoints/diBindings';
-import { ValidatedMap } from '../collections/validatedMap';
 
 export type GetComponentByID = <T>(identifier: interfaces.ServiceIdentifier<T>) => T;
 export type ComponentCustomizationCallback = <T>(identifier: interfaces.ServiceIdentifier<T>, injectable: T, getComponentById: GetComponentByID) => T;
@@ -96,5 +95,9 @@ export class DependencyInjection {
         this.importFromOtherContainer(privateClassesMapping.keys(), privateClassesContainer);
 
         return this;
+    }
+
+    public toString(): string {
+        return `Dependency Injection container: ${this._name}`;
     }
 }

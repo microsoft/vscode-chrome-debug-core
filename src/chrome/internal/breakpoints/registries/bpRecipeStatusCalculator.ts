@@ -8,10 +8,10 @@ import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { ValidatedMap, IValidatedMap } from '../../../collections/validatedMap';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipeIsUnbound, BPRecipeIsBoundInRuntimeLocation } from '../bpRecipeStatusForRuntimeLocation';
-import { IBreakpointsEventsListener, BreakpointsEventSystem } from '../features/breakpointsEventSystem';
+import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { printMap } from '../../../collections/printing';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
-import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { Listeners } from '../../../communication/listeners';
 import { PrivateTypes } from '../diTypes';
 

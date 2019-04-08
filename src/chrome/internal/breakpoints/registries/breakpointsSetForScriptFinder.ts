@@ -6,8 +6,8 @@ import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
 import { LocationInScript } from '../../locations/location';
 import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { IScript } from '../../scripts/script';
-import { IBreakpointsEventsListener, BreakpointsEventSystem } from '../features/breakpointsEventSystem';
-import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
+import { injectable, inject } from 'inversify';
 import { PrivateTypes } from '../diTypes';
 
 /**

@@ -2,7 +2,7 @@ import { CDTPBPRecipe, CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitiv
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
 import { BreakpointsUpdater } from './breakpointsUpdater';
-import { injectable, inject, LazyServiceIdentifer } from 'inversify';
+import { injectable } from 'inversify';
 import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusCalculator } from '../registries/bpRecipeStatusCalculator';
 
@@ -21,9 +21,9 @@ export interface IBreakpointsEventsListener {
 @injectable()
 export class BreakpointsEventSystem implements IBreakpointsEventsListener {
     // TODO: Try to find a way to put these properties on the constructor (At the moment we get a circular reference error if we do that)
-    public breakpointsUpdater: BreakpointsUpdater;
-    public bpRecipeStatusCalculator: BPRecipeStatusCalculator;
-    public bpRecipeAtLoadedSourceLogic: BPRecipeAtLoadedSourceSetter;
+    public breakpointsUpdater: BreakpointsUpdater | undefined = undefined;
+    public bpRecipeStatusCalculator: BPRecipeStatusCalculator | undefined = undefined;
+    public bpRecipeAtLoadedSourceLogic: BPRecipeAtLoadedSourceSetter | undefined = undefined;
 
     // TODO: Try to find a way to remove this and use the DI framework instead
     private _scheduledActions: (() => void)[] | null = [];
@@ -50,43 +50,43 @@ export class BreakpointsEventSystem implements IBreakpointsEventsListener {
 
     public listenForOnClientBPRecipeAdded(listener: (bpRecipie: BPRecipeInSource) => void): void {
         this.schedule(() => {
-            this.breakpointsUpdater.clientBPRecipeAddedListeners.add(listener);
+            this.breakpointsUpdater!.clientBPRecipeAddedListeners.add(listener);
         });
     }
 
     public listenForOnClientBPRecipeRemoved(listener: (bpRecipie: BPRecipeInSource) => void): void {
         this.schedule(() => {
-            this.breakpointsUpdater.clientBPRecipeRemovedListeners.add(listener);
+            this.breakpointsUpdater!.clientBPRecipeRemovedListeners.add(listener);
         });
     }
 
     public listenForOnDebuggeeBPRecipeAdded(listener: (bpRecipie: CDTPBPRecipe) => void): void {
         this.schedule(() => {
-            this.bpRecipeAtLoadedSourceLogic.debuggeeBPRecipeAddedListeners.add(listener);
+            this.bpRecipeAtLoadedSourceLogic!.debuggeeBPRecipeAddedListeners.add(listener);
         });
     }
 
     public listenForOnDebuggeeBPRecipeRemoved(listener: (bpRecipie: CDTPBPRecipe) => void): void {
         this.schedule(() => {
-            this.bpRecipeAtLoadedSourceLogic.debuggeeBPRecipeRemovedListeners.add(listener);
+            this.bpRecipeAtLoadedSourceLogic!.debuggeeBPRecipeRemovedListeners.add(listener);
         });
     }
 
     public listenForOnBreakpointIsBound(listener: (breakpoint: CDTPBreakpoint) => void): void {
         this.schedule(() => {
-            this.breakpointsUpdater.breakpointIsBoundListeners.add(listener);
+            this.breakpointsUpdater!.breakpointIsBoundListeners.add(listener);
         });
     }
 
     public listenForOnBPRecipeIsUnbound(listener: (bpRecipieIsUnbound: BPRecipeIsUnbound) => void): void {
         this.schedule(() => {
-            this.bpRecipeAtLoadedSourceLogic.bpRecipeIsUnboundListeners.add(listener);
+            this.bpRecipeAtLoadedSourceLogic!.bpRecipeIsUnboundListeners.add(listener);
         });
     }
 
     public listenForOnBPRecipeStatusChanged(listener: (bpRecipie: BPRecipeInSource) => void): void {
         this.schedule(() => {
-            this.bpRecipeStatusCalculator.bpRecipeStatusChangedListeners.add(listener);
+            this.bpRecipeStatusCalculator!.bpRecipeStatusChangedListeners.add(listener);
         });
     }
 }

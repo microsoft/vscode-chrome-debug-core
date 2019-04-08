@@ -218,7 +218,6 @@ export interface IDebugTransformer {
     source?(args: DebugProtocol.SourceArguments, requestSeq?: number): PromiseOrNot<void>;
     evaluate?(args: DebugProtocol.EvaluateArguments, requestSeq?: number): PromiseOrNot<void>;
 
-    setBreakpointsResponse?(response: ISetBreakpointsResponseBody, requestSeq?: number): PromiseOrNot<void>;
     stackTraceResponse?(response: IStackTraceResponseBody, requestSeq?: number): PromiseOrNot<void>;
     scopesResponse?(response: IScopesResponseBody, requestSeq?: number): PromiseOrNot<void>;
     variablesResponse?(response: IVariablesResponseBody, requestSeq?: number): PromiseOrNot<void>;

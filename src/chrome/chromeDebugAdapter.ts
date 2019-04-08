@@ -3,12 +3,12 @@
  *--------------------------------------------------------*/
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { TerminatedEvent, ContinuedEvent, logger, } from 'vscode-debugadapter';
+import { ContinuedEvent, logger, } from 'vscode-debugadapter';
 
 import {
-    ICommonRequestArgs, ILaunchRequestArgs, IScopesResponseBody, IVariablesResponseBody,
+    ICommonRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody,
-    ICompletionsResponseBody, IRestartRequestArgs, ITimeTravelRuntime
+    ICompletionsResponseBody, ITimeTravelRuntime
 } from '../debugAdapterInterfaces';
 
 import { ChromeConnection } from './chromeConnection';
@@ -22,7 +22,7 @@ import { stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
-import { telemetry, BatchTelemetryReporter } from '../telemetry';
+import { telemetry } from '../telemetry';
 import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 
 import { LineColTransformer } from '../transformers/lineNumberTransformer';
@@ -52,7 +52,7 @@ import { IEvaluateOnCallFrameRequest, IDebuggeeStateInspector } from './cdtpDebu
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
-import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, validateCDTPRemoteObjectOfTypeObject, CDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
+import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
 
 let localize = nls.loadMessageBundle();
 
@@ -93,24 +93,19 @@ export class ChromeDebugLogic {
     public _session: ISession;
     public _domains = new Map<CrdpDomain, CDTP.Schema.Domain>();
     private _exception: CDTP.Runtime.RemoteObject | undefined;
-    private _expectingResumedEvent: boolean;
+    private _expectingResumedEvent = false;
     public _expectingStopReason: ReasonType | undefined;
     private _waitAfterStep = Promise.resolve();
 
     private _variableHandles: variables.VariableHandles;
 
     private _lineColTransformer: LineColTransformer;
-    protected _chromeConmer: BaseSourceMapTransformer;
     public _pathTransformer: BasePathTransformer;
 
-    public _attachMode: boolean;
     public readonly _launchAttachArgs: ICommonRequestArgs = this._configuration.args;
-    public _port: number;
 
     private _currentLogMessage = Promise.resolve();
     privaRejectExceptionFilterEnabled = false;
-
-    private _batchTelemetryReporter: BatchTelemetryReporter;
 
     public readonly events: StepProgressEventsEmitter;
 
@@ -138,7 +133,6 @@ export class ChromeDebugLogic {
         @inject(TYPES.IPauseOnExceptions) private readonly _pauseOnExceptions: IPauseOnExceptionsConfigurer,
     ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
-        this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
         this._chromeConnection = chromeConnection;
         this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
@@ -796,7 +790,10 @@ export class ChromeDebugLogic {
         name = name || '""';
 
         if (object) {
-            if (object.type === 'object' && validateCDTPRemoteObjectOfTypeObject(object)) {
+            if (object.type === 'object' && (object.subtype === 'null' || (<string>object.subtype) === 'internal#location')) {
+                // Could format this nicely later, see #110
+                return this.createPrimitiveVariableWithValue(name, object.subtype!, parentEvaluateName);
+            } else if (object.type === 'object' && object.subtype !== 'null' && validateNonPrimitiveRemoteObject(object)) {
                 return this.createObjectVariable(name, object, parentEvaluateName, context);
             } else if (object.type === 'function' && validateNonPrimitiveRemoteObject(object)) {
                 return this.createFunctionVariable(name, object, context, parentEvaluateName);
@@ -834,14 +831,7 @@ export class ChromeDebugLogic {
         };
     }
 
-    public createObjectVariable(name: string, object: CDTPRemoteObjectOfTypeObject, parentEvaluateName: string | undefined, context: VariableContext): Promise<DebugProtocol.Variable> {
-        if ((<string>object.subtype) === 'internal#location') {
-            // Could format this nicely later, see #110
-            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'internal#location', parentEvaluateName));
-        } else if (object.subtype === 'null') {
-            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'null', parentEvaluateName));
-        }
-
+    public createObjectVariable(name: string, object: CDTPNonPrimitiveRemoteObject, parentEvaluateName: string | undefined, context: VariableContext): Promise<DebugProtocol.Variable> {
         const value = variables.getRemoteObjectPreview_object(object, context);
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
@@ -853,7 +843,7 @@ export class ChromeDebugLogic {
                 propCountP = this.getArrayNumPropsByEval(object.objectId);
             }
         } else if (object.subtype === 'set' || object.subtype === 'map') {
-            if (object.preview && !object.preview.overflow) {
+            if (validateCDTPRemoteObjectOfTypeObject(object) && !object.preview.overflow) {
                 propCountP = Promise.resolve(this.getCollectionNumPropsByPreview(object));
             } else {
                 propCountP = this.getCollectionNumPropsByEval(object.objectId);
@@ -878,7 +868,7 @@ export class ChromeDebugLogic {
         }));
     }
 
-    protected createPropertyContainer(object: CDTPRemoteObjectOfTypeObject, evaluateName: string): IVariableContainer {
+    protected createPropertyContainer(object: CDTPNonPrimitiveRemoteObject, evaluateName: string): IVariableContainer {
         return new PropertyContainer(object.objectId, evaluateName);
     }
 

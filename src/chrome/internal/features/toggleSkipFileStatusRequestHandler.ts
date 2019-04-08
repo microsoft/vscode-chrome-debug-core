@@ -1,6 +1,6 @@
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from './components';
 import { SkipFilesLogic } from './skipFiles';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { IToggleSkipFileStatusArgs } from '../../../debugAdapterInterfaces';

@@ -19,6 +19,7 @@ type ActionToTakeWhenPausedProvider = (paused: PausedEvent) => PromiseOrNot<IAct
 
 export interface IDebuggeePausedHandler {
     registerActionProvider(provider: (paused: PausedEvent) => PromiseOrNot<IActionToTakeWhenPaused>): void;
+    reprocessLatestPause(): Promise<void>; // TODO: Try to figure out a nicer way to do this without reprocessing the pause event
 }
 
 /**
@@ -30,6 +31,7 @@ export interface IDebuggeePausedHandler {
 @injectable()
 export class DebuggeePausedHandler implements IDebuggeePausedHandler {
     private readonly _actionToTakeWhenPausedProviders: ActionToTakeWhenPausedProvider[] = [];
+    private latestPaused: PausedEvent | null = null;
 
     constructor(
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggerEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
@@ -62,5 +64,11 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
 
         // TODO: Report telemetry here
         this._logging.verbose(printArray(`Paused - choosen: ${highestPriorityActionToTake} other actions = `, nonExecutedRelevantActions));
+    }
+
+    public async reprocessLatestPause(): Promise<void> {
+        if (this.latestPaused !== null) {
+            await this.onPause(this.latestPaused);
+        }
     }
 }

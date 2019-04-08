@@ -10,7 +10,7 @@ import { IEventsToClientReporter } from '../../../client/eventsToClientReporter'
 import { ReasonType } from '../../../stoppedEvent';
 import { CDTPBreakpoint, CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { DebuggeeBPRsSetForClientBPRFinder } from '../registries/debuggeeBPRsSetForClientBPRFinder';
-import { BPRecipeInLoadedSource } from '../BaseMappedBPRecipe';
+import { BPRecipeInLoadedSource } from '../baseMappedBPRecipe';
 import { ConditionalPause, AlwaysPause } from '../bpActionWhenHit';
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { BPRecipe } from '../bpRecipe';

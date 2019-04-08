@@ -11,7 +11,6 @@ import { createDIContainer } from './cdaDIContainerCreator';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { TerminatingCDA } from './terminatingCDA';
 import { logger } from '../../..';
-import { BaseCDAState } from './baseCDAState';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -25,7 +24,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     constructor(private readonly _debugSessionOptions: IChromeDebugSessionOpts, private readonly _rawDebugSession: ChromeDebugSession) {
         const uninitializedCDA = this._diContainer.createComponent<UninitializedCDA>(TYPES.UninitializedCDA);
         this.waitUntilInitialized = uninitializedCDA.install();
-        this.changeStateTo(uninitializedCDA);
+        this._state = uninitializedCDA;
     }
 
     public async processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<unknown> {
@@ -44,7 +43,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
                 return capabilities;
             case 'launch':
             case 'attach':
-            this.changeStateTo(<IDebugAdapterState>response);
+                this.changeStateTo(<IDebugAdapterState>response);
                 return {};
             default:
                 // For all other messages where the state doesn't change, we don't need to do anything
@@ -63,5 +62,5 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
         if (!this._state.processRequest) {
             throw new Error(`Invalid state: ${this._state}`);
         }
-}
+    }
 }

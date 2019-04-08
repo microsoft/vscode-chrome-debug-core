@@ -2,10 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from 'vscode-debugadapter';
-import { ICommonRequestArgs } from '../debugAdapterInterfaces';
 import * as errors from '../errors';
 import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
@@ -18,6 +16,7 @@ import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 
 interface IRootsState {
+    install(): Promise<void>;
     getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier;
     getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier;
 }
@@ -25,7 +24,20 @@ interface IRootsState {
 class BothRootsAreSet implements IRootsState {
     public constructor(
         public readonly _localRoot: string,
-        public readonly _remoteRoot: string) { }
+        public readonly _remoteRoot: string // Maybe validate that it's absolute, for either windows or unix
+    ) { }
+
+    public async install(): Promise<void> {
+        // Validate that localRoot is absolute and exists
+        if (!path.isAbsolute(this._localRoot)) {
+            return Promise.reject(errors.attributePathRelative('localRoot', this._localRoot));
+        }
+
+        const exists = await utils.existsAsync(this._localRoot);
+        if (!exists) {
+            throw errors.attributePathNotExist('localRoot', this._localRoot);
+        }
+    }
 
     private shouldMapPaths(remotePath: IResourceIdentifier): boolean {
         // Map paths only if localRoot/remoteRoot are set, and the remote path is absolute on some system
@@ -56,6 +68,8 @@ class BothRootsAreSet implements IRootsState {
 }
 
 class MissingRoots implements IRootsState {
+    public async install(): Promise<void> {}
+
     public getClientPathFromTargetPath(_remotePath: IResourceIdentifier): IResourceIdentifier {
         return parseResourceIdentifier('');
     }
@@ -69,47 +83,21 @@ class MissingRoots implements IRootsState {
  * Converts a local path from Code to a path on the target.
  */
 export class RemotePathTransformer extends UrlPathTransformer {
-    private _localRoot: string;
-    private _remoteRoot?: string;
     private readonly _state: IRootsState;
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
         super(configuration);
-        this._state = !!this._localRoot && !!this._remoteRoot
-            ? new BothRootsAreSet(this._localRoot, this._remoteRoot)
-            : new MissingRoots();
-        this.init(configuration.args);
-    }
-
-    private async init(args: ICommonRequestArgs): Promise<void> {
-        if ((args.localRoot && !args.remoteRoot) || (args.remoteRoot && !args.localRoot)) {
+        if ((configuration.args.localRoot && !configuration.args.remoteRoot) || (configuration.args.remoteRoot && !configuration.args.localRoot)) {
             throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
         }
 
-        // Maybe validate that it's absolute, for either windows or unix
-        this._remoteRoot = args.remoteRoot;
+        this._state = !!configuration.args.localRoot && !!configuration.args.remoteRoot
+            ? new BothRootsAreSet(configuration.args.localRoot, configuration.args.remoteRoot)
+            : new MissingRoots();
+    }
 
-        // Validate that localRoot is absolute and exists
-        let localRootP = Promise.resolve();
-        if (args.localRoot) {
-            const localRoot = args.localRoot;
-            if (!path.isAbsolute(localRoot)) {
-                return Promise.reject(errors.attributePathRelative('localRoot', localRoot));
-            }
-
-            localRootP = new Promise<void>((resolve, reject) => {
-                fs.exists(localRoot, exists => {
-                    if (!exists) {
-                        reject(errors.attributePathNotExist('localRoot', localRoot));
-                    }
-
-                    this._localRoot = localRoot;
-                    resolve();
-                });
-            });
-        }
-
-        return localRootP;
+    public install(): Promise<void> {
+        return this._state.install();
     }
 
     public async scriptParsed(scriptPath: IResourceIdentifier): Promise<IResourceIdentifier> {

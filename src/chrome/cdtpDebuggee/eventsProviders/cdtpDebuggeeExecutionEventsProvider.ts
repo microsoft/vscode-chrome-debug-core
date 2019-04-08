@@ -18,7 +18,7 @@ import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrac
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
-import { CDTPBPRecipe, validateCDTPRemoteObjectOfTypeObject } from '../cdtpPrimitives';
+import { CDTPBPRecipe, validateNonPrimitiveRemoteObject } from '../cdtpPrimitives';
 
 export type PauseEventReason = 'XHR' | 'DOM' | 'EventListener' | 'exception' | 'assert' | 'debugCommand' | 'promiseRejection' | 'OOM' | 'other' | 'ambiguous';
 
@@ -94,7 +94,7 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
     }
 
     private async toScope(scope: CDTP.Debugger.Scope): Promise<Scope> {
-        if (validateCDTPRemoteObjectOfTypeObject(scope.object)) {
+        if (validateNonPrimitiveRemoteObject(scope.object)) {
             return new Scope(
                 scope.type,
                 scope.object,

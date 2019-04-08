@@ -1,5 +1,5 @@
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { SourcesRetriever } from './sourcesRetriever';

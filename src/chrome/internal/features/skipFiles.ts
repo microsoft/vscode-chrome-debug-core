@@ -19,6 +19,7 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { CurrentStackTraceProvider } from '../stackTraces/currentStackTraceProvider';
 import { ISource } from '../sources/source';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
+import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 const localize = nls.loadMessageBundle();
 
 export interface ISkipFilesConfiguration {
@@ -30,7 +31,6 @@ export interface ISkipFilesConfiguration {
 export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
     private _blackboxedRegexes: RegExp[] = [];
     private _skipFileStatuses = newResourceIdentifierMap<boolean>();
-    public reprocessPausedEvent: () => void; // TODO DIEGO: Do this in a better way
 
     private readonly _currentStackStraceProvider = new CurrentStackTraceProvider(this._cdtpDebuggeeExecutionEventsProvider);
 
@@ -38,6 +38,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
         @inject(TYPES.IScriptParsedProvider) public readonly _cdtpOnScriptParsedEventProvider: IScriptParsedProvider,
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggeeExecutionEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
+        @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
         @inject(TYPES.IBlackboxPatternsConfigurer) private readonly _blackboxPatternsConfigurer: IBlackboxPatternsConfigurer
     ) {
         this._cdtpOnScriptParsedEventProvider.onScriptParsed(scriptParsed => this.onScriptParsed(scriptParsed));
@@ -124,7 +125,8 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                 this.makeRegexesNotSkip(resolvedSource.url);
             }
 
-            this.reprocessPausedEvent();
+            // Reprocess the latest pause event to adjust for any changes in our configuration
+            await this._debuggeePausedHandler.reprocessLatestPause();
         }, async sourceIdentifier => {
             logger.log(`Can't toggle the skipFile status for: ${sourceIdentifier} - haven't seen it yet.`);
         });
