@@ -100,10 +100,10 @@ export class HitCountBreakpointsSetter implements ISingleBreakpointSetter {
     constructor(
         @inject(PrivateTypes.SingleBreakpointSetterForHitCountBreakpoints) private readonly _singleBreakpointSetter: SingleBreakpointSetter,
         @inject(TYPES.IDebuggeeExecutionController) private readonly _debuggeeExecutionControl: IDebuggeeExecutionController) {
+        this._singleBreakpointSetter.bpRecipeStatusChangedListeners.add(bpRecipeStatus => this.onUnderlyingBPRecipeStatusChange(bpRecipeStatus));
     }
 
     public setOnPausedForBreakpointCallback(onPausedForBreakpointCallback: OnPausedForBreakpointCallback): void {
-        this._singleBreakpointSetter.bpRecipeStatusChangedListeners.add(bpRecipeStatus => this.onUnderlyingBPRecipeStatusChange(bpRecipeStatus));
         this._singleBreakpointSetter.setOnPausedForBreakpointCallback(bpRecipes => this.onBreakpointHit(bpRecipes, onPausedForBreakpointCallback));
     }
 
