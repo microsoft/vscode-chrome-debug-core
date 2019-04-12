@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { ContinuedEvent, logger, } from 'vscode-debugadapter';
+import { logger, } from 'vscode-debugadapter';
 
 import {
     ICommonRequestArgs, IScopesResponseBody, IVariablesResponseBody,
@@ -219,9 +219,6 @@ export class ChromeDebugLogic {
 
             // Need to wait to eval just a little after each step, because of #148
             this._waitAfterStep = utils.promiseTimeout(undefined, 50);
-        } else {
-            let resumedEvent = new ContinuedEvent(ChromeDebugLogic.THREAD_ID);
-            this._session.sendEvent(resumedEvent);
         }
     }
 

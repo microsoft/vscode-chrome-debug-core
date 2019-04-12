@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { Container, interfaces } from 'inversify';
-import { bindAll } from './bind';
+import { bindAll, createWrapWithLoggerActivator } from './bind';
 import { MethodsCalledLoggerConfiguration, ReplacementInstruction } from '../logging/methodsCalledLogger';
 import { addCDTPBindings } from '../cdtpDebuggee/cdtpDIContainer';
 import { addBreakpointsFeatureBindings } from '../internal/breakpoints/diBindings';
@@ -18,7 +18,7 @@ export type IdentifierToClassPairs = [interfaces.ServiceIdentifier<any>, interfa
 // Hides the current DI framework from the rest of our implementation
 export class DependencyInjection {
     private readonly _container = new Container({ autoBindInjectable: true, defaultScope: 'Singleton' });
-    private readonly _loggingConfiguration = new MethodsCalledLoggerConfiguration([]);
+    private readonly _loggingConfiguration = new MethodsCalledLoggerConfiguration(this._name, []);
 
     constructor(private readonly _name: string, private readonly _componentCustomizationCallback: ComponentCustomizationCallback, parentContainer?: interfaces.Container) {
         (<any>this._container).__msft_name = _name; // This name is for debugging purposes, so we can see the name of the container while we debug it
@@ -28,7 +28,7 @@ export class DependencyInjection {
     }
 
     public configureClass<T>(interfaceClass: interfaces.ServiceIdentifier<T>, value: interfaces.Newable<T>): this {
-        this._container.bind(interfaceClass).to(value).inSingletonScope();
+        this._container.bind(interfaceClass).to(value).inSingletonScope().onActivation(createWrapWithLoggerActivator(this._loggingConfiguration, interfaceClass));
         return this;
     }
 
@@ -87,14 +87,14 @@ export class DependencyInjection {
         return this;
     }
 
-    public configureExportedAndPrivateClasses(subcontainerName: string, exportedClassesMapping: IdentifierToClass, privateClassesMapping: IdentifierToClassMapping): this {
+    public configureExportedAndPrivateClasses(subcontainerName: string, exportedClassesMapping: IdentifierToClassMapping,
+        privateClassesMapping: IdentifierToClass): DependencyInjection {
         const privateClassesContainer = new DependencyInjection(subcontainerName, (_identifier, component) => component, this._container)
-            .configureMultipleClasses(privateClassesMapping);
+            .configureMultipleClasses(privateClassesMapping).configureMultipleClasses(exportedClassesMapping);
 
-        this.configureMultipleClasses(exportedClassesMapping);
-        this.importFromOtherContainer(privateClassesMapping.keys(), privateClassesContainer);
+        this.importFromOtherContainer(exportedClassesMapping.keys(), privateClassesContainer);
 
-        return this;
+        return privateClassesContainer;
     }
 
     public toString(): string {

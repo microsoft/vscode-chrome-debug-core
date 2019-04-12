@@ -14,6 +14,7 @@ import { IPauseOnExceptionsConfigurer } from '../../cdtpDebuggee/features/cdtpPa
 import * as utils from '../../../utils';
 import { IDebuggeePausedHandler } from '../features/debuggeePausedHandler';
 import { CDTPScriptsRegistry } from '../../cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { printClassDescription } from '../../utils/printing';
 
 type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -31,6 +32,7 @@ export interface IExceptionInformation {
     readonly details: IExceptionInformationDetails;
 }
 
+@printClassDescription
 export class ExceptionWasThrown extends BaseNotifyClientOfPause {
     public readonly reason = 'exception'; // There is an issue of how the .d.ts is generated for this file, so we need to type that explicitly
 
@@ -39,6 +41,7 @@ export class ExceptionWasThrown extends BaseNotifyClientOfPause {
     }
 }
 
+@printClassDescription
 export class PromiseWasRejected extends BaseNotifyClientOfPause {
     public readonly reason: 'promise_rejection' = 'promise_rejection'; // There is an issue of how the .d.ts is generated for this file, so we need to type that explicitly
 

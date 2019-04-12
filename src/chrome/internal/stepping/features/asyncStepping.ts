@@ -9,7 +9,9 @@ import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeE
 import { IDebuggeeExecutionController } from '../../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
 import { IDebuggeeSteppingController } from '../../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
+import { printClassDescription } from '../../../utils/printing';
 
+@printClassDescription
 export class PausedBecauseAsyncCallWasScheduled extends BasePauseShouldBeAutoResumed {
     constructor(protected _debuggeeExecutionControl: IDebuggeeExecutionController) {
         super();

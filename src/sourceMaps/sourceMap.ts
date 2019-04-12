@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMapConsumer, MappedPosition } from 'source-map';
+import { SourceMapConsumer, MappedPosition, NullableMappedPosition } from 'source-map';
 import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
@@ -39,7 +39,7 @@ export class SourceRange {
 export class SourceMap {
     private _generatedPath: string; // the generated file for this sourcemap (absolute path)
     private _sources: string[]; // list of authored files (absolute paths)
-    private _smc: SourceMapConsumer; // the source map
+    private _smc: SourceMapConsumer | null = null; // the source map
     private _authoredPathCaseMap = new Map<string, string>(); // Maintain pathCase map because VSCode is case sensitive
 
     private _allSourcePathDetails: ISourcePathDetails[] | undefined; // A list of all original paths from the sourcemap, and their inferred local paths
@@ -47,6 +47,8 @@ export class SourceMap {
     // Original sourcemap details
     private _originalSources: string[];
     private _originalSourceRoot: string;
+
+    private readonly _init: Promise<void>;
 
     /**
      * Returns list of ISourcePathDetails for all sources in this sourcemap, sorted by their
@@ -146,7 +148,14 @@ export class SourceMap {
             return utils.pathToFileURL(lowerCaseSourceAbsPath, true);
         });
 
-        this._smc = new SourceMapConsumer(sm);
+        this._init = new SourceMapConsumer(sm).then(sourceMapConsumer => {
+            this._smc = sourceMapConsumer;
+        });
+    }
+
+    public async init(): Promise<this> {
+        await this._init;
+        return this;
     }
 
     /*
@@ -174,7 +183,7 @@ export class SourceMap {
      * Finds the nearest source location for the given location in the generated file.
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
-    public authoredPositionFor(line: number, column: number): MappedPosition | null {
+    public authoredPositionFor(line: number, column: number): NullableMappedPosition | null {
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -184,11 +193,11 @@ export class SourceMap {
             bias: (<any>SourceMapConsumer).GREATEST_LOWER_BOUND
         };
 
-        let position = this._smc.originalPositionFor(lookupArgs);
+        let position = this._smc!.originalPositionFor(lookupArgs);
         if (!position.source) {
             // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
             lookupArgs.bias = (<any>SourceMapConsumer).LEAST_UPPER_BOUND;
-            position = this._smc.originalPositionFor(lookupArgs);
+            position = this._smc!.originalPositionFor(lookupArgs);
         }
 
         if (position.source) {
@@ -199,7 +208,9 @@ export class SourceMap {
             position.source = this._authoredPathCaseMap.get(position.source) || position.source;
 
             // Back to 0-indexed lines
-            position.line--;
+            if (typeof position.line === 'number') {
+                position.line--;
+            }
 
             return position;
         } else {
@@ -211,7 +222,7 @@ export class SourceMap {
      * Finds the nearest location in the generated file for the given source location.
      * Will return a mapping on the next line, if there is no subsequent mapping on the expected line.
      */
-    public generatedPositionFor(source: string, line: number, column: number): MappedPosition | null {
+    public generatedPositionFor(source: string, line: number, column: number): NullableMappedPosition | null {
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -226,11 +237,11 @@ export class SourceMap {
             bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
         };
 
-        let position = this._smc.generatedPositionFor(lookupArgs);
+        let position = this._smc!.generatedPositionFor(lookupArgs);
         if (position.line === null) {
             // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
             lookupArgs.bias = (<any>SourceMapConsumer).GREATEST_LOWER_BOUND;
-            position = this._smc.generatedPositionFor(lookupArgs);
+            position = this._smc!.generatedPositionFor(lookupArgs);
         }
 
         if (position.line === null) {
@@ -239,7 +250,8 @@ export class SourceMap {
             return {
                 line: position.line - 1, // Back to 0-indexed lines
                 column: position.column,
-                source: this._generatedPath
+                source: this._generatedPath,
+                name: null
             };
         }
     }
@@ -252,14 +264,16 @@ export class SourceMap {
     public rangesInSources(): IValidatedMap<IResourceIdentifier, SourceRange> {
         const sourceToRange = newResourceIdentifierMap<SourceRange>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
-        this._smc.eachMapping(mapping => {
+        this._smc!.eachMapping(mapping => {
             const positionInSource = new Position(createLineNumber(mapping.originalLine), createColumnNumber(mapping.originalColumn));
-            const sourceIdentifier = memoizedParseResourceIdentifier(mapping.source);
-            const range = sourceToRange.getOr(sourceIdentifier, () => new SourceRange(positionInSource, positionInSource));
-            const expandedRange = new SourceRange(
-                Position.appearingFirstOf(range.start, positionInSource),
-                Position.appearingLastOf(range.end, positionInSource));
-            sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
+            if (mapping.source) { // In source-map 0.5.7 this is null sometimes
+                const sourceIdentifier = memoizedParseResourceIdentifier(mapping.source);
+                const range = sourceToRange.getOr(sourceIdentifier, () => new SourceRange(positionInSource, positionInSource));
+                const expandedRange = new SourceRange(
+                    Position.appearingFirstOf(range.start, positionInSource),
+                    Position.appearingLastOf(range.end, positionInSource));
+                sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
+                }
         });
 
         return sourceToRange;

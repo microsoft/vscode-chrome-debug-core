@@ -1,5 +1,5 @@
 import { Location, ScriptOrSourceOrURLOrURLRegexp, LocationInScript, LocationInUrlRegexp, LocationInUrl, LocationInLoadedSource } from '../locations/location';
-import { IBPActionWhenHit } from './bpActionWhenHit';
+import { IBPActionWhenHit, AlwaysPause } from './bpActionWhenHit';
 import { BaseBPRecipe, IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { ILoadedSource } from '../sources/loadedSource';
@@ -38,11 +38,16 @@ abstract class BaseMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRege
     public toString(): string {
         return `BP @ ${this.location} do: ${this.bpActionWhenHit}`;
     }
+
 }
 
 export class BPRecipeInLoadedSource<TBPActionWhenHit extends IBPActionWhenHit> extends BaseMappedBPRecipe<ILoadedSource, TBPActionWhenHit>  {
     public mappedToScript(): BPRecipeInScript[] {
         return this.location.mappedToScript().map(location => new BPRecipeInScript(this.unmappedBPRecipe, location));
+    }
+
+    public withAlwaysPause(): BPRecipeInLoadedSource<AlwaysPause> {
+        return new BPRecipeInLoadedSource(this.unmappedBPRecipe.withAlwaysPause(), this.location);
     }
 }
 

@@ -2,9 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMap, MappedPosition, ISourcePathDetails } from './sourceMap';
+import { SourceMap, ISourcePathDetails } from './sourceMap';
 import { SourceMapFactory } from './sourceMapFactory';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
+import { NullableMappedPosition } from 'source-map';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -17,7 +18,7 @@ export class SourceMaps {
         this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): MappedPosition | null {
+    public mapToAuthored(pathToGenerated: string, line: number, column: number): NullableMappedPosition | null {
         pathToGenerated = pathToGenerated.toLowerCase();
         const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
         return sourceMap !== undefined ?

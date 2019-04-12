@@ -1,6 +1,16 @@
 export const PrivateTypes = {
     IBreakpointsEventsListener: Symbol.for('IBreakpointsEventsListener'),
     BPRecipeAtLoadedSourceSetter: Symbol.for('BPRecipeAtLoadedSourceSetter'),
+    HitCountBreakpointsSetter: Symbol.for('HitCountBreakpointsSetter'),
+    SingleBreakpointSetter: Symbol.for('SingleBreakpointSetter'),
+    SingleBreakpointSetterForHitCountBreakpoints: Symbol.for('SingleBreakpointSetterForHitCountBreakpoints'),
+    SingleBreakpointSetterWithHitCountSupport: Symbol.for('SingleBreakpointSetterWithHitCountSupport'),
+    CurrentBPRecipesForSourceRegistry: Symbol.for('CurrentBPRecipesForSourceRegistry'),
+    CurrentBPRecipeStatusRetriever: Symbol.for('CurrentBPRecipeStatusRetriever'),
     BPRecipeStatusCalculator: Symbol.for('BPRecipeStatusCalculator'),
+    PauseScriptLoadsToSetBPs: Symbol.for('PauseScriptLoadsToSetBPs'),
+    ExistingBPsForJustParsedScriptSetter: Symbol.for('ExistingBPsForJustParsedScriptSetter'),
+    BreakpointsSetForScriptFinder: Symbol.for('BreakpointsSetForScriptFinder'),
+    BPRecipesForSourceRetriever: Symbol.for('BPRecipesForSourceRetriever'),
     DebuggeeBPRsSetForClientBPRFinder: Symbol.for('DebuggeeBPRsSetForClientBPRFinder'),
 };

@@ -7,7 +7,7 @@ import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame, ICallFrameState } from './callFrame';
 import { CallFramePresentationHint, IStackTracePresentationRow } from './stackTracePresentationRow';
-import { DebugProtocol } from 'vscode-debugprotocol';
+import { IStackTraceFormat, StackTraceCustomFormat } from './stackTracePresenter';
 
 export type SourcePresentationHint = 'normal' | 'emphasize' | 'deemphasize';
 
@@ -19,7 +19,7 @@ export interface ICallFramePresentationDetails {
 export class CallFramePresentation implements IStackTracePresentationRow {
     constructor(
         public readonly callFrame: CallFrame<ILoadedSource, ICallFrameState>,
-        private readonly _descriptionFormatArgs?: DebugProtocol.StackFrameFormat,
+        private readonly _descriptionFormatArgs?: IStackTraceFormat,
         public readonly additionalPresentationDetails?: ICallFramePresentationDetails,
         public readonly presentationHint?: CallFramePresentationHint) {
     }
@@ -56,12 +56,12 @@ export class CallFramePresentation implements IStackTracePresentationRow {
 
         let formattedDescription = functionDescription(this.callFrame.codeFlow.functionName, location.source);
 
-        if (this._descriptionFormatArgs) {
-            if (this._descriptionFormatArgs.module) {
+        if (this._descriptionFormatArgs instanceof StackTraceCustomFormat) {
+            if (this._descriptionFormatArgs.formatOptions.module) {
                 formattedDescription += ` [${path.basename(location.source.identifier.textRepresentation)}]`;
             }
 
-            if (this._descriptionFormatArgs.line) {
+            if (this._descriptionFormatArgs.formatOptions.line) {
                 formattedDescription += ` Line ${location.position.lineNumber}`;
             }
         }

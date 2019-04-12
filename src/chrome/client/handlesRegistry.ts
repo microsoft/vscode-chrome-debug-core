@@ -18,6 +18,7 @@ export class BidirectionalHandles<T> {
         return this._idToObject.getByLeft(id);
     }
 
+    // TODO: Split thsi method into createNewIdForObject and other methods
     public getIdByObject(obj: T): number {
         const id = this._idToObject.tryGettingByRight(obj);
         if (id !== undefined) {
@@ -27,6 +28,10 @@ export class BidirectionalHandles<T> {
             this._idToObject.set(newId, obj);
             return newId;
         }
+    }
+
+    public getExistingIdByObject(obj: T): number {
+        return this._idToObject.getByRight(obj);
     }
 
     public toString(): string {

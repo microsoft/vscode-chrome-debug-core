@@ -31,13 +31,16 @@ export interface IDebuggeePausedHandler {
 @injectable()
 export class DebuggeePausedHandler implements IDebuggeePausedHandler {
     private readonly _actionToTakeWhenPausedProviders: ActionToTakeWhenPausedProvider[] = [];
+
     private latestPaused: PausedEvent | null = null;
+    private isClientPaused = false;
 
     constructor(
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggerEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.ILogger) private readonly _logging: Logging) {
         this._cdtpDebuggerEventsProvider.onPaused(paused => this.onPause(paused));
+        this._cdtpDebuggerEventsProvider.onResumed(() => this.onResumed());
     }
 
     public registerActionProvider(provider: ActionToTakeWhenPausedProvider): void {
@@ -56,7 +59,15 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
         this.logActionToTake(actionsToTake, highestPriorityAction);
 
         // Execute the action with the highest priority
+        this.isClientPaused = !highestPriorityAction.isAutoResuming();
         await highestPriorityAction.execute(actionsToTake);
+    }
+
+    public async onResumed(): Promise<void> {
+        if (this.isClientPaused) {
+            await this._eventsToClientReporter.sendDebuggeeIsResumed();
+            this.isClientPaused = false;
+        }
     }
 
     public logActionToTake(allActionsToTake: IActionToTakeWhenPaused[], highestPriorityActionToTake: IActionToTakeWhenPaused): void {

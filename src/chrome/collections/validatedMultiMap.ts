@@ -2,13 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { ValidatedMap } from './validatedMap';
+import { ValidatedMap, IValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { ValidatedSet, IValidatedSet } from './validatedSet';
 
 /** A multi map that throws exceptions instead of returning error codes. */
 export class ValidatedMultiMap<K, V> {
-    private readonly _wrappedMap: ValidatedMap<K, IValidatedSet<V>>;
 
     public get keysSize(): number {
         return this._wrappedMap.size;
@@ -18,13 +17,19 @@ export class ValidatedMultiMap<K, V> {
         return 'ValidatedMultiMap' as 'Map';
     }
 
-    constructor(initialContents?: Map<K, Set<V>> | Iterable<[K, Set<V>]> | ReadonlyArray<[K, Set<V>]>) {
-        if (initialContents !== undefined) {
-            const elements = Array.from(initialContents).map(element => <[K, IValidatedSet<V>]>[element[0], new ValidatedSet(element[1])]);
-            this._wrappedMap = new ValidatedMap<K, IValidatedSet<V>>(elements);
-        } else {
-            this._wrappedMap = new ValidatedMap<K, IValidatedSet<V>>();
-        }
+    private constructor(private readonly _wrappedMap: IValidatedMap<K, IValidatedSet<V>>) { }
+
+    public static empty<K, V>(): ValidatedMultiMap<K, V> {
+        return this.usingCustomMap(new ValidatedMap<K, IValidatedSet<V>>());
+    }
+
+    public static withContents<K, V>(initialContents: Map<K, Set<V>> | Iterable<[K, Set<V>]> | ReadonlyArray<[K, Set<V>]>): ValidatedMultiMap<K, V> {
+        const elements = Array.from(initialContents).map(element => <[K, IValidatedSet<V>]>[element[0], new ValidatedSet(element[1])]);
+        return this.usingCustomMap(new ValidatedMap<K, IValidatedSet<V>>(elements));
+    }
+
+    public static usingCustomMap<K, V>(wrappedMap: IValidatedMap<K, IValidatedSet<V>>): ValidatedMultiMap<K, V> {
+        return new ValidatedMultiMap(wrappedMap);
     }
 
     public clear(): void {

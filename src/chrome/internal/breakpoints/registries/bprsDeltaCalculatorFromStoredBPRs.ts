@@ -12,7 +12,7 @@ import { injectable } from 'inversify';
  * Store the current list of breakpoint recipes for a particular source
  */
 @injectable()
-export class CurrentBPRecipesForSourceRegistry {
+export class BPRsDeltaCalculatorFromStoredBPRs {
     private readonly _requestedSourcePathToCurrentBPRecipes = newResourceIdentifierMap<BPRecipeInSource[]>();
 
     public updateBPRecipesAndCalculateDelta(requestedBPRecipes: BPRecipesInSource): BPRsDeltaInRequestedSource {

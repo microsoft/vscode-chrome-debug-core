@@ -9,7 +9,7 @@ import { ClientSourceParser } from '../../../client/clientSourceParser';
 import { BPRecipieStatusToClientConverter } from './bpRecipieStatusToClientConverter';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { LocationInSource, Position } from '../../locations/location';
-import { ConditionalPause, AlwaysPause, IBPActionWhenHit } from '../bpActionWhenHit';
+import { ConditionalPause, AlwaysPause, IBPActionWhenHit, PauseOnHitCount } from '../bpActionWhenHit';
 import { ISource } from '../../sources/source';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { HandlesRegistry } from '../../../client/handlesRegistry';
@@ -32,7 +32,12 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
         if (args.breakpoints) {
             const desiredBPRecipes = this.toBPRecipes(args);
             const bpRecipesStatus = await this._breakpointsLogic.updateBreakpointsForFile(desiredBPRecipes, telemetryPropertyCollector);
-            return { breakpoints: await asyncMap(bpRecipesStatus, bprs => this._bpRecipieStatusToClientConverter.toBreakpoint(bprs)) };
+            const response = { breakpoints: await asyncMap(bpRecipesStatus, bprs => this._bpRecipieStatusToClientConverter.toBreakpoint(bprs)) };
+            if (response.breakpoints.length !== args.breakpoints.length) {
+                throw new Error(`The response the debug adapter generated for setBreakpoints have ${response.breakpoints.length} breakpoints in the response yet ${args.breakpoints.length} breakpoints were set. Response: ${JSON.stringify(response.breakpoints)}`);
+            }
+
+            return response;
         } else {
             throw new Error(`Expected the set breakpoints arguments to have a list of breakpoints yet it was ${args.breakpoints}`);
         }
@@ -65,7 +70,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             if (actionWhenHit.condition) {
                 return new ConditionalPause(actionWhenHit.condition);
             } else if (actionWhenHit.hitCondition) {
-                return new ConditionalPause(actionWhenHit.hitCondition);
+                return new PauseOnHitCount(actionWhenHit.hitCondition);
             } else if (actionWhenHit.logMessage) {
                 return new ConditionalPause(actionWhenHit.logMessage);
             } else {
@@ -84,7 +89,8 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
         return new Position(lineNumber, columnNumber);
     }
 
-    public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {
+    public async getCommandHandlerDeclarations(): Promise<ICommandHandlerDeclaration[]> {
+        await this._breakpointsLogic.install();
         return CommandHandlerDeclaration.fromLiteralObject({
             setBreakpoints: args => this.setBreakpoints(args)
         });

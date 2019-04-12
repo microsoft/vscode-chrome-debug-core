@@ -44,11 +44,11 @@ export class SourceMapFactory {
             sourceMapContentsP = this.getSourceMapContent(pathToGenerated, mapPath);
         }
 
-        return sourceMapContentsP.then(contents => {
+        return sourceMapContentsP.then(async contents => {
             if (contents) {
                 try {
                     // Throws for invalid JSON
-                    return new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides, isVSClient);
+                    return await new SourceMap(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides, isVSClient).init();
                 } catch (e) {
                     logger.error(`SourceMaps.getMapForGeneratedPath: exception while processing path: ${pathToGenerated}, sourcemap: ${mapPath}\n${e.stack}`);
                     return null;

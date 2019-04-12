@@ -11,7 +11,7 @@ export class LoadedSourcesRegistry implements ICurrentScriptRelationshipsProvide
     // TODO: Figure out a way to store IdentifiedLoadedSource<CDTPScriptUrl> and IdentifiedLoadedSource<string> in a single map while preserving type safety
     private readonly _loadedSourceByPath = newResourceIdentifierMap<IdentifiedLoadedSource>();
 
-    private readonly _loadedSourceToCurrentScriptRelationships = new ValidatedMultiMap<IdentifiedLoadedSource, ILoadedSourceToScriptRelationship>();
+    private readonly _loadedSourceToCurrentScriptRelationships = ValidatedMultiMap.empty<IdentifiedLoadedSource, ILoadedSourceToScriptRelationship>();
 
     public getOrAdd(pathOrUrl: IResourceIdentifier,
         obtainValueToAdd: (provider: ICurrentScriptRelationshipsProvider) => IdentifiedLoadedSource): IdentifiedLoadedSource {

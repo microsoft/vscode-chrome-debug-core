@@ -16,7 +16,10 @@ import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
+import { printClassDescription } from '../../../utils/printing';
+import { PrivateTypes } from '../diTypes';
 
+@printClassDescription
 export class HitStillPendingBreakpoint extends BaseNotifyClientOfPause {
     protected reason: ReasonType = 'breakpoint';
 
@@ -25,6 +28,7 @@ export class HitStillPendingBreakpoint extends BaseNotifyClientOfPause {
     }
 }
 
+@printClassDescription
 export class PausedWhileLoadingScriptToResolveBreakpoints extends BasePauseShouldBeAutoResumed {
     constructor(protected readonly _debuggeeExecutionControl: IDebuggeeExecutionController) {
         super();
@@ -51,8 +55,8 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
         @inject(TYPES.IDebuggeeExecutionController) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.IDebuggeeRuntimeVersionProvider) private readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider,
-        private readonly _existingBPsForJustParsedScriptSetter: ExistingBPsForJustParsedScriptSetter,
-        private readonly _breakpointsRegistry: BreakpointsSetForScriptFinder,
+        @inject(PrivateTypes.ExistingBPsForJustParsedScriptSetter) private readonly _existingBPsForJustParsedScriptSetter: ExistingBPsForJustParsedScriptSetter,
+        @inject(PrivateTypes.BreakpointsSetForScriptFinder) private readonly _breakpointsRegistry: BreakpointsSetForScriptFinder,
     ) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
     }

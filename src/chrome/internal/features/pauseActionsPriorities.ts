@@ -4,23 +4,27 @@
 import { ValidatedMap } from '../../collections/validatedMap';
 import { IActionToTakeWhenPaused } from './actionToTakeWhenPaused';
 import { ShouldStepInToAvoidSkippedSource } from './smartStep';
-import { HitAndSatisfiedCountBPCondition } from '../breakpoints/features/hitCountBreakpoints';
-import { HitBreakpoint } from '../breakpoints/features/bpRecipeAtLoadedSourceLogic';
+import { HitBreakpoint, NoRecognizedBreakpoints } from '../breakpoints/features/bpRecipeAtLoadedSourceLogic';
 import { HitStillPendingBreakpoint, PausedWhileLoadingScriptToResolveBreakpoints } from '../breakpoints/features/pauseScriptLoadsToSetBPs';
 import { ExceptionWasThrown, PromiseWasRejected } from '../exceptions/pauseOnException';
+import { HitAndSatisfiedHitCountBreakpoint, HitCountBreakpointWhenConditionWasNotSatisfied } from '../breakpoints/features/hitCountBreakpointsSetter';
 
 export type ActionToTakeWhenPausedClass = { new(...args: any[]): IActionToTakeWhenPaused };
 
 const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
     ShouldStepInToAvoidSkippedSource, // Stepping in to avoid a skipper source takes preference over hitting breakpoints, etc...
 
-    HitAndSatisfiedCountBPCondition,
+    HitAndSatisfiedHitCountBreakpoint,
     HitBreakpoint,
     HitStillPendingBreakpoint,
     ExceptionWasThrown,
     PromiseWasRejected,
 
-    PausedWhileLoadingScriptToResolveBreakpoints
+    PausedWhileLoadingScriptToResolveBreakpoints,
+
+    HitCountBreakpointWhenConditionWasNotSatisfied,
+
+    NoRecognizedBreakpoints,
 ];
 
 const priorityIndexAndActionClassPairs = actionsFromHighestToLowestPriority.map((situationClass, index) => <[ActionToTakeWhenPausedClass, number]>[situationClass, index]);

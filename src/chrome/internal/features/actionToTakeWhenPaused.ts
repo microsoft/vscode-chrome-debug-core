@@ -5,6 +5,7 @@ import { IDebuggeeExecutionController } from '../../cdtpDebuggee/features/cdtpDe
 import { ReasonType } from '../../stoppedEvent';
 import { IEventsToClientReporter } from '../../client/eventsToClientReporter';
 import { PausedEvent } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
+import { printClassDescription } from '../../utils/printing';
 
 /**
  * Action that a component proposes to do when the debuggee is paused. Should be show the pause to the client? Auto-resume?
@@ -14,17 +15,24 @@ export interface IActionToTakeWhenPaused {
     [ImplementsActionToTakeWhenPaused]: string;
 
     execute(actionsWithLowerPriority: IActionToTakeWhenPaused[]): Promise<void>;
+    isAutoResuming(): boolean;
 }
 
 export abstract class BaseActionToTakeWhenPaused implements IActionToTakeWhenPaused {
     [ImplementsActionToTakeWhenPaused] = 'ActionToTakeWhenPaused';
 
     public abstract execute(actionsWithLowerPriority: IActionToTakeWhenPaused[]): Promise<void>;
+    public abstract isAutoResuming(): boolean;
+
+    public toString(): string {
+        return this.constructor.name;
+    }
 }
 
 /**
  * Action used when the component doesn't have any useful information about the Paused event that just happened
  */
+@printClassDescription
 export class NoActionIsNeededForThisPause extends BaseActionToTakeWhenPaused {
     constructor(public readonly actionProvider: unknown /* Used for debugging purposes only */) {
         super();
@@ -32,6 +40,10 @@ export class NoActionIsNeededForThisPause extends BaseActionToTakeWhenPaused {
 
     public async execute(): Promise<void> {
         // We don't need to do anything
+    }
+
+    public isAutoResuming(): boolean {
+        return false;
     }
 
     public toString(): string {
@@ -48,6 +60,10 @@ export abstract class BasePauseShouldBeAutoResumed extends BaseActionToTakeWhenP
     public async execute(): Promise<void> {
         await this._debuggeeExecutionControl.resume();
     }
+
+    public isAutoResuming(): boolean {
+        return true;
+    }
 }
 
 /**
@@ -61,11 +77,16 @@ export abstract class BaseNotifyClientOfPause extends BaseActionToTakeWhenPaused
     public async execute(): Promise<void> {
         this._eventsToClientReporter.sendDebuggeeIsStopped({ reason: this.reason, exception: this.exception });
     }
+
+    public isAutoResuming(): boolean {
+        return false;
+    }
 }
 
 /**
  * Action used when we hit a debugger; statement in the code
  */
+@printClassDescription
 export class HitDebuggerStatement extends BaseNotifyClientOfPause {
     protected readonly reason = 'debugger_statement';
 

@@ -4,7 +4,7 @@
 
 import * as _ from 'lodash';
 import * as chromeUtils from '../../../chromeUtils';
-import { IDebuggeeBreakpointsSetter } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import { IDebuggeeBreakpointsSetter, IEventsConsumer } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { IBreakpointFeaturesSupport } from '../../../cdtpDebuggee/features/cdtpBreakpointFeaturesSupport';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { ReasonType } from '../../../stoppedEvent';
@@ -21,14 +21,17 @@ import { RangeInResource } from '../../locations/rangeInScript';
 import { logger } from 'vscode-debugadapter/lib/logger';
 import { asyncMap } from '../../../collections/async';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
-import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../../features/actionToTakeWhenPaused';
+import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseActionToTakeWhenPaused } from '../../features/actionToTakeWhenPaused';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
 import { Listeners } from '../../../communication/listeners';
 import { inject, injectable, LazyServiceIdentifer } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PrivateTypes } from '../diTypes';
+import { printClassDescription } from '../../../utils/printing';
+import { BPRecipeInSource } from '../bpRecipeInSource';
 
+@printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
     protected reason: ReasonType = 'breakpoint';
 
@@ -38,9 +41,31 @@ export class HitBreakpoint extends BaseNotifyClientOfPause {
 }
 
 export interface IBPRecipeAtLoadedSourceSetter {
-    addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>): Promise<CDTPBreakpoint[]>;
+    addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, eventsConsumer: IEventsConsumer): Promise<CDTPBreakpoint[]>;
     removeDebuggeeBPRs(clientBPRecipe: BPRecipe<ISource>): Promise<void>;
 }
+
+@printClassDescription
+export class NoRecognizedBreakpoints extends BaseActionToTakeWhenPaused {
+    constructor(public readonly actionProvider: unknown /* Used for debugging purposes only */) {
+        super();
+    }
+
+    public async execute(): Promise<void> {
+        // We don't need to do anything
+    }
+
+    public isAutoResuming(): boolean {
+        return false;
+    }
+
+    public toString(): string {
+        return `${this.actionProvider} doesn't need to do any action for this pause because none of the breakpoints that were hit were recognized`;
+    }
+}
+
+export type OnPausedForBreakpointCallback = (bpRecipes: BPRecipeInSource[]) => Promise<IActionToTakeWhenPaused>;
+const defaultOnPausedForBreakpointCallback: OnPausedForBreakpointCallback = () => { throw new Error(`No callback was specified for pauses for breakpoints`); };
 
 /**
  * Handles setting breakpoints on sources that are associated with scripts already loaded
@@ -50,7 +75,8 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     private readonly doesTargetSupportColumnBreakpointsCached: Promise<boolean>;
     public readonly debuggeeBPRecipeAddedListeners = new Listeners<CDTPBPRecipe, void>();
     public readonly debuggeeBPRecipeRemovedListeners = new Listeners<CDTPBPRecipe, void>();
-    public readonly bpRecipeIsUnboundListeners = new Listeners<BPRecipeIsUnbound, void>();
+    public readonly bpRecipeFailedToBindListeners = new Listeners<BPRecipeIsUnbound, void>();
+    private _onPausedForBreakpointCallback: OnPausedForBreakpointCallback = defaultOnPausedForBreakpointCallback;
 
     public readonly withLogging = wrapWithMethodLogger(this);
 
@@ -58,22 +84,34 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
         @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
         @inject(new LazyServiceIdentifer(() => PrivateTypes.DebuggeeBPRsSetForClientBPRFinder)) private readonly _bpRecipesRegistry: DebuggeeBPRsSetForClientBPRFinder,
         @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
-        @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler) {
         this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints;
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
     }
 
+    public setOnPausedForBreakpointCallback(onPausedForBreakpointCallback: OnPausedForBreakpointCallback): void {
+        if (this._onPausedForBreakpointCallback === defaultOnPausedForBreakpointCallback) {
+            this._onPausedForBreakpointCallback = onPausedForBreakpointCallback;
+        } else {
+            throw new Error(`setOnPausedForBreakpointCallback was already configured to a different value`);
+        }
+    }
+
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (paused.hitBreakpoints && paused.hitBreakpoints.length > 0) {
-            // TODO DIEGO: Improve this to consider breakpoints where we shouldn't pause
-            return new HitBreakpoint(this._eventsToClientReporter);
+            const bpRecipes = paused.hitBreakpoints.filter(bp => this._bpRecipesRegistry.containsBPRecipe(bp.unmappedBPRecipe));
+            if (bpRecipes.length >= 1) {
+                return this._onPausedForBreakpointCallback(bpRecipes.map(bpRecipe => bpRecipe.unmappedBPRecipe));
+            } else {
+                // We could've hit a breakpoint from another domain (e.g.: Hit count breakpoints) or from the Chrome DevTools
+                return new NoRecognizedBreakpoints(this);
+            }
         } else {
             return new NoActionIsNeededForThisPause(this);
         }
     }
 
-    public async addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>): Promise<CDTPBreakpoint[]> {
+    public async addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, eventsConsumer: IEventsConsumer): Promise<CDTPBreakpoint[]> {
         try {
             const bpsInScriptRecipe = bpRecipe.mappedToScript();
 
@@ -85,7 +123,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
 
                 let breakpoints: CDTPBreakpoint[];
                 if (!runtimeSource.doesScriptHasUrl()) {
-                    breakpoints = [await this._targetBreakpoints.setBreakpoint(bpRecipeInBestLocation)];
+                    breakpoints = [await this._targetBreakpoints.setBreakpoint(bpRecipeInBestLocation, eventsConsumer)];
                 } else {
                     /**
                      * If the script is a local file path, we *need* to transform it into an url to be able to set the breakpoint
@@ -94,7 +132,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
                      * We transform it into a regexp anyway to add a GUID to it, so CDTP will let us add the same breakpoint/recipe two times (using different guids).
                      * That way we can always add the new breakpoints for a file, before removing the old ones (except if the script doesn't have an URL)
                      */
-                    breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpRecipeInBestLocation.mappedToUrlRegexp());
+                    breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpRecipeInBestLocation.mappedToUrlRegexp(), eventsConsumer);
                 }
 
                 for (const breakpoint of breakpoints) {
@@ -107,7 +145,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
             return breakpoints;
         }
         catch (exception) {
-            this.bpRecipeIsUnboundListeners.call(new BPRecipeIsUnbound(bpRecipe.unmappedBPRecipe, exception)); // We publish it so the breakpoint itself will have this information in the tooltip
+            this.bpRecipeFailedToBindListeners.call(new BPRecipeIsUnbound(bpRecipe.unmappedBPRecipe, exception)); // We publish it so the breakpoint itself will have this information in the tooltip
             throw exception; // We throw the exceptio so the call that the client made will fail
         }
     }
