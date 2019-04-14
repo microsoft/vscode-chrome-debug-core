@@ -21,6 +21,7 @@ import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipesForSourceRetriever } from '../registries/bpRecipesForSourceRetriever';
 import { IEventsConsumer, Synchronicity } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
+import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 
 class MakeAllEventsAsyncConsumer implements IEventsConsumer {
     public constructor(private readonly _wrappedEventsConsumer: IEventsConsumer) { }
@@ -44,6 +45,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         @inject(TYPES.IScriptParsedProvider) private readonly _scriptParsedProvider: IScriptParsedProvider,
         @inject(PrivateTypes.DebuggeeBPRsSetForClientBPRFinder) private readonly _debuggeeBPRsSetForClientBPRFinder: DebuggeeBPRsSetForClientBPRFinder,
         @inject(PrivateTypes.BPRecipesForSourceRetriever) private readonly _bpRecipesForSourceRetriever: BPRecipesForSourceRetriever,
+        @inject(PrivateTypes.SourceToScriptMapper) private readonly _sourceToScriptMapper: SourceToScriptMapper,
         @inject(PrivateTypes.BPRecipeAtLoadedSourceSetter) private readonly _bpRecipeAtLoadedSourceSetter: BPRecipeAtLoadedSourceSetter) {
         this._scriptParsedProvider.onScriptParsed(scriptParsed => this.withLogging.setBPsForScript(scriptParsed.script));
     }
@@ -94,7 +96,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         const bpRecepieResolved = bpRecipe.resolvedWithLoadedSource(sourceWhichMayHaveBPs);
         const runtimeLocationsWhichAlreadyHaveThisBPR = debuggeeBPRecipes.map(recipe => recipe.runtimeSourceLocation);
 
-        const bprInScripts = bpRecepieResolved.mappedToScript().filter(b => b.location.script === justParsedScript);
+        const bprInScripts = (await this._sourceToScriptMapper.mapBPRecipe(bpRecepieResolved)).filter(b => b.location.script === justParsedScript);
         await this.withLogging.setBPRsInScriptIfNeeded(bprInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
     }
 

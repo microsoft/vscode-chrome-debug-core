@@ -5,6 +5,7 @@ import { ILoadedSource, IScriptMapper, SourceScriptRelationship, ImplementsLoade
 import { ILoadedSourceToScriptRelationship, DevelopmentSourceOf, RuntimeSourceOf } from './loadedSourceToScriptRelationship';
 import { UnmappedSourceMapper } from '../scripts/sourcesMapper';
 import { LocationInLoadedSource, LocationInScript } from '../locations/location';
+import { IMappedTokensInScript, MappedTokensInScript } from '../locations/mappedTokensInScript';
 
 export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
     // TODO DIEGO: Move these two properties to the client layer
@@ -52,8 +53,8 @@ export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
 export class CurrentUnidentifiedSourceScriptRelationships implements IScriptMapper {
     constructor(private readonly _source: UnidentifiedLoadedSource, private readonly _script: IScript) { }
 
-    public mapToScripts(position: LocationInLoadedSource): LocationInScript[] {
-        return [new LocationInScript(this._script, position.position)];
+    public mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript[] {
+        return [MappedTokensInScript.characterAt(new LocationInScript(this._script, position.position))];
     }
 
     public get relationships(): ILoadedSourceToScriptRelationship[] {

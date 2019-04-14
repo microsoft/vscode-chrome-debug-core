@@ -18,6 +18,7 @@ import { BPRsDeltaCalculatorFromStoredBPRs } from './registries/bprsDeltaCalcula
 import { BreakpointsSetForScriptFinder } from './registries/breakpointsSetForScriptFinder';
 import { PauseScriptLoadsToSetBPs } from './features/pauseScriptLoadsToSetBPs';
 import { BPRecipesForSourceRetriever } from './registries/bpRecipesForSourceRetriever';
+import { SourceToScriptMapper } from '../services/sourceToScriptMapper';
 
 const exportedIdentifierToClasses = new ValidatedMap<interfaces.ServiceIdentifier<any>, interfaces.Newable<any>>([
     [TYPES.IBreakpointsUpdater, BreakpointsUpdater],
@@ -33,6 +34,7 @@ const privatedentifierToClasses: IdentifierToClassPairs = [
     [PrivateTypes.HitCountBreakpointsSetter, HitCountBreakpointsSetter],
     [PrivateTypes.BreakpointsSetForScriptFinder, BreakpointsSetForScriptFinder],
     [PrivateTypes.BPRecipesForSourceRetriever, BPRecipesForSourceRetriever],
+    [PrivateTypes.SourceToScriptMapper, SourceToScriptMapper],
     [PrivateTypes.PauseScriptLoadsToSetBPs, PauseScriptLoadsToSetBPs],
     [PrivateTypes.CurrentBPRecipesForSourceRegistry, BPRsDeltaCalculatorFromStoredBPRs],
     [PrivateTypes.ExistingBPsForJustParsedScriptSetter, ExistingBPsForJustParsedScriptSetter],

@@ -62,7 +62,10 @@ export class CallFramePresentation implements IStackTracePresentationRow {
             }
 
             if (this._descriptionFormatArgs.formatOptions.line) {
-                formattedDescription += ` Line ${location.position.lineNumber}`;
+                // The description property intended for the user, so we don't care if the client uses 0-index or 1-index line number. We send this as 1-index line number always
+                const oneBasedLineNumber = location.position.lineNumber + 1;
+
+                formattedDescription += ` Line ${oneBasedLineNumber}`;
             }
         }
 

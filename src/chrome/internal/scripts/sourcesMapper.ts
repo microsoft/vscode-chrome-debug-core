@@ -10,9 +10,11 @@ import { IResourceIdentifier, parseResourceIdentifier } from '../sources/resourc
 import { IScript } from './script';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { logger } from 'vscode-debugadapter';
+import { MappedTokensInScript, NoMappedTokensInScript, IMappedTokensInScript } from '../locations/mappedTokensInScript';
+import { RangeInResource } from '../locations/rangeInScript';
 
 export interface ISourceToScriptMapper {
-    getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null;
+    getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript;
 }
 
 export interface IScriptToSourceMapper {
@@ -57,35 +59,37 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         }
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
         const range = this._rangeInSources.get(positionInSource.source.identifier);
         if (!Position.isBetween(range.start, positionInSource.position, range.end)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
             logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
-            return null;
+            return new NoMappedTokensInScript(this._script);
         }
 
-        const mappedPositionRelativeToScript = this._sourceMap.generatedPositionFor(positionInSource.source.identifier.textRepresentation,
+        const manyMappedPositionRelativeToScript = this._sourceMap.allGeneratedPositionFor(positionInSource.source.identifier.textRepresentation,
             positionInSource.position.lineNumber, positionInSource.position.columnNumber || 0);
 
-        if (mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number' && typeof mappedPositionRelativeToScript.column === 'number') {
+        const validPositions = manyMappedPositionRelativeToScript.filter(mappedPositionRelativeToScript => mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number' && typeof mappedPositionRelativeToScript.column === 'number');
 
+        const results = validPositions.map(mappedPositionRelativeToScript => {
             const scriptPositionInResource = this._script.rangeInSource.start.position;
 
             // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
-            const lineNumberRelativeToEntireResource = createLineNumber(mappedPositionRelativeToScript.line + scriptPositionInResource.lineNumber);
+            const lineNumberRelativeToEntireResource = createLineNumber(mappedPositionRelativeToScript.line! + scriptPositionInResource.lineNumber);
 
             // The columns on the first line need to be adjusted. Columns on all other lines don't need any adjustment.
-            const columnNumberRelativeToEntireResource = createColumnNumber((mappedPositionRelativeToScript.line === 0 ? scriptPositionInResource.columnNumber : 0) + mappedPositionRelativeToScript.column);
+            const columnNumberRelativeToEntireResource = createColumnNumber((mappedPositionRelativeToScript.line === 0 ? scriptPositionInResource.columnNumber : 0) + mappedPositionRelativeToScript.column!);
+            const endColumnNumberRelativeToEntireResource = createColumnNumber((mappedPositionRelativeToScript.line === 0 ? scriptPositionInResource.columnNumber : 0) + (mappedPositionRelativeToScript.lastColumn || mappedPositionRelativeToScript.column!));
 
             const position = new Position(createLineNumber(lineNumberRelativeToEntireResource), createColumnNumber(columnNumberRelativeToEntireResource));
-            const mappingResult = new LocationInScript(this._script, position);
+            const endPosition = new Position(createLineNumber(lineNumberRelativeToEntireResource), createColumnNumber(endColumnNumberRelativeToEntireResource));
+            const mappingResult = new RangeInResource<IScript>(this._script, position, endPosition);
             logger.log(`SourceMapper: ${positionInSource} mapped to script: ${mappingResult}`);
             return mappingResult;
-        } else {
-            logger.log(`SourceMapper: ${positionInSource} didn't return a valid value from the source map: ${mappedPositionRelativeToScript} so for ${this._script} it doesn't map anywhere`);
-            return null;
-        }
+        });
+
+        return new MappedTokensInScript(this._script, results);
     }
 
     public get sources(): string[] {
@@ -106,9 +110,9 @@ export class NoMappedSourcesMapper implements IMappedSourcesMapper {
         return new LocationInLoadedSource(this._script.developmentSource, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
         if (positionInSource.resource === this._script.developmentSource || positionInSource.resource === this._script.runtimeSource) {
-            return new LocationInScript(this._script, positionInSource.position);
+            return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
         } else {
             throw new Error(`This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
         }
@@ -130,8 +134,8 @@ export class UnmappedSourceMapper implements ISourceMapper {
         return new LocationInLoadedSource(this._source, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript {
-        return new LocationInScript(this._script, positionInSource.position);
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+        return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
     }
 
     public toString(): string {

@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMapConsumer, MappedPosition, NullableMappedPosition } from 'source-map';
+import { SourceMapConsumer, MappedPosition, NullableMappedPosition, NullablePosition } from 'source-map';
 import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
@@ -254,6 +254,30 @@ export class SourceMap {
                 name: null
             };
         }
+    }
+
+    public allGeneratedPositionFor(source: string, line: number, column: number): NullablePosition[] {
+        // source-map lib uses 1-indexed lines.
+        line++;
+
+        // sources in the sourcemap have been forced to file:///
+        // Convert to lowerCase so search is case insensitive
+        source = utils.pathToFileURL(source.toLowerCase(), true);
+
+        const lookupArgs = {
+            line,
+            column,
+            source,
+            bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
+        };
+
+        let positions = this._smc!.allGeneratedPositionsFor(lookupArgs);
+
+        return positions.map(position => ({
+            line: position.line !== null ? position.line - 1 : null, // Back to 0-indexed lines
+            column: position.column,
+            lastColumn: position.lastColumn
+        }));
     }
 
     public sourceContentFor(authoredSourcePath: string): string {

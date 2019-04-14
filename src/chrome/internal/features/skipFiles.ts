@@ -198,7 +198,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                         throw new Error(`Source '${s}' start not found in script.`);
                     }
 
-                    libPositions.push(pos);
+                    libPositions.push(pos.enclosingRange.start);
                     inLibRange = !inLibRange;
                 }
             }
