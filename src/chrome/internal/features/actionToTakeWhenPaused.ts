@@ -75,7 +75,7 @@ export abstract class BaseNotifyClientOfPause extends BaseActionToTakeWhenPaused
     protected readonly abstract _eventsToClientReporter: IEventsToClientReporter;
 
     public async execute(): Promise<void> {
-        this._eventsToClientReporter.sendDebuggeeIsStopped({ reason: this.reason, exception: this.exception });
+        return this._eventsToClientReporter.sendDebuggeeIsStopped({ reason: this.reason, exception: this.exception });
     }
 
     public isAutoResuming(): boolean {

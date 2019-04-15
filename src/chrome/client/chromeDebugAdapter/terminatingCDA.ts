@@ -50,7 +50,7 @@ export class TerminatingCDA extends BaseCDAState {
         await this._debuggeeLauncher.stop();
 
         this.shutdown();
-        this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');
+        await this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');
 
         return new DisconnectedCDA();
     }

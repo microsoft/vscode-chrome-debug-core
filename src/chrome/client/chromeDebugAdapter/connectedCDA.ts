@@ -60,11 +60,11 @@ export class ConnectedCDA extends BaseCDAState {
         await this._runtimeStarter.runIfWaitingForDebugger();
         this._session.sendEvent(new InitializedEvent());
 
-        this._chromeConnection.onClose(() => {
+        this._chromeConnection.onClose(async () => {
             if (!this._ignoreNextDisconnectedFromWebSocket) {
                 // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
                 // To avoid processing the same disconnect twice, we ignore the first disconnect from websocket after the client requests a disconnect
-                this.disconnect(TerminatingReason.DisconnectedFromWebsocket);
+                await this.disconnect(TerminatingReason.DisconnectedFromWebsocket);
                 this._ignoreNextDisconnectedFromWebSocket = false;
             }
         });
