@@ -222,7 +222,7 @@ export class ChromeDebugLogic {
         }
     }
 
-    public onConsoleAPICalled(event: IConsoleAPICalledEvent): void {
+    public async onConsoleAPICalled(event: IConsoleAPICalledEvent): Promise<void> {
         if (this._launchAttachArgs._suppressConsoleOutput) {
             return;
         }
@@ -230,11 +230,11 @@ export class ChromeDebugLogic {
         const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
         const stack = event.stackTrace ? stackTraceWithoutLogpointFrame(event.stackTrace) : undefined;
         if (result) {
-            this.logObjects(result.args, result.isError, stack);
+            return this.logObjects(result.args, result.isError, stack);
         }
     }
 
-    private onLogEntryAdded(entry: ILogEntry): void {
+    private async onLogEntryAdded(entry: ILogEntry): Promise<void> {
         // The Debug Console doesn't give the user a way to filter by level, just ignore 'verbose' logs
         if (entry.level === 'verbose') {
             return;
@@ -264,7 +264,7 @@ export class ChromeDebugLogic {
         const result = formatConsoleArguments(type, args, entry.stackTrace);
         const stack = entry.stackTrace;
         if (result) {
-            this.logObjects(result.args, result.isError, stack);
+            return this.logObjects(result.args, result.isError, stack);
         }
     }
 
@@ -284,17 +284,17 @@ export class ChromeDebugLogic {
                     let msg: string = objs[0].value;
                     if (isError) {
                         const stackTrace = await new FormattedExceptionParser(this._scriptsLogic, msg).parse();
-                        this._eventSender.sendExceptionThrown({ exceptionStackTrace: stackTrace, category, location });
+                        return this._eventSender.sendExceptionThrown({ exceptionStackTrace: stackTrace, category, location });
                     } else {
                         if (!msg.endsWith(clearConsoleCode)) {
                             // If this string will clear the console, don't append a \n
                             msg += '\n';
                         }
-                        this._eventSender.sendOutput({ output: msg, category, location });
+                        return this._eventSender.sendOutput({ output: msg, category, location });
                     }
                 } else {
                     const variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
-                    this._eventSender.sendOutput({ output: 'output', category, variablesReference, location });
+                    return this._eventSender.sendOutput({ output: 'output', category, variablesReference, location });
                 }
 
             })
@@ -316,7 +316,7 @@ export class ChromeDebugLogic {
                 location = stackTrace.codeFlowFrames[0].location.mappedToSource();
             }
 
-            this._eventSender.sendExceptionThrown({ exceptionStackTrace: exceptionStackTrace, category: 'stderr', location });
+            return this._eventSender.sendExceptionThrown({ exceptionStackTrace: exceptionStackTrace, category: 'stderr', location });
         })
             .catch(err => logger.error(err.toString()));
     }
@@ -324,7 +324,7 @@ export class ChromeDebugLogic {
     /**
      * For backcompat, also listen to Console.messageAdded, only if it looks like the old format.
      */
-    protected onMessageAdded(params: any): void {
+    protected async onMessageAdded(params: any): Promise<void> {
         // message.type is undefined when Runtime.consoleAPICalled is being sent
         if (params && params.message && params.message.type) {
             const onConsoleAPICalledParams: IConsoleAPICalledEvent = {
@@ -334,7 +334,7 @@ export class ChromeDebugLogic {
                 stackTrace: params.message.stack,
                 executionContextId: 1
             };
-            this.onConsoleAPICalled(onConsoleAPICalledParams);
+            await this.onConsoleAPICalled(onConsoleAPICalledParams);
         }
     }
 

@@ -76,7 +76,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
-    public sendOutput(params: IOutputParameters): void {
+    public async sendOutput(params: IOutputParameters) {
         const event = new OutputEvent(params.output, params.category) as DebugProtocol.OutputEvent;
 
         if (params.variablesReference) {
@@ -84,7 +84,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         }
 
         if (params.location) {
-            this._locationInSourceToClientConverter.toLocationInSource(params.location, event.body);
+            await this._locationInSourceToClientConverter.toLocationInSource(params.location, event.body);
         }
 
         this._session.sendEvent(event);

@@ -35,13 +35,15 @@ export class NotifyClientOfLoadedSources {
     /**
      * e.g. the target navigated
      */
-    protected onExecutionContextsCleared(): void {
+    protected async onExecutionContextsCleared() {
+        let sourceEvents = [];
         for (const script of this._notifiedSourceByIdentifier.values()) {
-            this.sendLoadedSourceEvent(script, 'removed');
+            sourceEvents.push(this.sendLoadedSourceEvent(script, 'removed'));
         }
+        return Promise.all(sourceEvents);
     }
 
-    protected sendLoadedSourceEvent(source: ILoadedSource, loadedSourceEventReason: LoadedSourceEventReason): void {
+    protected async sendLoadedSourceEvent(source: ILoadedSource, loadedSourceEventReason: LoadedSourceEventReason) {
         switch (loadedSourceEventReason) {
             case 'new':
             case 'changed':
@@ -67,6 +69,6 @@ export class NotifyClientOfLoadedSources {
                 telemetry.reportEvent('LoadedSourceEventError', { issue: 'Unknown reason', reason: loadedSourceEventReason });
         }
 
-        this._eventsToClientReporter.sendSourceWasLoaded({ reason: loadedSourceEventReason, source: source });
+        await this._eventsToClientReporter.sendSourceWasLoaded({ reason: loadedSourceEventReason, source: source });
     }
 }
