@@ -35,7 +35,7 @@ export class NotifyClientOfLoadedSources {
     /**
      * e.g. the target navigated
      */
-    protected async onExecutionContextsCleared() {
+    protected async onExecutionContextsCleared(): Promise<void[]> {
         let sourceEvents = [];
         for (const script of this._notifiedSourceByIdentifier.values()) {
             sourceEvents.push(this.sendLoadedSourceEvent(script, 'removed'));
@@ -43,7 +43,7 @@ export class NotifyClientOfLoadedSources {
         return Promise.all(sourceEvents);
     }
 
-    protected async sendLoadedSourceEvent(source: ILoadedSource, loadedSourceEventReason: LoadedSourceEventReason) {
+    protected async sendLoadedSourceEvent(source: ILoadedSource, loadedSourceEventReason: LoadedSourceEventReason): Promise<void> {
         switch (loadedSourceEventReason) {
             case 'new':
             case 'changed':
@@ -69,6 +69,6 @@ export class NotifyClientOfLoadedSources {
                 telemetry.reportEvent('LoadedSourceEventError', { issue: 'Unknown reason', reason: loadedSourceEventReason });
         }
 
-        await this._eventsToClientReporter.sendSourceWasLoaded({ reason: loadedSourceEventReason, source: source });
+        return this._eventsToClientReporter.sendSourceWasLoaded({ reason: loadedSourceEventReason, source: source });
     }
 }
