@@ -2019,12 +2019,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 frame.source.path = undefined;
                 frame.source.name = this.displayNameForSourceReference(frame.source.sourceReference);
             }
-
-            // Format stackframe name
-            frame.name = this.formatStackFrameName(frame, args.format);
         }));
 
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
+        stackTraceResponse.stackFrames.forEach(frame => frame.name = this.formatStackFrameName(frame, args.format));
 
         return stackTraceResponse;
     }
