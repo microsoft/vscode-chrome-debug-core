@@ -8,6 +8,7 @@ import { createURLRegexp, URLRegexp } from '../locations/subtypes';
 import { IURL } from '../sources/resourceIdentifier';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import * as utils from '../../../utils';
+import { IMappedTokensInScript } from '../locations/mappedTokensInScript';
 
 export interface IMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit>
     extends IBPRecipe<TResource, TBPActionWhenHit> {
@@ -42,8 +43,8 @@ abstract class BaseMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRege
 }
 
 export class BPRecipeInLoadedSource<TBPActionWhenHit extends IBPActionWhenHit> extends BaseMappedBPRecipe<ILoadedSource, TBPActionWhenHit>  {
-    public mappedToScript(): BPRecipeInScript[] {
-        return this.location.mappedToScript().map(location => new BPRecipeInScript(this.unmappedBPRecipe, location));
+    public tokensWhenMappedToScript(): IMappedTokensInScript[] {
+        return this.location.tokensWhenMappedToScript();
     }
 
     public withAlwaysPause(): BPRecipeInLoadedSource<AlwaysPause> {

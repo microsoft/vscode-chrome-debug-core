@@ -5,7 +5,8 @@ import { ILoadedSource, IScriptMapper, ICurrentScriptRelationshipsProvider as IS
 import { ILoadedSourceToScriptRelationship } from './loadedSourceToScriptRelationship';
 import * as _ from 'lodash';
 import { printArray } from '../../collections/printing';
-import { LocationInScript, LocationInLoadedSource } from '../locations/location';
+import { LocationInLoadedSource } from '../locations/location';
+import { IMappedTokensInScript } from '../locations/mappedTokensInScript';
 
 /**
  * Loaded Source classification:
@@ -62,9 +63,9 @@ export class IdentifiedLoadedSource<TString extends string = string> implements 
 export class ScriptMapper implements IScriptMapper {
     constructor(public readonly relationships: ILoadedSourceToScriptRelationship[]) { }
 
-    public mapToScripts(locationToMap: LocationInLoadedSource): LocationInScript[] {
-        return <LocationInScript[]>this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
-            .filter(location => location !== null);
+    public mapToScripts(locationToMap: LocationInLoadedSource): IMappedTokensInScript[] {
+        return this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
+            .filter(mappedTokensInScript => !mappedTokensInScript.isEmpty());
     }
 
     public get scripts(): IScript[] {

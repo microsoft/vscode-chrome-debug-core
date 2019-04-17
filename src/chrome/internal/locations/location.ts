@@ -11,6 +11,7 @@ import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import { IResourceIdentifier, IURL, isResourceIdentifier } from '../sources/resourceIdentifier';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as _ from 'lodash';
+import { IMappedTokensInScript } from './mappedTokensInScript';
 
 export type integer = number;
 
@@ -177,7 +178,7 @@ export class LocationInLoadedSource extends BaseLocation<ILoadedSource> {
         return this.resource;
     }
 
-    public mappedToScript(): LocationInScript[] {
+    public tokensWhenMappedToScript(): IMappedTokensInScript[] {
         return this.source.scriptMapper().mapToScripts(this);
     }
 }

@@ -8,7 +8,8 @@ import { determineOrderingOfStrings } from '../../collections/utilities';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import { IdentifiedLoadedSource } from './identifiedLoadedSource';
 import { ISourceMapper } from '../scripts/sourcesMapper';
-import { LocationInScript, LocationInLoadedSource } from '../locations/location';
+import { LocationInLoadedSource } from '../locations/location';
+import { IMappedTokensInScript } from '../locations/mappedTokensInScript';
 
 /**
  * This interface represents a source or text that is related to a script that the debuggee is executing. The text can be the contents of the script itself,
@@ -50,7 +51,7 @@ export class ScriptAndSourceMapper {
 
 export interface IScriptMapper {
     readonly scripts: IScript[];
-    mapToScripts(position: LocationInLoadedSource): LocationInScript[];
+    mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript[];
 }
 
 export enum SourceScriptRelationship {

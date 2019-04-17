@@ -3,16 +3,18 @@
  *--------------------------------------------------------*/
 
 import { createColumnNumber, createLineNumber } from '../locations/subtypes';
-import { SourceMap, SourceRange } from '../../../sourceMaps/sourceMap';
+import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { LocationInLoadedSource, LocationInScript, Position } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IResourceIdentifier, parseResourceIdentifier } from '../sources/resourceIdentifier';
 import { IScript } from './script';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { logger } from 'vscode-debugadapter';
+import { MappedTokensInScript, NoMappedTokensInScript, IMappedTokensInScript } from '../locations/mappedTokensInScript';
+import { Range } from '../locations/rangeInScript';
 
 export interface ISourceToScriptMapper {
-    getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null;
+    getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript;
 }
 
 export interface IScriptToSourceMapper {
@@ -27,7 +29,7 @@ export interface IMappedSourcesMapper extends ISourceMapper {
 
 /** This class maps locations from a script into the sources form which it was compiled, and back. */
 export class MappedSourcesMapper implements IMappedSourcesMapper {
-    private readonly _rangeInSources: IValidatedMap<IResourceIdentifier, SourceRange>;
+    private readonly _rangeInSources: IValidatedMap<IResourceIdentifier, Range>;
 
     constructor(private readonly _script: IScript, private readonly _sourceMap: SourceMap) {
         this._rangeInSources = this._sourceMap.rangesInSources();
@@ -57,35 +59,66 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         }
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript | null {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+        // TODO: getPositionInSource and getPositionInScript are too difficult to follow right now. Refactor them into something easier to follow
+
         const range = this._rangeInSources.get(positionInSource.source.identifier);
         if (!Position.isBetween(range.start, positionInSource.position, range.end)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
             logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
-            return null;
+            return new NoMappedTokensInScript(this._script);
         }
 
-        const mappedPositionRelativeToScript = this._sourceMap.generatedPositionFor(positionInSource.source.identifier.textRepresentation,
-            positionInSource.position.lineNumber, positionInSource.position.columnNumber || 0);
+        const manyMappedPositionRelativeToScript = this._sourceMap.allGeneratedPositionFor(positionInSource.source.identifier.textRepresentation,
+            positionInSource.position.lineNumber, positionInSource.position.columnNumber);
 
-        if (mappedPositionRelativeToScript && typeof mappedPositionRelativeToScript.line === 'number' && typeof mappedPositionRelativeToScript.column === 'number') {
-
+        const results = manyMappedPositionRelativeToScript.map(mappedPositionRelativeToScript => {
             const scriptPositionInResource = this._script.rangeInSource.start.position;
 
             // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
-            const lineNumberRelativeToEntireResource = createLineNumber(mappedPositionRelativeToScript.line + scriptPositionInResource.lineNumber);
+            const lineNumberRelativeToEntireResource = createLineNumber(mappedPositionRelativeToScript.line! + scriptPositionInResource.lineNumber);
 
             // The columns on the first line need to be adjusted. Columns on all other lines don't need any adjustment.
-            const columnNumberRelativeToEntireResource = createColumnNumber((mappedPositionRelativeToScript.line === 0 ? scriptPositionInResource.columnNumber : 0) + mappedPositionRelativeToScript.column);
+            const columnNumberRelativeToEntireResource = createColumnNumber((
+                mappedPositionRelativeToScript.line === 0
+                    ? scriptPositionInResource.columnNumber
+                    : 0)
+                + mappedPositionRelativeToScript.column!);
+
+            let endLineNumber = 0;
+            let endColumnNumber = 0;
+
+            /**
+             * I didn't find in the documentation what are the semantics of lastColumn being null or Infinity. I'm assuming this is the correct thing to do
+             * We'll fix it if we realize it's not...
+             */
+            switch (mappedPositionRelativeToScript.lastColumn) {
+                case null: // We don't know what this means. For the moment let's arbitrarily assume this means that the range lasts for a single character
+                    endLineNumber = lineNumberRelativeToEntireResource;
+                    endColumnNumber = mappedPositionRelativeToScript.column! + 1;
+                    break;
+                case Infinity: // We assume this means up to the end of the line, so the session will end at the beginning of the next line
+                    endLineNumber = lineNumberRelativeToEntireResource + 1;
+                    endColumnNumber = 0;
+                    break;
+                default:
+                    endLineNumber = lineNumberRelativeToEntireResource;
+                    endColumnNumber = (mappedPositionRelativeToScript.line === 0
+                        ? scriptPositionInResource.columnNumber
+                        : 0) + mappedPositionRelativeToScript.lastColumn;
+            }
+
+            const endLineNumberRelativeToEntireResource = createColumnNumber(endLineNumber);
+            const endColumnNumberRelativeToEntireResource = createColumnNumber(endColumnNumber);
 
             const position = new Position(createLineNumber(lineNumberRelativeToEntireResource), createColumnNumber(columnNumberRelativeToEntireResource));
-            const mappingResult = new LocationInScript(this._script, position);
+            const endPosition = new Position(createLineNumber(endLineNumberRelativeToEntireResource), createColumnNumber(endColumnNumberRelativeToEntireResource));
+            const mappingResult = new Range(position, endPosition);
             logger.log(`SourceMapper: ${positionInSource} mapped to script: ${mappingResult}`);
             return mappingResult;
-        } else {
-            logger.log(`SourceMapper: ${positionInSource} didn't return a valid value from the source map: ${mappedPositionRelativeToScript} so for ${this._script} it doesn't map anywhere`);
-            return null;
-        }
+        });
+
+        return new MappedTokensInScript(this._script, results);
     }
 
     public get sources(): string[] {
@@ -106,9 +139,9 @@ export class NoMappedSourcesMapper implements IMappedSourcesMapper {
         return new LocationInLoadedSource(this._script.developmentSource, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
         if (positionInSource.resource === this._script.developmentSource || positionInSource.resource === this._script.runtimeSource) {
-            return new LocationInScript(this._script, positionInSource.position);
+            return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
         } else {
             throw new Error(`This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
         }
@@ -130,8 +163,8 @@ export class UnmappedSourceMapper implements ISourceMapper {
         return new LocationInLoadedSource(this._source, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): LocationInScript {
-        return new LocationInScript(this._script, positionInSource.position);
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+        return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
     }
 
     public toString(): string {

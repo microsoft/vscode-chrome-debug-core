@@ -12,5 +12,6 @@ export const PrivateTypes = {
     ExistingBPsForJustParsedScriptSetter: Symbol.for('ExistingBPsForJustParsedScriptSetter'),
     BreakpointsSetForScriptFinder: Symbol.for('BreakpointsSetForScriptFinder'),
     BPRecipesForSourceRetriever: Symbol.for('BPRecipesForSourceRetriever'),
+    SourceToScriptMapper: Symbol.for('SourceToScriptMapper'),
     DebuggeeBPRsSetForClientBPRFinder: Symbol.for('DebuggeeBPRsSetForClientBPRFinder'),
 };

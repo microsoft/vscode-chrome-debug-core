@@ -3,9 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as _ from 'lodash';
-import * as chromeUtils from '../../../chromeUtils';
 import { IDebuggeeBreakpointsSetter, IEventsConsumer } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
-import { IBreakpointFeaturesSupport } from '../../../cdtpDebuggee/features/cdtpBreakpointFeaturesSupport';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { ReasonType } from '../../../stoppedEvent';
 import { CDTPBreakpoint, CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
@@ -15,10 +13,6 @@ import { ConditionalPause, AlwaysPause } from '../bpActionWhenHit';
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { BPRecipe } from '../bpRecipe';
 import { ISource } from '../../sources/source';
-import { LocationInScript, Position } from '../../locations/location';
-import { createColumnNumber, createLineNumber } from '../../locations/subtypes';
-import { RangeInResource } from '../../locations/rangeInScript';
-import { logger } from 'vscode-debugadapter/lib/logger';
 import { asyncMap } from '../../../collections/async';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseActionToTakeWhenPaused } from '../../features/actionToTakeWhenPaused';
@@ -30,6 +24,7 @@ import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PrivateTypes } from '../diTypes';
 import { printClassDescription } from '../../../utils/printing';
 import { BPRecipeInSource } from '../bpRecipeInSource';
+import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 
 @printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
@@ -72,7 +67,6 @@ const defaultOnPausedForBreakpointCallback: OnPausedForBreakpointCallback = () =
  */
 @injectable()
 export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSetter {
-    private readonly doesTargetSupportColumnBreakpointsCached: Promise<boolean>;
     public readonly debuggeeBPRecipeAddedListeners = new Listeners<CDTPBPRecipe, void>();
     public readonly debuggeeBPRecipeRemovedListeners = new Listeners<CDTPBPRecipe, void>();
     public readonly bpRecipeFailedToBindListeners = new Listeners<BPRecipeIsUnbound, void>();
@@ -81,11 +75,10 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     public readonly withLogging = wrapWithMethodLogger(this);
 
     constructor(
-        @inject(TYPES.IBreakpointFeaturesSupport) private readonly _breakpointFeaturesSupport: IBreakpointFeaturesSupport,
         @inject(new LazyServiceIdentifer(() => PrivateTypes.DebuggeeBPRsSetForClientBPRFinder)) private readonly _bpRecipesRegistry: DebuggeeBPRsSetForClientBPRFinder,
         @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
+        @inject(PrivateTypes.SourceToScriptMapper) private readonly _sourceToScriptMapper: SourceToScriptMapper,
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler) {
-        this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints;
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
     }
 
@@ -113,17 +106,14 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
 
     public async addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, eventsConsumer: IEventsConsumer): Promise<CDTPBreakpoint[]> {
         try {
-            const bpsInScriptRecipe = bpRecipe.mappedToScript();
+            const manyBpInScriptRecipes = await this._sourceToScriptMapper.mapBPRecipe(bpRecipe);
 
-            const breakpoints = _.flatten(await asyncMap(bpsInScriptRecipe, async bpInScriptRecipe => {
-                const bestLocation = await this.considerColumnAndSelectBestBPLocation(bpInScriptRecipe.location);
-                const bpRecipeInBestLocation = bpInScriptRecipe.withLocationReplaced(bestLocation);
-
+            const breakpoints = _.flatten(await asyncMap(manyBpInScriptRecipes, async bpInScriptRecipe => {
                 const runtimeSource = bpInScriptRecipe.location.script.runtimeSource;
 
                 let breakpoints: CDTPBreakpoint[];
                 if (!runtimeSource.doesScriptHasUrl()) {
-                    breakpoints = [await this._targetBreakpoints.setBreakpoint(bpRecipeInBestLocation, eventsConsumer)];
+                    breakpoints = [await this._targetBreakpoints.setBreakpoint(bpInScriptRecipe, eventsConsumer)];
                 } else {
                     /**
                      * If the script is a local file path, we *need* to transform it into an url to be able to set the breakpoint
@@ -132,7 +122,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
                      * We transform it into a regexp anyway to add a GUID to it, so CDTP will let us add the same breakpoint/recipe two times (using different guids).
                      * That way we can always add the new breakpoints for a file, before removing the old ones (except if the script doesn't have an URL)
                      */
-                    breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpRecipeInBestLocation.mappedToUrlRegexp(), eventsConsumer);
+                    breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpInScriptRecipe.mappedToUrlRegexp(), eventsConsumer);
                 }
 
                 for (const breakpoint of breakpoints) {
@@ -156,24 +146,6 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
             await this._targetBreakpoints.removeBreakpoint(bpr);
             await this.debuggeeBPRecipeRemovedListeners.call(bpr);
         });
-    }
-
-    private async considerColumnAndSelectBestBPLocation(location: LocationInScript): Promise<LocationInScript> {
-        if (await this.doesTargetSupportColumnBreakpointsCached) {
-            const thisLineStart = new Position(location.position.lineNumber, createColumnNumber(0));
-            const nextLineStart = new Position(createLineNumber(location.position.lineNumber + 1), createColumnNumber(0));
-            const thisLineRange = new RangeInResource(location.script, thisLineStart, nextLineStart);
-
-            const possibleLocations = await this._targetBreakpoints.getPossibleBreakpoints(thisLineRange);
-
-            if (possibleLocations.length > 0) {
-                const bestLocation = chromeUtils.selectBreakpointLocation(location.position.lineNumber, location.position.columnNumber, possibleLocations);
-                logger.verbose(`PossibleBreakpoints: Best location for ${location} is ${bestLocation}`);
-                return bestLocation;
-            }
-        }
-
-        return location;
     }
 
     public toString(): string {
