@@ -4,19 +4,20 @@
 
 import { Position, Location, ScriptOrSourceOrURLOrURLRegexp, createLocation, LocationInScript } from './location';
 import { IScript } from '../scripts/script';
+import { createColumnNumber } from './subtypes';
 
 export class Range {
     public constructor(
         readonly start: Position,
-        readonly end: Position) {
-        if (start.lineNumber > end.lineNumber
-            || (start.lineNumber === end.lineNumber && start.columnNumber > end.columnNumber)) {
-            throw new Error(`Can't create a range in where the end position (${end}) happens before the start position ${start}`);
+        readonly exclusiveEnd: Position) {
+        if (start.lineNumber > exclusiveEnd.lineNumber
+            || (start.lineNumber === exclusiveEnd.lineNumber && start.columnNumber > exclusiveEnd.columnNumber)) {
+            throw new Error(`Can't create a range in where the end position (${exclusiveEnd}) happens before the start position ${start}`);
         }
     }
 
     public static at(position: Position): Range {
-        return new Range(position, position);
+        return new Range(position, new Position(position.lineNumber, createColumnNumber(position.columnNumber + 1)));
     }
 
     public static enclosingAll(manyRanges: Range[]) {
@@ -24,13 +25,17 @@ export class Range {
             throw new Error(`Can't find the enclosing range of an empty list of ranges`);
         } else {
             const firstPosition = Position.appearingFirstOf(...manyRanges.map(range => range.start));
-            const lastPosition = Position.appearingLastOf(...manyRanges.map(range => range.end));
+            const lastPosition = Position.appearingLastOf(...manyRanges.map(range => range.exclusiveEnd));
             return new Range(firstPosition, lastPosition);
         }
     }
 
+    public isEmpty(): boolean {
+        return this.start.isEquivalentTo(this.exclusiveEnd);
+    }
+
     public toString(): string {
-        return `[${this.start} to ${this.end}]`;
+        return `[${this.start} to ${this.exclusiveEnd}]`;
     }
 }
 
@@ -53,7 +58,7 @@ export class RangeInResource<TResource extends ScriptOrSourceOrURLOrURLRegexp> {
     }
 
     public get end(): Location<TResource> {
-        return createLocation(this.resource, this.range.end);
+        return createLocation(this.resource, this.range.exclusiveEnd);
     }
 
     public toString(): string {
