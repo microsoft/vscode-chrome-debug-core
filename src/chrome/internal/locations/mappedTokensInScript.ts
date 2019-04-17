@@ -1,29 +1,28 @@
-import { RangeInScript, RangeInResource } from './rangeInScript';
+import { RangeInScript, RangeInResource, Range } from './rangeInScript';
 import { IScript } from '../../..';
 import { LocationInScript } from './location';
 import { printArray } from '../../collections/printing';
 
 export interface IMappedTokensInScript {
     readonly script: IScript;
-    readonly ranges: RangeInScript[];
     readonly enclosingRange: RangeInScript;
 
     isEmpty(): boolean;
 }
 
 export class MappedTokensInScript implements IMappedTokensInScript {
-    public constructor(public readonly script: IScript, public readonly ranges: RangeInScript[]) {
-        if (this.ranges.length === 0) {
+    public constructor(public readonly script: IScript, private readonly _ranges: Range[]) {
+        if (this._ranges.length === 0) {
             throw new Error(`Expected the mapped tokens to have a non empty list of ranges where the tokens are located`);
         }
     }
 
     public static characterAt(characterLocation: LocationInScript): IMappedTokensInScript {
-        return new MappedTokensInScript(characterLocation.script, [RangeInResource.characterAt(characterLocation)]);
+        return new MappedTokensInScript(characterLocation.script, [Range.at(characterLocation.position)]);
     }
 
     public get enclosingRange(): RangeInScript {
-        return RangeInResource.enclosingAll(this.ranges);
+        return new RangeInResource(this.script, Range.enclosingAll(this._ranges));
     }
 
     public isEmpty(): boolean {
@@ -31,7 +30,7 @@ export class MappedTokensInScript implements IMappedTokensInScript {
     }
 
     public toString(): string {
-        return printArray('Mapped to script tokens at:', this.ranges);
+        return printArray('Mapped to script tokens at:', this._ranges);
     }
 }
 

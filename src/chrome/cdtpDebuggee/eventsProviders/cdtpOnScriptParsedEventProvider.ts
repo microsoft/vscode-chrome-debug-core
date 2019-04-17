@@ -184,7 +184,7 @@ abstract class ScriptCreator {
     protected scriptRange(runtimeSource: ILoadedSource<CDTPScriptUrl>) {
         const startPosition = new Position(createLineNumber(this._scriptParsedEvent.startLine), createColumnNumber(this._scriptParsedEvent.startColumn));
         const endPosition = new Position(createLineNumber(this._scriptParsedEvent.endLine), createColumnNumber(this._scriptParsedEvent.endColumn));
-        const scriptRange = new RangeInResource(runtimeSource, startPosition, endPosition);
+        const scriptRange = RangeInResource.fromPositions(runtimeSource, startPosition, endPosition);
         return scriptRange;
     }
 

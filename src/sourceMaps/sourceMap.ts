@@ -14,6 +14,7 @@ import { createLineNumber, createColumnNumber } from '../chrome/internal/locatio
 import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
 import { IValidatedMap } from '../chrome/collections/validatedMap';
+import { Range } from '../chrome/internal/locations/rangeInScript';
 
 export type MappedPosition = MappedPosition;
 
@@ -26,14 +27,10 @@ export interface ISourcePathDetails {
     startPosition: MappedPosition;
 }
 
-export class SourceRange {
-    public constructor(
-        readonly start: Position,
-        readonly end: Position) { }
-
-    public toString(): string {
-        return `[${this.start} to ${this.end}]`;
-    }
+export interface NonNullablePosition extends NullablePosition {
+    line: number;
+    column: number;
+    lastColumn: number | null;
 }
 
 export class SourceMap {
@@ -150,6 +147,7 @@ export class SourceMap {
 
         this._init = new SourceMapConsumer(sm).then(sourceMapConsumer => {
             this._smc = sourceMapConsumer;
+            this._smc.computeColumnSpans(); // So allGeneratedPositionsFor will return the last column info
         });
     }
 
@@ -256,7 +254,11 @@ export class SourceMap {
         }
     }
 
-    public allGeneratedPositionFor(source: string, line: number, column: number): NullablePosition[] {
+    private isNonNullablePosition(position: NullablePosition): position is NonNullablePosition {
+        return position.line !== null && position.column != null;
+    }
+
+    public allGeneratedPositionFor(source: string, line: number, column: number): NonNullablePosition[] {
         // source-map lib uses 1-indexed lines.
         line++;
 
@@ -272,9 +274,14 @@ export class SourceMap {
         };
 
         let positions = this._smc!.allGeneratedPositionsFor(lookupArgs);
+        const validPositions = <NonNullablePosition[]>positions.filter(p => this.isNonNullablePosition(p));
+        if (validPositions.length < positions.length) {
+            const invalidPositions = _.difference(positions, validPositions);
+            logger.log(`WARNING: Some source map positions for: ${JSON.stringify(lookupArgs)} were discarded because they weren't valid: ${JSON.stringify(invalidPositions)}`);
+        }
 
-        return positions.map(position => ({
-            line: position.line !== null ? position.line - 1 : null, // Back to 0-indexed lines
+        return validPositions.map(position => ({
+            line: position.line - 1, // Back to 0-indexed lines
             column: position.column,
             lastColumn: position.lastColumn
         }));
@@ -285,19 +292,19 @@ export class SourceMap {
         return (<any>this._smc).sourceContentFor(authoredSourcePath, /*returnNullOnMissing=*/true);
     }
 
-    public rangesInSources(): IValidatedMap<IResourceIdentifier, SourceRange> {
-        const sourceToRange = newResourceIdentifierMap<SourceRange>();
+    public rangesInSources(): IValidatedMap<IResourceIdentifier, Range> {
+        const sourceToRange = newResourceIdentifierMap<Range>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
         this._smc!.eachMapping(mapping => {
             const positionInSource = new Position(createLineNumber(mapping.originalLine), createColumnNumber(mapping.originalColumn));
             if (mapping.source) { // In source-map 0.5.7 this is null sometimes
                 const sourceIdentifier = memoizedParseResourceIdentifier(mapping.source);
-                const range = sourceToRange.getOr(sourceIdentifier, () => new SourceRange(positionInSource, positionInSource));
-                const expandedRange = new SourceRange(
+                const range = sourceToRange.getOr(sourceIdentifier, () => new Range(positionInSource, positionInSource));
+                const expandedRange = new Range(
                     Position.appearingFirstOf(range.start, positionInSource),
                     Position.appearingLastOf(range.end, positionInSource));
                 sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
-                }
+            }
         });
 
         return sourceToRange;
