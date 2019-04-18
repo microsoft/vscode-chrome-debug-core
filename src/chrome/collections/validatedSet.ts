@@ -3,6 +3,8 @@ import { breakWhileDebugging } from '../../validation';
 
 export interface IValidatedSet<K> extends Set<K> {
     addOrReplaceIfExists(key: K): this;
+    deleteIfExists(key: K): boolean;
+    toArray(): K[];
 }
 
 /** A set that throws exceptions instead of returning error codes. */
@@ -37,6 +39,10 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
         }
 
         return true;
+    }
+
+    public deleteIfExists(key: K): boolean {
+        return this._wrappedSet.delete(key);
     }
 
     public forEach(callbackfn: (key: K, sameKeyAgain: K, set: Set<K>) => void, thisArg?: any): void {
@@ -79,5 +85,9 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
 
     public toString(): string {
         return printSet('ValidatedSet', this);
+    }
+
+    public toArray(): K[] {
+        return Array.from(this);
     }
 }

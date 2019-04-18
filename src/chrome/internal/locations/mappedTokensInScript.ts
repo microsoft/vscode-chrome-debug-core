@@ -26,6 +26,10 @@ export class MappedTokensInScript implements IMappedTokensInScript {
         return new MappedTokensInScript(characterLocation.script, [Range.at(characterLocation.position)]);
     }
 
+    public static untilNextLine(characterLocation: LocationInScript): IMappedTokensInScript {
+        return new MappedTokensInScript(characterLocation.script, [Range.untilNextLine(characterLocation.position)]);
+    }
+
     public get enclosingRange(): RangeInScript {
         return new RangeInResource(this.script, Range.enclosingAll(this._ranges));
     }

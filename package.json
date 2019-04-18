@@ -28,7 +28,6 @@
     "ws": "^6.0.0"
   },
   "devDependencies": {
-    "@types/source-map": "^0.5.7",
     "@types/color": "^3.0.0",
     "@types/glob": "^5.0.35",
     "@types/lodash": "^4.14.123",
@@ -37,6 +36,7 @@
     "@types/mockery": "^1.4.29",
     "@types/node": "^8.0.58",
     "@types/semver": "^5.5.0",
+    "@types/source-map": "^0.5.7",
     "@types/ws": "^6.0.0",
     "del": "^2.2.2",
     "event-stream": "^3.3.4",

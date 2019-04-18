@@ -296,14 +296,20 @@ export class SourceMap {
         const sourceToRange = newResourceIdentifierMap<Range>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
         this._smc!.eachMapping(mapping => {
-            const positionInSource = new Position(createLineNumber(mapping.originalLine), createColumnNumber(mapping.originalColumn));
-            if (mapping.source) { // In source-map 0.5.7 this is null sometimes
+            if (typeof mapping.originalLine === 'number' && typeof mapping.originalColumn === 'number' && typeof mapping.source === 'string') {
+                // Mapping's line numbers are 1-based so we substract one (columns are 0-based)
+                const positionInSource = new Position(createLineNumber(mapping.originalLine - 1), createColumnNumber(mapping.originalColumn));
                 const sourceIdentifier = memoizedParseResourceIdentifier(mapping.source);
                 const range = sourceToRange.getOr(sourceIdentifier, () => new Range(positionInSource, positionInSource));
                 const expandedRange = new Range(
                     Position.appearingFirstOf(range.start, positionInSource),
                     Position.appearingLastOf(range.exclusiveEnd, positionInSource));
                 sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
+            } else {
+                /**
+                 * TODO: Report some telemetry. We've seen the line numbers and source be null in the Webpack scenario of our integration tests
+                 * There are probably more scenarios like these
+                 */
             }
         });
 

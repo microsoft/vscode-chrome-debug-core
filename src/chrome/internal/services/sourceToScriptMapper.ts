@@ -1,9 +1,10 @@
+import * as ChromeUtils from '../../chromeUtils';
 import { BPRecipeInLoadedSource, BPRecipeInScript } from '../breakpoints/baseMappedBPRecipe';
 import { ConditionalPause, AlwaysPause } from '../breakpoints/bpActionWhenHit';
 import { injectable, inject } from 'inversify';
 import { IBreakpointFeaturesSupport } from '../../cdtpDebuggee/features/cdtpBreakpointFeaturesSupport';
 import { LocationInScript } from '../locations/location';
-import { RangeInScript } from '../locations/rangeInScript';
+import { RangeInScript, RangeInResource } from '../locations/rangeInScript';
 import { logger } from 'vscode-debugadapter/lib/logger';
 import { IDebuggeeBreakpointsSetter } from '../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { printArray } from '../../collections/printing';
@@ -45,7 +46,15 @@ export class SourceToScriptMapper {
 
             return choosenLocation;
         } else {
-            throw new Error(`Couldn't find a suitable position to set a breakpoin in: ${range}`);
+            // TODO: Report telemetry here
+            /**
+             * If trying to search for the exact range doesn't work, expand the range to include the whole line, and try to find the first place
+             * to break just before the start of our range...
+             */
+            const lineNumber = range.start.position.lineNumber;
+            const wholeLineRange = RangeInResource.wholeLine(range.resource, lineNumber);
+            const manyPossibleLocations = await this._targetBreakpoints.getPossibleBreakpoints(wholeLineRange);
+            return ChromeUtils.selectBreakpointLocation(lineNumber, range.start.position.columnNumber, manyPossibleLocations);
         }
     }
 }
