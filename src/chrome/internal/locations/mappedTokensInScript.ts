@@ -15,6 +15,11 @@ export class MappedTokensInScript implements IMappedTokensInScript {
         if (this._ranges.length === 0) {
             throw new Error(`Expected the mapped tokens to have a non empty list of ranges where the tokens are located`);
         }
+
+        const emptyRanges = this._ranges.filter(range => range.isEmpty());
+        if (emptyRanges.length > 0) {
+            throw new Error(`Expected all the ranges of mapped tokens to have a list of non empty ranges, yet these ranges were empty: ${printArray('', emptyRanges)}`);
+        }
     }
 
     public static characterAt(characterLocation: LocationInScript): IMappedTokensInScript {

@@ -302,7 +302,7 @@ export class SourceMap {
                 const range = sourceToRange.getOr(sourceIdentifier, () => new Range(positionInSource, positionInSource));
                 const expandedRange = new Range(
                     Position.appearingFirstOf(range.start, positionInSource),
-                    Position.appearingLastOf(range.end, positionInSource));
+                    Position.appearingLastOf(range.exclusiveEnd, positionInSource));
                 sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
             }
         });

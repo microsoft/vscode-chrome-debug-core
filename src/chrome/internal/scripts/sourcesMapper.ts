@@ -63,7 +63,7 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         // TODO: getPositionInSource and getPositionInScript are too difficult to follow right now. Refactor them into something easier to follow
 
         const range = this._rangeInSources.get(positionInSource.source.identifier);
-        if (!Position.isBetween(range.start, positionInSource.position, range.end)) {
+        if (!Position.isBetween(range.start, positionInSource.position, range.exclusiveEnd)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
             logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
             return new NoMappedTokensInScript(this._script);
@@ -105,7 +105,7 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
                     endLineNumber = lineNumberRelativeToEntireResource;
                     endColumnNumber = (mappedPositionRelativeToScript.line === 0
                         ? scriptPositionInResource.columnNumber
-                        : 0) + mappedPositionRelativeToScript.lastColumn;
+                        : 0) + mappedPositionRelativeToScript.lastColumn + 1; // The ranges returned by the source map library are inclusive. The ranges we use are exlusive, so we add 1 to the column
             }
 
             const endLineNumberRelativeToEntireResource = createColumnNumber(endLineNumber);
