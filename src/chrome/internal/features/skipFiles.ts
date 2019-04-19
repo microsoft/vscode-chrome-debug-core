@@ -116,7 +116,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
 
             const newStatus = !this.shouldSkipSource(resolvedSource);
             logger.log(`Setting the skip file status for: ${resolvedSource} to ${newStatus}`);
-            this._skipFileStatuses.set(resolvedSource.identifier, newStatus);
+            this._skipFileStatuses.setAndReplaceIfExist(resolvedSource.identifier, newStatus);
 
             if (newStatus) {
                 // TODO: Verify that using targetPath works here. We need targetPath to be this.getScriptByUrl(targetPath).url

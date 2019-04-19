@@ -4,7 +4,7 @@
 
 import { Position, Location, ScriptOrSourceOrURLOrURLRegexp, createLocation, LocationInScript } from './location';
 import { IScript } from '../scripts/script';
-import { createColumnNumber } from './subtypes';
+import { createColumnNumber, createLineNumber, LineNumber } from './subtypes';
 
 export class Range {
     public constructor(
@@ -18,6 +18,10 @@ export class Range {
 
     public static at(position: Position): Range {
         return new Range(position, new Position(position.lineNumber, createColumnNumber(position.columnNumber + 1)));
+    }
+
+    public static untilNextLine(position: Position): Range {
+        return new Range(position, new Position(createLineNumber(position.lineNumber + 1), createColumnNumber(0)));
     }
 
     public static enclosingAll(manyRanges: Range[]) {
@@ -51,6 +55,15 @@ export class RangeInResource<TResource extends ScriptOrSourceOrURLOrURLRegexp> {
 
     public static characterAt(characterLocation: LocationInScript): RangeInResource<IScript> {
         return RangeInResource.fromPositions(characterLocation.script, characterLocation.position, characterLocation.position);
+    }
+
+    public static wholeLine(script: IScript, lineNumber: LineNumber): RangeInResource<IScript> {
+        const zeroColumnNumber = createColumnNumber(0);
+        const nextLineNumber = createLineNumber(lineNumber + 1);
+
+        return RangeInResource.fromPositions(script,
+            new Position(lineNumber, zeroColumnNumber),
+            new Position(nextLineNumber, zeroColumnNumber));
     }
 
     public get start(): Location<TResource> {

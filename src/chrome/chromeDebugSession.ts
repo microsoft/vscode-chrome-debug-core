@@ -13,7 +13,7 @@ import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, Telemetr
 import * as utils from '../utils';
 import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
 import { ChromeDebugAdapter } from './client/chromeDebugAdapter/chromeDebugAdapterV2';
-import { AvailableCommands, CommandText } from './client/requests';
+import { CommandText } from './client/requests';
 import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
 
 export interface IChromeDebugAdapterOpts {
@@ -124,13 +124,12 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
      * Overload dispatchRequest to the debug adapters' Promise-based methods instead of DebugSession's callback-based methods
      */
     public dispatchRequest(request: DebugProtocol.Request): Promise<void> {
-        if (AvailableCommands.has(request.command)) {
-
         // We want the request to be non-blocking, so we won't await for reportTelemetry
         return this.reportTelemetry(`ClientRequest/${request.command}`, async (reportFailure, telemetryPropertyCollector) => {
             const response: DebugProtocol.Response = new Response(request);
+
             try {
-                logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments) })`);
+                logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments)})`);
                 telemetryPropertyCollector.addTelemetryProperty('requestType', request.type);
                 response.body = await this._debugAdapter.processRequest(<CommandText>request.command, request.arguments, telemetryPropertyCollector);
                 this.sendResponse(response);
@@ -138,12 +137,9 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                 if (!this.isEvaluateRequest(request.command, e)) {
                     reportFailure(e);
                 }
-                    this.failedRequest(request.command, response, e);
-                }
-            });
-        } else {
-            throw new Error(`The client requested ${request.command} which is not a recognized command`);
-        }
+                this.failedRequest(request.command, response, e);
+            }
+        });
     }
 
     // { command: request.command, type: request.type };

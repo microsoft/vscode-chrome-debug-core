@@ -35,6 +35,11 @@ export class PausedWhileLoadingScriptToResolveBreakpoints extends BasePauseShoul
     }
 }
 
+export enum WhenWasEnabled {
+    JustEnabled,
+    AlreadyEnabled
+}
+
 /// TODO: Move this to a browser-shared package
 /**
  * Pause the scripts after they are parsed, so we have time to set all the breakpoint recipes for that script before resuming the execution,
@@ -61,9 +66,12 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
     }
 
-    public async enableIfNeccesary(): Promise<void> {
+    public async enableIfNeccesary(): Promise<WhenWasEnabled> {
         if (this._isInstrumentationEnabled === false) {
             await this.startPausingOnScriptFirstStatement();
+            return WhenWasEnabled.JustEnabled;
+        } else {
+            return WhenWasEnabled.AlreadyEnabled;
         }
     }
 

@@ -12,6 +12,12 @@ export class BidirectionalMap<Left, Right> {
     private readonly _leftToRight = new ValidatedMap<Left, Right>();
     private readonly _rightToLeft = new ValidatedMap<Right, Left>();
 
+    constructor(initialContents?: Iterable<[Left, Right]> | ReadonlyArray<[Left, Right]>) {
+        this._leftToRight = initialContents ? new ValidatedMap<Left, Right>(initialContents) :  new ValidatedMap<Left, Right>();
+        const reversed = Array.from(this._leftToRight.entries()).map(e => <[Right, Left]>[e[1], e[0]]);
+        this._rightToLeft = new ValidatedMap<Right, Left>(reversed);
+    }
+
     public clear(): void {
         this._leftToRight.clear();
         this._rightToLeft.clear();

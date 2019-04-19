@@ -96,6 +96,11 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
         return `file://${encodeURIComponent(this._localResourcePath.textRepresentation)}` as TString;
     }
 
+    public get filePathRepresentation(): string {
+        // TODO: Migrate to url.fileURLToPath after VS Code migrates to node v10.12
+        return this._localResourcePath.textRepresentation;
+    }
+
     public get canonicalized(): string {
         return this._localResourcePath.canonicalized;
     }
@@ -162,13 +167,21 @@ export class UnixLocalFilePath<TString extends string = string> extends LocalFil
 // A windows local file path
 // e.g.: C:\proj\myfile.js
 export class WindowLocalFilePath<TString extends string = string> extends LocalFilePathCommonLogic<TString> implements ILocalFilePath<TString> {
+    public constructor(textRepresentation: TString) {
+        super(WindowLocalFilePath.normalize(textRepresentation));
+    }
+
     public static isValid(path: string) {
         return path.match(/^[A-Za-z]:/);
     }
 
+    private static normalize<TString extends string>(textRepresentation: TString): TString {
+        const normalized = path.normalize(textRepresentation); // Remove ../s
+        return <TString>normalized.replace(/[\\\/]+/, '\\');
+    }
+
     protected generateCanonicalized(): string {
-        const normalized = path.normalize(this.textRepresentation); // Remove ../s
-        return normalized.toLowerCase().replace(/[\\\/]+/, '\\');
+        return this.textRepresentation.toLowerCase();
     }
 }
 

@@ -8,11 +8,12 @@ import { BPRecipeInSource } from '../bpRecipeInSource';
 import { IBPRecipeStatus } from '../bpRecipeStatus';
 import { BPRecipe } from '../bpRecipe';
 import { ISource, TYPES, ConnectedCDAConfiguration } from '../../../..';
-import { PauseScriptLoadsToSetBPs } from './pauseScriptLoadsToSetBPs';
+import { PauseScriptLoadsToSetBPs, WhenWasEnabled } from './pauseScriptLoadsToSetBPs';
 import { BreakpointsEventSystem } from './breakpointsEventSystem';
 import { BPRecipesForSourceRetriever } from '../registries/bpRecipesForSourceRetriever';
 import { ExistingBPsForJustParsedScriptSetter } from './existingBPsForJustParsedScriptSetter';
 import { IEventsConsumer, BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import { IBPActionWhenHit } from '../bpActionWhenHit';
 
 export interface ISingleBreakpointSetter {
     readonly bpRecipeStatusChangedListeners: Listeners<BPRecipeStatusChanged, void>;
@@ -73,18 +74,30 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
     public async addBPRecipe(requestedBP: BPRecipeInSource): Promise<void> {
         this._bpRecipesForSourceRetriever.bpRecipeIsBeingAdded(requestedBP);
         this.clientBPRecipeAddedListeners.call(requestedBP);
-        await requestedBP.tryResolving(async (resolvedRequestedBP) => {
-            await this._breakpointsInLoadedSource.addBreakpointAtLoadedSource(resolvedRequestedBP, this._bpRecipeWasResolvedEventsConsumer);
-        }, async () => {
+
+        await this.setAlreadyRegisteredBPRecipe(requestedBP, async () => {
             /**
              * TODO: Implement setting breakpoints using an heuristic when we cannot resolve the source
              * const existingUnboundBPs = bpsDelta.existingToLeaveAsIs.filter(bp => !this._singleBreakpointSetter.statusOfBPRecipe(bp).isVerified());
              * const requestedBPsPendingToAdd = new BPRecipesInSource(bpsDelta.resource, bpsDelta.requestedToAdd.concat(existingUnboundBPs));
              */
             if (this._isBpsWhileLoadingEnable) {
-                await this._bpsWhileLoadingLogic.enableIfNeccesary();
+                const whenWasEnabled = await this._bpsWhileLoadingLogic.enableIfNeccesary();
+                if (whenWasEnabled === WhenWasEnabled.JustEnabled) {
+                    /**
+                     * It's possible that while we were enabling the pause while loading logic a script got parsed for this BP Recipe,
+                     * and it dodn't pause on the first line. To address that race condition, we re-check to see if we can set the bpRecipe
+                     */
+                    await this.setAlreadyRegisteredBPRecipe(requestedBP, () => { /** We don't need to do anything */ });
+                }
             }
         });
+    }
+
+    private async setAlreadyRegisteredBPRecipe(requestedBP: BPRecipeInSource<IBPActionWhenHit>, whenNotResolvedAction: () => void): Promise<void> {
+        await requestedBP.tryResolving(async (resolvedRequestedBP) => {
+            await this._breakpointsInLoadedSource.addBreakpointAtLoadedSource(resolvedRequestedBP, this._bpRecipeWasResolvedEventsConsumer);
+        }, whenNotResolvedAction);
     }
 
     public async removeBPRecipe(clientBPRecipe: BPRecipe<ISource>): Promise<void> {
