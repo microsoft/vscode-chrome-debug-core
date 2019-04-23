@@ -1,13 +1,48 @@
 const { series } = require('gulp');
 const del = require('del');
+const { exec } = require('child_process');
 const run = require('gulp-run-command').default;
-const fs = require('fs');
+
+const CHROME_DEBUG_V2_PATH = './vscode-chrome-debug';
+const CHROME_DEBUG_ZIP_PATH = './vscode-chrome-debug-v2.zip';
+
+const IS_WINDOWS = (process.platform == 'win32');
+
+
+function getModifiedPathEnv() {
+    let env = process.env;
+    env.path = `C:\\Program Files\\Git\\mingw64\\bin\\;${env.path}`;
+    return env;
+}
+
+/**
+ * Run using exec for windows. This seems to solve the problems with git/paths
+ */
+function runWindows(cmd, options) {
+    return new Promise((accept, reject) => {
+        const child = exec(cmd, options, (err, _stdout, _stderr) => {
+
+            if(err)
+                reject(err);
+            else
+                accept();
+        });
+
+        child.stdout.pipe(process.stdout);
+        child.stderr.pipe(process.stderr);
+    });
+}
 
 /**
  * Run a command in the vscode-chrome-debug working directory
  */
-function runInDebug(cmd) {
-    return run(cmd, { cwd: './vscode-chrome-debug' })();
+function runInChromeDebug(cmd, options = {}) {
+    if(IS_WINDOWS) {
+        return runWindows(cmd, { cwd: CHROME_DEBUG_V2_PATH, ...options });
+    }
+    else {
+        return run(cmd, { cwd: CHROME_DEBUG_V2_PATH, ...options })();
+    }
 }
 
 /**
@@ -15,56 +50,53 @@ function runInDebug(cmd) {
  */
 function clean(done) {
     // using sync because async del doesn't report failures correctly, can can cause hangs
-    del.sync(['vscode-chrome-debug']);
+    del.sync([CHROME_DEBUG_ZIP_PATH, CHROME_DEBUG_V2_PATH]);
     done();
 }
 
 /**
  * Clone the vscode-chrome-debug project from GitHub
  */
-function clone() {
-    return run('git clone -b v2 --single-branch --depth 1 https://github.com/Microsoft/vscode-chrome-debug.git')();
+async function clone() {
+    if(IS_WINDOWS) {
+        return runWindows('C:\\Progra~1\\Git\\bin\\git.exe clone -b v2 --single-branch --depth 1 https://github.com/Microsoft/vscode-chrome-debug', { env: getModifiedPathEnv() });
+    }
+    else {
+        return run('git clone -b v2 --single-branch --depth 1 https://github.com/Microsoft/vscode-chrome-debug')();
+    }
 }
 
 /**
  * Run `npm install` on vscode-chrome-debug
  */
 function install() {
-    return runInDebug('npm install');
+    if(IS_WINDOWS)
+        return runInChromeDebug('npm install', { env: getModifiedPathEnv() });
+    else
+        return runInChromeDebug('npm install');
 }
 
 /**
  * Substitute our version of -core for the tests
  */
-function setCoreVersion(cb) {
-    const packageJsonPath = './vscode-chrome-debug/package.json';
-    const originalPackageJson = fs.readFileSync(packageJsonPath);
-    let modifiedPackageJson = JSON.parse(originalPackageJson);
-    modifiedPackageJson.dependencies['vscode-chrome-debug-core'] = '../';
-    fs.writeFileSync(packageJsonPath, JSON.stringify(modifiedPackageJson));
-    cb();
+async function linkChromeDebugCore() {
+    await run('npm link')();
+    return runInChromeDebug('npm link vscode-chrome-debug-core');
 }
 
 /**
  * Build vscode-chrome-debug
  */
 function build() {
-    return runInDebug('npm run build');
+    return runInChromeDebug('npm run build');
 }
 
 /**
  * Run the integration tests for vscode-chrome-debug
  */
 function intTest() {
-    return runInDebug('npm run allIntTest', {cwd: './vscode-chrome-debug/'});
+    return runInChromeDebug('npm run allIntTest', {cwd: './vscode-chrome-debug/'});
 }
-
-exports.clean = clean;
-exports.clone = clone;
-exports.install = install;
-exports.setCoreVersion = setCoreVersion;
-exports.build = build;
-exports.intTest = intTest;
 
 /**
  * This task will check out vscode-chrome-debug from source, modify it to use this version of -core, and run
@@ -73,8 +105,8 @@ exports.intTest = intTest;
 exports.testChromeDebug = series(
     clean,
     clone,
-    setCoreVersion,
     install,
+    linkChromeDebugCore,
     build,
     intTest
 );

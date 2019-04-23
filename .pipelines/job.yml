@@ -38,7 +38,7 @@ jobs:
       command: custom
       verbose: false
       customCommand: test
-  - task: Gulp@1
+  - task: Gulp@0
     displayName: Run Integration Tests
     inputs:
       gulpFile: gulp-test-chrome-debug.js
