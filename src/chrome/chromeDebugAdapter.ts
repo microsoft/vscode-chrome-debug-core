@@ -2082,7 +2082,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {
         let formattedName = frame.name;
-        if (formatArgs) {
+
+        if (frame.source && formatArgs) {
             if (formatArgs.module) {
                 formattedName += ` [${frame.source.name}]`;
             }
