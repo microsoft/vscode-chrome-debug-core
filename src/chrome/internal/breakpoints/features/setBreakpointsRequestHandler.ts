@@ -19,11 +19,10 @@ import { SourceResolver } from '../../sources/sourceResolver';
 import { logger } from 'vscode-debugadapter';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
-import { waitForEnd } from '../../../utils/promises';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
-    private _onFlightRequests = Promise.resolve();
+    private _onFlightRequests = Promise.resolve<unknown>(null);
 
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesResolver);
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
@@ -103,13 +102,14 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
         return CommandHandlerDeclaration.fromLiteralObject({
             setBreakpoints: args => {
                 const response = this.setBreakpoints(args);
+                const waitForResponseIgnoringFailures = response.then(() => {}, () => {});
                 /**
                  * The breakpoints gets assigned at the end of the setBreakpoints request
                  * We need to prevent BPStatusChanged from being sent while we are processing a setBreakpoints request event, because they might
                  * try to reference a breakpoint for which the client doesn't yet have an id
                  */
-                this._onFlightRequests = waitForEnd(this._onFlightRequests, response);
-                return response;
+                this._onFlightRequests = Promise.all([this._onFlightRequests, waitForResponseIgnoringFailures]); // onFlightRequests ignores failures on requests
+                return response; // The setBreakpoints failures will ve handled by our caller
             }
         });
     }
@@ -121,7 +121,9 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
          * try to reference a breakpoint for which the client doesn't yet have an id
          */
         logger.log(`Waiting for set breakpoints on flight requests`);
-        // tslint:disable-next-line: no-floating-promises
-        this._onFlightRequests.then(() => this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status }));
+
+        this._onFlightRequests.then(() => this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status }), rejection => {
+            logger.error(`Failed to send a breakpoint status update: ${rejection}`);
+        });
     }
 }
