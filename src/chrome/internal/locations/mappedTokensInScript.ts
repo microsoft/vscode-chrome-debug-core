@@ -1,7 +1,7 @@
 import { RangeInScript, RangeInResource, Range } from './rangeInScript';
-import { IScript } from '../../..';
 import { LocationInScript } from './location';
 import { printArray } from '../../collections/printing';
+import { IScript } from '../scripts/script';
 
 export interface IMappedTokensInScript {
     readonly script: IScript;

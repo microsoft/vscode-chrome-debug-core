@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMapConsumer, MappedPosition, NullableMappedPosition, NullablePosition } from 'source-map';
+import { SourceMapConsumer, MappedPosition, NullablePosition, RawSourceMap } from 'source-map';
 import * as path from 'path';
 
 import * as sourceMapUtils from './sourceMapUtils';
@@ -10,11 +10,12 @@ import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { Position } from '../chrome/internal/locations/location';
-import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
-import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { createLineNumber, createColumnNumber, LineNumber, ColumnNumber } from '../chrome/internal/locations/subtypes';
+import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier, parseResourceIdentifiers, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
 import { IValidatedMap } from '../chrome/collections/validatedMap';
 import { Range } from '../chrome/internal/locations/rangeInScript';
+import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 
 export type MappedPosition = MappedPosition;
 
@@ -22,9 +23,9 @@ export type MappedPosition = MappedPosition;
  * A pair of the original path in the sourcemap, and the full absolute path as inferred
  */
 export interface ISourcePathDetails {
-    originalPath: string;
-    inferredPath: string;
-    startPosition: MappedPosition;
+    originalPath: IResourceIdentifier;
+    inferredPath: IResourceIdentifier;
+    startPosition: IGeneratedPosition;
 }
 
 export interface NonNullablePosition extends NullablePosition {
@@ -33,186 +34,156 @@ export interface NonNullablePosition extends NullablePosition {
     lastColumn: number | null;
 }
 
-export class SourceMap {
-    private _generatedPath: string; // the generated file for this sourcemap (absolute path)
-    private _sources: string[]; // list of authored files (absolute paths)
-    private _smc: SourceMapConsumer | null = null; // the source map
-    private _authoredPathCaseMap = new Map<string, string>(); // Maintain pathCase map because VSCode is case sensitive
+export interface IAuthoredPosition {
+    source: IResourceIdentifier;
+    line: LineNumber;
+    column: ColumnNumber;
+}
 
-    private _allSourcePathDetails: ISourcePathDetails[] | undefined; // A list of all original paths from the sourcemap, and their inferred local paths
+export interface IGeneratedPosition {
+    source: IResourceIdentifier;
+    line: LineNumber;
+    column: ColumnNumber;
+}
 
-    // Original sourcemap details
-    private _originalSources: string[];
-    private _originalSourceRoot: string;
-
-    private readonly _init: Promise<void>;
+class SourcePathMappingCalculator {
+    public constructor(private _sourceMap: SourceMap, private _originalSourceRoot: string | undefined,
+        private _originalSourcesInOrder: string[], private readonly _normalizedSourcesInOrder: IResourceIdentifier[]) { }
 
     /**
      * Returns list of ISourcePathDetails for all sources in this sourcemap, sorted by their
      * positions within the sourcemap.
      */
     public get allSourcePathDetails(): ISourcePathDetails[] {
-        if (!this._allSourcePathDetails) {
-            // Lazy compute because the source-map lib handles the bulk of the sourcemap parsing lazily, and this info
-            // is not always needed.
-            this._allSourcePathDetails = this._sources.map((inferredPath, i) => {
-                const originalSource = this._originalSources[i];
-                const originalPath = this._originalSourceRoot ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource) : originalSource;
-                return <ISourcePathDetails>{
-                    inferredPath,
-                    originalPath,
-                    startPosition: this.generatedPositionFor(inferredPath, 0, 0)
-                };
-            }).sort((a, b) => {
-                // https://github.com/Microsoft/vscode-chrome-debug/issues/353
-                if (!a.startPosition) {
-                    logger.log(`Could not map start position for: ${a.inferredPath}`);
-                    return -1;
-                } else if (!b.startPosition) {
-                    logger.log(`Could not map start position for: ${b.inferredPath}`);
-                    return 1;
-                }
+        // Lazy compute because the source-map lib handles the bulk of the sourcemap parsing lazily, and this info
+        // is not always needed.
+        return this._normalizedSourcesInOrder.map((inferredPath: IResourceIdentifier, i: number) => {
+            const originalSource = this._originalSourcesInOrder[i];
+            const originalPath = this._originalSourceRoot
+                ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource)
+                : originalSource;
+            return <ISourcePathDetails>{
+                inferredPath,
+                originalPath,
+                startPosition: this._sourceMap.generatedPositionFor(inferredPath, 0, 0)
+            };
+        }).sort((a, b) => {
+            // https://github.com/Microsoft/vscode-chrome-debug/issues/353
+            if (!a.startPosition) {
+                logger.log(`Could not map start position for: ${a.inferredPath}`);
+                return -1;
+            } else if (!b.startPosition) {
+                logger.log(`Could not map start position for: ${b.inferredPath}`);
+                return 1;
+            }
 
-                if (a.startPosition.line === b.startPosition.line) {
-                    return a.startPosition.column - b.startPosition.column;
-                } else {
-                    return a.startPosition.line - b.startPosition.line;
-                }
-            });
-        }
+            if (a.startPosition.line === b.startPosition.line) {
+                return a.startPosition.column - b.startPosition.column;
+            } else {
+                return a.startPosition.line - b.startPosition.line;
+            }
+        });
+    }
+}
 
-        return this._allSourcePathDetails;
+export class SourceMap {
+    private readonly _sourcePathMappingCalculator: SourcePathMappingCalculator;
+
+    public constructor(
+        private readonly _generatedPath: string,
+        sourceMap: RawSourceMap,
+        normalizedSourcesInOrder: IResourceIdentifier[],
+        private readonly _sources: SetUsingProjection<IResourceIdentifier, string>, // list of authored files (absolute paths)
+        private readonly _smc: SourceMapConsumer // the source map
+    ) {
+        this._sourcePathMappingCalculator = new SourcePathMappingCalculator(this, sourceMap.sourceRoot, sourceMap.sources, normalizedSourcesInOrder);
     }
 
     /**
      * generatedPath: an absolute local path or a URL
      * json: sourcemap contents as string
      */
-    public constructor(generatedPath: string, json: string, pathMapping?: IPathMapping, sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient = false) {
-        this._generatedPath = generatedPath;
-
-        const sm = JSON.parse(json);
+    public static async create(generatedPath: string, json: string, pathMapping?: IPathMapping,
+        sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient = false): Promise<SourceMap> {
+        const sourceMap: RawSourceMap = JSON.parse(json);
         logger.log(`SourceMap: creating for ${generatedPath}`);
-        logger.log(`SourceMap: sourceRoot: ${sm.sourceRoot}`);
-        if (sm.sourceRoot && sm.sourceRoot.toLowerCase() === '/source/') {
+        logger.log(`SourceMap: sourceRoot: ${sourceMap.sourceRoot}`);
+        if (sourceMap.sourceRoot && sourceMap.sourceRoot.toLowerCase() === '/source/') {
             logger.log('Warning: if you are using gulp-sourcemaps < 2.0 directly or indirectly, you may need to set sourceRoot manually in your build config, if your files are not actually under a directory called /source');
         }
-        logger.log(`SourceMap: sources: ${JSON.stringify(sm.sources)}`);
+        logger.log(`SourceMap: sources: ${JSON.stringify(sourceMap.sources)}`);
         if (pathMapping) {
             logger.log(`SourceMap: pathMapping: ${JSON.stringify(pathMapping)}`);
         }
 
         // Absolute path
-        const computedSourceRoot = sourceMapUtils.getComputedSourceRoot(sm.sourceRoot, this._generatedPath, pathMapping);
+        const computedSourceRoot = sourceMapUtils.getComputedSourceRoot(sourceMap.sourceRoot, generatedPath, pathMapping);
 
-        // Overwrite the sourcemap's sourceRoot with the version that's resolved to an absolute path,
-        // so the work above only has to be done once
-        this._originalSourceRoot = sm.sourceRoot;
-        this._originalSources = sm.sources;
-        sm.sourceRoot = null;
-
-        // sm.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
+        // sourceMap.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
         // resolve them to file:/// urls, using computedSourceRoot, to be simpler and unambiguous, since
         // it needs to look them up later in exactly the same format.
-        this._sources = sm.sources.map((sourcePath: string) => {
+        const normalizedSources = sourceMap.sources.map(sourcePath => {
             if (sourceMapPathOverrides) {
-                const fullSourceEntry = sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, sourcePath);
-                const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry, sourceMapPathOverrides, isVSClient);
-                if (fullSourceEntry !== mappedFullSourceEntry) {
-                    return utils.canonicalizeUrl(mappedFullSourceEntry);
+                const fullSourceEntry = sourceMapUtils.getFullSourceEntry(sourceMap.sourceRoot, sourcePath);
+                const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry.textRepresentation, sourceMapPathOverrides, isVSClient);
+                if (fullSourceEntry.textRepresentation !== mappedFullSourceEntry) {
+                    return mappedFullSourceEntry; // If we found a path override that applies, return the result of applying it
                 }
             }
 
-            if (sourcePath.startsWith('file://')) {
-                // strip file://
-                return utils.canonicalizeUrl(sourcePath);
-            }
-
-            if (!path.isAbsolute(sourcePath)) {
-                // Overrides not applied, use the computed sourceRoot
-                sourcePath = path.resolve(computedSourceRoot, sourcePath);
-            }
-
-            return utils.canonicalizeUrl(sourcePath);
+            return path.resolve(computedSourceRoot, sourcePath); // If no path override applies, just concatenate the source with the computed source root
         });
 
-        // Rewrite sm.sources to same as this._sources but file url with forward slashes
-        sm.sources = this._sources.map(sourceAbsPath => {
-            // Convert to file:/// url. After this, it's a file URL for an absolute path to a file on disk with forward slashes.
-            // We lowercase so authored <-> generated mapping is not case sensitive.
-            const lowerCaseSourceAbsPath = sourceAbsPath.toLowerCase();
-            this._authoredPathCaseMap.set(lowerCaseSourceAbsPath, sourceAbsPath);
-            return utils.pathToFileURL(lowerCaseSourceAbsPath, true);
-        });
+        const identifiers = parseResourceIdentifiers(normalizedSources);
+        const setOfNormalizedSources = newResourceIdentifierSet(identifiers);
 
-        this._init = new SourceMapConsumer(sm).then(sourceMapConsumer => {
-            this._smc = sourceMapConsumer;
-            this._smc.computeColumnSpans(); // So allGeneratedPositionsFor will return the last column info
-        });
+        const normalizedSourceMap = Object.assign({}, sourceMap,
+            {
+                sources: identifiers.map(i => i.canonicalized), // We replace all sources with canonicalized absolute paths
+                sourceRoot: undefined // Given that we are putting absolute paths in sources, we remove the sourceRoot to avoid applying the prefix a second time
+            });
+
+        const consumer = await new SourceMapConsumer(normalizedSourceMap);
+        consumer.computeColumnSpans(); // So allGeneratedPositionsFor will return the last column info
+        return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumer);
     }
 
-    public async init(): Promise<this> {
-        await this._init;
-        return this;
+    /**
+     * Returns list of ISourcePathDetails for all sources in this sourcemap, sorted by their
+     * positions within the sourcemap.
+     */
+    public get allSourcePathDetails(): ISourcePathDetails[] {
+        return this._sourcePathMappingCalculator.allSourcePathDetails;
     }
 
     /*
      * Return all mapped sources as absolute paths
      */
-    public get authoredSources(): string[] {
-        return this._sources;
-    }
-
-    /*
-     * The generated file of this source map.
-     */
-    public generatedPath(): string {
-        return this._generatedPath;
-    }
-
-    /*
-     * Returns true if this source map originates from the given source.
-     */
-    public doesOriginateFrom(absPath: string): boolean {
-        return this.authoredSources.some(path => path === absPath);
+    public get mappedSources(): IResourceIdentifier[] {
+        return Array.from(this._sources.keys());
     }
 
     /*
      * Finds the nearest source location for the given location in the generated file.
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
-    public authoredPositionFor(line: number, column: number): NullableMappedPosition | null {
-        // source-map lib uses 1-indexed lines.
-        line++;
-
+    public authoredPosition<T>(line: number, column: number, whenMappedAction: (position: IAuthoredPosition) => T, noMappingAction: () => T): T {
         const lookupArgs = {
-            line,
-            column,
-            bias: (<any>SourceMapConsumer).GREATEST_LOWER_BOUND
+            line: line + 1, // source-map lib uses 1-indexed lines.
+            column
         };
 
-        let position = this._smc!.originalPositionFor(lookupArgs);
-        if (!position.source) {
-            // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
-            lookupArgs.bias = (<any>SourceMapConsumer).LEAST_UPPER_BOUND;
-            position = this._smc!.originalPositionFor(lookupArgs);
-        }
+        const authoredPosition = this.tryInBothDirections(lookupArgs, args => this._smc.originalPositionFor(args));
 
-        if (position.source) {
-            // file:/// -> absolute path
-            position.source = utils.canonicalizeUrl(position.source);
-
-            // Convert back to original case
-            position.source = this._authoredPathCaseMap.get(position.source) || position.source;
-
-            // Back to 0-indexed lines
-            if (typeof position.line === 'number') {
-                position.line--;
-            }
-
-            return position;
+        if (typeof authoredPosition.source === 'string' && typeof authoredPosition.line === 'number' && typeof authoredPosition.column === 'number') {
+            const source = this._sources.get(parseResourceIdentifier(authoredPosition.source));
+            return whenMappedAction({
+                source,
+                line: createLineNumber(authoredPosition.line - 1), // Back to 0-indexed lines
+                column: createColumnNumber(authoredPosition.column)
+            });
         } else {
-            return null;
+            return noMappingAction();
         }
     }
 
@@ -220,37 +191,34 @@ export class SourceMap {
      * Finds the nearest location in the generated file for the given source location.
      * Will return a mapping on the next line, if there is no subsequent mapping on the expected line.
      */
-    public generatedPositionFor(source: string, line: number, column: number): NullableMappedPosition | null {
-        // source-map lib uses 1-indexed lines.
-        line++;
-
-        // sources in the sourcemap have been forced to file:///
-        // Convert to lowerCase so search is case insensitive
-        source = utils.pathToFileURL(source.toLowerCase(), true);
-
+    public generatedPositionFor(source: IResourceIdentifier, line: number, column: number): IGeneratedPosition {
         const lookupArgs = {
-            line,
+            line: line + 1, // source-map lib uses 1-indexed lines.
             column,
-            source,
-            bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
+            source: source.canonicalized
         };
 
-        let position = this._smc!.generatedPositionFor(lookupArgs);
-        if (position.line === null) {
-            // If it can't find a match, it returns a mapping with null props. Try looking the other direction.
-            lookupArgs.bias = (<any>SourceMapConsumer).GREATEST_LOWER_BOUND;
-            position = this._smc!.generatedPositionFor(lookupArgs);
-        }
+        const position = this.tryInBothDirections(lookupArgs, args => this._smc.generatedPositionFor(args));
 
-        if (position.line === null) {
-            return null;
-        } else {
+        if (typeof position.line === 'number' && typeof position.column === 'number') {
             return {
-                line: position.line - 1, // Back to 0-indexed lines
-                column: position.column,
-                source: this._generatedPath,
-                name: null
+                line: createLineNumber(position.line - 1), // Back to 0-indexed lines
+                column: createColumnNumber(position.column),
+                source: parseResourceIdentifier(this._generatedPath)
             };
+        } else {
+            throw new Error(`Couldn't find generated position for ${JSON.stringify(lookupArgs)}`);
+        }
+    }
+
+    private tryInBothDirections<T extends { line: number }, R extends { line: number | null }>(args: T, action: (argsWithBias: T & { bias?: number }) => R): R {
+        const goForward = Object.assign({}, args, { bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND });
+        const result = action(goForward);
+        if (typeof result.line === 'number') {
+            return result;
+        } else {
+            const goBackwards = Object.assign({}, args, { bias: (<any>SourceMapConsumer).GREATEST_LOWER_BOUND });
+            return action(goBackwards);
         }
     }
 
@@ -258,22 +226,15 @@ export class SourceMap {
         return position.line !== null && position.column != null;
     }
 
-    public allGeneratedPositionFor(source: string, line: number, column: number): NonNullablePosition[] {
-        // source-map lib uses 1-indexed lines.
-        line++;
-
-        // sources in the sourcemap have been forced to file:///
-        // Convert to lowerCase so search is case insensitive
-        source = utils.pathToFileURL(source.toLowerCase(), true);
-
+    public allGeneratedPositionFor(source: IResourceIdentifier, line: number, column: number): NonNullablePosition[] {
         const lookupArgs = {
-            line,
+            line: line + 1, // source-map lib uses 1-indexed lines.
             column,
-            source,
-            bias: (<any>SourceMapConsumer).LEAST_UPPER_BOUND
+            source: source.canonicalized
         };
 
-        let positions = this._smc!.allGeneratedPositionsFor(lookupArgs);
+        const positions = this.allGeneratedPositionsForBothDirections(lookupArgs);
+
         const validPositions = <NonNullablePosition[]>positions.filter(p => this.isNonNullablePosition(p));
         if (validPositions.length < positions.length) {
             const invalidPositions = _.difference(positions, validPositions);
@@ -287,12 +248,19 @@ export class SourceMap {
         }));
     }
 
-    public sourceContentFor(authoredSourcePath: string): string {
-        authoredSourcePath = utils.pathToFileURL(authoredSourcePath, true);
-        return (<any>this._smc).sourceContentFor(authoredSourcePath, /*returnNullOnMissing=*/true);
+    private allGeneratedPositionsForBothDirections(originalPosition: MappedPosition): NullablePosition[] {
+        const positions = this._smc.allGeneratedPositionsFor(originalPosition);
+        if (positions.length !== 0) {
+            return positions;
+        } else {
+            const position = this.tryInBothDirections(originalPosition, args => this._smc.generatedPositionFor(args));
+            return [position];
+        }
     }
 
     public rangesInSources(): IValidatedMap<IResourceIdentifier, Range> {
+        // IMPORTANT TODO: Analyze the performance of the DA for large source maps. We'll probably need to not call this._smc!.eachMapping,
+        // or call it async instead of blocking other things...
         const sourceToRange = newResourceIdentifierMap<Range>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
         this._smc!.eachMapping(mapping => {
@@ -314,5 +282,13 @@ export class SourceMap {
         });
 
         return sourceToRange;
+    }
+
+    /**
+     * We need to call this method to release the memory associated with the source-map
+     */
+    // TODO: Figure out when should we call this method, and call it. Maybe when we clear the execution context?
+    public destroy(): void {
+        this._smc.destroy();
     }
 }

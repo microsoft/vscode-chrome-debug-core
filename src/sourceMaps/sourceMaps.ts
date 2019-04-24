@@ -2,15 +2,14 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMap, ISourcePathDetails } from './sourceMap';
+import { SourceMap, ISourcePathDetails, IAuthoredPosition } from './sourceMap';
 import { SourceMapFactory } from './sourceMapFactory';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
-import { NullableMappedPosition } from 'source-map';
+import { IResourceIdentifier } from '..';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
     private _generatedPathToSourceMap = new Map<string, SourceMap>();
-    private _authoredPathToSourceMap = new Map<string, SourceMap>();
 
     private _sourceMapFactory: SourceMapFactory;
 
@@ -18,19 +17,19 @@ export class SourceMaps {
         this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): NullableMappedPosition | null {
+    public mapToAuthored(pathToGenerated: string, line: number, column: number): IAuthoredPosition | null {
         pathToGenerated = pathToGenerated.toLowerCase();
         const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
-        return sourceMap !== undefined ?
-            sourceMap.authoredPositionFor(line, column) :
-            null;
+        return sourceMap !== undefined
+            ? sourceMap.authoredPosition(line, column, position => position, () => null)
+            : null;
     }
 
-    public allMappedSources(pathToGenerated: string): string[] | null {
+    public allMappedSources(pathToGenerated: string): IResourceIdentifier[] | null {
         pathToGenerated = pathToGenerated.toLowerCase();
         const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
         return sourceMap !== undefined ?
-            sourceMap.authoredSources :
+            sourceMap.mappedSources :
             null;
     }
 
@@ -49,7 +48,6 @@ export class SourceMaps {
         const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
         if (sourceMap) {
             this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
-            sourceMap.authoredSources.forEach(authoredSource => this._authoredPathToSourceMap.set(authoredSource.toLowerCase(), sourceMap));
             return sourceMap;
         } else {
             return null;

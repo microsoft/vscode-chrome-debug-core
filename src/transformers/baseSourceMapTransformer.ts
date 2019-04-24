@@ -5,7 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { ILaunchRequestArgs, IAttachRequestArgs, IScopesResponseBody } from '../debugAdapterInterfaces';
-import { ISourcePathDetails, SourceMap } from '../sourceMaps/sourceMap';
+import { ISourcePathDetails, SourceMap, IAuthoredPosition } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
@@ -13,7 +13,7 @@ import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
-import { NullableMappedPosition } from 'source-map';
+import { IResourceIdentifier } from '..';
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -126,14 +126,14 @@ export class BaseSourceMapTransformer {
         }
     }
 
-    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<NullableMappedPosition | null> {
+    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<IAuthoredPosition | null> {
         if (!this._sourceMaps) return null;
 
         await this.wait();
         return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
     }
 
-    public async allSources(pathToGenerated: string): Promise<string[]> {
+    public async allSources(pathToGenerated: string): Promise<IResourceIdentifier[]> {
         if (!this._sourceMaps) return [];
 
         await this.wait();

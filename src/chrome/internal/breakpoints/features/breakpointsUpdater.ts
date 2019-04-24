@@ -18,12 +18,15 @@ import { HitBreakpoint } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { Synchronicity } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { logger } from 'vscode-debugadapter';
+import { Listeners } from '../../../communication/listeners';
 
 /**
  * Update the breakpoint recipes for a particular source
  */
 @injectable()
 export class BreakpointsUpdater {
+    public bpRecipeStatusChangedListeners = new Listeners<BPRecipeStatusChanged, void>();
+
     constructor(
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(PrivateTypes.CurrentBPRecipesForSourceRegistry) private readonly _clientCurrentBPRecipesRegistry: BPRsDeltaCalculatorFromStoredBPRs,
@@ -33,7 +36,7 @@ export class BreakpointsUpdater {
         this._singleBreakpointSetter.setOnPausedForBreakpointCallback(async _bpRecipes => new HitBreakpoint(this._eventsToClientReporter));
     }
 
-    protected onBPRecipeStatusChanged(statusChanged: BPRecipeStatusChanged): void {
+    protected async onBPRecipeStatusChanged(statusChanged: BPRecipeStatusChanged): Promise<void> {
         // Update the status in _currentBPRecipeStatusRetriever for future queries
         this._currentBPRecipeStatusRetriever.bpRecipeStatusUpdated(statusChanged.status);
 
@@ -43,7 +46,7 @@ export class BreakpointsUpdater {
          * If this is sync, we should also *avoid* sending this event to the client, because the breakpoint id doesn't exist yet, so the event will be invalid
          */
         if (statusChanged.changeSynchronicity === Synchronicity.Async) {
-            this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status });
+            this.bpRecipeStatusChangedListeners.call(statusChanged);
         } else {
             logger.log(`BPRecipe status changed event not sent to the client because it was sync: ${statusChanged}`);
         }

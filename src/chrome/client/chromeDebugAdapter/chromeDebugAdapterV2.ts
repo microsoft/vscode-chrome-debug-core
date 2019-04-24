@@ -10,7 +10,7 @@ import { CommandText } from '../requests';
 import { createDIContainer } from './cdaDIContainerCreator';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { TerminatingCDA } from './terminatingCDA';
-import { logger } from '../../..';
+import { logger } from 'vscode-debugadapter';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
