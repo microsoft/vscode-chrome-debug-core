@@ -16,14 +16,14 @@ const steppingRequests = {
 };
 
 export class DoNotPauseWhileSteppingSession extends BaseWrappedSession {
-    private readonly _onFlightSteppingRequests = new Set<Promise<void>>();
+    private readonly _inFlightSteppingRequests = new Set<Promise<void>>();
 
     public async dispatchRequest(request: DebugProtocol.Request): Promise<void> {
         const response = this._wrappedSession.dispatchRequest(request);
         if (this.isSteppingRequest(request)) {
             // We track the on-flight stepping requests
-            this._onFlightSteppingRequests.add(response);
-            const finallyHandler = () => { this._onFlightSteppingRequests.delete(response); };
+            this._inFlightSteppingRequests.add(response);
+            const finallyHandler = () => { this._inFlightSteppingRequests.delete(response); };
             return response.then(finallyHandler, finallyHandler);
         } else {
             return await response;
@@ -33,7 +33,7 @@ export class DoNotPauseWhileSteppingSession extends BaseWrappedSession {
     public async sendEvent(event: DebugProtocol.Event): Promise<void> {
         if (event.event === 'stopped') {
             // If this is a stopped event, we try to wait until there are no stepping requests in flight, or we timeout
-            await utils.promiseTimeout(this.waitUntilThereAreNoOnFlightSteppingRequests(), /*timeoutMs=*/300);
+            await utils.promiseTimeout(this.waitUntilThereAreNoInFlightSteppingRequests(), /*timeoutMs=*/300);
         }
 
         this._wrappedSession.sendEvent(event);
@@ -43,11 +43,11 @@ export class DoNotPauseWhileSteppingSession extends BaseWrappedSession {
         return !!(steppingRequests as any)[request.command];
     }
 
-    private async waitUntilThereAreNoOnFlightSteppingRequests(): Promise<void> {
-        while (this._onFlightSteppingRequests.size > 0) {
-            const onFlightRequests = Array.from(this._onFlightSteppingRequests.keys());
-            const noFailOnFlightRequests = onFlightRequests.map(promise => promise.catch(_ => { }));
-            await Promise.all(noFailOnFlightRequests);
+    private async waitUntilThereAreNoInFlightSteppingRequests(): Promise<void> {
+        while (this._inFlightSteppingRequests.size > 0) {
+            const inFlightRequests = Array.from(this._inFlightSteppingRequests.keys());
+            const noFailInFlightRequests = inFlightRequests.map(promise => promise.catch(_ => { }));
+            await Promise.all(noFailInFlightRequests);
             // After we waited for all the on flight requests, a new request might just have appeared, so we check and wait again if needed
         }
     }

@@ -22,7 +22,7 @@ import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
-    private _onFlightRequests = Promise.resolve<unknown>(null);
+    private _inFlightRequests = Promise.resolve<unknown>(null);
 
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesResolver);
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
@@ -108,7 +108,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
                  * We need to prevent BPStatusChanged from being sent while we are processing a setBreakpoints request event, because they might
                  * try to reference a breakpoint for which the client doesn't yet have an id
                  */
-                this._onFlightRequests = Promise.all([this._onFlightRequests, waitForResponseIgnoringFailures]); // onFlightRequests ignores failures on requests
+                this._inFlightRequests = Promise.all([this._inFlightRequests, waitForResponseIgnoringFailures]); // inFlightRequests ignores failures on requests
                 return response; // The setBreakpoints failures will ve handled by our caller
             }
         });
@@ -122,7 +122,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
          */
         logger.log(`Waiting for set breakpoints on flight requests`);
 
-        this._onFlightRequests.then(() => this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status }), rejection => {
+        this._inFlightRequests.then(() => this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status }), rejection => {
             logger.error(`Failed to send a breakpoint status update: ${rejection}`);
         });
     }
