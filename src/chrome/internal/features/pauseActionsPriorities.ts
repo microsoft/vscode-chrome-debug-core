@@ -8,12 +8,14 @@ import { HitBreakpoint, NoRecognizedBreakpoints } from '../breakpoints/features/
 import { HitStillPendingBreakpoint, PausedWhileLoadingScriptToResolveBreakpoints } from '../breakpoints/features/pauseScriptLoadsToSetBPs';
 import { ExceptionWasThrown, PromiseWasRejected } from '../exceptions/pauseOnException';
 import { HitAndSatisfiedHitCountBreakpoint, HitCountBreakpointWhenConditionWasNotSatisfied } from '../breakpoints/features/hitCountBreakpointsSetter';
-import { FinishedStepping } from '../stepping/features/syncStepping';
+import { FinishedStepping, UserPaused } from '../stepping/features/syncStepping';
 
 export type ActionToTakeWhenPausedClass = { new(...args: any[]): IActionToTakeWhenPaused };
 
 const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
-    ShouldStepInToAvoidSkippedSource, // Stepping in to avoid a skipper source takes preference over hitting breakpoints, etc...
+    ShouldStepInToAvoidSkippedSource, // Stepping in to avoid a skipped source takes preference over hitting breakpoints, even user pausing, etc...
+
+    UserPaused, // The user requesting to pause takes preferences over everything else
 
     HitAndSatisfiedHitCountBreakpoint,
     HitBreakpoint,

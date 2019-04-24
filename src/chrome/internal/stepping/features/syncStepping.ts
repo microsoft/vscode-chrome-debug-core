@@ -38,6 +38,23 @@ export class FinishedStepping extends BaseNotifyClientOfPause {
     }
 }
 
+@printClassDescription
+export class UserPaused extends BaseNotifyClientOfPause {
+    protected readonly reason = 'pause';
+
+    public constructor(
+        private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
+        protected readonly _eventsToClientReporter: IEventsToClientReporter,
+    ) {
+        super();
+    }
+
+    public async execute(): Promise<void> {
+        this._changeStatus(new CurrentlyIdle(this._changeStatus, this._eventsToClientReporter));
+        await super.execute();
+    }
+}
+
 class CurrentlyStepping implements SyncSteppingStatus {
     public constructor(
         private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
@@ -53,6 +70,20 @@ class CurrentlyStepping implements SyncSteppingStatus {
         } else {
             return new NoActionIsNeededForThisPause(this);
         }
+    }
+}
+
+class CurrentlyPausing implements SyncSteppingStatus {
+    public constructor(
+        private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
+        private readonly _eventsToClientReporter: IEventsToClientReporter) { }
+
+    public startStepping(): SyncSteppingStatus {
+        throw new Error('Cannot start stepping while the debugger is trying to pause the program');
+    }
+
+    public async onProvideActionForWhenPaused(_paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
+        return new UserPaused(this._changeStatus, this._eventsToClientReporter);
     }
 }
 
@@ -98,6 +129,7 @@ export class SyncStepping {
     }
 
     public pause(): Promise<void> {
+        this._status = new CurrentlyPausing(this.changeStatus(), this._eventsToClientReporter);
         return this._debugeeExecutionControl.pause();
     }
 

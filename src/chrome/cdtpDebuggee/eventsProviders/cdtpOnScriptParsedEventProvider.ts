@@ -171,7 +171,7 @@ abstract class ScriptCreator {
     protected abstract registerRuntimeAndDevelopmentSourcesRelationships(script: IScript): Promise<void>;
 
     private mappedSources(sourceMapper: IMappedSourcesMapper): IdentifiedLoadedSource[] {
-        return sourceMapper.sources.map((path: string) => this.obtainLoadedSource(parseResourceIdentifier(path), SourceScriptRelationship.Unknown));
+        return sourceMapper.sources.map(path => this.obtainLoadedSource(path, SourceScriptRelationship.Unknown));
     }
 
     private sourceMapper(script: IScript, sourceMap: SourceMap | null): IMappedSourcesMapper {

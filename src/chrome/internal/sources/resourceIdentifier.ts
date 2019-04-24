@@ -7,6 +7,7 @@ import { IValidatedMap } from '../../collections/validatedMap';
 import { MapUsingProjection } from '../../collections/mapUsingProjection';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as utils from '../../../utils';
+import { SetUsingProjection } from '../../collections/setUsingProjection';
 
 /**
  * Hierarchy:
@@ -249,4 +250,9 @@ export function newResourceIdentifierMap<V, TString extends string = string>(
     initialContents: Map<IResourceIdentifier<TString>, V> | Iterable<[IResourceIdentifier<TString>, V]>
         | ReadonlyArray<[IResourceIdentifier<TString>, V]> = []): IValidatedMap<IResourceIdentifier<TString>, V> {
     return new MapUsingProjection<IResourceIdentifier<TString>, V, string>(path => path.canonicalized, initialContents);
+}
+
+export function newResourceIdentifierSet<TString extends string = string>(
+    initialContents: IResourceIdentifier<TString>[] = []): SetUsingProjection<IResourceIdentifier<TString>, string> {
+    return new SetUsingProjection<IResourceIdentifier<TString>, string>(path => path.canonicalized, initialContents);
 }

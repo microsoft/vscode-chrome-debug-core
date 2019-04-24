@@ -8,6 +8,10 @@ import { printMap } from './printing';
 
 class KeyAndValue<K, V> {
     constructor(public readonly key: K, public readonly value: V) { }
+
+    public toString(): string {
+        return `${this.key}: ${this.value}`;
+    }
 }
 
 /** A map which uses a projection of the key to compare it's elements (This is equivalent to define a custom comparison criteria in other languages) */

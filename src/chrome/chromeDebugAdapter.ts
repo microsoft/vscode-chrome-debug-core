@@ -53,6 +53,7 @@ import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfig
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
 import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
+import { waitForEnd } from './utils/promises';
 
 let localize = nls.loadMessageBundle();
 
@@ -687,7 +688,7 @@ export class ChromeDebugLogic {
 
     private async waitThenDoEvaluate(expression: string, frame?: LoadedSourceCallFrame<CallFrameWithState>, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
         const waitThenEval = this._waitAfterStep.then(() => this.doEvaluate(expression, frame, extraArgs));
-        this._waitAfterStep = waitThenEval.then(() => { }, () => { }); // to Promise<void> and handle failed evals
+        this._waitAfterStep = waitForEnd(waitThenEval);
         return waitThenEval;
     }
 

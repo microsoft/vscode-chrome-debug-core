@@ -7,13 +7,15 @@ import { Listeners } from '../../../communication/listeners';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { IBPRecipeStatus } from '../bpRecipeStatus';
 import { BPRecipe } from '../bpRecipe';
-import { ISource, TYPES, ConnectedCDAConfiguration } from '../../../..';
-import { PauseScriptLoadsToSetBPs, WhenWasEnabled } from './pauseScriptLoadsToSetBPs';
+import { PauseScriptLoadsToSetBPs } from './pauseScriptLoadsToSetBPs';
 import { BreakpointsEventSystem } from './breakpointsEventSystem';
 import { BPRecipesForSourceRetriever } from '../registries/bpRecipesForSourceRetriever';
 import { ExistingBPsForJustParsedScriptSetter } from './existingBPsForJustParsedScriptSetter';
 import { IEventsConsumer, BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { IBPActionWhenHit } from '../bpActionWhenHit';
+import { TYPES } from '../../../dependencyInjection.ts/types';
+import { ConnectedCDAConfiguration } from '../../../client/chromeDebugAdapter/cdaConfiguration';
+import { ISource } from '../../sources/source';
 
 export interface ISingleBreakpointSetter {
     readonly bpRecipeStatusChangedListeners: Listeners<BPRecipeStatusChanged, void>;
@@ -58,12 +60,15 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
 
     public async install(): Promise<this> {
         await this._bpsWhileLoadingLogic.install();
-        this.configure();
+        await this.configure();
         return this;
     }
 
-    public configure(): this {
+    public async configure(): Promise<this> {
         this._isBpsWhileLoadingEnable = this._configuration.args.breakOnLoadStrategy !== 'off';
+        if (this._isBpsWhileLoadingEnable) {
+            await this._bpsWhileLoadingLogic.enableIfNeccesary();
+        }
         return this;
     }
 
@@ -81,16 +86,6 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
              * const existingUnboundBPs = bpsDelta.existingToLeaveAsIs.filter(bp => !this._singleBreakpointSetter.statusOfBPRecipe(bp).isVerified());
              * const requestedBPsPendingToAdd = new BPRecipesInSource(bpsDelta.resource, bpsDelta.requestedToAdd.concat(existingUnboundBPs));
              */
-            if (this._isBpsWhileLoadingEnable) {
-                const whenWasEnabled = await this._bpsWhileLoadingLogic.enableIfNeccesary();
-                if (whenWasEnabled === WhenWasEnabled.JustEnabled) {
-                    /**
-                     * It's possible that while we were enabling the pause while loading logic a script got parsed for this BP Recipe,
-                     * and it dodn't pause on the first line. To address that race condition, we re-check to see if we can set the bpRecipe
-                     */
-                    await this.setAlreadyRegisteredBPRecipe(requestedBP, () => { /** We don't need to do anything */ });
-                }
-            }
         });
     }
 

@@ -20,6 +20,7 @@ import { Listeners } from '../../../communication/listeners';
 import { OnPausedForBreakpointCallback } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { LocationInLoadedSource } from '../../locations/location';
+import { logger } from 'vscode-debugadapter';
 
 @printClassDescription
 export class HitAndSatisfiedHitCountBreakpoint extends BaseNotifyClientOfPause {
@@ -49,11 +50,14 @@ class HitCountBreakpointData {
     }
 
     public shouldPauseForBreakpoint(): boolean {
-        return this._shouldPauseCondition(++this._currentHitCount);
+        ++this._currentHitCount;
+        const shouldPause = this._shouldPauseCondition(this._currentHitCount);
+        logger.log(`Evaluating hit count breakpoint: ${this.hitCountBPRecipe}. Hit count: ${this._currentHitCount}. Should pause: ${shouldPause}`);
+        return shouldPause;
     }
 
     public toString(): string {
-        return `Pause when: ${this._shouldPauseCondition}, current: hits ${this._currentHitCount}`;
+        return `Pause when: ${this.hitCountBPRecipe.bpActionWhenHit.pauseOnHitCondition}, current: hits ${this._currentHitCount}`;
     }
 }
 

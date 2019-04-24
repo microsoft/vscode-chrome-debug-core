@@ -9,6 +9,8 @@ import { logger } from 'vscode-debugadapter';
 import * as chromeUtils from '../chrome/chromeUtils';
 import * as utils from '../utils';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
+import { IResourceIdentifier } from '..';
+import { parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 
 /**
  * Resolves a relative path in terms of another file
@@ -20,7 +22,7 @@ export function resolveRelativeToFile(absPath: string, relPath: string): string 
 /**
  * Determine an absolute path for the sourceRoot.
  */
-export function getComputedSourceRoot(sourceRoot: string, generatedPath: string, pathMapping: IPathMapping = {}): string {
+export function getComputedSourceRoot(sourceRoot: string | undefined, generatedPath: string, pathMapping: IPathMapping = {}): string {
     let absSourceRoot: string;
     if (sourceRoot) {
         if (sourceRoot.startsWith('file:///')) {
@@ -155,14 +157,14 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMap
     return mapPath;
 }
 
-export function getFullSourceEntry(sourceRoot: string | undefined, sourcePath: string): string {
+export function getFullSourceEntry(sourceRoot: string | undefined, sourcePath: string): IResourceIdentifier {
     if (!sourceRoot) {
-        return sourcePath;
+        return parseResourceIdentifier(sourcePath);
     }
 
     if (!sourceRoot.endsWith('/')) {
         sourceRoot += '/';
     }
 
-    return sourceRoot + sourcePath;
+    return parseResourceIdentifier(sourceRoot + sourcePath);
 }

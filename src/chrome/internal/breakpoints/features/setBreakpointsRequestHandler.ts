@@ -16,9 +16,15 @@ import { HandlesRegistry } from '../../../client/handlesRegistry';
 import { LineColTransformer } from '../../../../transformers/lineNumberTransformer';
 import { createLineNumber, createColumnNumber } from '../../locations/subtypes';
 import { SourceResolver } from '../../sources/sourceResolver';
+import { logger } from 'vscode-debugadapter';
+import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
+import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
+import { waitForEnd } from '../../../utils/promises';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
+    private _onFlightRequests = Promise.resolve();
+
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesResolver);
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
 
@@ -26,7 +32,10 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
         @inject(TYPES.IBreakpointsUpdater) protected readonly _breakpointsLogic: BreakpointsUpdater,
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
-        private readonly _sourcesResolver: SourceResolver) { }
+        @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
+        private readonly _sourcesResolver: SourceResolver) {
+        this._breakpointsLogic.bpRecipeStatusChangedListeners.add(status => this.onBPRecipeStatusChanged(status));
+    }
 
     public async setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<ISetBreakpointsResponseBody> {
         if (args.breakpoints) {
@@ -92,7 +101,27 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     public async getCommandHandlerDeclarations(): Promise<ICommandHandlerDeclaration[]> {
         await this._breakpointsLogic.install();
         return CommandHandlerDeclaration.fromLiteralObject({
-            setBreakpoints: args => this.setBreakpoints(args)
+            setBreakpoints: args => {
+                const response = this.setBreakpoints(args);
+                /**
+                 * The breakpoints gets assigned at the end of the setBreakpoints request
+                 * We need to prevent BPStatusChanged from being sent while we are processing a setBreakpoints request event, because they might
+                 * try to reference a breakpoint for which the client doesn't yet have an id
+                 */
+                this._onFlightRequests = waitForEnd(this._onFlightRequests, response);
+                return response;
+            }
         });
+    }
+
+    protected async onBPRecipeStatusChanged(statusChanged: BPRecipeStatusChanged): Promise<void> {
+        /**
+         * The breakpoints gets assigned at the end of the setBreakpoints request
+         * We need to prevent BPStatusChanged from being sent while we are processing a setBreakpoints request event, because they might
+         * try to reference a breakpoint for which the client doesn't yet have an id
+         */
+        logger.log(`Waiting for set breakpoints on flight requests`);
+        // tslint:disable-next-line: no-floating-promises
+        this._onFlightRequests.then(() => this._eventsToClientReporter.sendBPStatusChanged({ reason: 'changed', bpRecipeStatus: statusChanged.status }));
     }
 }
