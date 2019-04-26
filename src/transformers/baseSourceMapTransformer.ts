@@ -5,7 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { ILaunchRequestArgs, IAttachRequestArgs, IScopesResponseBody } from '../debugAdapterInterfaces';
-import { ISourcePathDetails, SourceMap, IAuthoredPosition } from '../sourceMaps/sourceMap';
+import { ISourcePathDetails, SourceMap } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import { logger } from 'vscode-debugadapter';
 
@@ -14,6 +14,8 @@ import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { IResourceIdentifier } from '..';
+import { LocationInLoadedSource } from '../chrome/internal/locations/location';
+import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -39,7 +41,9 @@ export class BaseSourceMapTransformer {
 
     protected _isVSClient = false;
 
-    constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
+    constructor(
+        @inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration,
+        private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         this._enableSourceMapCaching = !!configuration.args.enableSourceMapCaching;
         this.init(configuration.args);
         this.isVSClient = configuration.clientCapabilities.clientID === 'visualstudio';
@@ -54,7 +58,7 @@ export class BaseSourceMapTransformer {
         const areSourceMapsEnabled = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
         if (areSourceMapsEnabled) {
             this._enableSourceMapCaching = !!args.enableSourceMapCaching;
-            this._sourceMaps = new SourceMaps(args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
+            this._sourceMaps = new SourceMaps(this._scriptsRegistry, args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._allRuntimeScriptPaths = new Set<string>();
         }
     }
@@ -114,19 +118,19 @@ export class BaseSourceMapTransformer {
             // Only apply changes if both mappings are found
             const mappedEnd = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
             if (mappedEnd) {
-                scope.line = mappedStart.line || undefined;
+                scope.line = mappedStart.position.lineNumber || undefined;
                 if (shiftedScopeStartForward && typeof scope.line === 'number') {
                     scope.line--;
                 }
-                scope.column = mappedStart.column || undefined;
+                scope.column = mappedStart.position.columnNumber || undefined;
 
-                scope.endLine = mappedEnd.line || undefined;
-                scope.endColumn = mappedEnd.column || undefined;
+                scope.endLine = mappedEnd.position.lineNumber || undefined;
+                scope.endColumn = mappedEnd.position.columnNumber || undefined;
             }
         }
     }
 
-    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<IAuthoredPosition | null> {
+    public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<LocationInLoadedSource | null> {
         if (!this._sourceMaps) return null;
 
         await this.wait();

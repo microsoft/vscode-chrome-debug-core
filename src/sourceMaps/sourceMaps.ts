@@ -2,10 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceMap, ISourcePathDetails, IAuthoredPosition } from './sourceMap';
+import { SourceMap, ISourcePathDetails } from './sourceMap';
 import { SourceMapFactory } from './sourceMapFactory';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
-import { IResourceIdentifier } from '..';
+import { Position, LocationInLoadedSource, LocationInScript } from '../chrome/internal/locations/location';
+import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
+import { parseResourceIdentifier, IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -13,16 +16,22 @@ export class SourceMaps {
 
     private _sourceMapFactory: SourceMapFactory;
 
-    public constructor(pathMapping?: IPathMapping, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
+    public constructor(private readonly _scriptsRegistry: CDTPScriptsRegistry, pathMapping?: IPathMapping, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
         this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
     }
 
-    public mapToAuthored(pathToGenerated: string, line: number, column: number): IAuthoredPosition | null {
+    public mapToAuthored(pathToGenerated: string, line: number, column: number): LocationInLoadedSource | null {
         pathToGenerated = pathToGenerated.toLowerCase();
         const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
-        return sourceMap !== undefined
-            ? sourceMap.authoredPosition(line, column, position => position, () => null)
-            : null;
+        const scripts = this._scriptsRegistry.getScriptsByPath(parseResourceIdentifier(pathToGenerated));
+        if (scripts.length > 0) {
+            const location = new LocationInScript(scripts[0], new Position(createLineNumber(line), createColumnNumber(column)));
+            return sourceMap !== undefined
+                ? sourceMap.authoredPosition(location, position => position, () => null)
+                : null;
+        } else {
+            return null;
+        }
     }
 
     public allMappedSources(pathToGenerated: string): IResourceIdentifier[] | null {

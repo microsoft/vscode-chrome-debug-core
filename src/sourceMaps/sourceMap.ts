@@ -9,7 +9,7 @@ import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
-import { Position } from '../chrome/internal/locations/location';
+import { Position, LocationInLoadedSource, LocationInScript } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber, LineNumber, ColumnNumber } from '../chrome/internal/locations/subtypes';
 import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier, parseResourceIdentifiers, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
@@ -32,12 +32,6 @@ export interface NonNullablePosition extends NullablePosition {
     line: number;
     column: number;
     lastColumn: number | null;
-}
-
-export interface IAuthoredPosition {
-    source: IResourceIdentifier;
-    line: LineNumber;
-    column: ColumnNumber;
 }
 
 export interface IGeneratedPosition {
@@ -167,21 +161,20 @@ export class SourceMap {
      * Finds the nearest source location for the given location in the generated file.
      * Will return null instead of a mapping on the next line (different from generatedPositionFor).
      */
-    public authoredPosition<T>(line: number, column: number, whenMappedAction: (position: IAuthoredPosition) => T, noMappingAction: () => T): T {
+    public authoredPosition<T>(position: LocationInScript, whenMappedAction: (position: LocationInLoadedSource) => T, noMappingAction: () => T): T {
         const lookupArgs = {
-            line: line + 1, // source-map lib uses 1-indexed lines.
-            column
+            line: position.position.lineNumber + 1, // source-map lib uses 1-indexed lines.
+            column: position.position.columnNumber
         };
 
         const authoredPosition = this.tryInBothDirections(lookupArgs, args => this._smc.originalPositionFor(args));
 
         if (typeof authoredPosition.source === 'string' && typeof authoredPosition.line === 'number' && typeof authoredPosition.column === 'number') {
             const source = this._sources.get(parseResourceIdentifier(authoredPosition.source));
-            return whenMappedAction({
-                source,
-                line: createLineNumber(authoredPosition.line - 1), // Back to 0-indexed lines
-                column: createColumnNumber(authoredPosition.column)
-            });
+            return whenMappedAction(
+                new LocationInLoadedSource(position.script.getSource(source), new Position(
+                    createLineNumber(authoredPosition.line - 1), // Back to 0-indexed lines
+                    createColumnNumber(authoredPosition.column))));
         } else {
             return noMappingAction();
         }
@@ -226,11 +219,11 @@ export class SourceMap {
         return position.line !== null && position.column != null;
     }
 
-    public allGeneratedPositionFor(source: IResourceIdentifier, line: number, column: number): NonNullablePosition[] {
+    public allGeneratedPositionFor(positionInSource: LocationInLoadedSource): Range[] {
         const lookupArgs = {
-            line: line + 1, // source-map lib uses 1-indexed lines.
-            column,
-            source: source.canonicalized
+            line: positionInSource.position.lineNumber + 1, // source-map lib uses 1-indexed lines.
+            column: positionInSource.position.columnNumber,
+            source: positionInSource.source.identifier.canonicalized
         };
 
         const positions = this.allGeneratedPositionsForBothDirections(lookupArgs);
@@ -241,11 +234,15 @@ export class SourceMap {
             logger.log(`WARNING: Some source map positions for: ${JSON.stringify(lookupArgs)} were discarded because they weren't valid: ${JSON.stringify(invalidPositions)}`);
         }
 
-        return validPositions.map(position => ({
-            line: position.line - 1, // Back to 0-indexed lines
-            column: position.column,
-            lastColumn: position.lastColumn
-        }));
+        /**
+         * I didn't find in the documentation what are the semantics of lastColumn being null or Infinity. I'm assuming this is the correct thing to do
+         * We'll fix it if we realize it's not... if it's null, we'll replace it by position.column. If it's Infinity we assume it includes the full line
+         */
+        return validPositions.map(position => Range.acrossSingleLine(
+            createLineNumber(position.line - 1), // Back to 0-indexed lines
+            createColumnNumber(position.column),
+            createColumnNumber((position.lastColumn || position.column) + 1)) // position.lastColumn is inclusive and Range uses exclusive ranges, so we add 1
+        );
     }
 
     private allGeneratedPositionsForBothDirections(originalPosition: MappedPosition): NullablePosition[] {

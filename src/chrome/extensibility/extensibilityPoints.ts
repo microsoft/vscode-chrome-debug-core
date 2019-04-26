@@ -5,7 +5,6 @@
 import { Protocol as CDTP } from 'devtools-protocol';
 import { ChromeConnection, ITargetFilter } from '../chromeConnection';
 import { BasePathTransformer } from '../../transformers/basePathTransformer';
-import { BaseSourceMapTransformer } from '../../transformers/baseSourceMapTransformer';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { ILaunchRequestArgs, IAttachRequestArgs } from '../../debugAdapterInterfaces';
 import { interfaces } from 'inversify';
@@ -28,7 +27,6 @@ export interface IExtensibilityPoints {
 
     chromeConnection: typeof ChromeConnection;
     pathTransformer?: { new(configuration: IConnectedCDAConfiguration): BasePathTransformer };
-    sourceMapTransformer?: { new(configuration: IConnectedCDAConfiguration): BaseSourceMapTransformer };
     lineColTransformer?: { new(configuration: IConnectedCDAConfiguration): LineColTransformer };
 
     bindAdditionalComponents(diContainer: DependencyInjection): void;
@@ -44,7 +42,6 @@ export class OnlyProvideCustomLauncherExtensibilityPoints implements IExtensibil
     targetFilter?: ITargetFilter;
     chromeConnection: typeof ChromeConnection = ChromeConnection;
     pathTransformer?: new (configuration: IConnectedCDAConfiguration) => BasePathTransformer;
-    sourceMapTransformer?: new (configuration: IConnectedCDAConfiguration) => BaseSourceMapTransformer;
     lineColTransformer?: new (configuration: IConnectedCDAConfiguration) => LineColTransformer;
 
     constructor(
