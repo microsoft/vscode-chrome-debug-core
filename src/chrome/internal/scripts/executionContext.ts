@@ -1,8 +1,8 @@
-import { FrameId } from '../../cdtpDebuggee/cdtpPrimitives';
-
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import { FrameId } from '../../cdtpDebuggee/cdtpPrimitives';
 
 /**
  * This interface represents the execution context in CDTP where a script is executed. A new context is created when a page is refreshed, etc...

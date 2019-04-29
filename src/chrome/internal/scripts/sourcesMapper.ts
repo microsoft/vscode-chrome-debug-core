@@ -2,7 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { createColumnNumber, createLineNumber } from '../locations/subtypes';
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { LocationInLoadedSource, LocationInScript, Position } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
@@ -12,6 +11,8 @@ import { IValidatedMap } from '../../collections/validatedMap';
 import { logger } from 'vscode-debugadapter';
 import { MappedTokensInScript, NoMappedTokensInScript, IMappedTokensInScript } from '../locations/mappedTokensInScript';
 import { Range } from '../locations/rangeInScript';
+import { ScriptToHtmlPositionTranslator } from './scriptToHtmlPositionTranslator';
+import { HtmlToScriptPositionTranslator } from './htmlToScriptPositionTranslator';
 
 export interface ISourceToScriptMapper {
     getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript;
@@ -35,91 +36,30 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         this._rangeInSources = this._sourceMap.rangesInSources();
     }
 
-    public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource {
-        const scriptPositionInResource = this._script.rangeInSource.start.position;
+    public getPositionInSource(positionRelativeToHtml: LocationInScript): LocationInLoadedSource {
+        const positionRelativeToScript = new HtmlToScriptPositionTranslator().toPositionRelativeToScript(this.whereScriptStartsInHtml(), positionRelativeToHtml);
 
-        // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
-        const lineNumberRelativeToScript = positionInScript.position.lineNumber - scriptPositionInResource.lineNumber;
-
-        // The columns on the first line need to be adjusted. Columns on all other lines don't need any adjustment.
-        const columnNumberRelativeToScript = (lineNumberRelativeToScript === 0 ? scriptPositionInResource.columnNumber : 0) + (positionInScript.position.columnNumber || 0);
-
-        return this._sourceMap.authoredPosition(lineNumberRelativeToScript, columnNumberRelativeToScript,
-            mappedPosition => {
-                const position = new Position(createLineNumber(mappedPosition.line), createColumnNumber(mappedPosition.column));
-                const mappedResult = new LocationInLoadedSource(positionInScript.script.getSource(mappedPosition.source), position);
-                logger.log(`SourceMapper: ${positionInScript} mapped to source: ${mappedResult}`);
-                return mappedResult;
-            },
-            () => {
+        return this._sourceMap.authoredPosition(positionRelativeToScript, mappedResult => mappedResult, () => {
                 // If we couldn't map it, return the location in the development source
-                const mappedResult = new LocationInLoadedSource(positionInScript.script.developmentSource, positionInScript.position);
-                logger.log(`SourceMapper: ${positionInScript} couldn't be mapped to source so we'll return the development location: ${mappedResult}`);
-                return mappedResult;
+                return new LocationInLoadedSource(positionRelativeToHtml.script.developmentSource, positionRelativeToHtml.position);
             });
     }
 
     public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
-        // TODO: getPositionInSource and getPositionInScript are too difficult to follow right now. Refactor them into something easier to follow
-
-        const range = this._rangeInSources.get(positionInSource.source.identifier);
-        if (!Position.isBetween(range.start, positionInSource.position, range.exclusiveEnd)) {
+        if (!this.canPositionPotentiallyHaveMappings(positionInSource)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
             logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
             return new NoMappedTokensInScript(this._script);
         }
 
-        const manyMappedPositionRelativeToScript = this._sourceMap.allGeneratedPositionFor(positionInSource.source.identifier,
-            positionInSource.position.lineNumber, positionInSource.position.columnNumber);
-        logger.log(`SourceMapperDebugger: For ${positionInSource} we got: ${JSON.stringify(manyMappedPositionRelativeToScript)}`);
+        const manyPositionsInScripts = this._sourceMap.allGeneratedPositionFor(positionInSource); // All the tokens where positionInSource maps to, relative to the script itself
 
-        const results = manyMappedPositionRelativeToScript.map(mappedPositionRelativeToScript => {
-            const scriptPositionInResource = this._script.rangeInSource.start.position;
+        // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
+        const tokenRanges = new ScriptToHtmlPositionTranslator().toManyRangesRelativeToHtml(this.whereScriptStartsInHtml(), manyPositionsInScripts);
 
-            // All the lines need to be adjusted by the relative position of the script in the resource (in an .html if the script starts in line 20, the first line is 20 rather than 0)
-            const lineNumberRelativeToEntireResource = createLineNumber(mappedPositionRelativeToScript.line! + scriptPositionInResource.lineNumber);
-
-            // The columns on the first line need to be adjusted. Columns on all other lines don't need any adjustment.
-            const columnNumberRelativeToEntireResource = createColumnNumber((
-                mappedPositionRelativeToScript.line === 0
-                    ? scriptPositionInResource.columnNumber
-                    : 0)
-                + mappedPositionRelativeToScript.column!);
-
-            let endLineNumber = 0;
-            let endColumnNumber = 0;
-
-            /**
-             * I didn't find in the documentation what are the semantics of lastColumn being null or Infinity. I'm assuming this is the correct thing to do
-             * We'll fix it if we realize it's not...
-             */
-            switch (mappedPositionRelativeToScript.lastColumn) {
-                case null: // We don't know what this means. For the moment let's arbitrarily assume this means that the range lasts for a single character
-                    endLineNumber = lineNumberRelativeToEntireResource;
-                    endColumnNumber = mappedPositionRelativeToScript.column! + 1;
-                    break;
-                case Infinity: // We assume this means up to the end of the line, so the session will end at the beginning of the next line
-                    endLineNumber = lineNumberRelativeToEntireResource + 1;
-                    endColumnNumber = 0;
-                    break;
-                default:
-                    endLineNumber = lineNumberRelativeToEntireResource;
-                    endColumnNumber = (mappedPositionRelativeToScript.line === 0
-                        ? scriptPositionInResource.columnNumber
-                        : 0) + mappedPositionRelativeToScript.lastColumn + 1; // The ranges returned by the source map library are inclusive. The ranges we use are exlusive, so we add 1 to the column
-            }
-
-            const endLineNumberRelativeToEntireResource = createColumnNumber(endLineNumber);
-            const endColumnNumberRelativeToEntireResource = createColumnNumber(endColumnNumber);
-
-            const position = new Position(createLineNumber(lineNumberRelativeToEntireResource), createColumnNumber(columnNumberRelativeToEntireResource));
-            const endPosition = new Position(createLineNumber(endLineNumberRelativeToEntireResource), createColumnNumber(endColumnNumberRelativeToEntireResource));
-            const mappingResult = new Range(position, endPosition);
-            logger.log(`SourceMapper: ${positionInSource} mapped to script: ${mappingResult}`);
-            return mappingResult;
-        });
-
-        return new MappedTokensInScript(this._script, results);
+        const mappedTokensInScript = new MappedTokensInScript(this._script, tokenRanges);
+        logger.log(`SourceMapper: ${positionInSource} mapped to script: ${mappedTokensInScript}`);
+        return mappedTokensInScript;
     }
 
     public get sources(): IResourceIdentifier[] {
@@ -128,6 +68,19 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
 
     public toString(): string {
         return `Mapped sources mapper of ${this._script} into ${this._script.mappedSources}`;
+    }
+
+    private canPositionPotentiallyHaveMappings(positionInSource: LocationInLoadedSource): boolean {
+        const range = this._rangeInSources.get(positionInSource.source.identifier);
+        return Position.isBetween(range.start, positionInSource.position, range.exclusiveEnd);
+    }
+
+    /**
+     * If the script is an inline script in an .html file, and the inline script starts on line 20:5, then this value will be 20:5
+     * If this script is not an inline script, this value will be 0:0
+     */
+    private whereScriptStartsInHtml() {
+        return this._script.rangeInSource.start.position;
     }
 }
 

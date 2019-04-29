@@ -4,7 +4,7 @@
 
 import { Position, Location, ScriptOrSourceOrURLOrURLRegexp, createLocation, LocationInScript } from './location';
 import { IScript } from '../scripts/script';
-import { createColumnNumber, createLineNumber, LineNumber } from './subtypes';
+import { createColumnNumber, createLineNumber, LineNumber, ColumnNumber } from './subtypes';
 
 export class Range {
     public constructor(
@@ -22,6 +22,14 @@ export class Range {
 
     public static untilNextLine(position: Position): Range {
         return new Range(position, new Position(createLineNumber(position.lineNumber + 1), createColumnNumber(0)));
+    }
+
+    public static acrossSingleLine(lineNumber: LineNumber, startingColumnNumber: ColumnNumber, endingExclusiveColumnNumber: ColumnNumber): Range {
+        const exclusiveEnd = endingExclusiveColumnNumber === Infinity
+            // If the column end is infinity, we assume that means that the range includes the whole line, so the exclusive end is the start of the next line
+            ? new Position(createLineNumber(lineNumber + 1), createColumnNumber(0))
+            : new Position(lineNumber, endingExclusiveColumnNumber);
+        return new Range(new Position(lineNumber, startingColumnNumber), exclusiveEnd);
     }
 
     public static enclosingAll(manyRanges: Range[]) {
