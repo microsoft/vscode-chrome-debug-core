@@ -96,9 +96,8 @@ export class ExistingBPsForJustParsedScriptSetter {
         const bpRecepieResolved = bpRecipe.resolvedWithLoadedSource(sourceWhichMayHaveBPs);
         const runtimeLocationsWhichAlreadyHaveThisBPR = debuggeeBPRecipes.map(recipe => recipe.runtimeSourceLocation);
 
-        const manyBPRecipesInScripts = await this._sourceToScriptMapper.mapBPRecipe(bpRecepieResolved);
-        const bprInScripts = manyBPRecipesInScripts.filter(b => b.location.script === justParsedScript);
-        await this.withLogging.setBPRsInScriptIfNeeded(bprInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
+        const manyBPRecipesInScripts = await this._sourceToScriptMapper.mapBPRecipe(bpRecepieResolved, script => script === justParsedScript);
+        await this.withLogging.setBPRsInScriptIfNeeded(manyBPRecipesInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
     }
 
     private async setBPRsInScriptIfNeeded(bprInScripts: BPRecipeInScript[], runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[]) {

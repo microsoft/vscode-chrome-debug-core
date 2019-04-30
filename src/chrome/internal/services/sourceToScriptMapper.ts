@@ -10,6 +10,7 @@ import { IDebuggeeBreakpointsSetter } from '../../cdtpDebuggee/features/cdtpDebu
 import { printArray } from '../../collections/printing';
 import { asyncMap } from '../../collections/async';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { IScript } from '../scripts/script';
 
 @injectable()
 export class SourceToScriptMapper {
@@ -21,8 +22,8 @@ export class SourceToScriptMapper {
         this.doesTargetSupportColumnBreakpointsCached = this._breakpointFeaturesSupport.supportsColumnBreakpoints;
     }
 
-    public async mapBPRecipe(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>): Promise<BPRecipeInScript[]> {
-        const tokensInManyScripts = bpRecipe.location.tokensWhenMappedToScript();
+    public async mapBPRecipe(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, onlyKeepIfScript: (script: IScript) => boolean = () => true): Promise<BPRecipeInScript[]> {
+        const tokensInManyScripts = bpRecipe.location.tokensWhenMappedToScript().filter(tokens => onlyKeepIfScript(tokens.script));
         return asyncMap(tokensInManyScripts, async manyTokensInScript => {
             const bestLocation = this.doesTargetSupportColumnBreakpointsCached
                 ? await this.findBestLocationForBP(manyTokensInScript.enclosingRange)
