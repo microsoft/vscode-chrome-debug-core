@@ -44,6 +44,7 @@ jobs:
     inputs:
       gulpFile: gulp-test-chrome-debug.js
       targets: testChromeDebug
+      publishJUnitResults: true
 
   - task: Gulp@0
     displayName: gulp tslint
