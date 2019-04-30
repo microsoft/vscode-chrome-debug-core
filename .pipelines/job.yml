@@ -38,6 +38,13 @@ jobs:
       command: custom
       verbose: false
       customCommand: test
+  - task: Gulp@0
+    displayName: Run Integration Tests
+    condition: or(eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['Agent.OS'], 'Darwin'))
+    inputs:
+      gulpFile: gulp-test-chrome-debug.js
+      targets: testChromeDebug
+      publishJUnitResults: true
 
   - task: Gulp@0
     displayName: gulp tslint
