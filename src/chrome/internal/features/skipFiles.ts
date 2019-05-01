@@ -119,11 +119,11 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                 await this.resolveSkipFiles(script, script.developmentSource, script.mappedSources, /*toggling=*/true);
             }
 
-            if (newStatus && scripts.length === 1) {
+            if (newStatus) {
                 // TODO: Verify that using targetPath works here. We need targetPath to be this.getScriptByUrl(targetPath).url
-                this.makeRegexesSkip(scripts[0].url);
+                this.makeRegexesSkip(resolvedSource.url);
             } else {
-                this.makeRegexesNotSkip(scripts[0].url);
+                this.makeRegexesNotSkip(resolvedSource.url);
             }
 
             // Reprocess the latest pause event to adjust for any changes in our configuration
