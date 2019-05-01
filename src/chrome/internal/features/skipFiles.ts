@@ -108,21 +108,22 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
             logger.log(`Setting the skip file status for: ${resolvedSource} to ${newStatus}`);
             this._skipFileStatuses.setAndReplaceIfExist(resolvedSource.identifier, newStatus);
 
-            for (const script of resolvedSource.scriptMapper().scripts) {
-                if (resolvedSource === script.developmentSource && script.mappedSources.length < 0) {
+            const scripts = resolvedSource.scriptMapper().scripts;
+            for (const script of scripts) {
+                if (resolvedSource === script.developmentSource && script.mappedSources.length > 0) {
                     // Ignore toggling skip status for generated scripts with sources
                     logger.log(`Can't toggle skipFile status for ${resolvedSource} - it's a script with a sourcemap`);
                     return;
                 }
 
                 await this.resolveSkipFiles(script, script.developmentSource, script.mappedSources, /*toggling=*/true);
+            }
 
-                if (newStatus) {
-                    // TODO: Verify that using targetPath works here. We need targetPath to be this.getScriptByUrl(targetPath).url
-                    this.makeRegexesSkip(script.url);
-                } else {
-                    this.makeRegexesNotSkip(script.url);
-                }
+            if (newStatus && scripts.length === 1) {
+                // TODO: Verify that using targetPath works here. We need targetPath to be this.getScriptByUrl(targetPath).url
+                this.makeRegexesSkip(scripts[0].url);
+            } else {
+                this.makeRegexesNotSkip(scripts[0].url);
             }
 
             // Reprocess the latest pause event to adjust for any changes in our configuration
