@@ -115,7 +115,11 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     public get isAttached(): boolean { return !!this._client; }
 
     public get api(): CDTP.ProtocolApi {
-        return this._client && this._client.api();
+        if (this._client !== undefined) {
+            return this._client.api();
+        } else {
+            throw new Error(`Can't access the CDTP API when the client is not attach to a debuggee`);
+        }
     }
 
     public setTargetFilter(targetFilter?: ITargetFilter) {

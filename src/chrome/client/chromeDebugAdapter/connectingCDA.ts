@@ -27,9 +27,6 @@ export class ConnectingCDA extends BaseCDAState {
     public async connect(telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ConnectedCDA> {
         const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
         await this._chromeConnection.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
-        if (this._chromeConnection.api === undefined) {
-            throw new Error('Expected the Chrome API object to be properly initialized by now');
-        }
 
         const newState = this._connectedCDAProvider(this._chromeConnection.api);
         await newState.install();

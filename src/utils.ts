@@ -119,9 +119,6 @@ export function setCaseSensitivePaths(useCaseSensitivePaths: boolean) {
  * http://site.com/ => http://site.com
  */
 export function canonicalizeUrl(urlOrPath: string): string {
-    if (urlOrPath == null) {
-        return urlOrPath;
-    }
     urlOrPath = fileUrlToPath(urlOrPath);
 
     // Remove query params
@@ -569,7 +566,7 @@ export function firstLine(msg: string | undefined): string {
     return getLine(msg || '');
 }
 
-export function isNumber(num: number): boolean {
+export function isNumber(num: any): boolean {
     return typeof num === 'number';
 }
 

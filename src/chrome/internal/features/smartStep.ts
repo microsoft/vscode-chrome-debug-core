@@ -70,7 +70,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
 
     public async toggleSmartStep(): Promise<void> {
         this.toggleEnabled();
-        this.stepInIfOnSkippedSource();
+        await this.stepInIfOnSkippedSource();
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
