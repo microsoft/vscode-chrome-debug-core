@@ -93,10 +93,10 @@ export class ExistingBPsForJustParsedScriptSetter {
 
     private async setBPFromSourceIntoScriptIfNeeded(bpRecipe: BPRecipeInSource<IBPActionWhenHit>, justParsedScript: IScript, sourceWhichMayHaveBPs: ILoadedSource<string>) {
         const debuggeeBPRecipes = this._debuggeeBPRsSetForClientBPRFinder.findDebuggeeBPRsSet(bpRecipe);
-        const bpRecepieResolved = bpRecipe.resolvedWithLoadedSource(sourceWhichMayHaveBPs);
+        const bpRecipeResolved = bpRecipe.resolvedWithLoadedSource(sourceWhichMayHaveBPs);
         const runtimeLocationsWhichAlreadyHaveThisBPR = debuggeeBPRecipes.map(recipe => recipe.runtimeSourceLocation);
 
-        const manyBPRecipesInScripts = await this._sourceToScriptMapper.mapBPRecipe(bpRecepieResolved, script => script === justParsedScript);
+        const manyBPRecipesInScripts = await this._sourceToScriptMapper.mapBPRecipe(bpRecipeResolved, script => script === justParsedScript);
         await this.withLogging.setBPRsInScriptIfNeeded(manyBPRecipesInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
     }
 
