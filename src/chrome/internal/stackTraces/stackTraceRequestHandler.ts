@@ -73,7 +73,7 @@ export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
         } else if (stackFrame instanceof StackTraceLabel) {
             return {
                 id: this.getFrameId(stackFrame),
-                name: `[${stackFrame.description}]`,
+                name: `[ ${stackFrame.description} ]`,
                 presentationHint: 'label'
             } as DebugProtocol.StackFrame;
         } else {
