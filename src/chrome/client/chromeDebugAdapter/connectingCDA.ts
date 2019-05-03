@@ -10,6 +10,9 @@ import { ChromeConnection } from '../../chromeConnection';
 import { ConnectedCDA, ConnectedCDAProvider } from './connectedCDA';
 import { ConnectedCDAConfiguration } from './cdaConfiguration';
 import { ITelemetryPropertyCollector } from '../../../telemetry';
+import { ScenarioType } from './unconnectedCDA';
+import { IAttachRequestArgs } from '../../../debugAdapterInterfaces';
+import { logger } from 'vscode-debugadapter';
 
 export type ConnectingCDAProvider = (configuration: ConnectedCDAConfiguration) => ConnectingCDA;
 
@@ -25,8 +28,18 @@ export class ConnectingCDA extends BaseCDAState {
     }
 
     public async connect(telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ConnectedCDA> {
-        const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
-        await this._chromeConnection.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
+
+        if (this._configuration.scenarioType === ScenarioType.Launch) {
+            logger.verbose('[ConnectingCDA]: Launching debugee...');
+            const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
+            await this._chromeConnection.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
+        }
+        else if (this._configuration.scenarioType === ScenarioType.Attach) {
+            logger.verbose('[ConnectingCDA]: Attaching to an existing instance of debugee...');
+            const attachArgs = <IAttachRequestArgs>this._configuration.args;
+            await this._chromeConnection.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
+        }
+
 
         const newState = this._connectedCDAProvider(this._chromeConnection.api);
         await newState.install();
