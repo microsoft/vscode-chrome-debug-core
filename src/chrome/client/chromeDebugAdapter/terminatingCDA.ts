@@ -14,6 +14,7 @@ import { IRestartRequestArgs, ILaunchRequestArgs } from '../../../debugAdapterIn
 import { ConnectedCDAConfiguration } from './cdaConfiguration';
 import { DisconnectedCDA } from './disconnectedCDA';
 import { IDebuggeeRunner, IDebuggeeLauncher } from '../../debugeeStartup/debugeeLauncher';
+import { ScenarioType } from './unconnectedCDA';
 
 export enum TerminatingReason {
     DisconnectedFromWebsocket,
@@ -47,7 +48,11 @@ export class TerminatingCDA extends BaseCDAState {
         // TODO: Wait until we don't have any more requests in flight.
         // TODO: Figure out if we need to do the stops before or after the shutdown and terminateSession
         await this._debuggeeRunner.stop();
-        await this._debuggeeLauncher.stop();
+
+        // don't call stop on the launcher if we attached
+        if (this._configuration.scenarioType === ScenarioType.Launch) {
+            await this._debuggeeLauncher.stop();
+        }
 
         this.shutdown();
         await this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');

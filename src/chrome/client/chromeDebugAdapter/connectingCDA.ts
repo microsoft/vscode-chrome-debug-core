@@ -40,7 +40,6 @@ export class ConnectingCDA extends BaseCDAState {
             await this._chromeConnection.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
         }
 
-
         const newState = this._connectedCDAProvider(this._chromeConnection.api);
         await newState.install();
         return newState;
