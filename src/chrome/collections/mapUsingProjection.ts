@@ -50,7 +50,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
 
     public get(key: K): V {
         const keyProjected = this._projection(key);
-        const underlyingValueOrUndefined = this._projectionToKeyAndvalue.get(keyProjected);
+        const underlyingValueOrUndefined = this._projectionToKeyAndvalue.tryGetting(keyProjected);
         if (underlyingValueOrUndefined !== undefined) {
             return underlyingValueOrUndefined.value;
         } else {

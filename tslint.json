@@ -134,7 +134,7 @@
     "no-duplicate-switch-case": true,
     "no-duplicate-parameter-names": true,
     "no-exec-script": true,
-    "no-function-constructor-with-string-args": true,
+    "function-constructor": true,
     "no-function-expression": true,
     "no-http-string": false,
     "no-increment-decrement": false,
@@ -142,7 +142,7 @@
     "no-for-in": false,
     "no-multiline-string": false,
     "no-multiple-var-decl": true,
-    "no-unnecessary-bind": true,
+    "unnecessary-bind": true,
     "no-unnecessary-semicolons": true,
     "no-octal-literal": true,
     "no-regex-spaces": true,
@@ -166,7 +166,10 @@
 
 
     // tslint-eslint-rules
-    "no-irregular-whitespace": true
+    "no-irregular-whitespace": true,
+
+    "strict-boolean-expressions": false,
+    "strict-type-predicates": true
   }
 }
 

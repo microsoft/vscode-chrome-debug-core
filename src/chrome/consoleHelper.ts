@@ -155,7 +155,7 @@ function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObjec
 
         let escapedSequence = '';
         let match = cssRegex.exec(arg.value);
-        while (match != null) {
+        while (match !== null) {
             if (match.length === 3) {
                 switch (match[1]) {
                     case 'color':

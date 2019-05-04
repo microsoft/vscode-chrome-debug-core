@@ -8,7 +8,8 @@ const ts = require('gulp-typescript');
 const log = require('gulp-util').log;
 const typescript = require('typescript');
 const sourcemaps = require('gulp-sourcemaps');
-const tslint = require('gulp-tslint');
+const gulpTslint = require('gulp-tslint');
+const tslint = require('tslint');
 const merge = require('merge2');
 const debug = require('gulp-debug');
 const del = require('del');
@@ -48,7 +49,7 @@ const libs = [
 
 const lintSources = [
     'src',
-    'test'
+    // 'test' TODO: Re-enable the unit tests
 ].map(tsFolder => tsFolder + '/**/*.ts');
 
 // tsBuildSources needs to explicitly exclude testData because it's built and copied separately.
@@ -114,9 +115,10 @@ gulp.task('watch', gulp.series('clean'), () => {
 gulp.task('default', gulp.series('build'));
 
 gulp.task('tslint', () => {
+    var program = tslint.Linter.createProgram("./tsconfig.json");
       return gulp.src(lintSources, { base: '.' })
-        .pipe(tslint())
-        .pipe(tslint.report());
+        .pipe(gulpTslint({program}))
+        .pipe(gulpTslint.report());
 });
 
 gulp.task('transifex-push', gulp.series('build'), function () {

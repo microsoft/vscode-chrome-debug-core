@@ -216,7 +216,7 @@ export class SourceMap {
     }
 
     private isNonNullablePosition(position: NullablePosition): position is NonNullablePosition {
-        return position.line !== null && position.column != null;
+        return position.line !== null && position.column !== null;
     }
 
     public allGeneratedPositionFor(positionInSource: LocationInLoadedSource): Range[] {
@@ -261,6 +261,7 @@ export class SourceMap {
         const sourceToRange = newResourceIdentifierMap<Range>();
         const memoizedParseResourceIdentifier = _.memoize(parseResourceIdentifier);
         this._smc!.eachMapping(mapping => {
+            // tslint:disable-next-line: strict-type-predicates - These values are sometimes null
             if (typeof mapping.originalLine === 'number' && typeof mapping.originalColumn === 'number' && typeof mapping.source === 'string') {
                 // Mapping's line numbers are 1-based so we substract one (columns are 0-based)
                 const positionInSource = new Position(createLineNumber(mapping.originalLine - 1), createColumnNumber(mapping.originalColumn));

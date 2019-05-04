@@ -211,7 +211,7 @@ function propertyPreviewToString(prop: CDTP.Runtime.PropertyPreview): string {
 }
 
 function trimProperty(value: string): string {
-    return (value !== undefined && value !== null && value.length > PREVIEW_PROP_LENGTH) ?
+    return (value.length > PREVIEW_PROP_LENGTH) ?
         value.substr(0, PREVIEW_PROP_LENGTH) + ELLIPSIS :
         value;
 }

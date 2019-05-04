@@ -13,9 +13,8 @@ export class HitCountConditionParser {
         const patternMatches = this.HIT_COUNT_CONDITION_PATTERN.exec(this._hitCountCondition.trim());
         if (patternMatches && patternMatches.length >= 3) {
             // eval safe because of the regex, and this is only a string that the current user will type in
-            /* tslint:disable:no-function-constructor-with-string-args */
+            // tslint:disable-next-line: function-constructor
             const shouldPause: HitCountConditionFunction = <any>new Function('numHits', this.javaScriptCodeToEvaluateCondition(patternMatches));
-            /* tslint:enable:no-function-constructor-with-string-args */
             return shouldPause;
         } else {
             throw new Error(`Didn't recognize <${this._hitCountCondition}> as a valid hit count condition`);

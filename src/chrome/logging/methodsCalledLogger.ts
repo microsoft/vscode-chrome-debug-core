@@ -59,7 +59,7 @@ export class MethodsCalledLogger<T extends object> {
     public wrapped(): T {
         const handler = {
             get: <K extends keyof T>(target: T, propertyKey: K, _receiver: any) => {
-                const originalPropertyValue = target[propertyKey];
+                const originalPropertyValue: any = target[propertyKey];
                 if (typeof originalPropertyValue === 'function') {
                     return (...args: any) => {
                         try {
