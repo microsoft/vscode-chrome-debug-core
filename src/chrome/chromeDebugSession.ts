@@ -15,6 +15,8 @@ import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents,
 import { ChromeDebugAdapter } from './client/chromeDebugAdapter/chromeDebugAdapterV2';
 import { CommandText } from './client/requests';
 import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
+import { isNotEmpty, isTrue, isDefined, ifDefinedDo } from './utils/typedOperators';
+import _ = require('lodash');
 
 export interface IChromeDebugAdapterOpts {
     extensibilityPoints: IExtensibilityPoints;
@@ -34,11 +36,11 @@ export const ErrorTelemetryEventName = 'error';
 type RequestHandleError = Error | DebugProtocol.Message | IChromeError;
 
 function isMessage(e: RequestHandleError): e is DebugProtocol.Message {
-    return !!(<DebugProtocol.Message>e).format;
+    return isNotEmpty((<DebugProtocol.Message>e).format);
 }
 
 function isChromeError(e: RequestHandleError): e is IChromeError {
-    return !!(<IChromeError>e).data;
+    return isNotEmpty((<IChromeError>e).data);
 }
 
 export class ChromeDebugSession extends LoggingDebugSession implements IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter> {
@@ -64,7 +66,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         const safeGetErrDetails = (err: any) => {
             let errMsg;
             try {
-                errMsg = (err && (<Error>err).stack) ? (<Error>err).stack : JSON.stringify(err);
+                errMsg = _.get(err, 'stack', JSON.stringify(err));
             } catch (e) {
                 errMsg = 'Error while handling previous error: ' + e.stack;
             }
@@ -115,7 +117,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         // class expression!
         return class extends ChromeDebugSession {
             constructor(debuggerLinesAndColumnsStartAt1?: boolean, isServer?: boolean) {
-                super(!!debuggerLinesAndColumnsStartAt1, !!isServer, opts);
+                super(isTrue(debuggerLinesAndColumnsStartAt1), isTrue(isServer), opts);
             }
         };
     }
@@ -201,7 +203,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         if (this.isEvaluateRequest(requestType, error)) {
             // Errors from evaluate show up in the console or watches pane. Doesn't seem right
             // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
-            response.message = error ? error.message : 'Unknown error';
+            response.message = isDefined(error) ? error.message : 'Unknown error';
             response.success = false;
             this.sendResponse(response);
             return;
@@ -209,10 +211,10 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
         const errUserMsg = isChromeError(error) ?
             error.message + ': ' + error.data :
-            (error.message || error.stack);
+            _.defaultTo(error.message, error.stack);
 
         const errDiagnosticMsg = isChromeError(error) ?
-            errUserMsg : (error.stack || error.message);
+            errUserMsg : _.defaultTo(error.stack, error.message);
 
         logger.error(`Error processing "${requestType}": ${errDiagnosticMsg}`);
 
@@ -255,7 +257,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     private configureExecutionTimingsReporting(): void {
         this.reporter.subscribeTo(this.events);
         this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, args => {
-            this.reportTimingsWhileStartingUpIfNeeded(args ? args.requestedContentWasDetected : true, args && args.reasonForNotDetected);
+            this.reportTimingsWhileStartingUpIfNeeded(isDefined(args) ? args.requestedContentWasDetected : true, ifDefinedDo(args, a => a.reasonForNotDetected));
         });
 
         setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'timeout'), this._readyForUserTimeoutInMilliseconds);
@@ -273,7 +275,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         const originalLogVerbose = logger.verbose;
         try {
             logger.verbose = textToLog => {
-                if (response && response.command === 'source' && response.body && response.body.content) {
+                if (isDefined(response) && response.command === 'source' && response.body && response.body.content) {
                     const clonedResponse = Object.assign({}, response);
                     clonedResponse.body = Object.assign({}, response.body);
                     clonedResponse.body.content = '<removed script source for logs>';

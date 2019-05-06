@@ -15,6 +15,7 @@ import { ITelemetryReporter } from '../telemetry';
 import { injectable, inject } from 'inversify';
 import { TYPES } from './dependencyInjection.ts/types';
 import { ILogger } from './internal/services/logging';
+import { isNotEmpty, isDefined, hasMatches } from './utils/typedOperators';
 const localize = nls.loadMessageBundle();
 
 export class TargetVersions {
@@ -53,7 +54,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
          */
         this.telemetry.reportEvent('targetCount', { numTargets: targets.length });
 
-        if (!targets.length) {
+        if (targets.length === 0) {
             return utils.errP(localize('attach.responseButNoTargets', 'Got a response from the target app, but no target pages found'));
         }
 
@@ -66,10 +67,13 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         this.logger.log(`Getting browser and debug protocol version via ${url}`);
 
         const jsonResponse = await utils.getURL(url, { headers: { Host: 'localhost' } })
-            .catch(e => this.logger.log(`There was an error connecting to ${url} : ${e.message}`));
+            .catch(e => {
+                this.logger.log(`There was an error connecting to ${url} : ${e.message}`);
+                return undefined;
+            });
 
         try {
-            if (jsonResponse) {
+            if (isNotEmpty(jsonResponse)) {
                 const response = JSON.parse(jsonResponse);
                 const protocolVersionString = response['Protocol-Version'] as string;
                 const browserWithPrefixVersionString = response.Browser as string;
@@ -144,22 +148,22 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     }
 
     private _getMatchingTargets(targets: ITarget[], targetFilter?: ITargetFilter, targetUrl?: string): ITarget[] {
-        let filteredTargets = targetFilter ?
+        let filteredTargets = isDefined(targetFilter) ?
             targets.filter(targetFilter) : // Apply the consumer-specific target filter
             targets;
 
         // If a url was specified, try to filter to that url
-        filteredTargets = targetUrl ?
+        filteredTargets = isNotEmpty(targetUrl) ?
             chromeUtils.getMatchingTargets(filteredTargets, targetUrl) :
             filteredTargets;
 
-        if (!filteredTargets.length) {
+        if (filteredTargets.length === 0) {
             throw new Error(localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
         }
 
         // If all possible targets appear to be attached to have some other devtool attached, then fail
-        const targetsWithWSURLs = filteredTargets.filter(target => !!target.webSocketDebuggerUrl);
-        if (!targetsWithWSURLs.length) {
+        const targetsWithWSURLs = filteredTargets.filter(target => isNotEmpty(target.webSocketDebuggerUrl));
+        if (targetsWithWSURLs.length === 0) {
             throw new Error(localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
         }
 
@@ -167,9 +171,9 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
     }
 
     private _fixRemoteUrl(remoteAddress: string, remotePort: number, target: ITarget): ITarget {
-        if (target.webSocketDebuggerUrl) {
+        if (target.webSocketDebuggerUrl !== '') {
             const addressMatch = target.webSocketDebuggerUrl.match(/ws:\/\/([^/]+)\/?/);
-            if (addressMatch) {
+            if (hasMatches(addressMatch)) {
                 const replaceAddress = `${remoteAddress}:${remotePort}`;
                 target.webSocketDebuggerUrl = target.webSocketDebuggerUrl.replace(addressMatch[1], replaceAddress);
             }
