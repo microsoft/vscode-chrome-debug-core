@@ -10,6 +10,8 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import * as utils from '../utils';
 import { LoadedSourceCallFrame, CallFrameWithState } from './internal/stackTraces/callFrame';
 import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from './cdtpDebuggee/cdtpPrimitives';
+import { isDefined, isUndefined, hasMatches, isNotEmpty, isTrue } from './utils/typedOperators';
+import _ = require('lodash');
 
 export interface IVariableContainer {
     expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
@@ -67,14 +69,14 @@ export class ScopeContainer extends BaseVariableContainer {
     public expand(adapter: ChromeDebugLogic, _filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         // No filtering in scopes right now
         return super.expand(adapter, 'all', start, count).then(variables => {
-            if (this._thisObj && !variables.find(v => v.name === 'this')) {
+            if (isDefined(this._thisObj) && isUndefined(variables.find(v => v.name === 'this'))) {
                 // If this is a scope that should have the 'this', prop, insert it at the top of the list
                 return this.insertRemoteObject(adapter, variables, 'this', this._thisObj);
             }
 
             return variables;
         }).then(variables => {
-            if (this._returnValue) {
+            if (isDefined(this._returnValue)) {
                 return this.insertRemoteObject(adapter, variables, 'Return value', this._returnValue);
             }
 
@@ -131,7 +133,7 @@ export class ExceptionValueContainer extends PropertyContainer {
 }
 
 export function isIndexedPropName(name: string): boolean {
-    return !!name.match(/^\d+$/);
+    return hasMatches(name.match(/^\d+$/));
 }
 
 const PREVIEW_PROPS_DEFAULT = 3;
@@ -140,7 +142,7 @@ const PREVIEW_PROP_LENGTH = 50;
 const ELLIPSIS = '…';
 function getArrayPreview(object: CDTP.Runtime.RemoteObject, context?: string): string | undefined {
     let value = object.description;
-    if (object.preview) {
+    if (isDefined(object.preview)) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
         const indexedProps = object.preview.properties
             .filter(prop => isIndexedPropName(prop.name));
@@ -180,12 +182,12 @@ function getArrayPreview(object: CDTP.Runtime.RemoteObject, context?: string): s
 
 function getObjectPreview(object: CDTP.Runtime.RemoteObject, context?: string): string |  undefined {
     let value = object.description;
-    if (object.preview) {
+    if (isDefined(object.preview)) {
         const numProps = context === 'repl' ? PREVIEW_PROPS_CONSOLE : PREVIEW_PROPS_DEFAULT;
         const props = object.preview.properties.slice(0, numProps);
         let propsPreview = props
             .map(prop => {
-                const name = prop.name || `""`;
+                const name = _.defaultTo(prop.name, `""`);
                 return `${name}: ${propertyPreviewToString(prop)}`;
             })
             .join(', ');
@@ -217,7 +219,7 @@ function trimProperty(value: string): string {
 }
 
 export function getRemoteObjectPreview(object: CDTP.Runtime.RemoteObject, stringify = true, context?: string): string | undefined {
-    if (object) {
+    if (isDefined(object)) {
         if (object.type === 'object') {
             return getRemoteObjectPreview_object(object, context);
         } else if (object.type === 'function') {
@@ -231,7 +233,7 @@ export function getRemoteObjectPreview(object: CDTP.Runtime.RemoteObject, string
 }
 
 export function getRemoteObjectPreview_object(object: CDTP.Runtime.RemoteObject, context?: string): string | undefined {
-    const objectDescription = object.description || '';
+    const objectDescription = _.defaultTo(object.description, '');
     if ((<string>object.subtype) === 'internal#location') {
         // Could format this nicely later, see #110
         return 'internal#location';
@@ -246,17 +248,17 @@ export function getRemoteObjectPreview_object(object: CDTP.Runtime.RemoteObject,
         return firstNewlineIdx >= 0 ?
             objectDescription.substr(0, firstNewlineIdx) :
             objectDescription;
-    } else if (object.subtype === 'promise' && object.preview) {
+    } else if (object.subtype === 'promise' && isDefined(object.preview)) {
         const promiseStatus = object.preview.properties.filter(prop => prop.name === '[[PromiseStatus]]')[0];
-        return promiseStatus ?
+        return isDefined(promiseStatus) ?
             objectDescription + ' { ' + promiseStatus.value + ' }' :
             objectDescription;
-    } else if (object.subtype === 'generator' && object.preview) {
+    } else if (object.subtype === 'generator' && isDefined(object.preview)) {
         const generatorStatus = object.preview.properties.filter(prop => prop.name === '[[GeneratorStatus]]')[0];
-        return generatorStatus ?
+        return isDefined(generatorStatus) ?
             objectDescription + ' { ' + generatorStatus.value + ' }' :
             objectDescription;
-    } else if (object.type === 'object' && object.preview) {
+    } else if (object.type === 'object' && isDefined(object.preview)) {
         return getObjectPreview(object, context);
     } else {
         return objectDescription;
@@ -270,7 +272,7 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
     } else if (object.type === 'number') {
         // .value is truncated, so use .description, the full string representation
         // Should be like '3' or 'Infinity'.
-        if (object.description) {
+        if (isNotEmpty(object.description)) {
             return object.description;
         } else {
             throw new Error(`Expected a remote object representing a number to have a description, yet it didn't: ${JSON.stringify(object)}`);
@@ -279,7 +281,7 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
         // Never stringified
         return '' + object.value;
     } else {
-        return stringify ? `"${object.value}"` : object.value;
+        return isTrue(stringify) ? `"${object.value}"` : object.value;
     }
 }
 
@@ -313,7 +315,7 @@ export class VariableHandles {
     }
 
     public get(handle: number): IVariableContainer {
-        return this._variableHandles.get(handle) || this._consoleVariableHandles.get(handle);
+        return _.defaultTo(this._variableHandles.get(handle), this._consoleVariableHandles.get(handle));
     }
 
     private getHandles(context: VariableContext): Handles<IVariableContainer> {

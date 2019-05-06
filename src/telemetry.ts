@@ -5,6 +5,7 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { OutputEvent } from 'vscode-debugadapter';
 import { fillErrorDetails } from './utils';
+import { isDefined } from './chrome/utils/typedOperators';
 
 /* __GDPR__FRAGMENT__
    "IExecutionResultTelemetryProperties" : {
@@ -43,7 +44,7 @@ export class TelemetryReporter implements ITelemetryReporter {
     private _globalTelemetryProperties: any = {};
 
     reportEvent(name: string, data?: any): void {
-        if (this._sendEvent) {
+        if (isDefined(this._sendEvent)) {
             const combinedData = Object.assign({}, this._globalTelemetryProperties, data);
             const event = new OutputEvent(name, 'telemetry', combinedData);
             this._sendEvent(event);

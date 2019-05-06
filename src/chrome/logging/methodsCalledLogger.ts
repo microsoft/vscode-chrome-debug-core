@@ -4,6 +4,7 @@
 import * as _ from 'lodash';
 import { printTopLevelObjectDescription } from './printObjectDescription';
 import { logger } from 'vscode-debugadapter';
+import { isDefined } from '../utils/typedOperators';
 
 enum Synchronicity {
     Sync,
@@ -124,7 +125,7 @@ export class MethodsCalledLogger<T extends object> {
     }
 
     private logCall(propertyKey: PropertyKey, synchronicity: Synchronicity, methodCallArguments: any[], outcome: Outcome, resultOrException: unknown, callId?: number): void {
-        const endPrefix = callId ? `END   ${callId}: ` : '';
+        const endPrefix = isDefined(callId) ? `END   ${callId}: ` : '';
         const message = `${endPrefix}${this.printMethodCall(propertyKey, methodCallArguments)} ${this.printMethodSynchronicity(synchronicity)}  ${this.printMethodResponse(outcome, resultOrException)}`;
         logger.verbose(message);
     }

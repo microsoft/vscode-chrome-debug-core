@@ -8,14 +8,18 @@ import * as variables from './variables';
 import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { IExceptionDetails } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
 import { functionDescription } from './internal/stackTraces/callFramePresentation';
+import isUndefined = require('lodash/isUndefined');
+import _ = require('lodash');
+import { isNotEmpty, isFalse, isDefined } from './utils/typedOperators';
 
 export function formatExceptionDetails(e: IExceptionDetails): string {
-    if (!e.exception) {
-        return `${e.text || 'Uncaught Error'}\n${stackTraceToString(e.stackTrace)}`;
+    if (isUndefined(e.exception)) {
+        return `${_.defaultTo(e.text, 'Uncaught Error')}\n${stackTraceToString(e.stackTrace)}`;
     }
 
-    return (e.exception.className && e.exception.className.endsWith('Error') && e.exception.description) ||
-        (`Error: ${variables.getRemoteObjectPreview(e.exception)}\n${stackTraceToString(e.stackTrace)}`);
+    return (`${e.exception.className}`.endsWith('Error') && isNotEmpty(e.exception.description))
+        ? e.exception.description
+        : `Error: ${variables.getRemoteObjectPreview(e.exception)}\n${stackTraceToString(e.stackTrace)}`;
 }
 
 export const clearConsoleCode = '\u001b[2J';
@@ -34,12 +38,12 @@ export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent[
             args = resolveParams(args);
             break;
         case 'assert':
-            const formattedParams = args.length ?
+            const formattedParams = args.length > 0 ?
                 // 'assert' doesn't support format specifiers
                 resolveParams(args, /*skipFormatSpecifiers=*/true) :
                 [];
 
-            const assertMsg = (formattedParams[0] && formattedParams[0].type === 'string') ?
+            const assertMsg = (formattedParams.length > 0 && formattedParams[0].type === 'string') ?
                 formattedParams.shift()!.value :
                 '';
             let outputText = `Assertion failed: ${assertMsg}\n` + stackTraceToString(stackTrace);
@@ -50,7 +54,7 @@ export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent[
         case 'startGroupCollapsed':
             let startMsg = '‹Start group›';
             const formattedGroupParams = resolveParams(args);
-            if (formattedGroupParams.length && formattedGroupParams[0].type === 'string') {
+            if (formattedGroupParams.length > 0 && formattedGroupParams[0].type === 'string') {
                 startMsg += ': ' + formattedGroupParams.shift()!.value;
             }
 
@@ -78,7 +82,7 @@ export function formatConsoleArguments(type: CDTP.Runtime.ConsoleAPICalledEvent[
  * Collapse non-object arguments, and apply format specifiers (%s, %d, etc). Return a reduced a formatted list of RemoteObjects.
  */
 function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?: boolean): CDTP.Runtime.RemoteObject[] {
-    if (!args.length || args[0].objectId) {
+    if (args.length === 0 || isNotEmpty(args[0].objectId)) {
         // If the first arg is not text, nothing is going to happen here
         return args;
     }
@@ -89,8 +93,8 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
 
     // currentCollapsedStringArg is the accumulated text
     let currentCollapsedStringArg: string | null = variables.getRemoteObjectPreview(firstTextArg, /*stringify=*/false) + '';
-    if (firstTextArg.type === 'string' && !skipFormatSpecifiers) {
-        formatSpecifiers = (currentCollapsedStringArg.match(/\%[sidfoOc]/g) || [])
+    if (firstTextArg.type === 'string' && isFalse(skipFormatSpecifiers)) {
+        formatSpecifiers = _.defaultTo(currentCollapsedStringArg.match(/\%[sidfoOc]/g), [] as RegExpMatchArray)
             .map(spec => spec[1]);
     } else {
         formatSpecifiers = [];
@@ -110,20 +114,20 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
         const formatSpec = formatSpecifiers.shift();
         const formatted = formatArg(formatSpec, arg);
 
-        currentCollapsedStringArg = currentCollapsedStringArg || '';
+        currentCollapsedStringArg = _.defaultTo(currentCollapsedStringArg, '');
 
         if (typeof formatted === 'string') {
-            if (formatSpec) {
+            if (isNotEmpty(formatSpec)) {
                 // If this param had a format specifier, search and replace it with the formatted param.
                 currentCollapsedStringArg = currentCollapsedStringArg.replace('%' + formatSpec, formatted);
             } else {
-                currentCollapsedStringArg += (currentCollapsedStringArg ? ' ' + formatted : formatted);
+                currentCollapsedStringArg += (currentCollapsedStringArg === '' ? ' ' + formatted : formatted);
             }
-        } else if (formatSpec) {
+        } else if (isNotEmpty(formatSpec)) {
             // `formatted` is an object - split currentCollapsedStringArg around the current formatSpec and add the object
             const curSpecIdx = currentCollapsedStringArg.indexOf('%' + formatSpec);
             const processedPart = currentCollapsedStringArg.slice(0, curSpecIdx);
-            if (processedPart) {
+            if (processedPart !== '') {
                 pushStringArg(processedPart);
             }
 
@@ -160,13 +164,13 @@ function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObjec
                 switch (match[1]) {
                     case 'color':
                         const color = getAnsi16Color(match[2]);
-                        if (color) {
+                        if (isDefined(color)) {
                             escapedSequence += `;${color}`;
                         }
                         break;
                     case 'background':
                         const background = getAnsi16Color(match[2]);
-                        if (background) {
+                        if (isDefined(background)) {
                             escapedSequence += `;${background + 10}`;
                         }
                         break;
@@ -194,7 +198,7 @@ function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObjec
 
         return escapedSequence;
     } else if (formatSpec === 'O') {
-        if (arg.objectId) {
+        if (isNotEmpty(arg.objectId)) {
             return arg;
         } else {
             return paramValue;
@@ -202,7 +206,7 @@ function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObjec
     } else {
         // No formatSpec, or unsupported formatSpec:
         // %o - expandable DOM element
-        if (arg.objectId) {
+        if (isNotEmpty(arg.objectId)) {
             return arg;
         } else {
             return paramValue;
@@ -211,7 +215,7 @@ function formatArg(formatSpec: string | undefined, arg: CDTP.Runtime.RemoteObjec
 }
 
 function stackTraceToString(stackTrace?: CodeFlowStackTrace): string {
-    if (!stackTrace) {
+    if (isUndefined(stackTrace)) {
         return '';
     }
 

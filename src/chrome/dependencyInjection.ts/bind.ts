@@ -38,6 +38,7 @@ import { ConnectingCDA } from '../client/chromeDebugAdapter/connectingCDA';
 import { ConnectedCDA } from '../client/chromeDebugAdapter/connectedCDA';
 import { SupportedDomains } from '../internal/domains/supportedDomains';
 import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
+import { isDefined } from '../utils/typedOperators';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -97,7 +98,7 @@ export function createWrapWithLoggerActivator<T extends object>(configuration: M
     return (_context: interfaces.Context, injectable: object) => {
         (<IHasContainerName>injectable).__containerName = configuration.containerName;
         const objectWithLogging = wrapWithLogging(configuration, injectable, `${configuration.containerName}.${getName(serviceIdentifier)}`);
-        const possibleOverwrittenComponent = callback
+        const possibleOverwrittenComponent = isDefined(callback)
             ? callback(serviceIdentifier, objectWithLogging, identifier => _context.container.get(identifier))
             : objectWithLogging;
         if (objectWithLogging === possibleOverwrittenComponent) {
