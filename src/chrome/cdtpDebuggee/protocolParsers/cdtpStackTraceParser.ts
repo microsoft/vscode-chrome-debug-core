@@ -10,6 +10,7 @@ import { CodeFlowFrame } from '../../internal/stackTraces/callFrame';
 import { CDTPLocationParser, IHasScriptLocation } from './cdtpLocationParser';
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { asyncMap } from '../../collections/async';
+import { ifDefinedDo } from '../../utils/typedOperators';
 
 export class CDTPStackTraceParser {
     private readonly _cdtpLocationParser = new CDTPLocationParser(this._scriptsRegistry);
@@ -20,7 +21,7 @@ export class CDTPStackTraceParser {
         return {
             codeFlowFrames: await asyncMap(stackTrace.callFrames, (callFrame, index) => this.runtimeCallFrameToCodeFlowFrame(index, callFrame)),
             description: stackTrace.description,
-            parent: stackTrace.parent && await this.toStackTraceCodeFlow(stackTrace.parent)
+            parent: await ifDefinedDo(stackTrace.parent, parent => this.toStackTraceCodeFlow(parent))
         };
     }
 

@@ -19,6 +19,8 @@ import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { CDTPBPRecipe, validateNonPrimitiveRemoteObject } from '../cdtpPrimitives';
+import _ = require('lodash');
+import { ifDefinedDo } from '../../utils/typedOperators';
 
 export type PauseEventReason = 'XHR' | 'DOM' | 'EventListener' | 'exception' | 'assert' | 'debugCommand' | 'promiseRejection' | 'OOM' | 'other' | 'ambiguous';
 
@@ -56,8 +58,8 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
 
         const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this.toCallFrame(index, callFrame));
 
-        return new PausedEvent(callFrames, params.reason, params.data, await asyncMap(params.hitBreakpoints || [], hbp => this.getBPFromID(hbp)),
-            params.asyncStackTrace && await this._stackTraceParser.toStackTraceCodeFlow(params.asyncStackTrace),
+        return new PausedEvent(callFrames, params.reason, params.data, await asyncMap(_.defaultTo(params.hitBreakpoints, []), hbp => this.getBPFromID(hbp)),
+            await ifDefinedDo(params.asyncStackTrace, asyncStackTrace => this._stackTraceParser.toStackTraceCodeFlow(asyncStackTrace)),
             params.asyncStackTraceId, params.asyncCallStackTraceId);
     });
 
@@ -100,8 +102,8 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
                 scope.object,
                 scope.name,
                 // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
-                await asyncUndefinedOnFailure(async () => scope.startLocation && await this._cdtpLocationParser.getLocationInScript(scope.startLocation)),
-                await asyncUndefinedOnFailure(async () => scope.endLocation && await this._cdtpLocationParser.getLocationInScript(scope.endLocation)));
+                await asyncUndefinedOnFailure(async () => ifDefinedDo(scope.startLocation, startLocation => this._cdtpLocationParser.getLocationInScript(startLocation))),
+                await asyncUndefinedOnFailure(async () => ifDefinedDo(scope.endLocation, endLocation => this._cdtpLocationParser.getLocationInScript(endLocation))));
         } else {
             throw new Error(`Expected the remote object of a scope to be of type object yet it wasn't: ${JSON.stringify(scope.object)}`);
         }
