@@ -14,6 +14,8 @@ import { IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
+import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
+import _ = require('lodash');
 
 interface IRootsState {
     install(): Promise<void>;
@@ -87,12 +89,14 @@ export class RemotePathTransformer extends UrlPathTransformer {
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration) {
         super(configuration);
-        if ((configuration.args.localRoot && !configuration.args.remoteRoot) || (configuration.args.remoteRoot && !configuration.args.localRoot)) {
+        const args = configuration.args;
+
+        if (isNotEmpty(args.localRoot) !== isNotEmpty(args.remoteRoot)) {
             throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
         }
 
-        this._state = !!configuration.args.localRoot && !!configuration.args.remoteRoot
-            ? new BothRootsAreSet(configuration.args.localRoot, configuration.args.remoteRoot)
+        this._state = isNotEmpty(args.localRoot) && isNotEmpty(args.remoteRoot)
+            ? new BothRootsAreSet(args.localRoot, args.remoteRoot)
             : new MissingRoots();
     }
 
@@ -102,13 +106,13 @@ export class RemotePathTransformer extends UrlPathTransformer {
 
     public async scriptParsed(scriptPath: IResourceIdentifier): Promise<IResourceIdentifier> {
         scriptPath = await super.scriptParsed(scriptPath);
-        scriptPath = this.getClientPathFromTargetPath(scriptPath) || scriptPath;
+        scriptPath = _.defaultTo(this.getClientPathFromTargetPath(scriptPath), scriptPath);
 
         return scriptPath;
     }
 
     public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier {
-        remotePath = super.getClientPathFromTargetPath(remotePath) || remotePath;
+        remotePath = _.defaultTo(this.getClientPathFromTargetPath(remotePath), remotePath);
 
         // Map as non-file-uri because remoteRoot won't expect a file uri
         remotePath = parseResourceIdentifier(utils.fileUrlToPath(remotePath.canonicalized));
@@ -116,7 +120,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
     }
 
     public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
-        localPath = super.getTargetPathFromClientPath(localPath) || localPath;
+        localPath = _.defaultTo(this.getTargetPathFromClientPath(localPath), localPath);
         return this._state.getTargetPathFromClientPath(localPath);
     }
 }
@@ -125,7 +129,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
  * Cross-platform path.relative
  */
 function relative(a: string, b: string): string {
-    return a.match(/^[A-Za-z]:/) ?
+    return hasMatches(a.match(/^[A-Za-z]:/)) ?
         path.win32.relative(a, b) :
         path.posix.relative(a, b);
 }
@@ -134,7 +138,7 @@ function relative(a: string, b: string): string {
  * Cross-platform path.join
  */
 function join(a: string, b: string): string {
-    return a.match(/^[A-Za-z]:/) ?
+    return hasMatches(a.match(/^[A-Za-z]:/)) ?
         path.win32.join(a, b) :
         utils.forceForwardSlashes(path.posix.join(a, b));
 }

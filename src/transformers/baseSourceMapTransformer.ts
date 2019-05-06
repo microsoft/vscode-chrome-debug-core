@@ -16,6 +16,8 @@ import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/
 import { IResourceIdentifier } from '..';
 import { LocationInLoadedSource } from '../chrome/internal/locations/location';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined, isNotEmpty } from '../chrome/utils/typedOperators';
+import _ = require('lodash');
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -44,7 +46,7 @@ export class BaseSourceMapTransformer {
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration,
         private readonly _scriptsRegistry: CDTPScriptsRegistry) {
-        this._enableSourceMapCaching = !!configuration.args.enableSourceMapCaching;
+        this._enableSourceMapCaching = isTrue(configuration.args.enableSourceMapCaching);
         this.init(configuration.args);
         this.isVSClient = configuration.clientCapabilities.clientID === 'visualstudio';
     }
@@ -57,7 +59,7 @@ export class BaseSourceMapTransformer {
         // Enable sourcemaps and async callstacks by default
         const areSourceMapsEnabled = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
         if (areSourceMapsEnabled) {
-            this._enableSourceMapCaching = !!args.enableSourceMapCaching;
+            this._enableSourceMapCaching = isTrue(args.enableSourceMapCaching);
             this._sourceMaps = new SourceMaps(this._scriptsRegistry, args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
             this._allRuntimeScriptPaths = new Set<string>();
         }
@@ -68,10 +70,10 @@ export class BaseSourceMapTransformer {
     }
 
     public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap | null> {
-        if (this._sourceMaps) {
+        if (isDefined(this._sourceMaps)) {
             this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
 
-            if (!sourceMapURL) return null;
+            if (isEmpty(sourceMapURL)) return null;
 
             // Load the sourcemap for this new script and log its sources
             const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL, this._isVSClient);
@@ -79,7 +81,7 @@ export class BaseSourceMapTransformer {
             await processNewSourceMapP;
 
             const sources = this._sourceMaps.allMappedSources(pathToGenerated);
-            if (sources) {
+            if (isNotNull(sources)) {
                 logger.log(`SourceMaps.scriptParsed: ${pathToGenerated} was just loaded and has mapped sources: ${JSON.stringify(sources) }`);
             } else {
                 logger.log(`No SourceMaps.scriptParsed: ${pathToGenerated} was just loaded and doesn't have any mapped sources at url: ${sourceMapURL}`);
@@ -92,7 +94,7 @@ export class BaseSourceMapTransformer {
     }
 
     public scopesResponse(pathToGenerated: string, scopesResponse: IScopesResponseBody): void {
-        if (this._sourceMaps) {
+        if (isDefined(this._sourceMaps)) {
             scopesResponse.scopes.forEach(scope => this.mapScopeLocations(pathToGenerated, scope));
         }
     }
@@ -109,46 +111,46 @@ export class BaseSourceMapTransformer {
 
         // If the scope is an async function, then the function declaration line may be missing a source mapping.
         // So if we failed, try to get the next line.
-        if (!mappedStart) {
+        if (isNull(mappedStart)) {
             mappedStart = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.line + 1, scope.column);
             shiftedScopeStartForward = true;
         }
 
-        if (mappedStart) {
+        if (isNotNull(mappedStart)) {
             // Only apply changes if both mappings are found
             const mappedEnd = this._sourceMaps!.mapToAuthored(pathToGenerated, scope.endLine, scope.endColumn);
-            if (mappedEnd) {
-                scope.line = mappedStart.position.lineNumber || undefined;
-                if (shiftedScopeStartForward && typeof scope.line === 'number') {
+            if (isNotNull(mappedEnd)) {
+                scope.line = mappedStart.position.lineNumber;
+                if (shiftedScopeStartForward) {
                     scope.line--;
                 }
-                scope.column = mappedStart.position.columnNumber || undefined;
+                scope.column = mappedStart.position.columnNumber;
 
-                scope.endLine = mappedEnd.position.lineNumber || undefined;
-                scope.endColumn = mappedEnd.position.columnNumber || undefined;
+                scope.endLine = mappedEnd.position.lineNumber;
+                scope.endColumn = mappedEnd.position.columnNumber;
             }
         }
     }
 
     public async mapToAuthored(pathToGenerated: string, line: number, column: number): Promise<LocationInLoadedSource | null> {
-        if (!this._sourceMaps) return null;
+        if (isUndefined(this._sourceMaps)) return null;
 
         await this.wait();
         return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
     }
 
     public async allSources(pathToGenerated: string): Promise<IResourceIdentifier[]> {
-        if (!this._sourceMaps) return [];
+        if (isUndefined(this._sourceMaps)) return [];
 
         await this.wait();
-        return this._sourceMaps.allMappedSources(pathToGenerated) || [];
+        return _.defaultTo(this._sourceMaps.allMappedSources(pathToGenerated), []);
     }
 
     public async allSourcePathDetails(pathToGenerated: string): Promise<ISourcePathDetails[]> {
-        if (!this._sourceMaps) return [];
+        if (isUndefined(this._sourceMaps)) return [];
 
         await this.wait();
-        return this._sourceMaps.allSourcePathDetails(pathToGenerated) || [];
+        return _.defaultTo(this._sourceMaps.allSourcePathDetails(pathToGenerated), []);
     }
 
     private wait(): Promise<any> {
@@ -156,6 +158,6 @@ export class BaseSourceMapTransformer {
     }
 
     private fixPathCasing(str: string): string {
-        return str && (this.caseSensitivePaths ? str : str.toLowerCase());
+        return isNotEmpty(str) && !this.caseSensitivePaths ? str.toLowerCase() : str;
     }
 }

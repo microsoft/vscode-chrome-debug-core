@@ -8,6 +8,7 @@ import { IDebugTransformer, IScopesResponseBody, IStackTraceResponseBody } from 
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
+import { isTrue } from '../chrome/utils/typedOperators';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
@@ -18,8 +19,8 @@ export class LineColTransformer implements IDebugTransformer {
     private _clientToDebuggerColumnsDifference: number; // Similar to line numbers
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) configuration: ConnectedCDAConfiguration) {
-        this._clientToDebuggerLineNumberDifference = configuration.clientCapabilities.linesStartAt1 ? 1 : 0;
-        this._clientToDebuggerColumnsDifference = configuration.clientCapabilities.columnsStartAt1 ? 1 : 0;
+        this._clientToDebuggerLineNumberDifference = isTrue(configuration.clientCapabilities.linesStartAt1) ? 1 : 0;
+        this._clientToDebuggerColumnsDifference = isTrue(configuration.clientCapabilities.columnsStartAt1) ? 1 : 0;
     }
 
     public stackTraceResponse(response: IStackTraceResponseBody): void {

@@ -11,6 +11,8 @@ import * as utils from '../utils';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 import { IResourceIdentifier } from '..';
 import { parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { isNotEmpty, hasNoMatches, isEmpty } from '../chrome/utils/typedOperators';
+import _ = require('lodash');
 
 /**
  * Resolves a relative path in terms of another file
@@ -24,7 +26,7 @@ export function resolveRelativeToFile(absPath: string, relPath: string): string 
  */
 export function getComputedSourceRoot(sourceRoot: string | undefined, generatedPath: string, pathMapping: IPathMapping = {}): string {
     let absSourceRoot: string;
-    if (sourceRoot) {
+    if (isNotEmpty(sourceRoot)) {
         if (sourceRoot.startsWith('file:///')) {
             // sourceRoot points to a local path like "file:///c:/project/src", make it an absolute path
             absSourceRoot = utils.canonicalizeUrl(sourceRoot);
@@ -32,7 +34,7 @@ export function getComputedSourceRoot(sourceRoot: string | undefined, generatedP
             // sourceRoot is like "/src", should be like http://localhost/src, resolve to a local path using pathMaping.
             // If path mappings do not apply (e.g. node), assume that sourceRoot is actually a local absolute path.
             // Technically not valid but it's easy to end up with paths like this.
-            absSourceRoot = chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping) || sourceRoot;
+            absSourceRoot = _.defaultTo(chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping), sourceRoot);
 
             // If no pathMapping (node), use sourceRoot as is.
             // But we also should handle an absolute sourceRoot for chrome? Does CDT handle that? No it does not, it interprets it as "localhost/full path here"
@@ -53,9 +55,9 @@ export function getComputedSourceRoot(sourceRoot: string | undefined, generatedP
         logger.log(`SourceMap: no sourceRoot specified, using script dirname: ${absSourceRoot}`);
     } else {
         // No sourceRoot and runtime script is not on disk, resolve the sourceRoot location on disk
-        const urlPathname = url.parse(generatedPath).pathname || '/placeholder.js';  // could be debugadapter://123, no other info.
+        const urlPathname = _.defaultTo(url.parse(generatedPath).pathname, '/placeholder.js');  // could be debugadapter://123, no other info.
         const mappedPath = chromeUtils.applyPathMappingsToTargetUrlPath(urlPathname, pathMapping);
-        const scriptPathDirname = mappedPath ? path.dirname(mappedPath) : '';
+        const scriptPathDirname = isNotEmpty(mappedPath) ? path.dirname(mappedPath) : '';
         absSourceRoot = scriptPathDirname;
         logger.log(`SourceMap: no sourceRoot specified, using webRoot + script path dirname: ${absSourceRoot}`);
     }
@@ -87,13 +89,13 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         const rightPattern = sourceMapPathOverrides[leftPattern];
         const entryStr = `"${leftPattern}": "${rightPattern}"`;
 
-        const asterisks = leftPattern.match(/\*/g) || [];
+        const asterisks = _.defaultTo(leftPattern.match(/\*/g), []);
         if (asterisks.length > 1) {
             logger.log(`Warning: only one asterisk allowed in a sourceMapPathOverrides entry - ${entryStr}`);
             continue;
         }
 
-        const replacePatternAsterisks = rightPattern.match(/\*/g) || [];
+        const replacePatternAsterisks = _.defaultTo(rightPattern.match(/\*/g), []);
         if (replacePatternAsterisks.length > asterisks.length) {
             logger.log(`Warning: the right side of a sourceMapPathOverrides entry must have 0 or 1 asterisks - ${entryStr}}`);
             continue;
@@ -106,7 +108,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
             .replace(/\\\\/g, '/');
         const leftRegex = new RegExp(`^${leftRegexSegment}$`, 'i');
         const overridePatternMatches = forwardSlashSourcePath.match(leftRegex);
-        if (!overridePatternMatches)
+        if (hasNoMatches(overridePatternMatches))
             continue;
 
         // Grab the value of the wildcard from the match above, replace the wildcard in the
@@ -135,7 +137,7 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMap
         if (utils.isURL(pathToGenerated)) {
             const scriptUrl = url.parse(pathToGenerated);
             const scriptPath = scriptUrl.pathname;
-            if (!scriptPath) {
+            if (isEmpty(scriptPath)) {
                 return null;
             }
 
@@ -146,7 +148,7 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMap
                 path.posix.join(path.dirname(scriptPath), mapPath);
             mapPath = `${scriptUrl.protocol}//${scriptUrl.host}${mapUrlPathSegment}`;
         } else if (utils.isAbsolute(mapPath)) {
-            mapPath = chromeUtils.applyPathMappingsToTargetUrlPath(mapPath, pathMapping) || mapPath;
+            mapPath = _.defaultTo(chromeUtils.applyPathMappingsToTargetUrlPath(mapPath, pathMapping), mapPath);
         } else if (path.isAbsolute(pathToGenerated)) {
             // mapPath needs to be resolved to an absolute path or a URL
             // runtime script is on disk, so map should be too
@@ -158,7 +160,7 @@ export function resolveMapPath(pathToGenerated: string, mapPath: string, pathMap
 }
 
 export function getFullSourceEntry(sourceRoot: string | undefined, sourcePath: string): IResourceIdentifier {
-    if (!sourceRoot) {
+    if (isEmpty(sourceRoot)) {
         return parseResourceIdentifier(sourcePath);
     }
 
