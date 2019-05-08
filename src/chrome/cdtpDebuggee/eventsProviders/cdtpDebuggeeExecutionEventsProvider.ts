@@ -19,7 +19,7 @@ import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { CDTPBPRecipe, validateNonPrimitiveRemoteObject } from '../cdtpPrimitives';
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { ifDefinedDo } from '../../utils/typedOperators';
 
 export type PauseEventReason = 'XHR' | 'DOM' | 'EventListener' | 'exception' | 'assert' | 'debugCommand' | 'promiseRejection' | 'OOM' | 'other' | 'ambiguous';
