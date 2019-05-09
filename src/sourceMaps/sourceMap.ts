@@ -16,8 +16,7 @@ import * as _ from 'lodash';
 import { IValidatedMap } from '../chrome/collections/validatedMap';
 import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
-import { isNotEmpty, isDefined } from '../chrome/utils/typedOperators';
-import isNull = require('lodash/isNull');
+import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 
 export type MappedPosition = MappedPosition;
 
