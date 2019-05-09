@@ -16,7 +16,7 @@ import { ChromeDebugAdapter } from './client/chromeDebugAdapter/chromeDebugAdapt
 import { CommandText } from './client/requests';
 import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
 import { isNotEmpty, isTrue, isDefined } from './utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export interface IChromeDebugAdapterOpts {
     extensibilityPoints: IExtensibilityPoints;
