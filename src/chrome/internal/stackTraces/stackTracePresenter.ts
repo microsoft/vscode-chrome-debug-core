@@ -23,7 +23,7 @@ import { StackTraceLabel, CallFramePresentationHint, IStackTracePresentationRow 
 import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 import { CurrentStackTraceProvider } from './currentStackTraceProvider';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];

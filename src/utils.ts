@@ -15,7 +15,7 @@ import { IExecutionResultTelemetryProperties } from './telemetry';
 import { ValidatedSet } from './chrome/collections/validatedSet';
 import { promisify } from 'util';
 import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export interface IStringDictionary<T> {
     [name: string]: T;

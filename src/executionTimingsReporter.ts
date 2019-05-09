@@ -5,7 +5,7 @@
 import { HighResTimer, calculateElapsedTime } from './utils';
 import { EventEmitter } from 'events';
 import { notNullNorUndefinedElements } from './validation';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 

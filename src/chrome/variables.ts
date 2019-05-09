@@ -11,7 +11,7 @@ import * as utils from '../utils';
 import { LoadedSourceCallFrame, CallFrameWithState } from './internal/stackTraces/callFrame';
 import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from './cdtpDebuggee/cdtpPrimitives';
 import { isDefined, isUndefined, hasMatches, isNotEmpty, isTrue } from './utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export interface IVariableContainer {
     expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;

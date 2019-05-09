@@ -9,7 +9,7 @@ import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { IExceptionDetails } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
 import { functionDescription } from './internal/stackTraces/callFramePresentation';
 import isUndefined = require('lodash/isUndefined');
-import _ = require('lodash');
+import * as _ from 'lodash';
 import { isNotEmpty, isFalse, isDefined } from './utils/typedOperators';
 
 export function formatExceptionDetails(e: IExceptionDetails): string {
