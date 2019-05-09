@@ -13,7 +13,7 @@ import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { SourceMap } from './sourceMap';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
-import { isDefined, isNotNull, isNull, ifDefinedDo, isTrue } from '../chrome/utils/typedOperators';
+import { isDefined, isNotNull, isNull, isTrue } from '../chrome/utils/typedOperators';
 
 export class SourceMapFactory {
     constructor(
@@ -126,7 +126,7 @@ export class SourceMapFactory {
                         logger.log(`SourceMaps.loadSourceMapContents: Could not read sourcemap file - ` + err.message);
                         resolve(null);
                     } else {
-                        resolve(ifDefinedDo(data, data => data.toString()));
+                        resolve(isDefined(data) ? data.toString() : undefined);
                     }
                 });
             });
