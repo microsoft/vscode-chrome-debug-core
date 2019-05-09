@@ -54,7 +54,7 @@ import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegist
 import { EventsToClientReporter } from './client/eventsToClientReporter';
 import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
 import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 let localize = nls.loadMessageBundle();
 

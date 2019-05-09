@@ -15,7 +15,7 @@ import { LocationInScript } from './internal/locations/location';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 import isUndefined = require('lodash/isUndefined');
 import { isNotEmpty, isEmpty, isDefined, hasMatches } from './utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
