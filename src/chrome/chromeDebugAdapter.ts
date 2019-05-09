@@ -53,7 +53,7 @@ import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfig
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
 import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
-import { ifDefinedDo, isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
+import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
 import _ = require('lodash');
 
 let localize = nls.loadMessageBundle();
@@ -137,7 +137,7 @@ export class ChromeDebugLogic {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = chromeConnection;
-        this.events = new StepProgressEventsEmitter(ifDefinedDo(this._chromeConnection.events, events => [events], []));
+        this.events = new StepProgressEventsEmitter(isDefined(this._chromeConnection.events) ? [this._chromeConnection.events] : []);
 
         this._variableHandles = new variables.VariableHandles();
 
@@ -230,7 +230,7 @@ export class ChromeDebugLogic {
         }
 
         const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
-        const stack = ifDefinedDo(event.stackTrace, stackTrace => stackTraceWithoutLogpointFrame(stackTrace));
+        const stack = isDefined(event.stackTrace) ? stackTraceWithoutLogpointFrame(event.stackTrace) : undefined;
         if (isNotNull(result)) {
             return this.logObjects(result.args, result.isError, stack);
         }

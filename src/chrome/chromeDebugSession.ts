@@ -15,7 +15,7 @@ import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents,
 import { ChromeDebugAdapter } from './client/chromeDebugAdapter/chromeDebugAdapterV2';
 import { CommandText } from './client/requests';
 import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
-import { isNotEmpty, isTrue, isDefined, ifDefinedDo } from './utils/typedOperators';
+import { isNotEmpty, isTrue, isDefined } from './utils/typedOperators';
 import _ = require('lodash');
 
 export interface IChromeDebugAdapterOpts {
@@ -257,7 +257,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     private configureExecutionTimingsReporting(): void {
         this.reporter.subscribeTo(this.events);
         this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, args => {
-            this.reportTimingsWhileStartingUpIfNeeded(isDefined(args) ? args.requestedContentWasDetected : true, ifDefinedDo(args, a => a.reasonForNotDetected));
+            this.reportTimingsWhileStartingUpIfNeeded(isDefined(args) ? args.requestedContentWasDetected : true, isDefined(args) ? args.reasonForNotDetected : undefined);
         });
 
         setTimeout(() => this.reportTimingsWhileStartingUpIfNeeded(/*requestedContentWasDetected*/false, /*reasonForNotDetected*/'timeout'), this._readyForUserTimeoutInMilliseconds);
