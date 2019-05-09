@@ -17,6 +17,10 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { TYPES } from './dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
+import { IDebuggeeLauncher } from './debugeeStartup/debugeeLauncher';
+import { ScenarioType } from './client/chromeDebugAdapter/unconnectedCDA';
+import { IAttachRequestArgs } from '../debugAdapterInterfaces';
+import { ITelemetryPropertyCollector } from '../telemetry';
 
 export interface ITarget {
     description: string;
@@ -106,8 +110,9 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     public readonly events: StepProgressEventsEmitter;
 
     constructor(@inject(TYPES.ChromeTargetDiscovery) targetDiscovery: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>,
-        @inject(TYPES.ConnectedCDAConfiguration) configuration: ConnectedCDAConfiguration) {
-        this._targetFilter = configuration.extensibilityPoints.targetFilter;
+        @inject(TYPES.IDebuggeeLauncher) private readonly _debuggeeLauncher: IDebuggeeLauncher,
+        @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration) {
+        this._targetFilter = _configuration.extensibilityPoints.targetFilter;
         this._targetDiscoveryStrategy = targetDiscovery;
         this.events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.events]);
     }
@@ -119,6 +124,26 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             return this._client.api();
         } else {
             throw new Error(`Can't access the CDTP API when the client is not attach to a debuggee`);
+        }
+    }
+
+    /**
+     * Open a new connection to Chrome (or the debugee)
+     */
+    public async open(telemetryPropertyCollector: ITelemetryPropertyCollector) {
+
+        if (this._configuration.scenarioType === ScenarioType.Launch) {
+            logger.verbose('[ChromeConnection]: Launching debugee...');
+            const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
+            await this.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
+        }
+        else if (this._configuration.scenarioType === ScenarioType.Attach) {
+            logger.verbose('[ChromeConnection]: Attaching to an existing instance of debugee...');
+            const attachArgs = <IAttachRequestArgs>this._configuration.args;
+            await this.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
+        }
+        else {
+            throw new Error(`Unexpected launch scenario type. Expected either ScenarioType.Launch (${ScenarioType.Launch}) or ScenarioType.Attach (${ScenarioType.Attach}) but got: ${this._configuration.scenarioType} `);
         }
     }
 
@@ -163,10 +188,13 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             });
     }
 
-    public close(): void {
+    public async close() {
         this.validateConnectionIsOpen();
         this._socket!.close();
         this._socket = null;
+        if (this._configuration.scenarioType === ScenarioType.Launch) {
+            await this._debuggeeLauncher.stop();
+        }
     }
 
     public onClose(handler: () => void): void {

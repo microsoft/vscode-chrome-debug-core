@@ -53,6 +53,7 @@ export interface ICommonRequestArgs {
 
     _suppressConsoleOutput?: boolean;
 
+    url?: string;
     port?: number;
 }
 
@@ -68,6 +69,7 @@ export interface IRestartRequestArgs {
  * Properties needed by -core, just a subset of the properties needed for launch in general
  */
 export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, ICommonRequestArgs {
+    file?: string;
     __restart?: IRestartRequestArgs;
 }
 
