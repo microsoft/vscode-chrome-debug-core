@@ -86,7 +86,7 @@ export class TerminatingCDA extends BaseCDAState {
         }
 
         if (this._chromeConnection.isAttached) {
-            this._chromeConnection.close();
+            await this._chromeConnection.close();
         }
     }
 }
