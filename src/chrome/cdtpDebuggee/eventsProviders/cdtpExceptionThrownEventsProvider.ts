@@ -13,7 +13,7 @@ import { integer } from '../cdtpPrimitives';
 import { IScript } from '../../internal/scripts/script';
 import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrace';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
-import { ifDefinedDo } from '../../utils/typedOperators';
+import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 
 export interface IExceptionThrownEvent {
     readonly timestamp: CDTP.Runtime.Timestamp;
@@ -62,9 +62,9 @@ export class CDTPExceptionThrownEventsProvider extends CDTPEventsEmitterDiagnost
             text: exceptionDetails.text,
             lineNumber: exceptionDetails.lineNumber,
             columnNumber: exceptionDetails.columnNumber,
-            script: await ifDefinedDo(exceptionDetails.scriptId, scriptId => this._scriptsRegistry.getScriptByCdtpId(scriptId)),
+            script: isNotEmpty(exceptionDetails.scriptId) ? await this._scriptsRegistry.getScriptByCdtpId(exceptionDetails.scriptId) : undefined,
             url: exceptionDetails.url,
-            stackTrace: await ifDefinedDo(exceptionDetails.stackTrace, stackTrace => this._stackTraceParser.toStackTraceCodeFlow(stackTrace)),
+            stackTrace: isDefined(exceptionDetails.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace) : undefined,
             exception: exceptionDetails.exception,
             executionContextId: exceptionDetails.executionContextId,
         };

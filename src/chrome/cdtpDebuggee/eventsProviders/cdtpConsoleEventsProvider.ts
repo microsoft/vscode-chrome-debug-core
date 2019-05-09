@@ -10,7 +10,7 @@ import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrac
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
-import { ifDefinedDo } from '../../utils/typedOperators';
+import { isDefined } from '../../utils/typedOperators';
 
 export type ConsoleAPIEventType = 'log' | 'debug' | 'info' | 'error' | 'warning' | 'dir' | 'dirxml' | 'table' | 'trace' | 'clear' | 'startGroup' | 'startGroupCollapsed' | 'endGroup' | 'assert' | 'profile' | 'profileEnd' | 'count' | 'timeEnd';
 
@@ -54,7 +54,7 @@ class CDTPConsoleEventsFromRuntimeProvider extends CDTPEventsEmitterDiagnosticsM
             executionContextId: params.executionContextId,
             timestamp: params.timestamp,
             type: params.type,
-            stackTrace: await ifDefinedDo(params.stackTrace, stackTrace => this._stackTraceParser.toStackTraceCodeFlow(stackTrace))
+            stackTrace: isDefined(params.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(params.stackTrace) : undefined
         }));
 
     constructor(
