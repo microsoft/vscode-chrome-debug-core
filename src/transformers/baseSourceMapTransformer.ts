@@ -17,7 +17,7 @@ import { IResourceIdentifier } from '..';
 import { LocationInLoadedSource } from '../chrome/internal/locations/location';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined, isNotEmpty } from '../chrome/utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 export interface ISourceLocation {
     source: ILoadedSource;

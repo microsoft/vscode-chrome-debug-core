@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { IStackTracePresentation } from '../chrome/internal/stackTraces/stackTracePresentation';
 import { injectable } from 'inversify';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 /**
  * Converts a local path from Code to a path on the target.

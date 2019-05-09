@@ -59,16 +59,16 @@ class SourcePathMappingCalculator {
                 ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource)
                 : originalSource;
 
-            let starPosition;
+            let startPosition;
             try {
-                starPosition = this._sourceMap.generatedPositionFor(inferredPath, 0, 0);
+                startPosition = this._sourceMap.generatedPositionFor(inferredPath, 0, 0);
             } catch {
-                starPosition = null;
+                startPosition = null;
             }
             return <ISourcePathDetails>{
                 inferredPath,
                 originalPath,
-                startPosition: starPosition
+                startPosition: startPosition
             };
         }).sort((a, b) => {
             // https://github.com/Microsoft/vscode-chrome-debug/issues/353

@@ -15,7 +15,7 @@ import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 interface IRootsState {
     install(): Promise<void>;

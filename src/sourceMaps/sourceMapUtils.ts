@@ -12,7 +12,7 @@ import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces
 import { IResourceIdentifier } from '..';
 import { parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { isNotEmpty, hasNoMatches, isEmpty } from '../chrome/utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 /**
  * Resolves a relative path in terms of another file

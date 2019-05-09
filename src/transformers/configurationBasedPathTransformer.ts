@@ -8,7 +8,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IStackTracePresentation } from '../chrome/internal/stackTraces/stackTracePresentation';
 import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { isTrue } from '../chrome/utils/typedOperators';
-import _ = require('lodash');
+import * as _ from 'lodash';
 
 /**
  * We use this class to be able to choose between different path transformer classes based on the supportsMapURLToFilePathRequest parameter
