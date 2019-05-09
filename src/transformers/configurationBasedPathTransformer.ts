@@ -7,6 +7,8 @@ import { RemotePathTransformer } from './remotePathTransformer';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { IStackTracePresentation } from '../chrome/internal/stackTraces/stackTracePresentation';
 import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { isTrue } from '../chrome/utils/typedOperators';
+import * as _ from 'lodash';
 
 /**
  * We use this class to be able to choose between different path transformer classes based on the supportsMapURLToFilePathRequest parameter
@@ -16,9 +18,9 @@ export class ConfigurationBasedPathTransformer extends BasePathTransformer {
 
     constructor(@inject(TYPES.ConnectedCDAConfiguration) private readonly configuration: IConnectedCDAConfiguration) {
         super();
-        const pathTransformerClass = this.configuration.clientCapabilities.supportsMapURLToFilePathRequest
+        const pathTransformerClass = isTrue(this.configuration.clientCapabilities.supportsMapURLToFilePathRequest)
             ? FallbackToClientPathTransformer
-            : this.configuration.extensibilityPoints.pathTransformer || RemotePathTransformer;
+            : _.defaultTo(this.configuration.extensibilityPoints.pathTransformer, RemotePathTransformer);
         this._pathTransformer = new pathTransformerClass(configuration);
     }
 

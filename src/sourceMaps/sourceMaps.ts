@@ -9,6 +9,7 @@ import { Position, LocationInLoadedSource, LocationInScript } from '../chrome/in
 import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
 import { parseResourceIdentifier, IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { isNotNull } from '../chrome/utils/typedOperators';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -55,7 +56,7 @@ export class SourceMaps {
      */
     public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string, isVSClient = false): Promise<SourceMap | null> {
         const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
-        if (sourceMap) {
+        if (isNotNull(sourceMap)) {
             this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
             return sourceMap;
         } else {

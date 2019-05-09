@@ -13,6 +13,7 @@ import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { SourceMap } from './sourceMap';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
+import { isDefined, isNotNull, isNull, isTrue } from '../chrome/utils/typedOperators';
 
 export class SourceMapFactory {
     constructor(
@@ -27,7 +28,7 @@ export class SourceMapFactory {
      */
     getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap | null> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
-        if (this._pathMapping) {
+        if (isDefined(this._pathMapping)) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
         }
 
@@ -45,7 +46,7 @@ export class SourceMapFactory {
         }
 
         return sourceMapContentsP.then(async contents => {
-            if (contents) {
+            if (isNotNull(contents)) {
                 try {
                     // Throws for invalid JSON
                     return await SourceMap.create(pathToGenerated, contents, this._pathMapping, this._sourceMapPathOverrides, isVSClient);
@@ -91,12 +92,12 @@ export class SourceMapFactory {
      */
     private getSourceMapContent(pathToGenerated: string, mapPathArg: string): Promise<string | null> {
         const mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPathArg, this._pathMapping);
-        if (!mapPath) {
+        if (isNull(mapPath)) {
             return Promise.resolve(null);
         }
 
         return this.loadSourceMapContents(mapPath).then(contents => {
-            if (!contents) {
+            if (isNull(contents)) {
                 // Last ditch effort - just look for a .js.map next to the script
                 const mapPathNextToSource = pathToGenerated + '.map';
                 if (mapPathNextToSource !== mapPath) {
@@ -120,12 +121,12 @@ export class SourceMapFactory {
             mapPathOrURL = utils.canonicalizeUrl(mapPathOrURL);
             contentsP = new Promise((resolve) => {
                 logger.log(`SourceMaps.loadSourceMapContents: Reading local sourcemap file from ${mapPathOrURL}`);
-                fs.readFile(mapPathOrURL, (err, data) => {
-                    if (err) {
+                fs.readFile(mapPathOrURL, (err?: NodeJS.ErrnoException, data?: Buffer) => {
+                    if (isDefined(err)) {
                         logger.log(`SourceMaps.loadSourceMapContents: Could not read sourcemap file - ` + err.message);
                         resolve(null);
                     } else {
-                        resolve(data && data.toString());
+                        resolve(isDefined(data) ? data.toString() : undefined);
                     }
                 });
             });
@@ -150,7 +151,7 @@ export class SourceMapFactory {
     private async _downloadSourceMapContents(sourceMapUri: string): Promise<string | null> {
         // use sha256 to ensure the hash value can be used in filenames
         let cachedSourcemapPath: string | null = null;
-        if (this._enableSourceMapCaching) {
+        if (isTrue(this._enableSourceMapCaching)) {
             const hash = crypto.createHash('sha256').update(sourceMapUri).digest('hex');
 
             const cachePath = path.join(os.tmpdir(), 'com.microsoft.VSCode', 'node-debug2', 'sm-cache');
@@ -164,7 +165,7 @@ export class SourceMapFactory {
         }
 
         const responseText = await utils.getURL(sourceMapUri);
-        if (cachedSourcemapPath && this._enableSourceMapCaching) {
+        if (isNotNull(cachedSourcemapPath) && isTrue(this._enableSourceMapCaching)) {
             logger.log(`Sourcemaps.downloadSourceMapContents: Caching sourcemap file at ${cachedSourcemapPath}`);
             await utils.writeFileP(cachedSourcemapPath, responseText);
         }

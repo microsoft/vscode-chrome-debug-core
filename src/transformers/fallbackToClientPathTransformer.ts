@@ -9,6 +9,7 @@ import { IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifi
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
+import { isNotEmpty } from '../chrome/utils/typedOperators';
 
 /**
  * Converts a local path from Code to a path on the target. Uses the UrlPathTransforme logic and fallbacks to asking the client if neccesary
@@ -28,7 +29,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
         return super.targetUrlToClientPath(scriptUrl).then(filePath => {
                 // If it returns a valid non empty file path then that should be a valid result, so we use that
                 // If it's an eval script we won't be able to map it, so we also return that
-                return (filePath || ChromeUtils.isEvalScript(scriptUrl))
+                return (isNotEmpty(filePath.textRepresentation) || ChromeUtils.isEvalScript(scriptUrl))
                     ? filePath
                     // In any other case we ask the client to map it as a fallback, and return filePath if there is any failures
                     : this.requestClientToMapURLToFilePath(scriptUrl).catch(rejection => {

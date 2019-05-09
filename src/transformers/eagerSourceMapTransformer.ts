@@ -13,6 +13,7 @@ import { injectable, inject } from 'inversify';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
+import { isDefined, isNotEmpty, isNotNull, hasMatches } from '../chrome/utils/typedOperators';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because
@@ -33,9 +34,9 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
         // Enable sourcemaps and async callstacks by default
         const areSourceMapsEnabled = typeof args.sourceMaps === 'undefined' || args.sourceMaps;
         if (areSourceMapsEnabled) {
-            const generatedCodeGlobs = args.outFiles ?
+            const generatedCodeGlobs = isDefined(args.outFiles) ?
                 args.outFiles :
-                args.outDir ?
+                isNotEmpty(args.outDir) ?
                     [path.join(args.outDir, '**/*.js')] :
                     [];
 
@@ -57,7 +58,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
     private discoverSourceMapForGeneratedScript(generatedScriptPath: string): Promise<void> {
         return this.findSourceMapUrlInFile(generatedScriptPath)
             .then(async uri => {
-                if (uri) {
+                if (isNotNull(uri)) {
                     logger.log(`SourceMaps: sourcemap url parsed from end of generated content: ${uri}`);
                     await this._sourceMaps!.processNewSourceMap(generatedScriptPath, uri, this._isVSClient);
                 } else {
@@ -75,7 +76,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
      * Returns null if no source map url is found or if an error occured.
      */
     private findSourceMapUrlInFile(pathToGenerated: string, content?: string): Promise<string | null> {
-        if (content) {
+        if (isNotEmpty(content)) {
             return Promise.resolve(this.findSourceMapUrl(content));
         }
 
@@ -93,7 +94,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
         for (let l = lines.length - 1; l >= Math.max(lines.length - 10, 0); l--) {    // only search for url in the last 10 lines
             const line = lines[l].trim();
             const matches = EagerSourceMapTransformer.SOURCE_MAPPING_MATCHER.exec(line);
-            if (matches && matches.length === 2) {
+            if (hasMatches(matches) && matches.length === 2) {
                 return matches[1].trim();
             }
         }

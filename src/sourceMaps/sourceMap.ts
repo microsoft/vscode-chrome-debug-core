@@ -16,6 +16,7 @@ import * as _ from 'lodash';
 import { IValidatedMap } from '../chrome/collections/validatedMap';
 import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
+import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 
 export type MappedPosition = MappedPosition;
 
@@ -25,7 +26,7 @@ export type MappedPosition = MappedPosition;
 export interface ISourcePathDetails {
     originalPath: IResourceIdentifier;
     inferredPath: IResourceIdentifier;
-    startPosition: IGeneratedPosition;
+    startPosition: IGeneratedPosition | null;
 }
 
 export interface NonNullablePosition extends NullablePosition {
@@ -53,20 +54,27 @@ class SourcePathMappingCalculator {
         // is not always needed.
         return this._normalizedSourcesInOrder.map((inferredPath: IResourceIdentifier, i: number) => {
             const originalSource = this._originalSourcesInOrder[i];
-            const originalPath = this._originalSourceRoot
+            const originalPath = isNotEmpty(this._originalSourceRoot)
                 ? sourceMapUtils.getFullSourceEntry(this._originalSourceRoot, originalSource)
                 : originalSource;
+
+            let startPosition;
+            try {
+                startPosition = this._sourceMap.generatedPositionFor(inferredPath, 0, 0);
+            } catch {
+                startPosition = null;
+            }
             return <ISourcePathDetails>{
                 inferredPath,
                 originalPath,
-                startPosition: this._sourceMap.generatedPositionFor(inferredPath, 0, 0)
+                startPosition: startPosition
             };
         }).sort((a, b) => {
             // https://github.com/Microsoft/vscode-chrome-debug/issues/353
-            if (!a.startPosition) {
+            if (isNull(a.startPosition)) {
                 logger.log(`Could not map start position for: ${a.inferredPath}`);
                 return -1;
-            } else if (!b.startPosition) {
+            } else if (isNull(b.startPosition)) {
                 logger.log(`Could not map start position for: ${b.inferredPath}`);
                 return 1;
             }
@@ -102,11 +110,11 @@ export class SourceMap {
         const sourceMap: RawSourceMap = JSON.parse(json);
         logger.log(`SourceMap: creating for ${generatedPath}`);
         logger.log(`SourceMap: sourceRoot: ${sourceMap.sourceRoot}`);
-        if (sourceMap.sourceRoot && sourceMap.sourceRoot.toLowerCase() === '/source/') {
+        if (isNotEmpty(sourceMap.sourceRoot) && sourceMap.sourceRoot.toLowerCase() === '/source/') {
             logger.log('Warning: if you are using gulp-sourcemaps < 2.0 directly or indirectly, you may need to set sourceRoot manually in your build config, if your files are not actually under a directory called /source');
         }
         logger.log(`SourceMap: sources: ${JSON.stringify(sourceMap.sources)}`);
-        if (pathMapping) {
+        if (isDefined(pathMapping)) {
             logger.log(`SourceMap: pathMapping: ${JSON.stringify(pathMapping)}`);
         }
 
@@ -117,7 +125,7 @@ export class SourceMap {
         // resolve them to file:/// urls, using computedSourceRoot, to be simpler and unambiguous, since
         // it needs to look them up later in exactly the same format.
         const normalizedSources = sourceMap.sources.map(sourcePath => {
-            if (sourceMapPathOverrides) {
+            if (isDefined(sourceMapPathOverrides)) {
                 const fullSourceEntry = sourceMapUtils.getFullSourceEntry(sourceMap.sourceRoot, sourcePath);
                 const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry.textRepresentation, sourceMapPathOverrides, isVSClient);
                 if (fullSourceEntry.textRepresentation !== mappedFullSourceEntry) {
@@ -241,7 +249,7 @@ export class SourceMap {
         return validPositions.map(position => Range.acrossSingleLine(
             createLineNumber(position.line - 1), // Back to 0-indexed lines
             createColumnNumber(position.column),
-            createColumnNumber((position.lastColumn || position.column) + 1)) // position.lastColumn is inclusive and Range uses exclusive ranges, so we add 1
+            createColumnNumber(_.defaultTo(position.lastColumn, position.column) + 1)) // position.lastColumn is inclusive and Range uses exclusive ranges, so we add 1
         );
     }
 
