@@ -13,8 +13,7 @@ import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
 import { LocationInScript } from './internal/locations/location';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
-import isUndefined = require('lodash/isUndefined');
-import { isNotEmpty, isEmpty, isDefined, hasMatches } from './utils/typedOperators';
+import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined } from './utils/typedOperators';
 import * as _ from 'lodash';
 
 /**
