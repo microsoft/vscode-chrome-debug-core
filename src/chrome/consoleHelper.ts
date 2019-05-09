@@ -8,9 +8,8 @@ import * as variables from './variables';
 import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { IExceptionDetails } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
 import { functionDescription } from './internal/stackTraces/callFramePresentation';
-import isUndefined = require('lodash/isUndefined');
 import * as _ from 'lodash';
-import { isNotEmpty, isFalse, isDefined } from './utils/typedOperators';
+import { isNotEmpty, isFalse, isDefined, isUndefined } from './utils/typedOperators';
 
 export function formatExceptionDetails(e: IExceptionDetails): string {
     if (isUndefined(e.exception)) {
