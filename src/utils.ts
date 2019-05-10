@@ -239,11 +239,11 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg?: string | Error): Promise<never> {
+export function errP(msg?: string): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
-    if (msg === undefined) {
+    if (isEmpty(msg)) {
         e = new Error('Unknown error');
     } else if (isErrorLike(msg)) {
         // msg is already an Error object
