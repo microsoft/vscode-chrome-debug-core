@@ -126,7 +126,7 @@ function resolveParams(args: CDTP.Runtime.RemoteObject[], skipFormatSpecifiers?:
             // `formatted` is an object - split currentCollapsedStringArg around the current formatSpec and add the object
             const curSpecIdx = currentCollapsedStringArg.indexOf('%' + formatSpec);
             const processedPart = currentCollapsedStringArg.slice(0, curSpecIdx);
-            if (processedPart !== '') {
+            if (isNotEmpty(processedPart)) {
                 pushStringArg(processedPart);
             }
 

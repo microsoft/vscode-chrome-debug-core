@@ -216,7 +216,7 @@ export function fixDriveLetter(aPath: string, uppercaseDriveLetter = false): str
             'file:///' +
             aPath[prefixLen].toLowerCase() +
             aPath.substr(prefixLen + 1);
-    } else if (aPath.match(/^[A-Za-z]:/) !== null) {
+    } else if (hasMatches(aPath.match(/^[A-Za-z]:/))) {
         // If the path starts with a drive letter, ensure lowercase. VS Code uses a lowercase drive letter
         const driveLetter = uppercaseDriveLetter ? aPath[0].toUpperCase() : aPath[0].toLowerCase();
         aPath = driveLetter + aPath.substr(1);
@@ -457,7 +457,7 @@ export function pathToRegex(aPath: string, guid = ''): string {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
     }
 
-    if (guid !== '') {
+    if (isNotEmpty(guid)) {
         // Add a guid to the regexp to make it unique, without modifying what it matches. This will allow us to add duplicated breakpoints using CDTP
         aPath = aPath + `(?:${guid}){0}`;
     }
