@@ -285,7 +285,7 @@ export function errorMessageFromExceptionDetails(exceptionDetails: CDTP.Runtime.
 }
 
 export function getEvaluateName(parentEvaluateName: string | undefined, name: string): string {
-    if (isUndefined(parentEvaluateName)) return name;
+    if (isEmpty(parentEvaluateName)) return name;
 
     let nameAccessor: string;
     if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)) {
