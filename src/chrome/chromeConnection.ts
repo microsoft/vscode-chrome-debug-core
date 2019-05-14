@@ -21,6 +21,7 @@ import { IDebuggeeLauncher } from './debugeeStartup/debugeeLauncher';
 import { ScenarioType } from './client/chromeDebugAdapter/unconnectedCDA';
 import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
+import { isDefined } from './utils/typedOperators';
 
 export interface ITarget {
     description: string;
@@ -117,7 +118,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         this.events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.events]);
     }
 
-    public get isAttached(): boolean { return !!this._client; }
+    public get isAttached(): boolean { return isDefined(this._client); }
 
     public get api(): CDTP.ProtocolApi {
         if (this._client !== undefined) {
@@ -203,11 +204,9 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     }
 
     public get version(): Promise<TargetVersions> {
-        if (this._attachedTarget) {
+        if (isDefined(this._attachedTarget)) {
             return this._attachedTarget.version
-            .then(version => {
-                return (version) ? version : new TargetVersions(Version.unknownVersion(), Version.unknownVersion());
-            });
+                .then(version => version, () => new TargetVersions(Version.unknownVersion(), Version.unknownVersion()));
         } else {
             throw new Error(`Can't request the version before we are attached to a target`);
         }

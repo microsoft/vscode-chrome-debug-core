@@ -53,6 +53,8 @@ import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfig
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
 import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
+import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
+import * as _ from 'lodash';
 
 let localize = nls.loadMessageBundle();
 
@@ -135,7 +137,7 @@ export class ChromeDebugLogic {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = chromeConnection;
-        this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
+        this.events = new StepProgressEventsEmitter(isDefined(this._chromeConnection.events) ? [this._chromeConnection.events] : []);
 
         this._variableHandles = new variables.VariableHandles();
 
@@ -223,13 +225,13 @@ export class ChromeDebugLogic {
     }
 
     public async onConsoleAPICalled(event: IConsoleAPICalledEvent): Promise<void> {
-        if (this._launchAttachArgs._suppressConsoleOutput) {
+        if (isTrue(this._launchAttachArgs._suppressConsoleOutput)) {
             return;
         }
 
         const result = formatConsoleArguments(event.type, event.args, event.stackTrace);
-        const stack = event.stackTrace ? stackTraceWithoutLogpointFrame(event.stackTrace) : undefined;
-        if (result) {
+        const stack = isDefined(event.stackTrace) ? stackTraceWithoutLogpointFrame(event.stackTrace) : undefined;
+        if (isNotNull(result)) {
             return this.logObjects(result.args, result.isError, stack);
         }
     }
@@ -240,18 +242,18 @@ export class ChromeDebugLogic {
             return;
         }
 
-        const args = entry.args || [];
+        const args = _.defaultTo(entry.args, [] as CDTP.Runtime.RemoteObject[]);
 
-        let text = entry.text || '';
-        if (entry.url && !entry.stackTrace) {
-            if (text) {
+        let text = _.defaultTo(entry.text, '');
+        if (isNotEmpty(entry.url) && isUndefined(entry.stackTrace)) {
+            if (isNotEmpty(text)) {
                 text += ' ';
             }
 
             text += `[${entry.url}]`;
         }
 
-        if (text) {
+        if (isNotEmpty(text)) {
             args.unshift({
                 type: 'string',
                 value: text
@@ -263,7 +265,7 @@ export class ChromeDebugLogic {
                 'log';
         const result = formatConsoleArguments(type, args, entry.stackTrace);
         const stack = entry.stackTrace;
-        if (result) {
+        if (isNotNull(result)) {
             return this.logObjects(result.args, result.isError, stack);
         }
     }
@@ -275,7 +277,7 @@ export class ChromeDebugLogic {
                 const category = isError ? 'stderr' : 'stdout';
 
                 let location: LocationInLoadedSource | undefined = undefined;
-                if (stackTrace && stackTrace.codeFlowFrames.length) {
+                if (isDefined(stackTrace) && hasElements(stackTrace.codeFlowFrames)) {
                     location = stackTrace.codeFlowFrames[0].location.mappedToSource();
                 }
 
@@ -302,7 +304,7 @@ export class ChromeDebugLogic {
     }
 
     protected async onExceptionThrown(params: IExceptionThrownEvent): Promise<void> {
-        if (this._launchAttachArgs._suppressConsoleOutput) {
+        if (isTrue(this._launchAttachArgs._suppressConsoleOutput)) {
             return;
         }
 
@@ -312,7 +314,7 @@ export class ChromeDebugLogic {
 
             let location: LocationInLoadedSource | undefined = undefined;
             const stackTrace = params.exceptionDetails.stackTrace;
-            if (stackTrace && stackTrace.codeFlowFrames.length) {
+            if (isDefined(stackTrace) && hasElements(stackTrace.codeFlowFrames)) {
                 location = stackTrace.codeFlowFrames[0].location.mappedToSource();
             }
 
@@ -330,7 +332,7 @@ export class ChromeDebugLogic {
             const onConsoleAPICalledParams: IConsoleAPICalledEvent = {
                 type: params.message.type,
                 timestamp: params.message.timestamp,
-                args: params.message.parameters || [{ type: 'string', value: params.message.text }],
+                args: _.defaultTo(params.message.parameters, [{ type: 'string', value: params.message.text }]),
                 stackTrace: params.message.stack,
                 executionContextId: 1
             };
@@ -412,7 +414,7 @@ export class ChromeDebugLogic {
         }
     */
     public scopes(currentFrame: LoadedSourceCallFrame<CallFrameWithState>): IScopesResponseBody {
-        if (!currentFrame || !currentFrame.location) {
+        if (isUndefined(currentFrame) || isUndefined(currentFrame.location)) {
             throw errors.stackFrameNotValid();
         }
 
@@ -429,7 +431,7 @@ export class ChromeDebugLogic {
                 expensive: scope.type === 'global'
             };
 
-            if (scope.startLocation && scope.endLocation) {
+            if (isDefined(scope.startLocation) && isDefined(scope.endLocation)) {
                 resultScope.column = scope.startLocation.position.columnNumber;
                 resultScope.line = scope.startLocation.position.lineNumber;
                 resultScope.endColumn = scope.endLocation.position.columnNumber;
@@ -439,7 +441,7 @@ export class ChromeDebugLogic {
             return resultScope;
         });
 
-        if (this._exception && currentFrame.index === 0) {
+        if (isDefined(this._exception) && currentFrame.index === 0) {
             scopes.unshift(<DebugProtocol.Scope>{
                 name: localize('scope.exception', 'Exception'),
                 variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
@@ -465,7 +467,7 @@ export class ChromeDebugLogic {
     */
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody | undefined> {
         const handle = this._variableHandles.get(args.variablesReference);
-        if (!handle) {
+        if (isUndefined(handle)) {
             return Promise.resolve(undefined);
         }
 
@@ -479,7 +481,7 @@ export class ChromeDebugLogic {
     }
 
     public async propertyDescriptorToVariable(propDesc: CDTP.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
-        if (propDesc.get) {
+        if (isDefined(propDesc.get)) {
             // Getter
             const grabGetterValue = 'function remoteFunction(propName) { return this[propName]; }';
 
@@ -495,7 +497,7 @@ export class ChromeDebugLogic {
                 return { name: propDesc.name, value: error.toString(), variablesReference: 0 };
             }
 
-            if (response.exceptionDetails) {
+            if (isDefined(response.exceptionDetails)) {
                 // Not an error, getter could be `get foo() { throw new Error('bar'); }`
                 const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
                 logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
@@ -503,7 +505,7 @@ export class ChromeDebugLogic {
             } else {
                 return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
             }
-        } else if (propDesc.set) {
+        } else if (isDefined(propDesc.set)) {
             // setter without a getter, unlikely
             return { name: propDesc.name, value: 'setter', variablesReference: 0 };
         } else {
@@ -528,11 +530,11 @@ export class ChromeDebugLogic {
             const propsByName = new Map<string, CDTP.Runtime.PropertyDescriptor>();
             const internalPropsByName = new Map<string, CDTP.Runtime.InternalPropertyDescriptor>();
             getPropsResponses.forEach(response => {
-                if (response) {
+                if (isNotNull(response)) {
                     response.result.forEach(propDesc =>
                         propsByName.set(propDesc.name, propDesc));
 
-                    if (response.internalProperties) {
+                    if (isDefined(response.internalProperties)) {
                         response.internalProperties.forEach(internalProp => {
                             internalPropsByName.set(internalProp.name, internalProp);
                         });
@@ -543,13 +545,13 @@ export class ChromeDebugLogic {
             // Convert Chrome prop descriptors to DebugProtocol vars
             const variables: Promise<DebugProtocol.Variable>[] = [];
             propsByName.forEach(propDesc => {
-                if (!filter || filter === 'all' || (isIndexedPropName(propDesc.name) === (filter === 'indexed'))) {
+                if (isEmpty(filter) || filter === 'all' || (isIndexedPropName(propDesc.name) === (filter === 'indexed'))) {
                     variables.push(this.propertyDescriptorToVariable(propDesc, objectId, evaluateName));
                 }
             });
 
             internalPropsByName.forEach(internalProp => {
-                if (!filter || filter === 'all' || (isIndexedPropName(internalProp.name) === (filter === 'indexed'))) {
+                if (isEmpty(filter) || filter === 'all' || (isIndexedPropName(internalProp.name) === (filter === 'indexed'))) {
                     variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp, evaluateName)));
                 }
             });
@@ -605,10 +607,10 @@ export class ChromeDebugLogic {
             arguments: [{ value: start }, { value: count }],
             silent: true
         }).then<DebugProtocol.Variable[]>(evalResponse => {
-            if (evalResponse.exceptionDetails) {
+            if (isDefined(evalResponse.exceptionDetails)) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
                 return Promise.reject(errors.errorFromEvaluate(errMsg));
-            } else if (evalResponse.result.objectId) {
+            } else if (isNotEmpty(evalResponse.result.objectId)) {
                 // The eval was successful and returned a reference to the array object. Get the props, then filter
                 // out everything except the index names.
                 return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
@@ -660,9 +662,9 @@ export class ChromeDebugLogic {
 
         // Convert to a Variable object then just copy the relevant fields off
         const variable = await this.remoteObjectToVariable(expression, evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
-        if (evalResponse.exceptionDetails) {
+        if (isDefined(evalResponse.exceptionDetails)) {
             let resultValue = variable.value;
-            if (resultValue && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
+            if (isNotEmpty(resultValue) && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
                 resultValue = errors.evalNotAvailableMsg;
             }
 
@@ -692,11 +694,7 @@ export class ChromeDebugLogic {
     }
 
     private async doEvaluate(expression: string, frame: LoadedSourceCallFrame<CallFrameWithState> | undefined, extraArgs?: Partial<CDTP.Runtime.EvaluateRequest>): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse | CDTP.Runtime.EvaluateResponse> {
-        if (frame) {
-            if (!frame) {
-                return utils.errP(errors.evalNotAvailableMsg);
-            }
-
+        if (isDefined(frame)) {
             return this.evaluateOnCallFrame(expression, frame, extraArgs);
         } else {
             let args: CDTP.Runtime.EvaluateRequest = {
@@ -707,7 +705,7 @@ export class ChromeDebugLogic {
                 objectGroup: 'console',
                 userGesture: true
             };
-            if (extraArgs) {
+            if (isDefined(extraArgs)) {
                 args = Object.assign(args, extraArgs);
             }
 
@@ -724,7 +722,7 @@ export class ChromeDebugLogic {
             includeCommandLineAPI: true,
             objectGroup: 'console'
         };
-        if (extraArgs) {
+        if (isDefined(extraArgs)) {
             args = Object.assign(args, extraArgs);
         }
 
@@ -741,7 +739,7 @@ export class ChromeDebugLogic {
     */
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
         const handle = this._variableHandles.get(args.variablesReference);
-        if (!handle) {
+        if (isUndefined(handle)) {
             return Promise.reject(errors.setValueNotSupported());
         }
 
@@ -752,7 +750,7 @@ export class ChromeDebugLogic {
     public setVariableValue(frame: LoadedSourceCallFrame<CallFrameWithState>, scopeNumber: number, variableName: string, value: string): Promise<string> {
         let evalResultObject: CDTP.Runtime.RemoteObject;
         return this._inspectDebuggeeState.evaluateOnCallFrame({ frame: frame.unmappedCallFrame, expression: value, silent: true }).then(evalResponse => {
-            if (evalResponse.exceptionDetails) {
+            if (isDefined(evalResponse.exceptionDetails)) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
                 return Promise.reject(errors.errorFromEvaluate(errMsg));
             } else {
@@ -772,7 +770,7 @@ export class ChromeDebugLogic {
             objectId, functionDeclaration: setPropertyValueFn,
             silent: true
         }).then(response => {
-            if (response.exceptionDetails) {
+            if (isDefined(response.exceptionDetails)) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
                 return Promise.reject<string>(errors.errorFromEvaluate(errMsg));
             } else {
@@ -784,9 +782,9 @@ export class ChromeDebugLogic {
     }
 
     public async remoteObjectToVariable(name: string, object?: CDTP.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
-        name = name || '""';
+        name = _.defaultTo(name, '""');
 
-        if (object) {
+        if (isDefined(object)) {
             if (object.type === 'object' && (object.subtype === 'null' || (<string>object.subtype) === 'internal#location')) {
                 // Could format this nicely later, see #110
                 return this.createPrimitiveVariableWithValue(name, object.subtype!, parentEvaluateName);
@@ -832,7 +830,7 @@ export class ChromeDebugLogic {
         const value = variables.getRemoteObjectPreview_object(object, context);
         let propCountP: Promise<IPropCount>;
         if (object.subtype === 'array' || object.subtype === 'typedarray') {
-            if (object.preview && !object.preview.overflow) {
+            if (isDefined(object.preview) && !object.preview.overflow) {
                 propCountP = Promise.resolve(this.getArrayNumPropsByPreview(object));
             } else if (object.className === 'Buffer') {
                 propCountP = this.getBufferNumPropsByEval(object.objectId);
@@ -907,19 +905,10 @@ export class ChromeDebugLogic {
             expression = prefix.substr(0, dot);
         }
 
-        if (args.frame && !expression) {
+        if (isDefined(args.frame) && isEmpty(expression)) {
             logger.verbose(`Completions: Returning global completions`);
 
-            // If no expression was passed, we must be getting global completions at a breakpoint
-            if (!args.frame) {
-                return Promise.reject(errors.stackFrameNotValid());
-            }
-
             const callFrame = args.frame;
-            if (!callFrame) {
-                // Async frame or label
-                return { targets: [] };
-            }
 
             const scopeExpandPs = callFrame.state.scopeChain
                 .map((scope, i) => new ScopeContainer(callFrame, i, scope.object.objectId).expand(this));
@@ -930,12 +919,12 @@ export class ChromeDebugLogic {
                     return { targets };
                 });
         } else {
-            expression = expression || 'this';
+            expression = _.defaultTo(expression, 'this');
 
             logger.verbose(`Completions: Returning for expression '${expression}'`);
             const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
             const response = await this.waitThenDoEvaluate(getCompletionsFn, args.frame, { returnByValue: true });
-            if (response.exceptionDetails) {
+            if (isDefined(response.exceptionDetails)) {
                 return { targets: [] };
             } else {
                 return { targets: this.getFlatAndUniqueCompletionItems(response.result.value) };
@@ -984,7 +973,7 @@ export class ChromeDebugLogic {
 
         const indexedProps = object.preview.properties
             .filter(prop => isIndexedPropName(prop.name));
-        if (indexedProps.length) {
+        if (indexedProps.length > 0) {
             // +1 because (last index=0) => 1 prop
             indexedVariables = parseInt(indexedProps[indexedProps.length - 1].name, 10) + 1;
         }
@@ -1012,7 +1001,7 @@ export class ChromeDebugLogic {
             silent: true,
             returnByValue: true
         }).then(response => {
-            if (response.exceptionDetails) {
+            if (isDefined(response.exceptionDetails)) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
                 return Promise.reject<IPropCount>(errors.errorFromEvaluate(errMsg));
             } else {
