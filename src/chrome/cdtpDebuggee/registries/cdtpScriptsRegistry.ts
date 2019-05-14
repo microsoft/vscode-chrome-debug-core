@@ -9,6 +9,7 @@ import { ExecutionContext, IExecutionContext } from '../../internal/scripts/exec
 import { injectable } from 'inversify';
 import { IResourceIdentifier, newResourceIdentifierMap } from '../../internal/sources/resourceIdentifier';
 import { FrameId } from '../cdtpPrimitives';
+import * as _ from 'lodash';
 
 /**
  * TODO: The CDTPScriptsRegistry is still a work in progress. We need to understand exactly how the ExecutionContexts, the Scripts, and the script "generations" work to figure out the best way to implement this
@@ -100,6 +101,6 @@ class CDTPCurrentGeneration {
 
     public getScriptByPath(path: IResourceIdentifier): IScript[] {
         const runtimeScript = this._scriptByPath.tryGetting(path);
-        return runtimeScript || [];
+        return _.defaultTo(runtimeScript, []);
     }
 }

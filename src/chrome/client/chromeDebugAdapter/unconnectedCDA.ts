@@ -14,6 +14,7 @@ import { CommandText } from '../requests';
 import { injectable, inject } from 'inversify';
 import { ConnectingCDAProvider } from './connectingCDA';
 import { ISession } from '../session';
+import { isTrue } from '../../utils/typedOperators';
 
 export enum ScenarioType {
     Launch,
@@ -55,9 +56,16 @@ export class UnconnectedCDA implements IDebugAdapterState {
     }
 
     private parseLoggingConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs): ILoggingConfiguration {
-        const traceMapping: { [key: string]: Logger.LogLevel | undefined } = { true: Logger.LogLevel.Warn, verbose: Logger.LogLevel.Verbose };
-        const traceValue = args.trace && traceMapping[args.trace.toString().toLowerCase()];
-        return { logLevel: traceValue || undefined, logFilePath: args.logFilePath, shouldLogTimestamps: !!args.logTimestamps };
+        let traceValue: Logger.LogLevel;
+        switch (args.trace) {
+            case 'verbose':
+                traceValue = Logger.LogLevel.Verbose;
+                break;
+            default:
+                traceValue = Logger.LogLevel.Warn;
+        }
+
+        return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: isTrue(args.logTimestamps) };
     }
 
     private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {

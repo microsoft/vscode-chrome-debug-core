@@ -4,6 +4,7 @@
 import * as path from 'path';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ScriptCallFrame, CallFrameWithState } from './callFrame';
+import { isTrue, isDefined } from '../../utils/typedOperators';
 
 /** The clients can requests the stack traces frames descriptions in different formats.
  * We use this class to create the description for the call frame according to the parameters supplied by the client.
@@ -24,12 +25,12 @@ export class CustomCallFrameDescriptionFormatter implements ICallFrameDescriptio
 
         let formattedDescription = this._callFrame.functionName;
 
-        if (this._formatArgs) {
-            if (this._formatArgs.module) {
+        if (isDefined(this._formatArgs)) {
+            if (isTrue(this._formatArgs.module)) {
                 formattedDescription += ` [${path.basename(locationInLoadedSource.source.identifier.textRepresentation)}]`;
             }
 
-            if (this._formatArgs.line) {
+            if (isTrue(this._formatArgs.line)) {
                 formattedDescription += ` Line ${locationInLoadedSource.position.lineNumber}`;
             }
         }

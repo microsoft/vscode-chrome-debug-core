@@ -12,6 +12,7 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject } from 'inversify';
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
+import { isDefined } from '../../utils/typedOperators';
 
 export type LogEntrySource = 'xml' | 'javascript' | 'network' | 'storage' | 'appcache' | 'rendering' | 'security' | 'deprecation' | 'worker' | 'violation' | 'intervention' | 'recommendation' | 'other';
 export type LogLevel = 'verbose' | 'info' | 'warning' | 'error';
@@ -59,7 +60,7 @@ export class CDTPLogEventsProvider extends CDTPEventsEmitterDiagnosticsModule<CD
             networkRequestId: entry.networkRequestId,
             workerId: entry.workerId,
             args: entry.args,
-            stackTrace: entry.stackTrace && await this._stackTraceParser.toStackTraceCodeFlow(entry.stackTrace),
+            stackTrace: isDefined(entry.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(entry.stackTrace) : undefined,
         };
     }
 }

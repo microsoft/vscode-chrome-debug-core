@@ -8,6 +8,7 @@ import { ILoadedSource } from '../sources/loadedSource';
 import { CodeFlowFrame, ICallFrame, CallFrame, ICallFrameState } from './callFrame';
 import { CallFramePresentationHint, IStackTracePresentationRow } from './stackTracePresentationRow';
 import { IStackTraceFormat, StackTraceCustomFormat } from './stackTracePresenter';
+import { isTrue, isNotEmpty } from '../../utils/typedOperators';
 
 export type SourcePresentationHint = 'normal' | 'emphasize' | 'deemphasize';
 
@@ -57,11 +58,11 @@ export class CallFramePresentation implements IStackTracePresentationRow {
         let formattedDescription = functionDescription(this.callFrame.codeFlow.functionName, location.source);
 
         if (this._descriptionFormatArgs instanceof StackTraceCustomFormat) {
-            if (this._descriptionFormatArgs.formatOptions.module) {
+            if (isTrue(this._descriptionFormatArgs.formatOptions.module)) {
                 formattedDescription += ` [${path.basename(location.source.identifier.textRepresentation)}]`;
             }
 
-            if (this._descriptionFormatArgs.formatOptions.line) {
+            if (isTrue(this._descriptionFormatArgs.formatOptions.line)) {
                 // The description property intended for the user, so we don't care if the client uses 0-index or 1-index line number. We send this as 1-index line number always
                 const oneBasedLineNumber = location.position.lineNumber + 1;
 
@@ -74,7 +75,7 @@ export class CallFramePresentation implements IStackTracePresentationRow {
 }
 
 export function functionDescription(functionName: string | undefined, functionModule: ILoadedSource): string {
-    if (functionName) {
+    if (isNotEmpty(functionName)) {
         return functionName;
     } else if (functionModule.doesScriptHasUrl()) {
         return '(anonymous function)';

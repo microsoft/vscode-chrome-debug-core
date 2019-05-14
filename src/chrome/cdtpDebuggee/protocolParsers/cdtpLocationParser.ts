@@ -6,6 +6,7 @@ import { Position, LocationInScript } from '../../internal/locations/location';
 import { createColumnNumber, createLineNumber } from '../../internal/locations/subtypes';
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { Protocol as CDTP } from 'devtools-protocol';
+import * as _ from 'lodash';
 
 interface IHasCoordinates {
     lineNumber: number;
@@ -28,6 +29,6 @@ export class CDTPLocationParser {
 
     private getCoordinates(crdpObjectWithCoordinates: IHasCoordinates): Position {
         // If the colum number is not specified, we assume it's referring to column 0
-        return new Position(createLineNumber(crdpObjectWithCoordinates.lineNumber), createColumnNumber(crdpObjectWithCoordinates.columnNumber || 0));
+        return new Position(createLineNumber(crdpObjectWithCoordinates.lineNumber), createColumnNumber(_.defaultTo(crdpObjectWithCoordinates.columnNumber, 0)));
     }
 }

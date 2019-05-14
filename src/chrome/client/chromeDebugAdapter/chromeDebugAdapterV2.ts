@@ -11,6 +11,7 @@ import { createDIContainer } from './cdaDIContainerCreator';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { TerminatingCDA } from './terminatingCDA';
 import { logger } from 'vscode-debugadapter';
+import { isUndefined } from '../../utils/typedOperators';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -31,7 +32,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
         await this.waitUntilInitialized;
 
         const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs => {
-            if (!this._state.processRequest) {
+            if (isUndefined(this._state.processRequest)) {
                 throw new Error(`Invalid state: ${this._state}`);
             }
             return this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector);
@@ -59,7 +60,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     private changeStateTo(newState: IDebugAdapterState) {
         logger.log(`Changing ChromeDebugAdapter state to ${newState}`);
         this._state = newState;
-        if (!this._state.processRequest) {
+        if (isUndefined(this._state.processRequest)) {
             throw new Error(`Invalid state: ${this._state}`);
         }
     }

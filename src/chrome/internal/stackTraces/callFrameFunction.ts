@@ -2,6 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 import { IScript } from '../scripts/script';
+import { isNotEmpty } from '../../utils/typedOperators';
 
 /** We use these classes to generate a proper description for the function
  * based on wheter it is named, and the script where it's at is named
@@ -31,7 +32,7 @@ class CallFrameForUnamedFunctionInNamedScript implements ICallFrameFunction {
 }
 
 export function createCallFrameFunction(script: IScript, functionName: string) {
-    if (functionName) {
+    if (isNotEmpty(functionName)) {
         return new CallFrameForNamedFunction(functionName);
     } else if (script.runtimeSource.doesScriptHasUrl()) {
         return new CallFrameForUnamedFunctionInNamedScript();
