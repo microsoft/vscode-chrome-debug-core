@@ -10,6 +10,7 @@ import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { injectable, inject } from 'inversify';
 import { PrivateTypes } from '../diTypes';
 import { BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import * as _ from 'lodash';
 
 /**
  * Find the list of breakpoints that we set for a particular script
@@ -27,7 +28,7 @@ export class BreakpointsSetForScriptFinder {
     }
 
     public tryGettingBreakpointAtLocation(locationInScript: LocationInScript): CDTPBreakpoint[] {
-        const breakpoints = this._scriptToBreakpoints.tryGetting(locationInScript.script) || new Set();
+        const breakpoints = _.defaultTo(this._scriptToBreakpoints.tryGetting(locationInScript.script), new Set());
         const bpsAtLocation = [];
         for (const bp of breakpoints) {
             if (bp.actualLocation.isSameAs(locationInScript)) {

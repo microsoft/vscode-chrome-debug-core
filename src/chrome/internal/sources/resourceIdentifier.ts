@@ -8,6 +8,7 @@ import { MapUsingProjection } from '../../collections/mapUsingProjection';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as utils from '../../../utils';
 import { SetUsingProjection } from '../../collections/setUsingProjection';
+import { hasMatches } from '../../utils/typedOperators';
 
 /**
  * Hierarchy:
@@ -172,8 +173,8 @@ export class WindowLocalFilePath<TString extends string = string> extends LocalF
         super(WindowLocalFilePath.normalize(textRepresentation));
     }
 
-    public static isValid(path: string) {
-        return path.match(/^[A-Za-z]:/);
+    public static isValid(path: string): boolean {
+        return hasMatches(path.match(/^[A-Za-z]:/));
     }
 
     private static normalize<TString extends string>(textRepresentation: TString): TString {

@@ -8,6 +8,7 @@ import { CDTPScriptUrl } from './sources/resourceIdentifierSubtypes';
 import { createLineNumber, createColumnNumber } from './locations/subtypes';
 import { Position } from '../internal/locations/location';
 import { CDTPScriptsRegistry } from '../cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { hasMatches } from '../utils/typedOperators';
 
 export interface IFormattedExceptionLineDescription {
     generateDescription(zeroBaseNumbers: boolean): string;
@@ -53,7 +54,7 @@ export class FormattedExceptionParser {
     public async parse(): Promise<IFormattedExceptionLineDescription[]> {
         return this.exceptionLines().map(line => {
             const matches = line.match(/^\s+at (.*?)\s*\(?([^ ]+):(\d+):(\d+)\)?$/);
-            if (matches) {
+            if (hasMatches(matches)) {
                 const url = parseResourceIdentifier(matches[2]) as IResourceIdentifier<CDTPScriptUrl>;
                 const lineNumber = parseInt(matches[3], 10);
                 const zeroBasedLineNumber = createLineNumber(lineNumber - 1);

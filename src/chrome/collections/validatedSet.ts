@@ -1,5 +1,6 @@
 import { printSet } from './printing';
 import { breakWhileDebugging } from '../../validation';
+import { isDefined } from '../utils/typedOperators';
 
 export interface IValidatedSet<K> extends Set<K> {
     addOrReplaceIfExists(key: K): this;
@@ -15,7 +16,7 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
     public constructor(iterable: Iterable<K>);
     public constructor(values?: ReadonlyArray<K>);
     public constructor(valuesOrIterable?: ReadonlyArray<K> | undefined | Iterable<K>) {
-        this._wrappedSet = valuesOrIterable
+        this._wrappedSet = isDefined(valuesOrIterable)
             ? new Set(valuesOrIterable)
             : new Set();
     }

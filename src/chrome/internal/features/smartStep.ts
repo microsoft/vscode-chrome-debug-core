@@ -19,6 +19,8 @@ import * as utils from '../../../utils';
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { IDebuggeeSteppingController } from '../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
 import { printClassDescription } from '../../utils/printing';
+import * as _ from 'lodash';
+import { isNotNull } from '../../utils/typedOperators';
 const localize = nls.loadMessageBundle();
 
 export interface ISmartStepLogicConfiguration {
@@ -94,14 +96,14 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
     public async shouldSkip(frame: ScriptCallFrame<CallFrameWithState>): Promise<boolean> {
         if (!this._isEnabled) return false;
 
-        const clientPath = this._pathTransformer.getClientPathFromTargetPath(frame.location.script.runtimeSource.identifier)
-            || frame.location.script.runtimeSource.identifier;
+        const clientPath = _.defaultTo(this._pathTransformer.getClientPathFromTargetPath(frame.location.script.runtimeSource.identifier),
+            frame.location.script.runtimeSource.identifier);
         const mapping = await this._sourceMapTransformer.mapToAuthored(clientPath.canonicalized, frame.codeFlow.lineNumber, frame.codeFlow.columnNumber);
-        if (mapping) {
+        if (isNotNull(mapping)) {
             return false;
         }
 
-        if ((await this._sourceMapTransformer.allSources(clientPath.canonicalized)).length) {
+        if ((await this._sourceMapTransformer.allSources(clientPath.canonicalized)).length > 0) {
             return true;
         }
 
@@ -109,7 +111,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
     }
 
     public callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[] {
-        return this.isEnabled && !locationInLoadedSource.source.isMappedSource()
+        return this.isEnabled() && !locationInLoadedSource.source.isMappedSource()
             ? [{
                 additionalSourceOrigins: [localize('smartStepFeatureName', 'smartStep')],
                 sourcePresentationHint: 'deemphasize'
