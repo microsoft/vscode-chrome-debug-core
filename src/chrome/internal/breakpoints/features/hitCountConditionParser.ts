@@ -1,3 +1,6 @@
+import { hasMatches } from '../../../utils/typedOperators';
+import * as _ from 'lodash';
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
@@ -11,7 +14,7 @@ export class HitCountConditionParser {
 
     public parse(): HitCountConditionFunction {
         const patternMatches = this.HIT_COUNT_CONDITION_PATTERN.exec(this._hitCountCondition.trim());
-        if (patternMatches && patternMatches.length >= 3) {
+        if (hasMatches(patternMatches) && patternMatches.length >= 3) {
             // eval safe because of the regex, and this is only a string that the current user will type in
             // tslint:disable-next-line: function-constructor
             const shouldPause: HitCountConditionFunction = <any>new Function('numHits', this.javaScriptCodeToEvaluateCondition(patternMatches));
@@ -35,7 +38,7 @@ export class HitCountConditionParser {
     }
 
     private parseOperator(patternMatches: RegExpExecArray): string {
-        let op = patternMatches[1] || '>=';
+        let op = _.defaultTo(patternMatches[1], '>=');
         if (op === '=')
             op = '==';
         return op;

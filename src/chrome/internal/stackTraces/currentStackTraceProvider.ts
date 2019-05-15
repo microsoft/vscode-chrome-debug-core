@@ -6,6 +6,7 @@ import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../featur
 import { ScriptCallFrame, CallFrameWithState } from './callFrame';
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { ILoadedSource } from '../sources/loadedSource';
+import { isDefined } from '../../utils/typedOperators';
 
 interface ICurrentStackTraceProviderState {
     isPaused(): boolean;
@@ -34,7 +35,7 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     public isSourceInCurrentStack(source: ILoadedSource): boolean {
         const asyncStackTrace = this.asyncStackTrace();
         return this.isSourceInCurrentSyncStack(source)
-            || (asyncStackTrace ? this.isSourceInAsyncStack(asyncStackTrace, source) : false);
+            || (isDefined(asyncStackTrace) ? this.isSourceInAsyncStack(asyncStackTrace, source) : false);
     }
 
     private isSourceInCurrentSyncStack(source: ILoadedSource<string>): boolean {
@@ -44,9 +45,9 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     private isSourceInAsyncStack(asyncStackTrace: CodeFlowStackTrace, source: ILoadedSource<string>): boolean {
         return asyncStackTrace.codeFlowFrames.some(frame => {
             const mappedSource = frame.location.mappedToSource();
-            return mappedSource ? mappedSource.source.isEquivalentTo(source) : false;
+            return mappedSource.source.isEquivalentTo(source);
         })
-            || (asyncStackTrace.parent ? this.isSourceInAsyncStack(asyncStackTrace.parent, source) : false);
+            || (isDefined(asyncStackTrace.parent) ? this.isSourceInAsyncStack(asyncStackTrace.parent, source) : false);
     }
 
     public async onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {

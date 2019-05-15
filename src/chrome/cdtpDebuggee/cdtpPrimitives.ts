@@ -11,6 +11,7 @@ import { IResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { IBPRecipeForRuntimeSource } from '../internal/breakpoints/baseMappedBPRecipe';
 import { MappableBreakpoint } from '../internal/breakpoints/breakpoint';
 import { MakePropertyRequired } from '../../typeUtils';
+import { isNotEmpty, isDefined } from '../utils/typedOperators';
 
 export type integer = number;
 // The IResourceIdentifier<CDTPScriptUrl> is used with the URL that is associated with each Script in CDTP. This should be a URL, but it could also be a string that is not a valid URL
@@ -25,7 +26,7 @@ export type FrameId = string & { [ImplementsFrameId]: 'FrameId' };
 export type CDTPNonPrimitiveRemoteObject = MakePropertyRequired<CDTP.Runtime.RemoteObject, 'objectId'>; // objectId won't be null for non primitive values. See https://chromedevtools.github.io/devtools-protocol/tot/Runtime#type-RemoteObject
 export type CDTPRemoteObjectOfTypeObject = MakePropertyRequired<CDTPNonPrimitiveRemoteObject, 'preview'>; // preview is only specified for remote objects of type === 'object'
 export function validateNonPrimitiveRemoteObject(remoteObject: CDTP.Runtime.RemoteObject): remoteObject is CDTPNonPrimitiveRemoteObject {
-    if (remoteObject.objectId) {
+    if (isNotEmpty(remoteObject.objectId)) {
         return true;
     } else {
         throw new Error(`Expected a non-primitive value to have an object id, yet it doesn't: ${JSON.stringify(remoteObject)}`);
@@ -33,7 +34,7 @@ export function validateNonPrimitiveRemoteObject(remoteObject: CDTP.Runtime.Remo
 }
 
 export function validateCDTPRemoteObjectOfTypeObject(remoteObject: CDTP.Runtime.RemoteObject): remoteObject is CDTPRemoteObjectOfTypeObject {
-    if (remoteObject.type === 'object' && remoteObject.objectId && remoteObject.preview) {
+    if (remoteObject.type === 'object' && isNotEmpty(remoteObject.objectId) && isDefined(remoteObject.preview)) {
         return true;
     } else {
         throw new Error(`Expected remote object to be of type == 'object' and to have an object id and a preview, yet it doesn't: ${JSON.stringify(remoteObject)}`);

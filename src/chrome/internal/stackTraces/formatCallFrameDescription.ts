@@ -6,6 +6,7 @@ import * as path from 'path';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LoadedSourceCallFrame, CallFrameWithState } from './callFrame';
 import { functionDescription } from './callFramePresentation';
+import { isDefined, isTrue } from '../../utils/typedOperators';
 
 /**
  * The clients can requests the stack traces frames descriptions in different formats.
@@ -16,12 +17,12 @@ export function formatCallFrameDescription(callFrame: LoadedSourceCallFrame<Call
 
     let formattedDescription = functionDescription(callFrame.codeFlow.functionName, location.source);
 
-    if (formatArgs) {
-        if (formatArgs.module) {
+    if (isDefined(formatArgs)) {
+        if (isTrue(formatArgs.module)) {
             formattedDescription += ` [${path.basename(location.source.identifier.textRepresentation)}]`;
         }
 
-        if (formatArgs.line) {
+        if (isTrue(formatArgs.line)) {
             formattedDescription += ` Line ${location.position.lineNumber}`;
         }
     }

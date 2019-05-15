@@ -13,16 +13,18 @@ import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
 import { LocationInScript } from './internal/locations/location';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
+import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined } from './utils/typedOperators';
+import * as _ from 'lodash';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
  */
 export function applyPathMappingsToTargetUrlPath(scriptUrlPath: string | undefined, pathMapping: IPathMapping | undefined): string {
-    if (!pathMapping) {
+    if (isUndefined(pathMapping)) {
         return '';
     }
 
-    if (!scriptUrlPath || !scriptUrlPath.startsWith('/')) {
+    if (isEmpty(scriptUrlPath) || !scriptUrlPath.startsWith('/')) {
         return '';
     }
 
@@ -30,7 +32,7 @@ export function applyPathMappingsToTargetUrlPath(scriptUrlPath: string | undefin
         .sort((a, b) => b.length - a.length);
     for (let pattern of mappingKeys) {
         // empty pattern match nothing use / to match root
-        if (!pattern) {
+        if (isEmpty(pattern)) {
             continue;
         }
 
@@ -63,7 +65,7 @@ function pathMappingPatternMatchesPath(pattern: string, scriptPath: string): boo
 
 export function applyPathMappingsToTargetUrl(scriptUrl: string, pathMapping: IPathMapping): string {
     const parsedUrl = url.parse(scriptUrl);
-    if (!parsedUrl.protocol || parsedUrl.protocol.startsWith('file') || !parsedUrl.pathname) {
+    if (isEmpty(parsedUrl.protocol) || parsedUrl.protocol.startsWith('file') || isEmpty(parsedUrl.pathname)) {
         // Skip file: URLs and paths, and invalid things
         return '';
     }
@@ -73,7 +75,7 @@ export function applyPathMappingsToTargetUrl(scriptUrl: string, pathMapping: IPa
 
 function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): string {
     const rest = decodeURIComponent(scriptPath.substring(pattern.length));
-    const mappedResult = rest ?
+    const mappedResult = isNotEmpty(rest) ?
         path.join(mappingRHS, rest) :
         mappingRHS;
 
@@ -87,7 +89,7 @@ function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): 
  * file:///d:/scripts/code.js => d:/scripts/code.js
  */
 export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping | undefined): string {
-    if (!aUrl) {
+    if (isEmpty(aUrl)) {
         return '';
     }
 
@@ -107,7 +109,7 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping | 
 
     // Search the filesystem under the webRoot for the file that best matches the given url
     let pathName = url.parse(canonicalUrl).pathname;
-    if (!pathName || pathName === '/') {
+    if (isEmpty(pathName) || pathName === '/') {
         return '';
     }
 
@@ -136,7 +138,7 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
     let value = '';
     let variableHandleRef: string | undefined;
 
-    if (object) {
+    if (isDefined(object)) {
         if (object.type === 'object') {
             if (object.subtype === 'null') {
                 value = 'null';
@@ -211,7 +213,7 @@ export function getMatchingTargets(targets: ITarget[], targetUrlPattern: string)
     targetUrlPattern = utils.escapeRegexSpecialChars(targetUrlPattern, '/*').replace(/\*/g, '.*');
 
     const targetUrlRegex = new RegExp('^' + targetUrlPattern + '$', 'g');
-    return targets.filter(target => target.url !== undefined && !!standardizeMatch(target.url).match(targetUrlRegex));
+    return targets.filter(target => target.url !== undefined && hasMatches(standardizeMatch(target.url).match(targetUrlRegex)));
 }
 
 const PROTO_NAME = '__proto__';
@@ -224,8 +226,8 @@ export function compareVariableNames(var1: string, var2: string): number {
         return -1;
     }
 
-    const isNum1 = !!var1.match(NUM_REGEX);
-    const isNum2 = !!var2.match(NUM_REGEX);
+    const isNum1 = hasMatches(var1.match(NUM_REGEX));
+    const isNum2 = hasMatches(var2.match(NUM_REGEX));
 
     if (isNum1 && !isNum2) {
         // Numbers after names
@@ -259,15 +261,14 @@ export function remoteObjectToCallArgument(object: CDTP.Runtime.RemoteObject): C
  */
 export function descriptionFromExceptionDetails(exceptionDetails: CDTP.Runtime.ExceptionDetails): string {
     let description: string;
-    if (exceptionDetails.exception) {
+    if (isDefined(exceptionDetails.exception)) {
         // Take exception object description, or if a value was thrown, the value
-        description = exceptionDetails.exception.description ||
-            'Error: ' + exceptionDetails.exception.value;
+        description = _.defaultTo(exceptionDetails.exception.description, 'Error: ' + exceptionDetails.exception.value);
     } else {
         description = exceptionDetails.text;
     }
 
-    return description || '';
+    return _.defaultTo(description, '');
 }
 
 /**
@@ -284,7 +285,7 @@ export function errorMessageFromExceptionDetails(exceptionDetails: CDTP.Runtime.
 }
 
 export function getEvaluateName(parentEvaluateName: string | undefined, name: string): string {
-    if (!parentEvaluateName) return name;
+    if (isEmpty(parentEvaluateName)) return name;
 
     let nameAccessor: string;
     if (/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)) {

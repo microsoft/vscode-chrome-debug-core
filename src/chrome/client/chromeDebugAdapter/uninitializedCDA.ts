@@ -10,6 +10,7 @@ import { IDebugAdapterState, IInitializeRequestArgs, ITelemetryPropertyCollector
 import { BaseCDAState } from './baseCDAState';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
+import { isNotEmpty } from '../../utils/typedOperators';
 let localize = nls.loadMessageBundle(); // Initialize to an unlocalized version until we know which locale to use
 
 @injectable()
@@ -22,8 +23,8 @@ export class UninitializedCDA extends BaseCDAState {
     }
 
     public async initialize(args: IInitializeRequestArgs, _telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<{ capabilities: DebugProtocol.Capabilities, newState: IDebugAdapterState }> {
-        if (args.locale) {
-            localize = nls.config({ locale: args.locale })(); // Replace with the proper locale
+        if (isNotEmpty(args.locale)) {
+                localize = nls.config({ locale: args.locale })(); // Replace with the proper locale
         }
 
         const exceptionBreakpointFilters = [

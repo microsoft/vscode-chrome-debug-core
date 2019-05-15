@@ -13,6 +13,7 @@ import { integer } from '../cdtpPrimitives';
 import { IScript } from '../../internal/scripts/script';
 import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrace';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
+import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 
 export interface IExceptionThrownEvent {
     readonly timestamp: CDTP.Runtime.Timestamp;
@@ -61,9 +62,9 @@ export class CDTPExceptionThrownEventsProvider extends CDTPEventsEmitterDiagnost
             text: exceptionDetails.text,
             lineNumber: exceptionDetails.lineNumber,
             columnNumber: exceptionDetails.columnNumber,
-            script: exceptionDetails.scriptId ? await this._scriptsRegistry.getScriptByCdtpId(exceptionDetails.scriptId) : undefined,
+            script: isNotEmpty(exceptionDetails.scriptId) ? await this._scriptsRegistry.getScriptByCdtpId(exceptionDetails.scriptId) : undefined,
             url: exceptionDetails.url,
-            stackTrace: exceptionDetails.stackTrace && await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace),
+            stackTrace: isDefined(exceptionDetails.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace) : undefined,
             exception: exceptionDetails.exception,
             executionContextId: exceptionDetails.executionContextId,
         };

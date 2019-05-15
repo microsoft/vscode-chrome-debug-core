@@ -15,6 +15,7 @@ import { asyncMap } from '../../collections/async';
 import { RemoveProperty } from '../../../typeUtils';
 import { LocationInSourceToClientConverter } from '../../client/locationInSourceToClientConverter';
 import { LineColTransformer } from '../../../transformers/lineNumberTransformer';
+import { isDefined } from '../../utils/typedOperators';
 
 /**
  * Handles and responds to the stackTrace requests from the client
@@ -37,7 +38,7 @@ export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
     }
 
     public async stackTrace(args: DebugProtocol.StackTraceArguments): Promise<IStackTraceResponseBody> {
-        const format = args.format
+        const format = isDefined(args.format)
             ? new StackTraceCustomFormat(args.format)
             : new StackTraceDefaultFormat();
 

@@ -1,3 +1,5 @@
+import { isNotEmpty } from '../utils/typedOperators';
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
@@ -15,7 +17,7 @@ export function printSet<T>(typeDescription: string, set: Set<T>): string {
 
 export function printArray<T>(typeDescription: string, elements: T[]): string {
     const elementsPrinted = printElements(elements, ', ');
-    return typeDescription ? `${typeDescription} [ ${elementsPrinted} ]` : `[ ${elementsPrinted} ]`;
+    return isNotEmpty(typeDescription) ? `${typeDescription} [ ${elementsPrinted} ]` : `[ ${elementsPrinted} ]`;
 }
 
 export function printIterable<T>(typeDescription: string, iterable: IterableIterator<T>): string {

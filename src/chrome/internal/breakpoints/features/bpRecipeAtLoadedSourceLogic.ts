@@ -91,7 +91,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        if (paused.hitBreakpoints && paused.hitBreakpoints.length > 0) {
+        if (paused.hitBreakpoints.length > 0) {
             const bpRecipes = paused.hitBreakpoints.filter(bp => this._bpRecipesRegistry.containsBPRecipe(bp.unmappedBPRecipe));
             if (bpRecipes.length >= 1) {
                 return this._onPausedForBreakpointCallback(bpRecipes.map(bpRecipe => bpRecipe.unmappedBPRecipe));

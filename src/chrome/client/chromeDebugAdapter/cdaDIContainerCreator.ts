@@ -19,6 +19,7 @@ import { TerminatingCDA, TerminatingReason } from './terminatingCDA';
 import { ChromeTargetDiscovery } from '../../chromeTargetDiscoveryStrategy';
 import { ChromeConnection } from '../../chromeConnection';
 import { telemetry } from '../../../telemetry';
+import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 
 export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDebugSession: ChromeDebugSession, debugSessionOptions: IChromeDebugSessionOpts): DependencyInjection {
     const session = new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(rawDebugSession));
@@ -60,7 +61,7 @@ export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDeb
 function bindComponents(diContainer: DependencyInjection, args: ILaunchRequestArgs | IAttachRequestArgs, bindAdditionalComponents: (diContainer: DependencyInjection) => void): DependencyInjection {
     const replacements = [];
 
-    if (args.pathMapping && args.pathMapping['/']) {
+    if (isDefined(args.pathMapping) && isNotEmpty(args.pathMapping['/'])) {
         // replace the workspace path with 'ws' in the logs to avoid long lines
         const workspace = args.pathMapping['/'];
         const workspaceRegexp = utils.pathToRegex(workspace);

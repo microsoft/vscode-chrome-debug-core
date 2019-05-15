@@ -10,6 +10,7 @@ import { IDebuggeeExecutionController } from '../../../cdtpDebuggee/features/cdt
 import { IDebuggeeSteppingController } from '../../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { printClassDescription } from '../../../utils/printing';
+import { isDefined } from '../../../utils/typedOperators';
 
 @printClassDescription
 export class PausedBecauseAsyncCallWasScheduled extends BasePauseShouldBeAutoResumed {
@@ -28,7 +29,7 @@ export class AsyncStepping {
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        if (paused.asyncCallStackTraceId) {
+        if (isDefined(paused.asyncCallStackTraceId)) {
             await this._debugeeStepping.pauseOnAsyncCall({ parentStackTraceId: paused.asyncCallStackTraceId });
             return new PausedBecauseAsyncCallWasScheduled(this._debugeeExecutionControl);
         }

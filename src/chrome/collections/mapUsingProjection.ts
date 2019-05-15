@@ -5,6 +5,7 @@
 import { ValidatedMap, IValidatedMap, ValueComparerFunction } from './validatedMap';
 import { IProjection } from './setUsingProjection';
 import { printMap } from './printing';
+import * as _ from 'lodash';
 
 class KeyAndValue<K, V> {
     constructor(public readonly key: K, public readonly value: V) { }
@@ -19,7 +20,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
     private readonly _projectionToKeyAndvalue: IValidatedMap<P, KeyAndValue<K, V>>;
 
     constructor(private _projection: IProjection<K, P>, readonly initialContents?: Map<K, V> | Iterable<[K, V]> | ReadonlyArray<[K, V]>) {
-        const entries = Array.from(initialContents || []).map<[P, KeyAndValue<K, V>]>(pair => {
+        const entries = Array.from(_.defaultTo(initialContents, [])).map<[P, KeyAndValue<K, V>]>(pair => {
             const projected = this._projection(pair[0]);
             return [projected, new KeyAndValue(pair[0], pair[1])];
         });

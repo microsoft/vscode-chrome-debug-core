@@ -6,6 +6,7 @@ import * as assert from 'assert';
 import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { breakWhileDebugging } from '../../validation';
+import { isDefined } from '../utils/typedOperators';
 
 /** A map where we can efficiently get the key from the value or the value from the key */
 export class BidirectionalMap<Left, Right> {
@@ -13,7 +14,7 @@ export class BidirectionalMap<Left, Right> {
     private readonly _rightToLeft = new ValidatedMap<Right, Left>();
 
     constructor(initialContents?: Iterable<[Left, Right]> | ReadonlyArray<[Left, Right]>) {
-        this._leftToRight = initialContents ? new ValidatedMap<Left, Right>(initialContents) :  new ValidatedMap<Left, Right>();
+        this._leftToRight = isDefined(initialContents) ? new ValidatedMap<Left, Right>(initialContents) :  new ValidatedMap<Left, Right>();
         const reversed = Array.from(this._leftToRight.entries()).map(e => <[Right, Left]>[e[1], e[0]]);
         this._rightToLeft = new ValidatedMap<Right, Left>(reversed);
     }

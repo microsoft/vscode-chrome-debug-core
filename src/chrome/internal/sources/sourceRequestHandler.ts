@@ -10,6 +10,7 @@ import { ILoadedSourceTreeNode } from './loadedSource';
 import { asyncMap } from '../../collections/async';
 import { SourceToClientConverter } from '../../client/sourceToClientConverter';
 import { SourceResolver } from './sourceResolver';
+import { isDefined } from '../../utils/typedOperators';
 
 @injectable()
 export class SourceRequestHandler implements ICommandHandlerDeclarer {
@@ -33,7 +34,7 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
     }
 
     public async source(args: DebugProtocol.SourceArguments, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<ISourceResponseBody> {
-        if (args.source) {
+        if (isDefined(args.source)) {
             const source = this._clientSourceParser.toSource(args.source);
             const sourceText = await this._sourcesLogic.text(source);
             return {

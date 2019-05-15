@@ -15,6 +15,8 @@ import * as utils from '../../../utils';
 import { IDebuggeePausedHandler } from '../features/debuggeePausedHandler';
 import { CDTPScriptsRegistry } from '../../cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { printClassDescription } from '../../utils/printing';
+import * as _ from 'lodash';
+import { isDefined } from '../../utils/typedOperators';
 
 type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -96,10 +98,11 @@ export class PauseOnExceptionOrRejection {
             const message = isError ? utils.firstLine(this._lastException.description) : (this._lastException.description || this._lastException.value);
             const formattedMessage = message && message.replace(/\*/g, '\\*');
             const response: IExceptionInformation = {
-                exceptionId: this._lastException.className || this._lastException.type || 'Error',
+                exceptionId: _.defaultTo(this._lastException.className, _.defaultTo(this._lastException.type, 'Error')),
                 breakMode: 'unhandled',
                 details: {
-                    stackTrace: this._lastException.description && await new FormattedExceptionParser(this._scriptsLogic, this._lastException.description).parse(),
+                    stackTrace: isDefined(this._lastException.description)
+                        ? await new FormattedExceptionParser(this._scriptsLogic, this._lastException.description).parse() : [],
                     message,
                     formattedDescription: formattedMessage, // VS workaround - see https://github.com/Microsoft/client/issues/34259
                     typeName: this._lastException.subtype || this._lastException.type

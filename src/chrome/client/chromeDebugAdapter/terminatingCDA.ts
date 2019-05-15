@@ -15,6 +15,7 @@ import { ConnectedCDAConfiguration } from './cdaConfiguration';
 import { DisconnectedCDA } from './disconnectedCDA';
 import { IDebuggeeRunner, IDebuggeeLauncher } from '../../debugeeStartup/debugeeLauncher';
 import { ScenarioType } from './unconnectedCDA';
+import { isTrue } from '../../utils/typedOperators';
 
 export enum TerminatingReason {
     DisconnectedFromWebsocket,
@@ -81,7 +82,7 @@ export class TerminatingCDA extends BaseCDAState {
            }
          */
         telemetry.reportEvent('debugStopped', { reason });
-        if ((<ILaunchRequestArgs>this._configuration.args).noDebug) {
+        if (isTrue((<ILaunchRequestArgs>this._configuration.args).noDebug)) {
             this._session.sendEvent(new TerminatedEvent(restart));
         }
 

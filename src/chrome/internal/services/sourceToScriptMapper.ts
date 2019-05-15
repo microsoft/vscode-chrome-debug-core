@@ -25,7 +25,7 @@ export class SourceToScriptMapper {
     public async mapBPRecipe(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, onlyKeepIfScript: (script: IScript) => boolean = () => true): Promise<BPRecipeInScript[]> {
         const tokensInManyScripts = bpRecipe.location.tokensWhenMappedToScript().filter(tokens => onlyKeepIfScript(tokens.script));
         return asyncMap(tokensInManyScripts, async manyTokensInScript => {
-            const bestLocation = this.doesTargetSupportColumnBreakpointsCached
+            const bestLocation = await this.doesTargetSupportColumnBreakpointsCached
                 ? await this.findBestLocationForBP(manyTokensInScript.enclosingRange)
                 : manyTokensInScript.enclosingRange.start; // If we don't support column breakpoints we set the breakpoint at the start of the range
             const bpRecipeAtBestLocation = new BPRecipeInScript(bpRecipe.unmappedBPRecipe, bestLocation);

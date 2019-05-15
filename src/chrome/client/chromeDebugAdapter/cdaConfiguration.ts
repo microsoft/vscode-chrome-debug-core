@@ -9,6 +9,7 @@ import { ScenarioType } from './unconnectedCDA';
 import { injectable } from 'inversify';
 import { ISession } from '../session';
 import * as utils from '../../../utils';
+import { isDefined } from '../../utils/typedOperators';
 
 export interface IConnectedCDAConfiguration {
     args: ILaunchRequestArgs | IAttachRequestArgs;
@@ -36,7 +37,7 @@ export class ConnectedCDAConfiguration implements IConnectedCDAConfiguration {
         private readonly originalArgs: ILaunchRequestArgs | IAttachRequestArgs) {
         this.args = this.extensibilityPoints.updateArguments(this.scenarioType, this.originalArgs);
 
-        if (this.args.pathMapping) {
+        if (isDefined(this.args.pathMapping)) {
             for (const urlToMap in this.args.pathMapping) {
                 this.args.pathMapping[urlToMap] = utils.canonicalizeUrl(this.args.pathMapping[urlToMap]);
             }

@@ -25,6 +25,7 @@ import * as _ from 'lodash';
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
+import { isNotEmpty, isNotNull } from '../../utils/typedOperators';
 
 /**
  * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
@@ -91,7 +92,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     protected readonly api = this._protocolApi.Debugger;
 
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: CDTP.Debugger.ScriptParsedEvent) => {
-        const creator = !!params.url ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
+        const creator = isNotEmpty(params.url) ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
         await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
 
         return await this.toScriptParsedEvent(params);
@@ -132,7 +133,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
 }
 
 abstract class ScriptCreator {
-    protected readonly runtimeSourcePath = parseResourceIdentifier(createCDTPScriptUrl(this._scriptParsedEvent.url || ''));
+    protected readonly runtimeSourcePath = parseResourceIdentifier(createCDTPScriptUrl(_.defaultTo(this._scriptParsedEvent.url, '')));
 
     constructor(
         private readonly _scriptsRegistry: CDTPScriptsRegistry,
@@ -175,7 +176,7 @@ abstract class ScriptCreator {
     }
 
     private sourceMapper(script: IScript, sourceMap: SourceMap | null): IMappedSourcesMapper {
-        const sourceMapper = sourceMap
+        const sourceMapper = isNotNull(sourceMap)
             ? new MappedSourcesMapper(script, sourceMap)
             : new NoMappedSourcesMapper(script);
         return sourceMapper;

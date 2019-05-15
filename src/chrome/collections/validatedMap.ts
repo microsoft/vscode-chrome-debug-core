@@ -144,7 +144,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
 
     // TODO: Remove the use of undefined
     public tryGetting(key: K): V | undefined {
-        return this._wrappedMap.get(key) || undefined;
+        return this._wrappedMap.get(key);
     }
 
     public toString(): string {

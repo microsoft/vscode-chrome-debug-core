@@ -1,3 +1,4 @@
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
@@ -24,6 +25,7 @@ import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaCo
 import { CurrentStackTraceProvider } from './currentStackTraceProvider';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import * as _ from 'lodash';
+import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 
 export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];
@@ -60,7 +62,7 @@ export class StackTracePresenter implements IInstallableComponent {
 
         const syncFrames: IStackTracePresentationRow[] = await this.syncCallFrames(format);
         const asyncStackTraceOrUndefined = this._currentStackStraceProvider.asyncStackTrace();
-        const asyncFrames = !!asyncStackTraceOrUndefined
+        const asyncFrames = isDefined(asyncStackTraceOrUndefined)
             ? await this.asyncCallFrames(asyncStackTraceOrUndefined, format)
             : [];
         const allStackFrames = syncFrames.concat(asyncFrames);
@@ -82,9 +84,9 @@ export class StackTracePresenter implements IInstallableComponent {
     private async asyncCallFrames(stackTrace: CodeFlowStackTrace, formatArgs?: IStackTraceFormat): Promise<IStackTracePresentationRow[]> {
         const thisSectionAsyncFrames = await asyncMap(stackTrace.codeFlowFrames,
             frame => this.toPresentation(this.codeFlowToCallFrame(frame), formatArgs));
-        const parentAsyncFrames = stackTrace.parent ? await this.asyncCallFrames(stackTrace.parent, formatArgs) : [];
+        const parentAsyncFrames = isDefined(stackTrace.parent) ? await this.asyncCallFrames(stackTrace.parent, formatArgs) : [];
 
-        return (stackTrace.description
+        return (isNotEmpty(stackTrace.description)
             ? [/* Description of this section of async frames */<IStackTracePresentationRow>new StackTraceLabel(stackTrace.description)]
             : [])
             .concat(thisSectionAsyncFrames, parentAsyncFrames);
