@@ -20,6 +20,7 @@ import { CurrentStackTraceProvider } from '../stackTraces/currentStackTraceProvi
 import { ISource } from '../sources/source';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
+import { isTrue, isFalse, isDefined } from '../../utils/typedOperators';
 const localize = nls.loadMessageBundle();
 
 export interface ISkipFilesConfiguration {
@@ -63,7 +64,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
     }
 
     public callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[] {
-        return this.shouldSkipSource(locationInLoadedSource.source)
+        return isTrue(this.shouldSkipSource(locationInLoadedSource.source))
             ? [{
                 additionalSourceOrigins: [localize('skipFilesFeatureName', 'skipFiles')],
                 sourcePresentationHint: 'deemphasize'
@@ -104,7 +105,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                 return;
             }
 
-            const newStatus = !this.shouldSkipSource(resolvedSource);
+            const newStatus = isFalse(this.shouldSkipSource(resolvedSource));
             logger.log(`Setting the skip file status for: ${resolvedSource} to ${newStatus}`);
             this._skipFileStatuses.setAndReplaceIfExist(resolvedSource.identifier, newStatus);
 
@@ -177,25 +178,24 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
     public async resolveSkipFiles(script: IScript, mappedUrl: ILoadedSource, sources: ILoadedSource[], toggling?: boolean): Promise<void> {
         const originInScript = new LocationInScript(script, Position.origin);
 
-        if (sources && sources.length) {
-            const parentIsSkipped = this.shouldSkipSource(script.runtimeSource);
+        if (sources.length > 0) {
+            const parentIsSkipped = isTrue(this.shouldSkipSource(script.runtimeSource));
             const libPositions: LocationInScript[] = [];
 
             // Figure out skip/noskip transitions within script
             let inLibRange = parentIsSkipped;
             for (let s of sources) {
-                let isSkippedFile = this.shouldSkipSource(s);
-                if (typeof isSkippedFile !== 'boolean') {
-                    // Inherit the parent's status
-                    isSkippedFile = parentIsSkipped;
-                }
+                const skippingConfiguration = this.shouldSkipSource(s);
+                const isSkippedFile = skippingConfiguration === undefined
+                    ? parentIsSkipped // Inherit the parent's status
+                    : skippingConfiguration;
 
-                this._skipFileStatuses.setAndReplaceIfExist(s.identifier, !!isSkippedFile);
+                this._skipFileStatuses.setAndReplaceIfExist(s.identifier, isTrue(isSkippedFile));
 
                 if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
                     const sourcesMapper = script.sourceMapper;
                     const pos = sourcesMapper.getPositionInScript(new LocationInLoadedSource(s, Position.origin));
-                    if (!pos) {
+                    if (pos.isEmpty()) {
                         throw new Error(`Source '${s}' start not found in script.`);
                     }
 
@@ -205,12 +205,12 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
             }
 
             // If there's any change from the default, set proper blackboxed ranges
-            if (libPositions.length || toggling) {
+            if (libPositions.length > 0 || toggling === true) {
                 if (parentIsSkipped) {
                     libPositions.splice(0, 0, originInScript);
                 }
 
-                if (!libPositions[0].position.isOrigin) {
+                if (!libPositions[0].position.isOrigin()) {
                     // The list of blackboxed ranges must start with 0,0 for some reason.
                     // https://github.com/Microsoft/vscode-chrome-debug/issues/667
                     libPositions[0] = originInScript;
@@ -218,7 +218,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
 
                 await this._blackboxPatternsConfigurer.setBlackboxedRanges(script, []).catch(() => this.warnNoSkipFiles());
 
-                if (libPositions.length) {
+                if (libPositions.length > 0) {
                     this._blackboxPatternsConfigurer.setBlackboxedRanges(script, libPositions).catch(() => this.warnNoSkipFiles());
                 }
             }
@@ -246,7 +246,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
         const _launchAttachArgs: ISkipFilesConfiguration = this._configuration.args;
         let patterns: string[] = [];
 
-        if (_launchAttachArgs.skipFiles) {
+        if (isDefined(_launchAttachArgs.skipFiles)) {
             const skipFilesArgs = _launchAttachArgs.skipFiles.filter(glob => {
                 if (glob.startsWith('!')) {
                     logger.warn(`Warning: skipFiles entries starting with '!' aren't supported and will be ignored. ("${glob}")`);
@@ -259,11 +259,11 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
             patterns = skipFilesArgs.map(glob => utils.pathGlobToBlackboxedRegex(glob));
         }
 
-        if (_launchAttachArgs.skipFileRegExps) {
+        if (isDefined(_launchAttachArgs.skipFileRegExps)) {
             patterns = patterns.concat(_launchAttachArgs.skipFileRegExps);
         }
 
-        if (patterns.length) {
+        if (patterns.length > 0) {
             this._blackboxedRegexes = patterns.map(pattern => new RegExp(pattern, 'i'));
             this.refreshBlackboxPatterns();
         }

@@ -11,6 +11,7 @@ import { IScript } from '../../scripts/script';
 import { CDTPScriptsRegistry } from '../../../cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { IScriptSourcesRetriever } from '../../../cdtpDebuggee/features/cdtpScriptSourcesRetriever';
 import { parseResourceIdentifier } from '../resourceIdentifier';
+import { isNotEmpty } from '../../../utils/typedOperators';
 
 @injectable()
 export class DotScriptCommand {
@@ -26,10 +27,10 @@ export class DotScriptCommand {
      */
     public handleScriptsCommand(scriptsRest: string): Promise<void> {
         let outputStringP: Promise<string>;
-        if (scriptsRest) {
+        if (isNotEmpty(scriptsRest)) {
             // `.scripts <url>` was used, look up the script by url
             const requestedScript = this._scriptsRegistry.getScriptsByPath(parseResourceIdentifier(scriptsRest));
-            if (requestedScript) {
+            if (requestedScript.length > 0) {
                 outputStringP = this._scriptSources.getScriptSource(requestedScript[0])
                     .then(result => {
                         const maxLength = 1e5;
@@ -65,7 +66,7 @@ export class DotScriptCommand {
 
         const sourcePathDetails = await this._sourceMapTransformer.allSourcePathDetails(script.runtimeSource.identifier.canonicalized);
         let mappedSourcesStr = sourcePathDetails.map(details => `    - ${details.originalPath} (${details.inferredPath})`).join('\n');
-        if (sourcePathDetails.length) {
+        if (sourcePathDetails.length > 0) {
             mappedSourcesStr = '\n' + mappedSourcesStr;
         }
 

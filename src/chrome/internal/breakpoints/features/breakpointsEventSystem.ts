@@ -6,6 +6,7 @@ import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { SingleBreakpointSetter } from './singleBreakpointSetter';
 import { BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
+import * as _ from 'lodash';
 
 export interface IBreakpointsEventsListener {
     listenForOnClientBPRecipeAdded(listener: (bpRecipie: BPRecipeInSource) => void): void;
@@ -76,7 +77,7 @@ export class BreakpointsEventSystem implements IBreakpointsEventsListener {
         this._singleBreakpointSetter = breakpointsUpdater;
         this._bpRecipeAtLoadedSourceSetter = bpRecipeAtLoadedSourceLogic;
 
-        (this._scheduledActions || []).forEach(action => action());
+        _.defaultTo(this._scheduledActions, []).forEach(action => action());
         this._scheduledActions = null;
     }
 

@@ -21,6 +21,7 @@ import { SourceToClientConverter } from './sourceToClientConverter';
 import { BPRecipieStatusToClientConverter } from '../internal/breakpoints/features/bpRecipieStatusToClientConverter';
 import { ConnectedCDAConfiguration } from './chromeDebugAdapter/cdaConfiguration';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
+import { isDefined } from '../utils/typedOperators';
 
 export interface IOutputParameters {
     readonly output: string;
@@ -79,11 +80,11 @@ export class EventsToClientReporter implements IEventsToClientReporter {
     public async sendOutput(params: IOutputParameters) {
         const event = new OutputEvent(params.output, params.category) as DebugProtocol.OutputEvent;
 
-        if (params.variablesReference) {
+        if (isDefined(params.variablesReference)) {
             event.body.variablesReference = params.variablesReference;
         }
 
-        if (params.location) {
+        if (isDefined(params.location)) {
             await this._locationInSourceToClientConverter.toLocationInSource(params.location, event.body);
         }
 

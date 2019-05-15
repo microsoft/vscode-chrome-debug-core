@@ -19,6 +19,7 @@ import { SourceResolver } from '../../sources/sourceResolver';
 import { logger } from 'vscode-debugadapter';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
+import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
@@ -37,7 +38,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     }
 
     public async setBreakpoints(args: DebugProtocol.SetBreakpointsArguments, telemetryPropertyCollector?: ITelemetryPropertyCollector): Promise<ISetBreakpointsResponseBody> {
-        if (args.breakpoints) {
+        if (isDefined(args.breakpoints)) {
             const desiredBPRecipes = this.toBPRecipes(args);
             const bpRecipesStatus = await this._breakpointsLogic.updateBreakpointsForFile(desiredBPRecipes, telemetryPropertyCollector);
             const response = { breakpoints: await asyncMap(bpRecipesStatus, bprs => this._bpRecipieStatusToClientConverter.toBreakpoint(bprs)) };
@@ -69,17 +70,17 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
 
     private toBPActionWhenHit(actionWhenHit: { condition?: string; hitCondition?: string; logMessage?: string; }): IBPActionWhenHit {
         let howManyDefined = 0;
-        howManyDefined += actionWhenHit.condition ? 1 : 0;
-        howManyDefined += actionWhenHit.hitCondition ? 1 : 0;
-        howManyDefined += actionWhenHit.logMessage ? 1 : 0;
+        howManyDefined += isNotEmpty(actionWhenHit.condition) ? 1 : 0;
+        howManyDefined += isNotEmpty(actionWhenHit.hitCondition) ? 1 : 0;
+        howManyDefined += isNotEmpty(actionWhenHit.logMessage) ? 1 : 0;
         if (howManyDefined === 0) {
             return new AlwaysPause();
         } else if (howManyDefined === 1) {
-            if (actionWhenHit.condition) {
+            if (isNotEmpty(actionWhenHit.condition)) {
                 return new ConditionalPause(actionWhenHit.condition);
-            } else if (actionWhenHit.hitCondition) {
+            } else if (isNotEmpty(actionWhenHit.hitCondition)) {
                 return new PauseOnHitCount(actionWhenHit.hitCondition);
-            } else if (actionWhenHit.logMessage) {
+            } else if (isNotEmpty(actionWhenHit.logMessage)) {
                 return new ConditionalPause(actionWhenHit.logMessage);
             } else {
                 throw new Error(`Couldn't parse the desired action when hit for the breakpoint: 'condition' (${actionWhenHit.condition}), 'hitCondition' (${actionWhenHit.hitCondition}) or 'logMessage' (${actionWhenHit.logMessage})`);

@@ -22,6 +22,7 @@ import { BPRecipesForSourceRetriever } from '../registries/bpRecipesForSourceRet
 import { IEventsConsumer, Synchronicity } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
+import { isDefined } from '../../../utils/typedOperators';
 
 class MakeAllEventsAsyncConsumer implements IEventsConsumer {
     public constructor(private readonly _wrappedEventsConsumer: IEventsConsumer) { }
@@ -63,13 +64,13 @@ export class ExistingBPsForJustParsedScriptSetter {
         }
     }
 
-    public waitUntilBPsAreSet(script: IScript): Promise<void> {
+    public async waitUntilBPsAreSet(script: IScript): Promise<void> {
         const doesScriptHaveAnyBPRecipes = script.allSources.find(source => this._bpRecipesForSourceRetriever.bpRecipesForSource(source.identifier).length >= 1);
-        if (doesScriptHaveAnyBPRecipes) {
+        if (isDefined(doesScriptHaveAnyBPRecipes)) {
             return this.finishedSettingBPsForScriptDefer(script).promise;
         } else {
             const defer = this._scriptToBPsAreSetDefer.tryGetting(script);
-            return Promise.resolve(defer && defer.promise);
+            return await (isDefined(defer) ? defer.promise : undefined);
         }
     }
 
