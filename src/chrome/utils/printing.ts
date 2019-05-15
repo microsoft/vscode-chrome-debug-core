@@ -1,5 +1,7 @@
+import { isNotEmpty } from './typedOperators';
+
 function _printClassDescription(this: Function): string {
-    return this.name ? `class ${this.name}` : Function.toString.call(this);
+    return isNotEmpty(this.name) ? `class ${this.name}` : Function.toString.call(this);
 }
 
 export function printClassDescription(functionConstructor: Function) {

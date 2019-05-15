@@ -9,13 +9,14 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
+import { isDefined, isNotEmpty } from './utils/typedOperators';
 const localize = nls.loadMessageBundle();
 
 export type ReasonType = 'step' | 'breakpoint' | 'exception' | 'pause' | 'entry' | 'debugger_statement' | 'frame_entry' | 'promise_rejection';
 
 export class StoppedEvent2 extends StoppedEvent {
     constructor(reason: ReasonType, threadId: number, exception?: CDTP.Runtime.RemoteObject) {
-        const exceptionText = exception && exception.description && utils.firstLine(exception.description);
+        const exceptionText = isDefined(exception) && isNotEmpty(exception.description) ? utils.firstLine(exception.description) : undefined;
         super(reason, threadId, exceptionText);
 
         switch (reason) {
@@ -26,7 +27,7 @@ export class StoppedEvent2 extends StoppedEvent {
                 (<DebugProtocol.StoppedEvent>this).body.description = localize('reason.description.breakpoint', 'Paused on breakpoint');
                 break;
             case 'exception':
-                const uncaught = exception && (<any>exception).uncaught; // Currently undocumented
+                const uncaught = isDefined(exception) && (<any>exception).uncaught; // Currently undocumented
                 if (typeof uncaught === 'undefined') {
                     (<DebugProtocol.StoppedEvent>this).body.description = localize('reason.description.exception', 'Paused on exception');
                 } else if (uncaught) {

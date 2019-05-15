@@ -1,4 +1,5 @@
 import * as _ from 'lodash';
+import { isNotEmpty } from '../utils/typedOperators';
 
 export function printTopLevelObjectDescription(objectToPrint: unknown) {
     return printObjectDescription(objectToPrint, printFirstLevelProperties);
@@ -6,7 +7,7 @@ export function printTopLevelObjectDescription(objectToPrint: unknown) {
 
 export function printObjectDescription(objectToPrint: unknown, fallbackPrintDescription = (obj: unknown) => `${obj}`) {
     let printed = `<logic to print this object doesn't exist>`;
-    if (!objectToPrint) {
+    if (objectToPrint === null || objectToPrint === undefined) {
         printed = `${objectToPrint}`;
     } else if (typeof objectToPrint === 'object') {
         // Proxies throw an exception when toString is called, so we need to check this first
@@ -17,7 +18,7 @@ export function printObjectDescription(objectToPrint: unknown, fallbackPrintDesc
             // This if is actually unnecesary, the previous if (!objectToPrint) { does the same thing. For some reason the typescript compiler cannot infer the type from that if
             // so we just write this code to leave the compiler happy
             // TODO: Sync with the typescript team and figure out how to remove this
-            if (!objectToPrint) {
+            if (objectToPrint === null) {
                 printed = `${objectToPrint}`;
             } else {
                 const toString = objectToPrint.toString();
@@ -30,10 +31,10 @@ export function printObjectDescription(objectToPrint: unknown, fallbackPrintDesc
                 } else {
                     printed = `${objectToPrint}(${objectToPrint.constructor.name})`;
                 }
-                }
+            }
         }
     } else if (typeof objectToPrint === 'function') {
-        if (objectToPrint.name) {
+        if (isNotEmpty(objectToPrint.name)) {
             printed = objectToPrint.name;
         } else {
             const functionSourceCode = objectToPrint.toString();

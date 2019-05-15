@@ -13,6 +13,9 @@ import * as https from 'https';
 
 import { IExecutionResultTelemetryProperties } from './telemetry';
 import { ValidatedSet } from './chrome/collections/validatedSet';
+import { promisify } from 'util';
+import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
+import * as _ from 'lodash';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -48,8 +51,8 @@ export function existsSync(path: string): boolean {
 export function existsAsync(path: string): Promise<boolean> {
     return new Promise((resolve) => {
         try {
-            fs.access(path, (err) => {
-                resolve(err ? false : true);
+            fs.access(path, (err?: NodeJS.ErrnoException) => {
+                resolve(isDefined(err) ? false : true);
             });
         } catch (e) {
             resolve(false);
@@ -73,12 +76,12 @@ export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg?: 
     }
 
     return new Promise((resolve, reject) => {
-        if (p) {
+        if (isDefined(p)) {
             p.then(resolve, reject);
         }
 
         setTimeout(() => {
-            if (p) {
+            if (isDefined(p)) {
                 reject(new Error(timeoutMsg));
             } else {
                 resolve();
@@ -142,7 +145,7 @@ function normalizeIfFSIsCaseInsensitive(urlOrPath: string): string {
 }
 
 function isWindowsFilePath(candidate: string): boolean {
-    return !!candidate.match(/[A-z]:[\\\/][^\\\/]/);
+    return hasMatches(candidate.match(/[A-z]:[\\\/][^\\\/]/));
 }
 
 export function isFileUrl(candidate: string): boolean {
@@ -156,7 +159,7 @@ export function fileUrlToPath(urlOrPath: string): string {
     if (isFileUrl(urlOrPath)) {
         urlOrPath = urlOrPath.replace('file:///', '');
         urlOrPath = decodeURIComponent(urlOrPath);
-        if (urlOrPath[0] !== '/' && !urlOrPath.match(/^[A-Za-z]:/)) {
+        if (urlOrPath[0] !== '/' && hasNoMatches(urlOrPath.match(/^[A-Za-z]:/))) {
             // If it has a : before the first /, assume it's a windows path or url.
             // Ensure unix-style path starts with /, it can be removed when file:/// was stripped.
             // Don't add if the url still has a protocol
@@ -193,15 +196,13 @@ export function forceForwardSlashes(aUrl: string): string {
  * Ensure lower case drive letter and \ on Windows
  */
 export function fixDriveLetterAndSlashes(aPath: string, uppercaseDriveLetter = false): string {
-    if (!aPath) return aPath;
-
     aPath = fixDriveLetter(aPath, uppercaseDriveLetter);
-    if (aPath.match(/file:\/\/\/[A-Za-z]:/)) {
+    if (hasMatches(aPath.match(/file:\/\/\/[A-Za-z]:/))) {
         const prefixLen = 'file:///'.length;
         aPath =
             aPath.substr(0, prefixLen + 1) +
             aPath.substr(prefixLen + 1).replace(/\//g, '\\');
-    } else if (aPath.match(/^[A-Za-z]:/)) {
+    } else if (hasMatches(aPath.match(/^[A-Za-z]:/))) {
         aPath = aPath.replace(/\//g, '\\');
     }
 
@@ -209,15 +210,13 @@ export function fixDriveLetterAndSlashes(aPath: string, uppercaseDriveLetter = f
 }
 
 export function fixDriveLetter(aPath: string, uppercaseDriveLetter = false): string {
-    if (!aPath) return aPath;
-
-    if (aPath.match(/file:\/\/\/[A-Za-z]:/)) {
+    if (hasMatches(aPath.match(/file:\/\/\/[A-Za-z]:/))) {
         const prefixLen = 'file:///'.length;
         aPath =
             'file:///' +
             aPath[prefixLen].toLowerCase() +
             aPath.substr(prefixLen + 1);
-    } else if (aPath.match(/^[A-Za-z]:/)) {
+    } else if (hasMatches(aPath.match(/^[A-Za-z]:/))) {
         // If the path starts with a drive letter, ensure lowercase. VS Code uses a lowercase drive letter
         const driveLetter = uppercaseDriveLetter ? aPath[0].toUpperCase() : aPath[0].toLowerCase();
         aPath = driveLetter + aPath.substr(1);
@@ -240,11 +239,11 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg: string | Error): Promise<never> {
+export function errP(msg?: string): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
-    if (!msg) {
+    if (isEmpty(msg)) {
         e = new Error('Unknown error');
     } else if (isErrorLike(msg)) {
         // msg is already an Error object
@@ -291,8 +290,9 @@ export function getURL(aUrl: string, options: https.RequestOptions = {}): Promis
 /**
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
-export function isURL(urlOrPath: string): boolean {
-    return !!urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
+export function isURL(urlOrPath?: string): boolean {
+    // Warning: url.parse(urlOrPath).protocol typing is wrong and it can actually be null
+    return isNotEmpty(urlOrPath) && !path.isAbsolute(urlOrPath) && isNotEmpty(url.parse(urlOrPath).protocol);
 }
 
 export function isAbsolute(_path: string): boolean {
@@ -316,7 +316,7 @@ export function lstrip(s: string, lStr: string): string {
  */
 export function pathToFileURL(_absPath: string, normalize?: boolean): string {
     let absPath = forceForwardSlashes(_absPath);
-    if (normalize) {
+    if (isTrue(normalize)) {
         absPath = path.normalize(absPath);
         absPath = forceForwardSlashes(absPath);
     }
@@ -330,40 +330,16 @@ export function pathToFileURL(_absPath: string, normalize?: boolean): string {
 }
 
 export function fsReadDirP(path: string): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-        fs.readdir(path, (err, files) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(files);
-            }
-        });
-    });
+    return promisify(fs.readdir)(path);
 }
 
 export function readFileP(path: string, encoding = 'utf8'): Promise<string> {
-    return new Promise((resolve, reject) => {
-        fs.readFile(path, encoding, (err, fileContents) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(fileContents);
-            }
-        });
-    });
+    return promisify(fs.readFile)(path, encoding);
 }
 
-export function writeFileP(filePath: string, data: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        mkdirs(path.dirname(filePath));
-        fs.writeFile(filePath, data, err => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(data);
-            }
-        });
-    });
+export async function writeFileP(filePath: string, data: string): Promise<void> {
+    await mkdirs(path.dirname(filePath));
+    return promisify(fs.writeFile)(filePath, data);
 }
 
 /**
@@ -429,15 +405,7 @@ export function multiGlob(patterns: string[], opts?: any): Promise<string[]> {
     }
 
     return Promise.all(globTasks.map(task => {
-        return new Promise<string[]>((c, e) => {
-            glob(task.pattern, task.opts, (err, files: string[]) => {
-                if (err) {
-                    e(err);
-                } else {
-                    c(files);
-                }
-            });
-        });
+        return promisify(glob)(task.pattern, task.opts);
     })).then(results => {
         const set = new Set<string>();
         for (let paths of results) {
@@ -489,7 +457,7 @@ export function pathToRegex(aPath: string, guid = ''): string {
         aPath = escapeRegexSpecialChars(fileUrlPrefix) + aPath;
     }
 
-    if (guid) {
+    if (isNotEmpty(guid)) {
         // Add a guid to the regexp to make it unique, without modifying what it matches. This will allow us to add duplicated breakpoints using CDTP
         aPath = aPath + `(?:${guid}){0}`;
     }
@@ -514,7 +482,7 @@ const regexChars = '/\\.?*()^${}|[]+';
 export function escapeRegexSpecialChars(str: string, except?: string): string {
     const useRegexChars = regexChars
         .split('')
-        .filter(c => !except || except.indexOf(c) < 0)
+        .filter(c => isEmpty(except) || except.indexOf(c) < 0)
         .join('')
         .replace(/[\\\]]/g, '\\$&');
 
@@ -563,7 +531,7 @@ export function getLine(msg: string, n = 0): string {
 }
 
 export function firstLine(msg: string | undefined): string {
-    return getLine(msg || '');
+    return getLine(_.defaultTo(msg, ''));
 }
 
 export function isNumber(num: any): boolean {

@@ -5,6 +5,7 @@
 import { HighResTimer, calculateElapsedTime } from './utils';
 import { EventEmitter } from 'events';
 import { notNullNorUndefinedElements } from './validation';
+import * as _ from 'lodash';
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 
@@ -193,8 +194,8 @@ export class ExecutionTimingsReporter {
         this.addElementToArrayProperty(this._requestProperties, propertyPrefix + 'timeTakenInMilliseconds', timeTakenInMilliseconds);
     }
 
-    private addElementToArrayProperty<T>(object: {[propertyName: string]: T[]}, propertyName: string, elementToAdd: T): void {
-        const propertiesArray = object[propertyName] = object[propertyName] || [] as T[];
+    private addElementToArrayProperty<T>(object: {[propertyName: string]: T[] | undefined}, propertyName: string, elementToAdd: T): void {
+        const propertiesArray = object[propertyName] = _.defaultTo(object[propertyName], [] as T[]);
         propertiesArray.push(elementToAdd);
     }
 

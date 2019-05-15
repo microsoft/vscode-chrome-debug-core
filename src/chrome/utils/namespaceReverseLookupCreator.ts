@@ -1,3 +1,5 @@
+import { isNotEmpty } from './typedOperators';
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
@@ -22,7 +24,7 @@ export class NamespaceReverseLookupCreator<T> {
 
     private exploreLeaf(currentRoot: NamespaceTree<T>, namePrefix: string): void {
         for (const propertyNamme in currentRoot) {
-            const propertyName = namePrefix ? `${namePrefix}.${propertyNamme}` : propertyNamme;
+            const propertyName = isNotEmpty(namePrefix) ? `${namePrefix}.${propertyNamme}` : propertyNamme;
             const propertyValue = currentRoot[propertyNamme];
             if (this._isLeaf(propertyValue)) {
                 this._leafToNameMapping.set(propertyValue as T, propertyName);

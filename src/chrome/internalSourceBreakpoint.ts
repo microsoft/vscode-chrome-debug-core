@@ -6,6 +6,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { parseResourceIdentifier } from './internal/sources/resourceIdentifier';
 import { createCDTPScriptUrl } from './internal/sources/resourceIdentifierSubtypes';
+import { isNotEmpty, isNotNull } from './utils/typedOperators';
 
 export class InternalSourceBreakpoint {
     static readonly LOGPOINT_URL = 'vscode.logpoint.js';
@@ -20,19 +21,19 @@ export class InternalSourceBreakpoint {
         this.column = breakpoint.column;
         this.hitCondition = breakpoint.hitCondition;
 
-        if (breakpoint.logMessage) {
+        if (isNotEmpty(breakpoint.logMessage)) {
             this.condition = logMessageToExpression(breakpoint.logMessage);
-            if (breakpoint.condition) {
+            if (isNotEmpty(breakpoint.condition)) {
                 this.condition = `(${breakpoint.condition}) && ${this.condition}`;
             }
-        } else if (breakpoint.condition) {
+        } else if (isNotEmpty(breakpoint.condition)) {
             this.condition = breakpoint.condition;
         }
     }
 }
 
 function isLogpointStack(stackTrace: CodeFlowStackTrace | null): boolean {
-    return !!stackTrace && stackTrace.codeFlowFrames.length > 0
+    return isNotNull(stackTrace) && stackTrace.codeFlowFrames.length > 0
     && stackTrace.codeFlowFrames[0].script.runtimeSource.identifier.isEquivalentTo(parseResourceIdentifier(createCDTPScriptUrl(InternalSourceBreakpoint.LOGPOINT_URL)));
 }
 
@@ -65,6 +66,6 @@ function logMessageToExpression(msg: string): string {
 
     format = format.replace('\'', '\\\'');
 
-    const argStr = args.length ? `, ${args.join(', ')}` : '';
+    const argStr = args.length > 0 ? `, ${args.join(', ')}` : '';
     return `console.log('${format}'${argStr});\n//# sourceURL=${InternalSourceBreakpoint.LOGPOINT_URL}`;
 }
