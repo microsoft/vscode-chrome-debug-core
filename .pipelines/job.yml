@@ -43,3 +43,10 @@ jobs:
     displayName: gulp tslint
     inputs:
       targets: tslint
+
+  - task: RichCodeNavIndexer@0
+    continueOnError: true
+    inputs:
+      serviceConnection: 'rich-nav'
+      githubServiceConnection: 'Github connection 1'
+      languages: 'typescript'
