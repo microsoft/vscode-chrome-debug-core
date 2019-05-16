@@ -5,6 +5,7 @@
         "target": "es2015",
         "sourceMap": true,
         "outDir": "out",
+        "rootDir": ".",
         "declaration": true,
 
         "noUnusedLocals": true,
