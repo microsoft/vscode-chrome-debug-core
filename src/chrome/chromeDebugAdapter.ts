@@ -867,7 +867,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
 
             const resolvePendingBPs = async (source: string) => {
-                source = source && utils.canonicalizeUrl(source); //
+                source = source && utils.canonicalizeUrl(source);
                 const pendingBP = this._pendingBreakpointsByUrl.get(source);
                 if (pendingBP && (!pendingBP.setWithPath || utils.canonicalizeUrl(pendingBP.setWithPath) === source)) {
                     logger.log(`OnScriptParsed.resolvePendingBPs: Resolving pending breakpoints: ${JSON.stringify(pendingBP)}`);
@@ -932,7 +932,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 } else {
                     loadedSourceEventReason = 'new';
                 }
-                this._loadedSourcesByScriptId.set(script.scriptId, script); //
+                this._loadedSourcesByScriptId.set(script.scriptId, script);
                 break;
             case 'removed':
                 if (!this._loadedSourcesByScriptId.delete(script.scriptId)) {
@@ -1067,7 +1067,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     */
     public async toggleSmartStep(): Promise<void> {
         this._smartStepEnabled = !this._smartStepEnabled;
-        this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting); //
+        this.onPaused(this._lastPauseState.event, this._lastPauseState.expecting);
     }
 
     /* __GDPR__
@@ -1183,7 +1183,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const sources = await Promise.all(Array.from(this._scriptsByUrl.values())
             .map(script => this.scriptToSource(script)));
 
-        return { sources: sources.sort((a, b) => a.path.localeCompare(b.path)) }; //
+        return { sources: sources.sort((a, b) => a.path.localeCompare(b.path)) };
     }
 
     public resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
@@ -1274,7 +1274,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const type = event.entry.level === 'error' ? 'error' :
             event.entry.level === 'warning' ? 'warning' :
             'log';
-        const result = formatConsoleArguments(type, args, event.entry.stackTrace); //
+        const result = formatConsoleArguments(type, args, event.entry.stackTrace);
         const stack = event.entry.stackTrace;
         if (result) {
             this.logObjects(result.args, result.isError, stack);
