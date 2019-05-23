@@ -4,8 +4,8 @@
 
 import { Logger, logger } from 'vscode-debugadapter';
 import { IExtensibilityPoints } from '../../extensibility/extensibilityPoints';
-import { isNotEmpty } from '../../utils/typedOperators';
 import { LogLevel } from 'vscode-debugadapter/lib/logger';
+import * as _ from 'lodash';
 
 export interface ILoggingConfiguration {
     logLevel: Logger.LogLevel;
@@ -38,7 +38,7 @@ export class Logging implements ILogger {
 
         // The debug configuration provider should have set logFilePath on the launch config. If not, default to 'true' to use the
         // "legacy" log file path from the CDA subclass
-        const logFilePath = isNotEmpty(configuration.logFilePath) || isNotEmpty(extensibilityPoints.logFilePath) || logToFile;
+        const logFilePath = _.defaultTo(configuration.logFilePath, _.defaultTo(extensibilityPoints.logFilePath, logToFile));
         logger.setup(configuration.logLevel, logFilePath, configuration.shouldLogTimestamps);
     }
 }
