@@ -60,6 +60,7 @@ export class MethodsCalledLogger<T extends object> {
         const handler = {
             get: <K extends keyof T>(target: T, propertyKey: K, receiver: any) => {
                 const originalPropertyValue = target[propertyKey];
+                // tslint:disable-next-line: strict-type-predicates
                 if (typeof originalPropertyValue === 'function') {
                     return (...args: any) => {
                         const callId = this.generateCallId();
