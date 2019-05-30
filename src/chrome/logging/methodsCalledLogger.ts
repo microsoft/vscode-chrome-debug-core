@@ -4,7 +4,6 @@
 import * as _ from 'lodash';
 import { printTopLevelObjectDescription } from './printObjectDescription';
 import { logger } from 'vscode-debugadapter';
-import { isDefined } from '../utils/typedOperators';
 
 enum Synchronicity {
     Sync,
@@ -25,18 +24,21 @@ export class ReplacementInstruction {
 export interface IMethodsCalledLoggerConfiguration {
     readonly replacements: ReplacementInstruction[];
 
-    decideWhetherToWrapMethodResult(methodName: string | symbol | number, args: unknown[], result: unknown, wrapWithName: (name: string) => void): void;
-    decideWhetherToWrapEventEmitterListener(receiverName: string, methodName: string | symbol | number, args: unknown[], wrapWithName: (name: string) => void): void;
+    customizeResult(methodName: string | symbol | number, args: unknown[], result: unknown): unknown;
+    customizeArgumentsBeforeCall(receiverName: string, methodName: string | symbol | number, args: unknown[]): void;
 }
 
 export class MethodsCalledLoggerConfiguration implements IMethodsCalledLoggerConfiguration {
 
     public constructor(public readonly containerName: string, private _replacements: ReplacementInstruction[]) { }
 
-    public decideWhetherToWrapMethodResult(_methodName: string | symbol | number, _args: unknown[], _result: unknown, _wrapWithName: (name: string) => void): void { }
-    public decideWhetherToWrapEventEmitterListener(receiverName: string, methodName: string | symbol | number, args: unknown[], wrapWithName: (name: string) => void): void {
-        if (methodName === 'on') {
-            wrapWithName(`(${receiverName} emits ${args[0]})`);
+    public customizeResult(_methodName: string | symbol | number, _args: unknown[], result: unknown): unknown {
+        return result;
+    }
+
+    public customizeArgumentsBeforeCall(receiverName: string, methodName: string | symbol | number, args: object[]): void {
+        if (methodName === 'on' && args.length >= 2) {
+            args[1] = new MethodsCalledLogger(this, args[1], `(${receiverName} emits ${args[0]})`).wrapped();
         }
     }
 
@@ -59,38 +61,39 @@ export class MethodsCalledLogger<T extends object> {
 
     public wrapped(): T {
         const handler = {
-            get: <K extends keyof T>(target: T, propertyKey: K, _receiver: any) => {
-                const originalPropertyValue: any = target[propertyKey];
+            get: <K extends keyof T>(target: T, propertyKey: K, receiver: any) => {
+                const originalPropertyValue = target[propertyKey];
+                // tslint:disable-next-line: strict-type-predicates
                 if (typeof originalPropertyValue === 'function') {
                     return (...args: any) => {
+                        const callId = this.generateCallId();
                         try {
-                            if (propertyKey === 'on' && args.length >= 2) {
-                                let listenerPossiblyWrapped = args[1];
-                                this._configuration.decideWhetherToWrapEventEmitterListener(this._objectToWrapName, propertyKey, args, name => listenerPossiblyWrapped = new MethodsCalledLogger(this._configuration, args[1], name).wrapped());
-                                args[1] = listenerPossiblyWrapped;
-                            }
-
+                            this.logCallStart(propertyKey, args, callId);
+                            this._configuration.customizeArgumentsBeforeCall(this._objectToWrapName, propertyKey, args);
                             const result = originalPropertyValue.apply(target, args);
                             if (!result || !result.then) {
-                                this.logCall(propertyKey, Synchronicity.Sync, args, Outcome.Succesful, result);
-                                let resultPossiblyWrapped = result;
-                                this._configuration.decideWhetherToWrapMethodResult(propertyKey, args, result, name => resultPossiblyWrapped = new MethodsCalledLogger(this._configuration, result, name).wrapped());
-                                return resultPossiblyWrapped;
+                                this.logCall(propertyKey, Synchronicity.Sync, args, Outcome.Succesful, result, callId);
+                                if (result === target) {
+                                    return receiver;
+                                } else {
+                                    return this._configuration.customizeResult(propertyKey, args, result);
+                                }
                             } else {
-                                const callId = this.generateCallId();
-                                this.logCallStart(propertyKey, args, callId);
+                                this.logSyncPartFinished(propertyKey, args, callId);
                                 return result.then((promiseResult: unknown) => {
                                     this.logCall(propertyKey, Synchronicity.Async, args, Outcome.Succesful, promiseResult, callId);
-                                    let resultPossiblyWrapped = promiseResult;
-                                    this._configuration.decideWhetherToWrapMethodResult(propertyKey, args, promiseResult, name => resultPossiblyWrapped = new MethodsCalledLogger(this._configuration, <object>promiseResult, name).wrapped());
-                                    return resultPossiblyWrapped;
+                                    if (promiseResult === target) {
+                                        return receiver;
+                                    } else {
+                                        return this._configuration.customizeResult(propertyKey, args, promiseResult);
+                                    }
                                 }, (error: unknown) => {
                                     this.logCall(propertyKey, Synchronicity.Async, args, Outcome.Failure, error, callId);
                                     return Promise.reject(error);
                                 });
                             }
                         } catch (exception) {
-                            this.logCall(propertyKey, Synchronicity.Sync, args, Outcome.Failure, exception);
+                            this.logCall(propertyKey, Synchronicity.Sync, args, Outcome.Failure, exception, callId);
                             throw exception;
                         }
                     };
@@ -120,12 +123,17 @@ export class MethodsCalledLogger<T extends object> {
     }
 
     private logCallStart(propertyKey: PropertyKey, methodCallArguments: any[], callId: number): void {
-        const message = `START ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
+        const message = `START            ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
         logger.verbose(message);
     }
 
-    private logCall(propertyKey: PropertyKey, synchronicity: Synchronicity, methodCallArguments: any[], outcome: Outcome, resultOrException: unknown, callId?: number): void {
-        const endPrefix = isDefined(callId) ? `END   ${callId}: ` : '';
+    private logSyncPartFinished(propertyKey: PropertyKey, methodCallArguments: any[], callId: number): void {
+        const message = `PROMISE-RETURNED ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
+        logger.verbose(message);
+    }
+
+    private logCall(propertyKey: PropertyKey, synchronicity: Synchronicity, methodCallArguments: any[], outcome: Outcome, resultOrException: unknown, callId: number): void {
+        const endPrefix = callId ? `END              ${callId}: ` : '';
         const message = `${endPrefix}${this.printMethodCall(propertyKey, methodCallArguments)} ${this.printMethodSynchronicity(synchronicity)}  ${this.printMethodResponse(outcome, resultOrException)}`;
         logger.verbose(message);
     }
