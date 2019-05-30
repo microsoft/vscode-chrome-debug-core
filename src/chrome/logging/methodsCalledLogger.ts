@@ -24,18 +24,21 @@ export class ReplacementInstruction {
 export interface IMethodsCalledLoggerConfiguration {
     readonly replacements: ReplacementInstruction[];
 
-    decideWhetherToWrapMethodResult(methodName: string | symbol | number, args: unknown[], result: unknown, wrapWithName: (name: string) => void): void;
-    decideWhetherToWrapEventEmitterListener(receiverName: string, methodName: string | symbol | number, args: unknown[], wrapWithName: (name: string) => void): void;
+    customizeResult(methodName: string | symbol | number, args: unknown[], result: unknown): unknown;
+    customizeArgumentsBeforeCall(receiverName: string, methodName: string | symbol | number, args: unknown[]): void;
 }
 
 export class MethodsCalledLoggerConfiguration implements IMethodsCalledLoggerConfiguration {
 
     public constructor(public readonly containerName: string, private _replacements: ReplacementInstruction[]) { }
 
-    public decideWhetherToWrapMethodResult(_methodName: string | symbol | number, _args: unknown[], _result: unknown, _wrapWithName: (name: string) => void): void { }
-    public decideWhetherToWrapEventEmitterListener(receiverName: string, methodName: string | symbol | number, args: unknown[], wrapWithName: (name: string) => void): void {
-        if (methodName === 'on') {
-            wrapWithName(`(${receiverName} emits ${args[0]})`);
+    public customizeResult(_methodName: string | symbol | number, _args: unknown[], result: unknown): unknown {
+        return result;
+    }
+
+    public customizeArgumentsBeforeCall(receiverName: string, methodName: string | symbol | number, args: object[]): void {
+        if (methodName === 'on' && args.length >= 2) {
+            args[1] = new MethodsCalledLogger(this, args[1], `(${receiverName} emits ${args[0]})`).wrapped();
         }
     }
 
@@ -65,22 +68,15 @@ export class MethodsCalledLogger<T extends object> {
                     return (...args: any) => {
                         const callId = this.generateCallId();
                         try {
-                            if (propertyKey === 'on' && args.length >= 2) {
-                                let listenerPossiblyWrapped = args[1];
-                                this._configuration.decideWhetherToWrapEventEmitterListener(this._objectToWrapName, propertyKey, args, name => listenerPossiblyWrapped = new MethodsCalledLogger(this._configuration, args[1], name).wrapped());
-                                args[1] = listenerPossiblyWrapped;
-                            }
-
                             this.logCallStart(propertyKey, args, callId);
+                            this._configuration.customizeArgumentsBeforeCall(this._objectToWrapName, propertyKey, args);
                             const result = originalPropertyValue.apply(target, args);
                             if (!result || !result.then) {
                                 this.logCall(propertyKey, Synchronicity.Sync, args, Outcome.Succesful, result, callId);
                                 if (result === target) {
                                     return receiver;
                                 } else {
-                                    let resultPossiblyWrapped = result;
-                                    this._configuration.decideWhetherToWrapMethodResult(propertyKey, args, result, name => resultPossiblyWrapped = new MethodsCalledLogger(this._configuration, result, name).wrapped());
-                                    return resultPossiblyWrapped;
+                                    return this._configuration.customizeResult(propertyKey, args, result);
                                 }
                             } else {
                                 this.logSyncPartFinished(propertyKey, args, callId);
@@ -89,9 +85,7 @@ export class MethodsCalledLogger<T extends object> {
                                     if (promiseResult === target) {
                                         return receiver;
                                     } else {
-                                        let resultPossiblyWrapped = promiseResult;
-                                        this._configuration.decideWhetherToWrapMethodResult(propertyKey, args, promiseResult, name => resultPossiblyWrapped = new MethodsCalledLogger(this._configuration, <object>promiseResult, name).wrapped());
-                                        return resultPossiblyWrapped;
+                                        return this._configuration.customizeResult(propertyKey, args, promiseResult);
                                     }
                                 }, (error: unknown) => {
                                     this.logCall(propertyKey, Synchronicity.Async, args, Outcome.Failure, error, callId);
