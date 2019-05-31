@@ -52,7 +52,7 @@ export function existsAsync(path: string): Promise<boolean> {
     return new Promise((resolve) => {
         try {
             fs.access(path, (err?: NodeJS.ErrnoException) => {
-                resolve(_.isNil(err) ? true : false);
+                resolve(_.isNil(err));
             });
         } catch (e) {
             resolve(false);
