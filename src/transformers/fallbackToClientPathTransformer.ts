@@ -41,7 +41,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
 
     private async requestClientToMapURLToFilePath(url: IResourceIdentifier): Promise<IResourceIdentifier> {
         return new Promise<IResourceIdentifier>((resolve, reject) => {
-            this._session.sendRequest('mapURLToFilePath', {url: url}, FallbackToClientPathTransformer.ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT, response => {
+            this._session.sendRequest('mapURLToFilePath', { url: url.textRepresentation }, FallbackToClientPathTransformer.ASK_CLIENT_TO_MAP_URL_TO_FILE_PATH_TIMEOUT, response => {
                 if (response.success) {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${response.body.filePath}"`);
                     resolve(response.body.filePath);
