@@ -10,7 +10,7 @@ import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IDebuggeeSteppingController } from '../../../cdtpDebuggee/features/cdtpDebugeeSteppingController';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
-import { printClassDescription } from '../../../utils/printing';
+import { printClassDescription, printInstanceDescription } from '../../../utils/printing';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { logger } from 'vscode-debugadapter';
 
@@ -46,6 +46,7 @@ export class FinishedStepping extends BaseNotifyClientOfPause {
 @printClassDescription
 export class UserPaused extends BaseNotifyClientOfPause {
     protected readonly reason = 'pause';
+    public readonly toString = printInstanceDescription;
 
     public constructor(
         private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
@@ -62,6 +63,8 @@ export class UserPaused extends BaseNotifyClientOfPause {
 
 @printClassDescription
 class CurrentlyStepping implements SyncSteppingStatus {
+    public readonly toString = printInstanceDescription;
+
     public constructor(
         private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
@@ -91,6 +94,8 @@ class CurrentlyStepping implements SyncSteppingStatus {
 
 @printClassDescription
 class CurrentlyPausing implements SyncSteppingStatus {
+    public readonly toString = printInstanceDescription;
+
     public constructor(
         private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
@@ -106,6 +111,8 @@ class CurrentlyPausing implements SyncSteppingStatus {
 
 @printClassDescription
 class CurrentlyIdle implements SyncSteppingStatus {
+    public readonly toString = printInstanceDescription;
+
     public constructor(
         private readonly _changeStatus: (newStatus: SyncSteppingStatus) => void,
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
