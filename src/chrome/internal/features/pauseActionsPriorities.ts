@@ -9,6 +9,7 @@ import { HitStillPendingBreakpoint, PausedWhileLoadingScriptToResolveBreakpoints
 import { ExceptionWasThrown, PromiseWasRejected } from '../exceptions/pauseOnException';
 import { HitAndSatisfiedHitCountBreakpoint, HitCountBreakpointWhenConditionWasNotSatisfied } from '../breakpoints/features/hitCountBreakpointsSetter';
 import { FinishedStepping, UserPaused } from '../stepping/features/syncStepping';
+import { PausedBecauseAsyncCallWasScheduled } from '../stepping/features/asyncStepping';
 
 export type ActionToTakeWhenPausedClass = { new(...args: any[]): IActionToTakeWhenPaused };
 
@@ -22,6 +23,8 @@ const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
     HitStillPendingBreakpoint,
     ExceptionWasThrown,
     PromiseWasRejected,
+
+    PausedBecauseAsyncCallWasScheduled,
 
     FinishedStepping,
 

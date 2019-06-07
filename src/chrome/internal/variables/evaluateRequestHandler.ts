@@ -7,16 +7,21 @@ import { ConnectedCDA } from '../../client/chromeDebugAdapter/connectedCDA';
 import { ITelemetryPropertyCollector } from '../../../telemetry';
 import { IEvaluateResponseBody, ISetExpressionResponseBody } from '../../../debugAdapterInterfaces';
 import { DotScriptsRequestHandler } from './dotScriptsRequestHandler';
+import { HandlesRegistry } from '../../client/handlesRegistry';
+import { isDefined } from '../../utils/typedOperators';
+import { CallFramePresentation } from '../stackTraces/callFramePresentation';
+import { LoadedSourceCallFrame, CallFrameWithState } from '../stackTraces/callFrame';
 
 @injectable()
 export class EvaluateRequestHandler implements ICommandHandlerDeclarer {
     public constructor(
         public readonly _dotScriptsRequestHandler: DotScriptsRequestHandler,
+        private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic) { }
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {
         return CommandHandlerDeclaration.fromLiteralObject({
-            evaluate: (args: DebugProtocol.EvaluateArguments) => this._chromeDebugAdapter.evaluate(args),
+            evaluate: (args: DebugProtocol.EvaluateArguments) => this.evaluate(args),
             setExpression: args => this.setExpression(args)
         });
     }
@@ -26,7 +31,19 @@ export class EvaluateRequestHandler implements ICommandHandlerDeclarer {
             await this._dotScriptsRequestHandler.dotScript(args);
             return <IEvaluateResponseBody>{ result: '', variablesReference: 0 };
         } else {
-            return this._chromeDebugAdapter.evaluate(args);
+            const frame = isDefined(args.frameId)
+                ? this.frameById(args.frameId)
+                : undefined;
+            return this._chromeDebugAdapter.evaluate({ context: args.context, expression: args.expression, format: args.format, frame });
+        }
+    }
+
+    private frameById(frameId: number): LoadedSourceCallFrame<CallFrameWithState> | undefined {
+        const stackTrace = this._handlesRegistry.frames.getObjectById(frameId);
+        if (stackTrace instanceof CallFramePresentation && stackTrace.callFrame.hasState()) {
+            return stackTrace.callFrame;
+        } else {
+            return undefined;
         }
     }
 
