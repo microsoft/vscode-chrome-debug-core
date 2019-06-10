@@ -9,6 +9,7 @@ import { IURL } from '../sources/resourceIdentifier';
 import { CDTPScriptUrl } from '../sources/resourceIdentifierSubtypes';
 import * as utils from '../../../utils';
 import { IMappedTokensInScript } from '../locations/mappedTokensInScript';
+import { notNullOrUndefined } from '../../../validation';
 
 export interface IMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRegexp, TBPActionWhenHit extends IBPActionWhenHit>
     extends IBPRecipe<TResource, TBPActionWhenHit> {
@@ -24,6 +25,7 @@ abstract class BaseMappedBPRecipe<TResource extends ScriptOrSourceOrURLOrURLRege
 
     constructor(public readonly unmappedBPRecipe: BPRecipeInSource<TBPActionWhenHit>, public readonly location: Location<TResource>) {
         super();
+        notNullOrUndefined('location', location);
     }
 
     public get bpActionWhenHit(): TBPActionWhenHit {
