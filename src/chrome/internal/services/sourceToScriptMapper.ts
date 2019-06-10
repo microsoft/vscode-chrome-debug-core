@@ -55,7 +55,11 @@ export class SourceToScriptMapper {
             const lineNumber = range.start.position.lineNumber;
             const wholeLineRange = RangeInResource.wholeLine(range.resource, lineNumber);
             const manyPossibleLocations = await this._targetBreakpoints.getPossibleBreakpoints(wholeLineRange);
-            return ChromeUtils.selectBreakpointLocation(lineNumber, range.start.position.columnNumber, manyPossibleLocations);
+            if (manyPossibleLocations.length > 0) {
+                return ChromeUtils.selectBreakpointLocation(lineNumber, range.start.position.columnNumber, manyPossibleLocations);
+            } else {
+                return range.start;
+            }
         }
     }
 }

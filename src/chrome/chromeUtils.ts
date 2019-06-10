@@ -15,6 +15,7 @@ import { LocationInScript } from './internal/locations/location';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined } from './utils/typedOperators';
 import * as _ from 'lodash';
+import { notEmpty } from '../validation';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -300,6 +301,8 @@ export function getEvaluateName(parentEvaluateName: string | undefined, name: st
 }
 
 export function selectBreakpointLocation(_lineNumber: number, columnNumber: number, locations: LocationInScript[]): LocationInScript {
+    notEmpty('locations', locations);
+
     for (let i = locations.length - 1; i >= 0; i--) {
         if (locations[i].position.columnNumber <= columnNumber) {
             return locations[i];
