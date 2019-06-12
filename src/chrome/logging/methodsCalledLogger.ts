@@ -4,6 +4,7 @@
 import * as _ from 'lodash';
 import { printTopLevelObjectDescription } from './printObjectDescription';
 import { logger } from 'vscode-debugadapter';
+import { shouldLog } from './decorators';
 
 enum Synchronicity {
     Sync,
@@ -63,6 +64,10 @@ export class MethodsCalledLogger<T extends object> {
         const handler = {
             get: <K extends keyof T>(target: T, propertyKey: K, receiver: any) => {
                 const originalPropertyValue = target[propertyKey];
+                if (!shouldLog(originalPropertyValue)) {
+                    return originalPropertyValue;
+                }
+
                 // tslint:disable-next-line: strict-type-predicates
                 if (typeof originalPropertyValue === 'function') {
                     return (...args: any) => {

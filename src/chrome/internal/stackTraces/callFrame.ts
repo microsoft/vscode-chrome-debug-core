@@ -7,6 +7,7 @@ import { ILoadedSource } from '../sources/loadedSource';
 import { IScript } from '../scripts/script';
 import { Protocol as CDTP } from 'devtools-protocol';
 import { Scope } from './scopes';
+import { printArray } from '../../collections/printing';
 
 /**
  * CDTP has two types of stack traces:
@@ -46,7 +47,7 @@ export class CodeFlowFrame<TResource extends ScriptOrLoadedSource> {
     }
 
     public toString(): string {
-        return `${this.functionName} at ${this.location}`;
+        return `${this.index}: ${this.functionName} at ${this.location}`;
     }
 }
 
@@ -95,6 +96,10 @@ abstract class BaseCallFrame<TResource extends ScriptOrLoadedSource> implements 
     public get functionName(): string {
         return this.codeFlow.functionName;
     }
+
+    public toString(): string {
+        return `${this.codeFlow} {${this.state}}`;
+    }
 }
 
 export interface ICallFrameState {}
@@ -104,6 +109,10 @@ export class CallFrameWithState implements ICallFrameState {
         public readonly scopeChain: Scope[],
         public readonly frameThis: CDTP.Runtime.RemoteObject,
         public readonly returnValue?: CDTP.Runtime.RemoteObject) {}
+
+    public toString(): string {
+        return printArray('Scopes', this.scopeChain);
+    }
 }
 
 export class CallFrameWithoutState implements ICallFrameState {}

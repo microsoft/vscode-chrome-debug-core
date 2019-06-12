@@ -72,6 +72,10 @@ export class CallFramePresentation implements IStackTracePresentationRow {
 
         return formattedDescription;
     }
+
+    public toString(): string {
+        return `${this.callFrame}[printed with ${this._descriptionFormatArgs} and ${JSON.stringify(this.additionalPresentationDetails)}](${this.presentationHint})`;
+    }
 }
 
 export function functionDescription(functionName: string | undefined, functionModule: ILoadedSource): string {

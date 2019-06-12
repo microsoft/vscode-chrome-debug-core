@@ -36,6 +36,7 @@ export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDeb
             return diContainer.createComponent<UnconnectedCDA>(TYPES.UnconnectedCDA);
         })
         .configureClass(TYPES.IDebuggeeRunner, debugSessionOptions.extensibilityPoints.debuggeeRunner)
+        .configureClass(TYPES.IDebuggeeInitializer, debugSessionOptions.extensibilityPoints.debuggeeInitializer)
         .configureClass(TYPES.IDebuggeeLauncher, debugSessionOptions.extensibilityPoints.debuggeeLauncher)
         .configureClass(TYPES.ChromeTargetDiscovery, ChromeTargetDiscovery)
         .configureClass(TYPES.ChromeConnection, ChromeConnection)

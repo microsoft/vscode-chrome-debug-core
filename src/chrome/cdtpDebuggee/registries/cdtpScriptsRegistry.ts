@@ -10,6 +10,8 @@ import { injectable } from 'inversify';
 import { IResourceIdentifier, newResourceIdentifierMap } from '../../internal/sources/resourceIdentifier';
 import { FrameId } from '../cdtpPrimitives';
 import * as _ from 'lodash';
+import { DoNotLog } from '../../logging/decorators';
+import { printMap } from '../../collections/printing';
 
 /**
  * TODO: The CDTPScriptsRegistry is still a work in progress. We need to understand exactly how the ExecutionContexts, the Scripts, and the script "generations" work to figure out the best way to implement this
@@ -45,6 +47,7 @@ export class CDTPScriptsRegistry {
         return this._scripts.getCdtpId(script);
     }
 
+    @DoNotLog()
     public getScriptByCdtpId(runtimeScriptCrdpId: CDTP.Runtime.ScriptId): Promise<IScript> {
         return this._scripts.getScriptByCdtpId(runtimeScriptCrdpId);
     }
@@ -55,6 +58,10 @@ export class CDTPScriptsRegistry {
 
     public getScriptsByPath(nameOrLocation: IResourceIdentifier): IScript[] {
         return this._scripts.getScriptByPath(nameOrLocation);
+    }
+
+    public toString(): string {
+        return `${this._scripts}`;
     }
 }
 
@@ -102,5 +109,9 @@ class CDTPCurrentGeneration {
     public getScriptByPath(path: IResourceIdentifier): IScript[] {
         const runtimeScript = this._scriptByPath.tryGetting(path);
         return _.defaultTo(runtimeScript, []);
+    }
+
+    public toString(): string {
+        return printMap('Script to ID', this._scriptByCdtpId);
     }
 }

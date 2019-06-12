@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { LocationInScript } from '../locations/location';
+import { LocationInScript } from '../locations/location';
 import { CDTPNonPrimitiveRemoteObject } from '../../cdtpDebuggee/cdtpPrimitives';
 
 /** This class represents a variable's scope (Globals, locals, block variables, etc...) */
@@ -13,4 +13,8 @@ export class Scope {
         public readonly name?: string,
         public readonly startLocation?: LocationInScript,
         public readonly endLocation?: LocationInScript) { }
+
+    public toString(): string {
+        return `${this.type}`;
+    }
 }

@@ -28,6 +28,7 @@ import * as telemetry from './telemetry';
 import * as variables from './chrome/variables';
 import { NullLogger } from './nullLogger';
 import * as executionTimingsReporter from './executionTimingsReporter';
+import * as ChromeUtils from './chrome/chromeUtils';
 
 import { Protocol as CDTP } from 'devtools-protocol';
 import { TargetVersions } from './chrome/chromeTargetDiscoveryStrategy';
@@ -35,9 +36,9 @@ import { Version } from './chrome/utils/version';
 import { parseResourceIdentifier, IResourceIdentifier } from './chrome/internal/sources/resourceIdentifier';
 import { ChromeDebugAdapter } from './chrome/client/chromeDebugAdapter/chromeDebugAdapterV2';
 import { IExtensibilityPoints, OnlyProvideCustomLauncherExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
-import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner } from './chrome/debugeeStartup/debugeeLauncher';
+import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner, IDebuggeeInitializer } from './chrome/debugeeStartup/debugeeLauncher';
 import { inject, injectable, postConstruct, interfaces, multiInject } from 'inversify';
-import { ConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
+import { ConnectedCDAConfiguration, IConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent } from './chrome/internal/features/components';
 import { TYPES } from './chrome/dependencyInjection.ts/types';
 import { IDebuggeeStateInspector } from './chrome/cdtpDebuggee/features/cdtpDebugeeStateInspector';
@@ -46,7 +47,7 @@ import { ISupportedDomains } from './chrome/internal/domains/supportedDomains';
 import { ISession } from './chrome/client/session';
 import { IPausedOverlayConfigurer } from './chrome/cdtpDebuggee/features/cdtpPausedOverlayConfigurer';
 import { INetworkCacheConfigurer } from './chrome/cdtpDebuggee/features/cdtpNetworkCacheConfigurer';
-import { IDebuggeeRuntimeVersionProvider } from './chrome/cdtpDebuggee/features/cdtpDebugeeRuntimeVersionProvider';
+import { IDebuggeeRuntimeVersionProvider, CDTPComponentsVersions } from './chrome/cdtpDebuggee/features/cdtpDebugeeRuntimeVersionProvider';
 import { IBrowserNavigator } from './chrome/cdtpDebuggee/features/cdtpBrowserNavigator';
 import { ISourcesRetriever } from './chrome/internal/sources/sourcesRetriever';
 import { ISource } from './chrome/internal/sources/source';
@@ -58,8 +59,17 @@ import { GetComponentByID, DependencyInjection } from './chrome/dependencyInject
 import { BaseCDAState } from './chrome/client/chromeDebugAdapter/baseCDAState';
 import { UninitializedCDA } from './chrome/client/chromeDebugAdapter/uninitializedCDA';
 import { SourceResolver } from './chrome/internal/sources/sourceResolver';
-import { ICDTPDebuggeeExecutionEventsProvider } from './chrome/cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
+import { ICDTPDebuggeeExecutionEventsProvider, PausedEvent } from './chrome/cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { ScenarioType } from './chrome/client/chromeDebugAdapter/unconnectedCDA';
+import { ILoggingConfiguration } from './chrome/internal/services/logging';
+import { IFinishedStartingUpEventArguments, StepProgressEventsEmitter } from './executionTimingsReporter';
+import { ILogEventsProvider, ILogEntry } from './chrome/cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
+import { IDOMInstrumentationBreakpointsSetter } from './chrome/cdtpDebuggee/features/cdtpDOMInstrumentationBreakpointsSetter';
+import { IDebuggeePausedHandler } from './chrome/internal/features/debuggeePausedHandler';
+import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldBeAutoResumed } from './chrome/internal/features/actionToTakeWhenPaused';
+import { MakePropertyRequired } from './typeUtils';
+import { printClassDescription } from './chrome/utils/printing';
+import { IDebuggeeExecutionController } from './chrome/cdtpDebuggee/features/cdtpDebugeeExecutionController';
 
 export {
     chromeConnection,
@@ -79,6 +89,7 @@ export {
     OnlyProvideCustomLauncherExtensibilityPoints,
 
     IDebuggeeLauncher,
+    IDebuggeeInitializer,
     IDebuggeeRunner,
     ILaunchResult,
     ConnectedCDAConfiguration,
@@ -155,5 +166,40 @@ export {
 
     DependencyInjection,
 
-    ScenarioType
+    ScenarioType,
+
+    ILoggingConfiguration,
+
+    IFinishedStartingUpEventArguments,
+
+    ChromeUtils,
+
+    ILogEventsProvider,
+
+    CDTPComponentsVersions,
+
+    ILogEntry,
+
+    IDOMInstrumentationBreakpointsSetter,
+
+    IDebuggeePausedHandler,
+
+    PausedEvent,
+
+    IActionToTakeWhenPaused,
+
+    NoActionIsNeededForThisPause,
+
+    StepProgressEventsEmitter,
+
+    IConnectedCDAConfiguration,
+
+    MakePropertyRequired,
+
+    printClassDescription,
+
+    BasePauseShouldBeAutoResumed,
+
+    IDebuggeeExecutionController,
+
 };

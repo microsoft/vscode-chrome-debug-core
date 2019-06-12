@@ -150,6 +150,10 @@ export class SourceMap {
         return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumer);
     }
 
+    public generatedPath(): string {
+        return this._generatedPath;
+    }
+
     /**
      * Returns list of ISourcePathDetails for all sources in this sourcemap, sorted by their
      * positions within the sourcemap.

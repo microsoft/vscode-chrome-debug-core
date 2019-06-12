@@ -139,6 +139,20 @@ export class BaseSourceMapTransformer {
         return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
     }
 
+    public async getGeneratedPathFromAuthoredPath(authoredPath: string): Promise<string | null> {
+        if (!this._sourceMaps) return authoredPath;
+
+        await this.wait();
+
+        // Find the generated path, or check whether this script is actually a runtime path - if so, return that
+        return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
+            (this.isRuntimeScript(authoredPath) ? authoredPath : null);
+    }
+
+    private isRuntimeScript(scriptPath: string): boolean {
+        return this._allRuntimeScriptPaths.has(this.fixPathCasing(scriptPath));
+    }
+
     public async allSources(pathToGenerated: string): Promise<IResourceIdentifier[]> {
         if (isUndefined(this._sourceMaps)) return [];
 
