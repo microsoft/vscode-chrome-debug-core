@@ -9,12 +9,14 @@ import { ChromeConnection } from '../../chromeConnection';
 import { ConnectedCDA, ConnectedCDAProvider } from './connectedCDA';
 import { ConnectedCDAConfiguration } from './cdaConfiguration';
 import { ITelemetryPropertyCollector } from '../../../telemetry';
+import { ISession } from '../session';
 
 export type ConnectingCDAProvider = (configuration: ConnectedCDAConfiguration) => ConnectingCDA;
 
 @injectable()
 export class ConnectingCDA extends BaseCDAState {
     constructor(
+        @inject(TYPES.ISession) protected readonly _session: ISession,
         @inject(TYPES.ConnectedCDAProvider) private readonly _connectedCDAProvider: ConnectedCDAProvider,
         @inject(TYPES.ChromeConnection) private readonly _chromeConnection: ChromeConnection,
     ) {

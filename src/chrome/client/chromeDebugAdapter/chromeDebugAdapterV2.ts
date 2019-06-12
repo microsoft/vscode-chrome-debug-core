@@ -52,9 +52,9 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
         }
     }
 
-    public async disconnect(terminatingCDA: TerminatingCDA): Promise<void> {
+    public async terminate(terminatingCDA: TerminatingCDA): Promise<void> {
         this.changeStateTo(terminatingCDA);
-        this.changeStateTo(await terminatingCDA.disconnect()); // This should change the state to TerminatedCDA
+        this.changeStateTo(await terminatingCDA.terminate()); // This should change the state to TerminatedCDA
     }
 
     private changeStateTo(newState: IDebugAdapterState) {

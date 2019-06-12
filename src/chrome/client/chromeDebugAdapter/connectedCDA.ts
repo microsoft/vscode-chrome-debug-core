@@ -16,6 +16,7 @@ import { ChromeConnection } from '../../chromeConnection';
 import { ChromeDebugAdapter } from './chromeDebugAdapterV2';
 import { TerminatingCDAProvider, TerminatingReason } from './terminatingCDA';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
+import { DebugProtocol } from 'vscode-debugprotocol';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 
@@ -28,21 +29,22 @@ export class ConnectedCDA extends BaseCDAState {
         @inject(TYPES.ChromeDebugLogic) private readonly _chromeDebugAdapterLogic: ChromeDebugLogic,
         @inject(TYPES.IDomainsEnabler) private readonly _domainsEnabler: IDomainsEnabler,
         @inject(TYPES.IRuntimeStarter) private readonly _runtimeStarter: IRuntimeStarter,
-        @inject(TYPES.ISession) private readonly _session: ISession,
+        @inject(TYPES.ISession) protected readonly _session: ISession,
         @inject(TYPES.ChromeConnection) private readonly _chromeConnection: ChromeConnection,
         @inject(TYPES.TerminatingCDAProvider) private readonly _terminatingCDAProvider: TerminatingCDAProvider,
         @inject(TYPES.ChromeDebugAdapter) private readonly _chromeDebugAdapter: ChromeDebugAdapter,
         @multiInject(TYPES.IServiceComponent) private readonly _serviceComponents: IServiceComponent[],
         @inject(TYPES.BasePathTransformer) private readonly _basePathTransformer: BasePathTransformer,
-        @multiInject(TYPES.ICommandHandlerDeclarer) requestHandlerDeclarers: ICommandHandlerDeclarer[]
+        @multiInject(TYPES.ICommandHandlerDeclarer) requestHandlerDeclarers: ICommandHandlerDeclarer[],
     ) {
         super(requestHandlerDeclarers, {
             'initialize': () => { throw new Error('The debug adapter is already initialized. Calling initialize again is not supported.'); },
             'launch': () => { throw new Error("Can't launch  to a new target while connected to a previous target"); },
             'attach': () => { throw new Error("Can't attach to a new target while connected to a previous target"); },
-            'disconnect': async () => {
+            'disconnect': async (_args: DebugProtocol.DisconnectArguments) => {
+                // TODO: Add support for args.terminateDebuggee
                 this._ignoreNextDisconnectedFromWebSocket = true;
-                await this.disconnect(TerminatingReason.DisconnectedFromWebsocket);
+                await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
             },
         });
     }
@@ -64,16 +66,16 @@ export class ConnectedCDA extends BaseCDAState {
             if (!this._ignoreNextDisconnectedFromWebSocket) {
                 // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
                 // To avoid processing the same disconnect twice, we ignore the first disconnect from websocket after the client requests a disconnect
-                await this.disconnect(TerminatingReason.DisconnectedFromWebsocket);
+                await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
                 this._ignoreNextDisconnectedFromWebSocket = false;
             }
         });
         return this;
     }
 
-    public async disconnect(reason: TerminatingReason): Promise<void> {
+    public async terminate(reason: TerminatingReason): Promise<void> {
         const terminatingCDA = this._terminatingCDAProvider(reason);
         await terminatingCDA.install();
-        await this._chromeDebugAdapter.disconnect(terminatingCDA);
+        await this._chromeDebugAdapter.terminate(terminatingCDA);
     }
 }

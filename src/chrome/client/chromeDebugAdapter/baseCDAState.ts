@@ -4,12 +4,16 @@ import { CommandText } from '../requests';
 import { IDebugAdapterState } from '../../../debugAdapterInterfaces';
 import { ICommandHandlerDeclarer, CommandHandlerDeclaration, RequestHandlerMappings } from '../../internal/features/components';
 import { injectable } from 'inversify';
+import { ISession } from '../session';
 
 @injectable()
 export abstract class BaseCDAState implements IDebugAdapterState {
     private readonly _requestProcessor: RequestProcessor;
+    protected abstract readonly _session: ISession;
 
-    constructor(requestHandlerDeclarers: ICommandHandlerDeclarer[], requestHandlerMappings: RequestHandlerMappings) {
+    constructor(
+        requestHandlerDeclarers: ICommandHandlerDeclarer[],
+        requestHandlerMappings: RequestHandlerMappings) {
         const allDeclarers = requestHandlerDeclarers.concat({ getCommandHandlerDeclarations: () => CommandHandlerDeclaration.fromLiteralObject(requestHandlerMappings) });
         this._requestProcessor = new RequestProcessor(allDeclarers);
     }
@@ -20,7 +24,19 @@ export abstract class BaseCDAState implements IDebugAdapterState {
     }
 
     public async processRequest(requestName: CommandText, args: unknown): Promise<unknown> {
-        return await this._requestProcessor.processRequest(requestName, args);
+        try {
+            return await this._requestProcessor.processRequest(requestName, args);
+        } finally {
+            if (requestName === 'disconnect') {
+                // Disconnect shuts down the session forcefully after executing the available request handler
+                await this.shutdown();
+            }
+        }
+    }
+
+    public shutdown(): void {
+        // this._batchTelemetryReporter.finalize();
+        this._session.shutdown();
     }
 
     public toString(): string {
