@@ -147,7 +147,7 @@ export class Breakpoints {
             e => this.unverifiedBpResponse(args, requestSeq, undefined, e.message));
     }
 
-    protected validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
+    public validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
         if (!args.source.path || args.source.sourceReference) return Promise.resolve();
 
         // When break on load is active, we don't need to validate the path, so return
