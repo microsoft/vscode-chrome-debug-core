@@ -8,7 +8,6 @@ import * as ChromeUtils from './chromeUtils';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { ReasonType } from './stoppedEvent';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
-import { BreakOnLoadHelper } from './breakOnLoadHelper';
 import { Scripts } from './scripts';
 import { ChromeDebugAdapter } from '..';
 import { IPendingBreakpoint, BreakpointSetResult } from './chromeDebugAdapter';
@@ -16,6 +15,7 @@ import { IPendingBreakpoint, BreakpointSetResult } from './chromeDebugAdapter';
 import * as utils from '../utils';
 import * as path from 'path';
 import * as nls from 'vscode-nls';
+import { ChromeConnection } from './chromeConnection';
 let localize = nls.loadMessageBundle();
 
 export interface IHitConditionBreakpoint {
@@ -52,15 +52,21 @@ export class Breakpoints {
         this._committedBreakpointsByUrl.set(canonicalizedUrl, value);
     }
 
+    private get chrome() { return this._chromeConnection.api; }
+
+
     constructor(
         private readonly adapter: ChromeDebugAdapter,
-        private readonly chromeApi: Crdp.ProtocolApi,
-        private readonly breakOnLoadHelper: BreakOnLoadHelper
+        private readonly _chromeConnection: ChromeConnection,
     ) {
-        this.chromeApi.Debugger.on('breakpointResolved', params => this.onBreakpointResolved(params));
+
         this._breakpointIdHandles = new utils.ReverseHandles<Crdp.Debugger.BreakpointId>();
         this._pendingBreakpointsByUrl = new Map<string, IPendingBreakpoint>();
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
+    }
+
+    wireEvents() {
+        this.chrome.Debugger.on('breakpointResolved', params => this.onBreakpointResolved(params));
     }
 
     reset() {
@@ -180,7 +186,7 @@ export class Breakpoints {
         if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint
             const scriptId: Crdp.Runtime.ScriptId = utils.lstrip(url, ChromeUtils.EVAL_NAME_PREFIX);
-            responsePs = breakpoints.map(({ line, column = 0, condition }) => this.chromeApi.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
+            responsePs = breakpoints.map(({ line, column = 0, condition }) => this.chrome.Debugger.setBreakpoint({ location: { scriptId, lineNumber: line, columnNumber: column }, condition }));
         } else {
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
             // after refreshing the page. This is the only way to allow hitting breakpoints in code that runs immediately when
@@ -195,7 +201,7 @@ export class Breakpoints {
                 });
             } else { // Else if script hasn't been parsed and break on load is active, we need to do extra processing
                 if (this.adapter.breakOnLoadActive) {
-                    return await this.breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
+                    return await this.adapter.breakOnLoadHelper.handleAddBreakpoints(url, breakpoints);
                 }
             }
         }
@@ -208,7 +214,7 @@ export class Breakpoints {
         let bpLocation = { lineNumber, columnNumber };
         if (this.adapter.columnBreakpointsEnabled && scriptId) { // scriptId undefined when script not yet loaded, can't fix up column BP :(
             try {
-                const possibleBpResponse = await this.chromeApi.Debugger.getPossibleBreakpoints({
+                const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
                     start: { scriptId, lineNumber, columnNumber: 0 },
                     end: { scriptId, lineNumber: lineNumber + 1, columnNumber: 0 },
                     restrictToFunction: false });
@@ -223,7 +229,7 @@ export class Breakpoints {
 
         let result;
         try {
-            result = await this.chromeApi.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, condition });
+            result = await this.chrome.Debugger.setBreakpointByUrl({ urlRegex, lineNumber: bpLocation.lineNumber, columnNumber: bpLocation.columnNumber, condition });
         } catch (e) {
             if (e.message === 'Breakpoint at specified location already exists.') {
                 return {
@@ -353,7 +359,7 @@ export class Breakpoints {
         // state where later adds on the same line will fail with 'breakpoint already exists' even though it
         // does not break there.
         return this._committedBreakpointsByUrl.get(url).reduce((p, bp) => {
-            return p.then(() => this.chromeApi.Debugger.removeBreakpoint({ breakpointId: bp.breakpointId })).then(() => { });
+            return p.then(() => this.chrome.Debugger.removeBreakpoint({ breakpointId: bp.breakpointId })).then(() => { });
         }, Promise.resolve()).then(() => {
             this._committedBreakpointsByUrl.delete(url);
         });
@@ -368,7 +374,7 @@ export class Breakpoints {
         }
 
         // If the breakpoint resolved is a stopOnEntry breakpoint, we just return since we don't need to send it to client
-        if (this.adapter.breakOnLoadActive && this.breakOnLoadHelper.stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
+        if (this.adapter.breakOnLoadActive && this.adapter.breakOnLoadHelper.stopOnEntryBreakpointIdToRequestedFileName.has(params.breakpointId)) {
             return;
         }
 
@@ -488,7 +494,7 @@ export class Breakpoints {
                 hitConditionBp.numHits++;
                 // Only resume if we didn't break for some user action (step, pause button)
                 if (!expectingStopReason && !hitConditionBp.shouldPause(hitConditionBp.numHits)) {
-                    this.chromeApi.Debugger.resume()
+                    this.chrome.Debugger.resume()
                         .catch(() => { /* ignore failures */ });
                     return { didPause: false };
                 }

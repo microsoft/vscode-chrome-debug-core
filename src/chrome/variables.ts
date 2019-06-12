@@ -5,31 +5,34 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Handles } from 'vscode-debugadapter';
 
-import { ChromeDebugAdapter, VariableContext } from './chromeDebugAdapter';
+import { VariableContext } from './chromeDebugAdapter';
+
 import { Protocol as Crdp } from 'devtools-protocol';
 import * as utils from '../utils';
+import { VariablesManager } from './variablesManager';
+import * as ChromeUtils from './chromeUtils';
 
 export interface IVariableContainer {
-    expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
-    setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string>;
+    expand(variablesManager: VariablesManager, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
+    setValue(variablesManager: VariablesManager, name: string, value: string): Promise<string>;
 }
 
 export abstract class BaseVariableContainer implements IVariableContainer {
     constructor(protected objectId: string, protected evaluateName?: string) {
     }
 
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
-        return adapter.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
+    public expand(variablesManager: VariablesManager, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+        return variablesManager.getVariablesForObjectId(this.objectId, this.evaluateName, filter, start, count);
     }
 
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
+    public setValue(variablesManager: VariablesManager, name: string, value: string): Promise<string> {
         return utils.errP('setValue not supported by this variable type');
     }
 }
 
 export class PropertyContainer extends BaseVariableContainer {
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
-        return adapter.setPropertyValue(this.objectId, name, value);
+    public setValue(variablesManager: VariablesManager, name: string, value: string): Promise<string> {
+        return variablesManager.setPropertyValue(this.objectId, name, value);
     }
 }
 
@@ -38,8 +41,8 @@ export class LoggedObjects extends BaseVariableContainer {
         super(undefined);
     }
 
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
-        return Promise.all(this.args.map((arg, i) => adapter.remoteObjectToVariable('' + i, arg, undefined, /*stringify=*/false, 'repl')));
+    public expand(variablesManager: VariablesManager, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+        return Promise.all(this.args.map((arg, i) => variablesManager.remoteObjectToVariable('' + i, arg, undefined, /*stringify=*/false, 'repl')));
     }
 }
 
@@ -60,30 +63,30 @@ export class ScopeContainer extends BaseVariableContainer {
     /**
      * Call super then insert the 'this' object if needed
      */
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(variablesManager: VariablesManager, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         // No filtering in scopes right now
-        return super.expand(adapter, 'all', start, count).then(variables => {
+        return super.expand(variablesManager, 'all', start, count).then(variables => {
             if (this._thisObj) {
                 // If this is a scope that should have the 'this', prop, insert it at the top of the list
-                return this.insertRemoteObject(adapter, variables, 'this', this._thisObj);
+                return this.insertRemoteObject(variablesManager, variables, 'this', this._thisObj);
             }
 
             return variables;
         }).then(variables => {
             if (this._returnValue) {
-                return this.insertRemoteObject(adapter, variables, 'Return value', this._returnValue);
+                return this.insertRemoteObject(variablesManager, variables, 'Return value', this._returnValue);
             }
 
             return variables;
         });
     }
 
-    public setValue(adapter: ChromeDebugAdapter, name: string, value: string): Promise<string> {
-        return adapter.setVariableValue(this._frameId, this._origScopeIndex, name, value);
+    public setValue(variablesManager: VariablesManager, name: string, value: string): Promise<string> {
+        return variablesManager.setVariableValue(this._frameId, this._origScopeIndex, name, value);
     }
 
-    private insertRemoteObject(adapter: ChromeDebugAdapter, variables: DebugProtocol.Variable[], name: string, obj: Crdp.Runtime.RemoteObject): Promise<DebugProtocol.Variable[]> {
-        return adapter.remoteObjectToVariable(name, obj).then(variable => {
+    private insertRemoteObject(variablesManager: VariablesManager, variables: DebugProtocol.Variable[], name: string, obj: Crdp.Runtime.RemoteObject): Promise<DebugProtocol.Variable[]> {
+        return variablesManager.remoteObjectToVariable(name, obj).then(variable => {
             variables.unshift(variable);
             return variables;
         });
@@ -119,9 +122,9 @@ export class ExceptionValueContainer extends ExceptionContainer {
     /**
      * Make up a fake 'Exception' property to hold the thrown value, displayed under the Exception Scope
      */
-    public expand(adapter: ChromeDebugAdapter, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
+    public expand(variablesManager: VariablesManager, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
         const excValuePropDescriptor: Crdp.Runtime.PropertyDescriptor = <any>{ name: 'Exception', value: this._exception };
-        return adapter.propertyDescriptorToVariable(excValuePropDescriptor)
+        return variablesManager.propertyDescriptorToVariable(excValuePropDescriptor)
             .then(variable => [variable]);
     }
 }
@@ -309,4 +312,77 @@ export class VariableHandles {
             this._consoleVariableHandles :
             this._variableHandles;
     }
+}
+
+export interface IPropCount {
+    indexedVariables: number;
+    namedVariables: number;
+}
+
+export function getCollectionNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
+    let indexedVariables = 0;
+    let namedVariables = object.preview.properties.length + 1; // +1 for [[Entries]];
+
+    return { indexedVariables, namedVariables };
+}
+
+export function getArrayNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
+    let indexedVariables = 0;
+    const indexedProps = object.preview.properties
+        .filter(prop => isIndexedPropName(prop.name));
+    if (indexedProps.length) {
+        // +1 because (last index=0) => 1 prop
+        indexedVariables = parseInt(indexedProps[indexedProps.length - 1].name, 10) + 1;
+    }
+
+    const namedVariables = object.preview.properties.length - indexedProps.length + 2; // 2 for __proto__ and length
+    return { indexedVariables, namedVariables };
+}
+
+export function createPrimitiveVariableWithValue(name: string, value: string, parentEvaluateName?: string): DebugProtocol.Variable {
+    return {
+        name,
+        value,
+        variablesReference: 0,
+        evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
+    };
+}
+
+export function createPropertyContainer(object: Crdp.Runtime.RemoteObject, evaluateName: string): IVariableContainer {
+    return new PropertyContainer(object.objectId, evaluateName);
+}
+
+export function createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
+    const value = getRemoteObjectPreview_primitive(object, stringify);
+    const variable = createPrimitiveVariableWithValue(name, value, parentEvaluateName);
+    variable.type = object.type;
+
+    return variable;
+}
+
+export function createFunctionVariable(name: string,
+                                object: Crdp.Runtime.RemoteObject,
+                                context: VariableContext,
+                                handles: VariableHandles,
+                                parentEvaluateName?: string): DebugProtocol.Variable {
+
+    let value: string;
+    const firstBraceIdx = object.description.indexOf('{');
+    if (firstBraceIdx >= 0) {
+        value = object.description.substring(0, firstBraceIdx) + '{ … }';
+    } else {
+        const firstArrowIdx = object.description.indexOf('=>');
+        value = firstArrowIdx >= 0 ?
+            object.description.substring(0, firstArrowIdx + 2) + ' …' :
+            object.description;
+    }
+
+    const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
+    return <DebugProtocol.Variable>{
+        name,
+        value,
+        type: utils.uppercaseFirstLetter(object.type),
+        variablesReference: handles.create(new PropertyContainer(object.objectId, evaluateName), context),
+        evaluateName
+    };
 }

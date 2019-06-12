@@ -58,7 +58,7 @@
     "build": "gulp build",
     "watch": "gulp watch",
     "test": "mocha --exit --recursive -u tdd ./out/test/",
-    "testCoverage": "nyc mocha --require source-map-support/register  --exit --recursive -u tdd ./out/test/",
+    "testCoverage": "nyc mocha --require source-map-support/register  --exit --recursive -u tdd ./out/test/**/*.test.js",
     "prepare": "gulp build",
     "tslint": "gulp tslint",
     "patch": "npm version patch -m '%s'",
@@ -69,7 +69,11 @@
     "extension": [
       ".ts"
     ],
-    "exclude": ["**/*.d.ts"],
+    "exclude": [
+      "**/*.d.ts",
+      "**/coverage/**/*.*",
+      "**/testData/**/*.*"
+    ],
     "reporter": "html",
     "all": true
   }

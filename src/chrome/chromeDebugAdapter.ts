@@ -7,18 +7,18 @@ import { InitializedEvent, TerminatedEvent, Handles, ContinuedEvent, OutputEvent
 
 import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakpointsResponseBody, IStackTraceResponseBody,
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
-    ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, ISetVariableResponseBody, IDebugAdapter,
+    ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs, IInternalStackTraceResponseBody,
     ISetBreakpointResult, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector, IGetLoadedSourcesResponseBody, TimeTravelRuntime, IExceptionInfoResponseBody } from '../debugAdapterInterfaces';
 import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
 import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
 import { Protocol as Crdp } from 'devtools-protocol';
-import { PropertyContainer, ScopeContainer, ExceptionContainer, isIndexedPropName, IVariableContainer } from './variables';
+import { ScopeContainer, ExceptionContainer, isIndexedPropName } from './variables';
 import * as variables from './variables';
 import { formatConsoleArguments, formatExceptionDetails, clearConsoleCode } from './consoleHelper';
 import { StoppedEvent2, ReasonType } from './stoppedEvent';
-import { stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
+import { stackTraceWithoutLogpointFrame, InternalSourceBreakpoint } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -41,13 +41,10 @@ import * as nls from 'vscode-nls';
 import { mapRemoteClientToInternalPath, mapInternalSourceToRemoteClient } from '../remoteMapper';
 import { Scripts } from './scripts';
 import { Breakpoints } from './breakpoints';
-import { InternalSourceBreakpoint } from '..';
+import { VariablesManager } from './variablesManager';
 let localize = nls.loadMessageBundle();
 
-interface IPropCount {
-    indexedVariables: number;
-    namedVariables: number;
-}
+
 
 /**
  * Represents a reference to a source/script. `contents` is set if there are inlined sources.
@@ -103,7 +100,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _expectingStopReason: ReasonType;
     private _waitAfterStep = Promise.resolve();
     private _frameHandles: Handles<Crdp.Debugger.CallFrame>;
-    private _variableHandles: variables.VariableHandles;
+
     private _sourceHandles: utils.ReverseHandles<ISourceContainer>;
     private _lineColTransformer: LineColTransformer;
     protected _chromeConnection: ChromeConnection;
@@ -131,11 +128,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     private _earlyScripts: Crdp.Debugger.ScriptParsedEvent[] = [];
 
     private _initialSourceMapsP = Promise.resolve();
-
     private _lastPauseState: { expecting: ReasonType; event: Crdp.Debugger.PausedEvent };
-
     protected _breakOnLoadHelper: BreakOnLoadHelper | null;
-
     // Queue to synchronize new source loaded and source removed events so that 'remove' script events
     // won't be send before the corresponding 'new' event has been sent
     private _sourceLoadedQueue: Promise<void> = Promise.resolve(null);
@@ -152,8 +146,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _isVSClient: boolean;
 
     public get columnBreakpointsEnabled() { return this._columnBreakpointsEnabled; }
+    public get breakOnLoadHelper() { return this._breakOnLoadHelper; }
 
-    private breakpoints: Breakpoints;
+    protected _breakpoints: Breakpoints;
+    protected _variablesManager: VariablesManager;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
@@ -163,14 +159,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
         this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
 
+        this._breakpoints = new Breakpoints(this, this._chromeConnection);
+        this._variablesManager = new VariablesManager(this._chromeConnection);
+
+
         this._frameHandles = new Handles<Crdp.Debugger.CallFrame>();
-        this._variableHandles = new variables.VariableHandles();
         this._sourceHandles = new utils.ReverseHandles<ISourceContainer>();
         this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
         this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._sourceHandles);
         this._pathTransformer = new (pathTransformer || RemotePathTransformer)();
-
-        // this.breakpoints = new Breakpoints(this, this.chrome, this._breakOnLoadHelper);
 
         this.clearTargetContext();
     }
@@ -188,7 +185,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     public get committedBreakpointsByUrl(): Map<string, ISetBreakpointResult[]> {
-        return this.breakpoints.committedBreakpointsByUrl;
+        return this._breakpoints.committedBreakpointsByUrl;
     }
 
     public get sourceMapTransformer(): BaseSourceMapTransformer {
@@ -209,8 +206,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         Scripts.reset();
 
-        if (this.breakpoints) {
-            this.breakpoints.reset();
+        if (this._breakpoints) {
+            this._breakpoints.reset();
         }
 
         this._pathTransformer.clearTargetContext();
@@ -472,6 +469,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this.chrome.Runtime.on('executionContextsCleared', () => this.onExecutionContextsCleared());
         this.chrome.Log.on('entryAdded', params => this.onLogEntryAdded(params));
 
+        this._breakpoints.wireEvents();
+
         this._chromeConnection.onClose(() => this.terminateSession('websocket closed'));
     }
 
@@ -504,11 +503,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected runConnection(): Promise<void>[] {
         return [
             this.chrome.Console.enable()
-                .catch(e => { /* Specifically ignore a fail here since it's only for backcompat */ }),
+                .catch(() => { /* Specifically ignore a fail here since it's only for backcompat */ }),
             utils.toVoidP(this.chrome.Debugger.enable()),
             this.chrome.Runtime.enable(),
             this.chrome.Log.enable()
-                .catch(e => { }), // Not supported by all runtimes
+                .catch(() => { }), // Not supported by all runtimes
             this._chromeConnection.run(),
         ];
     }
@@ -540,7 +539,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             this.hookConnectionEvents();
             let patterns: string[] = [];
-            this.breakpoints = new Breakpoints(this, this._chromeConnection.api, this._breakOnLoadHelper);
 
             if (this._launchAttachArgs.skipFiles) {
                 const skipFilesArgs = this._launchAttachArgs.skipFiles.filter(glob => {
@@ -640,7 +638,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return { didPause: false };
         }
 
-        this._variableHandles.onPaused();
+        this._variablesManager.onPaused();
         this._frameHandles.reset();
         this._exception = undefined;
         this._lastPauseState = { event: notification, expecting: expectingStopReason };
@@ -672,7 +670,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // After processing smartStep and so on, check whether we are paused on a promise rejection, and should continue past it
             if (this._promiseRejectExceptionFilterEnabled && !this._pauseOnPromiseRejections) {
                 this.chrome.Debugger.resume()
-                    .catch(e => { /* ignore failures */ });
+                    .catch(() => { /* ignore failures */ });
                 return { didPause: false };
             }
 
@@ -680,7 +678,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         } else if (notification.hitBreakpoints && notification.hitBreakpoints.length) {
             reason = 'breakpoint';
 
-            const result = this.breakpoints.handleHitCountBreakpoints(expectingStopReason, notification.hitBreakpoints);
+            const result = this._breakpoints.handleHitCountBreakpoints(expectingStopReason, notification.hitBreakpoints);
             if (result) {
                 return result;
             }
@@ -850,7 +848,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     return undefined;
                 }
 
-                await this.breakpoints.handleScriptParsed(script, mappedUrl, sources);
+                await this._breakpoints.handleScriptParsed(script, mappedUrl, sources);
 
                 await this.resolveSkipFiles(script, mappedUrl, sources);
             });
@@ -1131,7 +1129,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             ]
         }
     */
-    public async loadedSources(args: DebugProtocol.LoadedSourcesArguments): Promise<IGetLoadedSourcesResponseBody> {
+    public async loadedSources(): Promise<IGetLoadedSourcesResponseBody> {
         const sources = await Promise.all(Array.from(Scripts._scriptsByUrl.values())
             .map(script => this.scriptToSource(script)));
 
@@ -1206,7 +1204,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     e = new OutputEvent(msg, category);
                 } else {
                     e = new OutputEvent('output', category);
-                    e.body.variablesReference = this._variableHandles.create(new variables.LoggedObjects(objs), 'repl');
+                    e.body.variablesReference = this._variablesManager.createHandle(new variables.LoggedObjects(objs), 'repl');
                 }
 
                 if (stackTrace && stackTrace.callFrames.length) {
@@ -1315,7 +1313,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
         this._clientRequestedSessionEnd = true;
         this.shutdown();
-        this.terminateSession('Got disconnect request', args);
+        this.terminateSession('Got disconnect request');
     }
 
     /* __GDPR__
@@ -1331,7 +1329,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     	args.source.path = mapRemoteClientToInternalPath(args.source.path);
     }
         this.reportBpTelemetry(args);
-        return this.breakpoints.setBreakpoints(args, _, requestSeq, ids);
+        return this._breakpoints.setBreakpoints(args, _, requestSeq, ids);
     }
 
     private reportBpTelemetry(args: ISetBreakpointsArgs): void {
@@ -1403,7 +1401,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.resume()
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1429,7 +1427,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOver()
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1458,7 +1456,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepInto({ breakOnAsyncCall: true })
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1484,7 +1482,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._expectingResumedEvent = true;
         return this._currentStep = this.chrome.Debugger.stepOut()
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1498,7 +1496,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public stepBack(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.stepBack()
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1512,7 +1510,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public reverseContinue(): Promise<void> {
         return (<TimeTravelRuntime>this.chrome).TimeTravel.reverse()
             .then(() => { /* make void */ },
-                e => { /* ignore failures - client can send the request when the target is no longer paused */ });
+                () => { /* ignore failures - client can send the request when the target is no longer paused */ });
     }
 
     /* __GDPR__
@@ -1571,7 +1569,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         await this._pathTransformer.stackTraceResponse(stackTraceResponse);
         await this._sourceMapTransformer.stackTraceResponse(stackTraceResponse);
 
-        await Promise.all(stackTraceResponse.stackFrames.map(async (frame, i) => {
+        await Promise.all(stackTraceResponse.stackFrames.map(async (frame) => {
             // Remove isSourceMapped to convert back to DebugProtocol.StackFrame
             const isSourceMapped = frame.isSourceMapped;
             delete frame.isSourceMapped;
@@ -1650,7 +1648,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
-        const origin = this.getReadonlyOrigin(script.url);
+        const origin = this.getReadonlyOrigin();
 
         const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
@@ -1693,7 +1691,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // When the script has a url and isn't one we're ignoring, send the name and path fields. PathTransformer will
             // attempt to resolve it to a script in the workspace. Otherwise, send the name and sourceReference fields.
             const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
-            const origin = this.getReadonlyOrigin(script.url);
+            const origin = this.getReadonlyOrigin();
             const source: DebugProtocol.Source = {
                 name: path.basename(script.url),
                 path: script.url,
@@ -1725,7 +1723,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected getReadonlyOrigin(url: string): string {
+    protected getReadonlyOrigin(): string {
         // To override
         return undefined;
     }
@@ -1784,7 +1782,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             // The first scope should include 'this'. Keep the RemoteObject reference for use by the variables request
             const thisObj = i === 0 && currentFrame.this;
             const returnValue = i === 0 && currentFrame.returnValue;
-            const variablesReference = this._variableHandles.create(
+            const variablesReference = this._variablesManager.createHandle(
                 new ScopeContainer(currentFrame.callFrameId, i, scope.object.objectId, thisObj, returnValue));
 
             const resultScope = <DebugProtocol.Scope>{
@@ -1806,7 +1804,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         if (this._exception && this.lookupFrameIndex(args.frameId) === 0) {
             scopes.unshift(<DebugProtocol.Scope>{
                 name: localize('scope.exception', 'Exception'),
-                variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
+                variablesReference: this._variablesManager.createHandle(ExceptionContainer.create(this._exception))
             });
         }
 
@@ -1840,162 +1838,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
-        if (!this.chrome) {
-            return utils.errP(errors.runtimeNotConnectedMsg);
-        }
-
-        const handle = this._variableHandles.get(args.variablesReference);
-        if (!handle) {
-            return Promise.resolve<IVariablesResponseBody>(undefined);
-        }
-
-        return handle.expand(this, args.filter, args.start, args.count)
-            .catch(err => {
-                logger.log('Error handling variables request: ' + err.toString());
-                return [];
-            }).then(variables => {
-                return { variables };
-            });
-    }
-
-    public async propertyDescriptorToVariable(propDesc: Crdp.Runtime.PropertyDescriptor, owningObjectId?: string, parentEvaluateName?: string): Promise<DebugProtocol.Variable> {
-        if (propDesc.get) {
-            // Getter
-            const grabGetterValue = 'function remoteFunction(propName) { return this[propName]; }';
-
-            let response: Crdp.Runtime.CallFunctionOnResponse;
-            try {
-                response = await this.chrome.Runtime.callFunctionOn({
-                    objectId: owningObjectId,
-                    functionDeclaration: grabGetterValue,
-                    arguments: [{ value: propDesc.name }]
-                });
-            } catch (error) {
-                logger.error(`Error evaluating getter for '${propDesc.name}' - ${error.toString()}`);
-                return { name: propDesc.name, value: error.toString(), variablesReference: 0 };
-            }
-
-            if (response.exceptionDetails) {
-                // Not an error, getter could be `get foo() { throw new Error('bar'); }`
-                const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
-                logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
-                return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
-            } else {
-                return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
-            }
-        } else if (propDesc.set) {
-            // setter without a getter, unlikely
-            return { name: propDesc.name, value: 'setter', variablesReference: 0 };
-        } else {
-            // Non getter/setter
-            return this.internalPropertyDescriptorToVariable(propDesc, parentEvaluateName);
-        }
-    }
-
-    public getVariablesForObjectId(objectId: string, evaluateName?: string, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]> {
-        if (typeof start === 'number' && typeof count === 'number') {
-            return this.getFilteredVariablesForObject(objectId, evaluateName, filter, start, count);
-        }
-
-        filter = filter === 'indexed' ? 'all' : filter;
-
-        return Promise.all([
-            // Need to make two requests to get all properties
-            this.getRuntimeProperties({ objectId, ownProperties: false, accessorPropertiesOnly: true, generatePreview: true }),
-            this.getRuntimeProperties({ objectId, ownProperties: true, accessorPropertiesOnly: false, generatePreview: true })
-        ]).then(getPropsResponses => {
-            // Sometimes duplicates will be returned - merge all descriptors by name
-            const propsByName = new Map<string, Crdp.Runtime.PropertyDescriptor>();
-            const internalPropsByName = new Map<string, Crdp.Runtime.InternalPropertyDescriptor>();
-            getPropsResponses.forEach(response => {
-                if (response) {
-                    response.result.forEach(propDesc =>
-                        propsByName.set(propDesc.name, propDesc));
-
-                    if (response.internalProperties) {
-                        response.internalProperties.forEach(internalProp => {
-                            internalPropsByName.set(internalProp.name, internalProp);
-                        });
-                    }
-                }
-            });
-
-            // Convert Chrome prop descriptors to DebugProtocol vars
-            const variables: Promise<DebugProtocol.Variable>[] = [];
-            propsByName.forEach(propDesc => {
-                if (!filter || filter === 'all' || (isIndexedPropName(propDesc.name) === (filter === 'indexed'))) {
-                    variables.push(this.propertyDescriptorToVariable(propDesc, objectId, evaluateName));
-                }
-            });
-
-            internalPropsByName.forEach(internalProp => {
-                if (!filter || filter === 'all' || (isIndexedPropName(internalProp.name) === (filter === 'indexed'))) {
-                    variables.push(Promise.resolve(this.internalPropertyDescriptorToVariable(internalProp, evaluateName)));
-                }
-            });
-
-            return Promise.all(variables);
-        }).then(variables => {
-            // Sort all variables properly
-            return variables.sort((var1, var2) => ChromeUtils.compareVariableNames(var1.name, var2.name));
-        });
-    }
-
-    private getRuntimeProperties(params: Crdp.Runtime.GetPropertiesRequest): Promise<Crdp.Runtime.GetPropertiesResponse> {
-        return this.chrome.Runtime.getProperties(params)
-            .catch(err => {
-                if (err.message.startsWith('Cannot find context with specified id')) {
-                    // Hack to ignore this error until we fix https://github.com/Microsoft/vscode/issues/18001 to not request variables at unexpected times.
-                    return null;
-                } else {
-                    throw err;
-                }
-            });
-    }
-
-    private internalPropertyDescriptorToVariable(propDesc: Crdp.Runtime.InternalPropertyDescriptor, parentEvaluateName: string): Promise<DebugProtocol.Variable> {
-        return this.remoteObjectToVariable(propDesc.name, propDesc.value, parentEvaluateName);
-    }
-
-    private getFilteredVariablesForObject(objectId: string, evaluateName: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
-        // No ES6, in case we talk to an old runtime
-        const getIndexedVariablesFn = `
-            function getIndexedVariables(start, count) {
-                var result = [];
-                for (var i = start; i < (start + count); i++) result[i] = this[i];
-                return result;
-            }`;
-        // TODO order??
-        const getNamedVariablesFn = `
-            function getNamedVariablesFn(start, count) {
-                var result = [];
-                var ownProps = Object.getOwnPropertyNames(this);
-                for (var i = start; i < (start + count); i++) result[i] = ownProps[i];
-                return result;
-            }`;
-
-        const getVarsFn = filter === 'indexed' ? getIndexedVariablesFn : getNamedVariablesFn;
-        return this.getFilteredVariablesForObjectId(objectId, evaluateName, getVarsFn, filter, start, count);
-    }
-
-    private getFilteredVariablesForObjectId(objectId: string, evaluateName: string, getVarsFn: string, filter: string, start: number, count: number): Promise<DebugProtocol.Variable[]> {
-        return this.chrome.Runtime.callFunctionOn({
-            objectId,
-            functionDeclaration: getVarsFn,
-            arguments: [{ value: start }, { value: count }],
-            silent: true
-        }).then<DebugProtocol.Variable[]>(evalResponse => {
-            if (evalResponse.exceptionDetails) {
-                const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
-                return Promise.reject(errors.errorFromEvaluate(errMsg));
-            } else {
-                // The eval was successful and returned a reference to the array object. Get the props, then filter
-                // out everything except the index names.
-                return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
-                    .then(variables => variables.filter(variable => isIndexedPropName(variable.name)));
-            }
-        },
-        error => Promise.reject(errors.errorFromEvaluate(error.message)));
+        return this._variablesManager.getVariables(args);
     }
 
     /* __GDPR__
@@ -2098,7 +1941,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const evalResponse = await this.waitThenDoEvaluate(args.expression, args.frameId, { generatePreview: true });
 
         // Convert to a Variable object then just copy the relevant fields off
-        const variable = await this.remoteObjectToVariable(args.expression, evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
+        const variable = await this._variablesManager.remoteObjectToVariable(args.expression, evalResponse.result, /*parentEvaluateName=*/undefined, /*stringify=*/undefined, <VariableContext>args.context);
         if (evalResponse.exceptionDetails) {
             let resultValue = variable.value;
             if (resultValue && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
@@ -2227,160 +2070,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Debugger.evaluateOnCallFrame(args);
     }
 
-    /* __GDPR__
-        "ClientRequest/setVariable" : {
-            "${include}": [
-                "${IExecutionResultTelemetryProperties}",
-                "${DebugCommonProperties}"
-            ]
-        }
-    */
-    public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
-        const handle = this._variableHandles.get(args.variablesReference);
-        if (!handle) {
-            return Promise.reject(errors.setValueNotSupported());
-        }
-
-        return handle.setValue(this, args.name, args.value)
-            .then(value => ({ value }));
-    }
-
-    public setVariableValue(callFrameId: string, scopeNumber: number, variableName: string, value: string): Promise<string> {
-        let evalResultObject: Crdp.Runtime.RemoteObject;
-        return this.chrome.Debugger.evaluateOnCallFrame({ callFrameId, expression: value, silent: true }).then(evalResponse => {
-            if (evalResponse.exceptionDetails) {
-                const errMsg = ChromeUtils.errorMessageFromExceptionDetails(evalResponse.exceptionDetails);
-                return Promise.reject(errors.errorFromEvaluate(errMsg));
-            } else {
-                evalResultObject = evalResponse.result;
-                const newValue = ChromeUtils.remoteObjectToCallArgument(evalResultObject);
-                return this.chrome.Debugger.setVariableValue({ callFrameId, scopeNumber, variableName, newValue });
-            }
-        },
-        error => Promise.reject(errors.errorFromEvaluate(error.message)))
-        // Temporary, Microsoft/vscode#12019
-        .then(setVarResponse => ChromeUtils.remoteObjectToValue(evalResultObject).value);
-    }
-
-    public setPropertyValue(objectId: string, propName: string, value: string): Promise<string> {
-        const setPropertyValueFn = `function() { return this["${propName}"] = ${value} }`;
-        return this.chrome.Runtime.callFunctionOn({
-            objectId, functionDeclaration: setPropertyValueFn,
-            silent: true
-        }).then(response => {
-            if (response.exceptionDetails) {
-                const errMsg = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
-                return Promise.reject<string>(errors.errorFromEvaluate(errMsg));
-            } else {
-                // Temporary, Microsoft/vscode#12019
-                return ChromeUtils.remoteObjectToValue(response.result).value;
-            }
-        },
-        error => Promise.reject<string>(errors.errorFromEvaluate(error.message)));
-    }
-
-    public async remoteObjectToVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify = true, context: VariableContext = 'variables'): Promise<DebugProtocol.Variable> {
-        name = name || '""';
-
-        if (object) {
-            if (object.type === 'object') {
-                return this.createObjectVariable(name, object, parentEvaluateName, context);
-            } else if (object.type === 'function') {
-                return this.createFunctionVariable(name, object, context, parentEvaluateName);
-            } else {
-                return this.createPrimitiveVariable(name, object, parentEvaluateName, stringify);
-            }
-        } else {
-            return this.createPrimitiveVariableWithValue(name, '', parentEvaluateName);
-        }
-    }
-
-    public createFunctionVariable(name: string, object: Crdp.Runtime.RemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
-        let value: string;
-        const firstBraceIdx = object.description.indexOf('{');
-        if (firstBraceIdx >= 0) {
-            value = object.description.substring(0, firstBraceIdx) + '{ … }';
-        } else {
-            const firstArrowIdx = object.description.indexOf('=>');
-            value = firstArrowIdx >= 0 ?
-                object.description.substring(0, firstArrowIdx + 2) + ' …' :
-                object.description;
-        }
-
-        const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
-        return <DebugProtocol.Variable>{
-            name,
-            value,
-            type: utils.uppercaseFirstLetter(object.type),
-            variablesReference: this._variableHandles.create(new PropertyContainer(object.objectId, evaluateName), context),
-            evaluateName
-        };
-    }
-
-    public createObjectVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName: string, context: VariableContext): Promise<DebugProtocol.Variable> {
-        if ((<string>object.subtype) === 'internal#location') {
-            // Could format this nicely later, see #110
-            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'internal#location', parentEvaluateName));
-        } else if (object.subtype === 'null') {
-            return Promise.resolve(this.createPrimitiveVariableWithValue(name, 'null', parentEvaluateName));
-        }
-
-        const value = variables.getRemoteObjectPreview_object(object, context);
-        let propCountP: Promise<IPropCount>;
-        if (object.subtype === 'array' || object.subtype === 'typedarray') {
-            if (object.preview && !object.preview.overflow) {
-                propCountP = Promise.resolve(this.getArrayNumPropsByPreview(object));
-            } else if (object.className === 'Buffer') {
-                propCountP = this.getBufferNumPropsByEval(object.objectId);
-            } else {
-                propCountP = this.getArrayNumPropsByEval(object.objectId);
-            }
-        } else if (object.subtype === 'set' || object.subtype === 'map') {
-            if (object.preview && !object.preview.overflow) {
-                propCountP = Promise.resolve(this.getCollectionNumPropsByPreview(object));
-            } else {
-                propCountP = this.getCollectionNumPropsByEval(object.objectId);
-            }
-        } else {
-            propCountP = Promise.resolve({
-                indexedVariables: undefined,
-                namedVariables: undefined
-             });
-        }
-
-        const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
-        const variablesReference = this._variableHandles.create(this.createPropertyContainer(object, evaluateName), context);
-        return propCountP.then(({ indexedVariables, namedVariables }) => (<DebugProtocol.Variable>{
-            name,
-            value,
-            type: utils.uppercaseFirstLetter(object.type),
-            variablesReference,
-            indexedVariables,
-            namedVariables,
-            evaluateName
-        }));
-    }
-
-    protected createPropertyContainer(object: Crdp.Runtime.RemoteObject, evaluateName: string): IVariableContainer {
-        return new PropertyContainer(object.objectId, evaluateName);
-    }
-
-    public createPrimitiveVariable(name: string, object: Crdp.Runtime.RemoteObject, parentEvaluateName?: string, stringify?: boolean): DebugProtocol.Variable {
-        const value = variables.getRemoteObjectPreview_primitive(object, stringify);
-        const variable = this.createPrimitiveVariableWithValue(name, value, parentEvaluateName);
-        variable.type = object.type;
-
-        return variable;
-    }
-
-    public createPrimitiveVariableWithValue(name: string, value: string, parentEvaluateName?: string): DebugProtocol.Variable {
-        return {
-            name,
-            value,
-            variablesReference: 0,
-            evaluateName: ChromeUtils.getEvaluateName(parentEvaluateName, name)
-        };
-    }
 
     /* __GDPR__
         "ClientRequest/restartFrame" : {
@@ -2437,7 +2126,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             const scopeExpandPs = callFrame.scopeChain
-                .map(scope => new ScopeContainer(callFrame.callFrameId, undefined, scope.object.objectId).expand(this));
+                .map(scope => new ScopeContainer(callFrame.callFrameId, undefined, scope.object.objectId).expand(this._variablesManager));
             return Promise.all(scopeExpandPs)
                 .then((variableArrs: DebugProtocol.Variable[][]) => {
                     const targets = this.getFlatAndUniqueCompletionItems(
@@ -2477,66 +2166,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return items;
     }
 
-    private getArrayNumPropsByEval(objectId: string): Promise<IPropCount> {
-        // +2 for __proto__ and length
-        const getNumPropsFn = `function() { return [this.length, Object.keys(this).length - this.length + 2]; }`;
-        return this.getNumPropsByEval(objectId, getNumPropsFn);
-    }
-
-    private getBufferNumPropsByEval(objectId: string): Promise<IPropCount> {
-        // +2 for __proto__ and length
-        // Object.keys doesn't return other props from a Buffer
-        const getNumPropsFn = `function() { return [this.length, 0]; }`;
-        return this.getNumPropsByEval(objectId, getNumPropsFn);
-    }
-
-    private getArrayNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
-        let indexedVariables = 0;
-        const indexedProps = object.preview.properties
-            .filter(prop => isIndexedPropName(prop.name));
-        if (indexedProps.length) {
-            // +1 because (last index=0) => 1 prop
-            indexedVariables = parseInt(indexedProps[indexedProps.length - 1].name, 10) + 1;
-        }
-
-        const namedVariables = object.preview.properties.length - indexedProps.length + 2; // 2 for __proto__ and length
-        return { indexedVariables, namedVariables };
-    }
-
-    private getCollectionNumPropsByEval(objectId: string): Promise<IPropCount> {
-        const getNumPropsFn = `function() { return [0, Object.keys(this).length + 1]; }`; // +1 for [[Entries]];
-        return this.getNumPropsByEval(objectId, getNumPropsFn);
-    }
-
-    private getCollectionNumPropsByPreview(object: Crdp.Runtime.RemoteObject): IPropCount {
-        let indexedVariables = 0;
-        let namedVariables = object.preview.properties.length + 1; // +1 for [[Entries]];
-
-        return { indexedVariables, namedVariables };
-    }
-
-    private getNumPropsByEval(objectId: string, getNumPropsFn: string): Promise<IPropCount> {
-        return this.chrome.Runtime.callFunctionOn({
-            objectId,
-            functionDeclaration: getNumPropsFn,
-            silent: true,
-            returnByValue: true
-        }).then(response => {
-            if (response.exceptionDetails) {
-                const errMsg = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
-                return Promise.reject<IPropCount>(errors.errorFromEvaluate(errMsg));
-            } else {
-                const resultProps = response.result.value;
-                if (resultProps.length !== 2) {
-                    return Promise.reject<IPropCount>(errors.errorFromEvaluate('Did not get expected props, got ' + JSON.stringify(resultProps)));
-                }
-
-                return { indexedVariables: resultProps[0], namedVariables: resultProps[1] };
-            }
-        },
-        error => Promise.reject<IPropCount>(errors.errorFromEvaluate(error.message)));
-    }
-
     private fakeUrlForSourceReference(sourceReference: number): string {
         const handle = this._sourceHandles.get(sourceReference);
         return `${ChromeDebugAdapter.EVAL_NAME_PREFIX}${handle.scriptId}`;
@@ -2556,11 +2185,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
-        return this.breakpoints.addBreakpoints(url, breakpoints);
+        return this._breakpoints.addBreakpoints(url, breakpoints);
     }
 
     protected validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
-        return this.breakpoints.validateBreakpointsPath(args);
+        return this._breakpoints.validateBreakpointsPath(args);
     }
 
 }
