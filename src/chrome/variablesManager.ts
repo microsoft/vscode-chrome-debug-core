@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { logger } from 'vscode-debugadapter';
 import { IVariablesResponseBody,

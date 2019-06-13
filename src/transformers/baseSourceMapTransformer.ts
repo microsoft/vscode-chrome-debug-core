@@ -11,9 +11,9 @@ import { MappedPosition, ISourcePathDetails } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
-import { ISourceContainer } from '../chrome/chromeDebugAdapter';
 
 import * as nls from 'vscode-nls';
+import { ScriptContainer } from '../chrome/scripts';
 const localize = nls.loadMessageBundle();
 
 interface ISavedSetBreakpointsArgs {
@@ -34,7 +34,7 @@ export interface ISourceLocation {
  */
 export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps;
-    protected _sourceHandles: utils.ReverseHandles<ISourceContainer>;
+    protected _scriptContainer: ScriptContainer;
     private _enableSourceMapCaching: boolean;
 
     private _requestSeqToSetBreakpointsArgs: Map<number, ISavedSetBreakpointsArgs>;
@@ -49,8 +49,8 @@ export class BaseSourceMapTransformer {
 
     protected _isVSClient = false;
 
-    constructor(sourceHandles: utils.ReverseHandles<ISourceContainer>) {
-        this._sourceHandles = sourceHandles;
+    constructor(sourceHandles: ScriptContainer) {
+        this._scriptContainer = sourceHandles;
     }
 
     public get sourceMaps(): SourceMaps {
@@ -98,7 +98,7 @@ export class BaseSourceMapTransformer {
         if (args.source.sourceReference) {
             // If the source contents were inlined, then args.source has no path, but we
             // stored it in the handle
-            const handle = this._sourceHandles.get(args.source.sourceReference);
+            const handle = this._scriptContainer.getSource(args.source.sourceReference);
             if (handle && handle.mappedPath) {
                 args.source.path = handle.mappedPath;
             }
@@ -239,7 +239,7 @@ export class BaseSourceMapTransformer {
                 // the source later and it will be returned from the sourcemap
                 sourceLocation.source.name = path.basename(mapped.source);
                 sourceLocation.source.path = mapped.source;
-                sourceLocation.source.sourceReference = this.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
+                sourceLocation.source.sourceReference = this._scriptContainer.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
                 sourceLocation.source.origin = localize('origin.inlined.source.map', 'read-only inlined content from source map');
                 sourceLocation.line = mapped.line;
                 sourceLocation.column = mapped.column;
@@ -250,14 +250,6 @@ export class BaseSourceMapTransformer {
                 sourceLocation.source.origin = undefined;
             }
         }
-    }
-
-    /**
-     * Get the existing handle for this script, identified by runtime scriptId, or create a new one
-     */
-    private getSourceReferenceForScriptPath(mappedPath: string, contents: string): number {
-        return this._sourceHandles.lookupF(container => container.mappedPath === mappedPath) ||
-            this._sourceHandles.create({ contents, mappedPath });
     }
 
     public async scriptParsed(pathToGenerated: string, originalUrlToGenerated: string | undefined, sourceMapURL: string): Promise<string[]> {

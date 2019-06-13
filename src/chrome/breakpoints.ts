@@ -1,14 +1,15 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { BreakpointEvent, logger } from 'vscode-debugadapter';
-import { ISetBreakpointsArgs, ISetBreakpointsResponseBody, ISetBreakpointResult, ITelemetryPropertyCollector } from '../debugAdapterInterfaces';
+import { ISetBreakpointsArgs, ISetBreakpointsResponseBody, ISetBreakpointResult } from '../debugAdapterInterfaces';
 import * as ChromeUtils from './chromeUtils';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { ReasonType } from './stoppedEvent';
 import { InternalSourceBreakpoint } from './internalSourceBreakpoint';
-import { Scripts } from './scripts';
+import { ScriptContainer } from './scripts';
 import { ChromeDebugAdapter } from '..';
 import { IPendingBreakpoint, BreakpointSetResult } from './chromeDebugAdapter';
 
@@ -65,16 +66,12 @@ export class Breakpoints {
         this._hitConditionBreakpointsById = new Map<Crdp.Debugger.BreakpointId, IHitConditionBreakpoint>();
     }
 
-    wireEvents() {
-        this.chrome.Debugger.on('breakpointResolved', params => this.onBreakpointResolved(params));
-    }
-
     reset() {
         this._committedBreakpointsByUrl = new Map<string, ISetBreakpointResult[]>();
         this._setBreakpointsRequestQ = Promise.resolve();
     }
 
-    public setBreakpoints(args: ISetBreakpointsArgs, _: ITelemetryPropertyCollector, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
+    public setBreakpoints(args: ISetBreakpointsArgs, scripts: ScriptContainer, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
 
         if (args.source.path) {
             args.source.path = this.adapter.displayPathToRealPath(args.source.path);
@@ -99,13 +96,13 @@ export class Breakpoints {
                 // Get the target url of the script
                 let targetScriptUrl: string;
                 if (args.source.sourceReference) {
-                    const handle = this.adapter.sourceHandles.get(args.source.sourceReference);
+                    const handle = scripts.getSource(args.source.sourceReference);
                     if ((!handle || !handle.scriptId) && args.source.path) {
                         // A sourcemapped script with inline sources won't have a scriptId here, but the
                         // source.path has been fixed.
                         targetScriptUrl = args.source.path;
                     } else {
-                        const targetScript = Scripts._scriptsById.get(handle.scriptId);
+                        const targetScript = scripts.getScriptById(handle.scriptId);
                         if (targetScript) {
                             targetScriptUrl = targetScript.url;
                         }
@@ -119,7 +116,7 @@ export class Breakpoints {
                     const internalBPs = args.breakpoints.map(bp => new InternalSourceBreakpoint(bp));
                     const setBreakpointsPFailOnError = this._setBreakpointsRequestQ
                         .then(() => this.clearAllBreakpoints(targetScriptUrl))
-                        .then(() => this.addBreakpoints(targetScriptUrl, internalBPs))
+                        .then(() => this.addBreakpoints(targetScriptUrl, internalBPs, scripts))
                         .then(responses => ({ breakpoints: this.targetBreakpointResponsesToBreakpointSetResults(targetScriptUrl, responses, internalBPs, ids) }));
 
                     const setBreakpointsPTimeout = utils.promiseTimeout(setBreakpointsPFailOnError, Breakpoints.SET_BREAKPOINTS_TIMEOUT, localize('setBPTimedOut', 'Set breakpoints request timed out'));
@@ -137,10 +134,8 @@ export class Breakpoints {
                     return setBreakpointsPFailOnError.then(setBpResultBody => {
                         const body = { breakpoints: setBpResultBody.breakpoints.map(setBpResult => setBpResult.breakpoint) };
                         if (body.breakpoints.every(bp => !bp.verified)) {
-                            // If all breakpoints are set, we mark them as set. If not, we mark them as un-set so they'll be set
-                            const areAllSet = setBpResultBody.breakpoints.every(setBpResult => setBpResult.isSet);
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
-                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoint set but not yet bound'), areAllSet);
+                            return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoint set but not yet bound'));
                         }
                         this.adapter.sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
                         this.adapter.lineColTransformer.setBreakpointsResponse(body);
@@ -181,7 +176,7 @@ export class Breakpoints {
      * Responses from setBreakpointByUrl are transformed to look like the response from setBreakpoint, so they can be
      * handled the same.
      */
-    async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]) {
+    async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[], scripts: ScriptContainer) {
         let responsePs: Promise<ISetBreakpointResult>[];
         if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint
@@ -191,7 +186,7 @@ export class Breakpoints {
             // script that has a url - use debugger_setBreakpointByUrl so that Chrome will rebind the breakpoint immediately
             // after refreshing the page. This is the only way to allow hitting breakpoints in code that runs immediately when
             // the page loads.
-            const script = Scripts.getScriptByUrl(url);
+            const script = scripts.getScriptByUrl(url);
 
             // If script has been parsed, script object won't be undefined and we would have the mapping file on the disk and we can directly set breakpoint using that
             if (!this.adapter.breakOnLoadActive || script) {
@@ -365,8 +360,8 @@ export class Breakpoints {
         });
     }
 
-    protected onBreakpointResolved(params: Crdp.Debugger.BreakpointResolvedEvent): void {
-        const script = Scripts._scriptsById.get(params.location.scriptId);
+    public onBreakpointResolved(params: Crdp.Debugger.BreakpointResolvedEvent, scripts: ScriptContainer): void {
+        const script = scripts.getScriptById(params.location.scriptId);
         const breakpointId = this._breakpointIdHandles.lookup(params.breakpointId);
         if (!script || !breakpointId) {
             // Breakpoint resolved for a script we don't know about or a breakpoint we don't know about
@@ -410,7 +405,7 @@ export class Breakpoints {
         return `${unboundBreakpointUniquePrefix}${this._nextUnboundBreakpointId++}`;
     }
 
-    private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, message?: string, bpsSet = false): ISetBreakpointsResponseBody {
+    private unverifiedBpResponse(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, message?: string): ISetBreakpointsResponseBody {
         const breakpoints = args.breakpoints.map(bp => {
             return <DebugProtocol.Breakpoint>{
                 verified: false,
@@ -424,7 +419,7 @@ export class Breakpoints {
         return this.unverifiedBpResponseForBreakpoints(args, requestSeq, targetScriptUrl, breakpoints, message);
     }
 
-    private unverifiedBpResponseForBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, breakpoints: DebugProtocol.Breakpoint[], defaultMessage?: string, bpsSet = false): ISetBreakpointsResponseBody {
+    private unverifiedBpResponseForBreakpoints(args: ISetBreakpointsArgs, requestSeq: number, targetScriptUrl: string, breakpoints: DebugProtocol.Breakpoint[], defaultMessage?: string): ISetBreakpointsResponseBody {
         breakpoints.forEach(bp => {
             if (!bp.message) {
                 bp.message = defaultMessage;
@@ -444,11 +439,11 @@ export class Breakpoints {
         return { breakpoints };
     }
 
-    public async handleScriptParsed(script: Crdp.Debugger.ScriptParsedEvent, mappedUrl: string, sources: string[]) {
+    public async handleScriptParsed(script: Crdp.Debugger.ScriptParsedEvent, scripts: ScriptContainer, mappedUrl: string, sources: string[]) {
         if (sources) {
             const filteredSources = sources.filter(source => source !== mappedUrl); // Tools like babel-register will produce sources with the same path as the generated script
             for (const filteredSource of filteredSources) {
-                await this.resolvePendingBPs(filteredSource);
+                await this.resolvePendingBPs(filteredSource, scripts);
             }
         }
 
@@ -457,16 +452,16 @@ export class Breakpoints {
             // to be resolved in this loaded script, and remove the pendingBP.
             this._pendingBreakpointsByUrl.delete(mappedUrl);
         } else {
-            await this.resolvePendingBPs(mappedUrl);
+            await this.resolvePendingBPs(mappedUrl, scripts);
         }
     }
 
-    public async resolvePendingBPs (source: string) {
+    public async resolvePendingBPs (source: string, scripts: ScriptContainer) {
         source = source && utils.canonicalizeUrl(source);
         const pendingBP = this._pendingBreakpointsByUrl.get(source);
         if (pendingBP && (!pendingBP.setWithPath || utils.canonicalizeUrl(pendingBP.setWithPath) === source)) {
             logger.log(`OnScriptParsed.resolvePendingBPs: Resolving pending breakpoints: ${JSON.stringify(pendingBP)}`);
-            await this.resolvePendingBreakpoint(pendingBP);
+            await this.resolvePendingBreakpoint(pendingBP, scripts);
             this._pendingBreakpointsByUrl.delete(source);
         } else if (source) {
             const sourceFileName = path.basename(source).toLowerCase();
@@ -476,8 +471,8 @@ export class Breakpoints {
         }
     }
 
-    public resolvePendingBreakpoint(pendingBP: IPendingBreakpoint): Promise<void> {
-        return this.setBreakpoints(pendingBP.args, null, pendingBP.requestSeq, pendingBP.ids).then(response => {
+    public resolvePendingBreakpoint(pendingBP: IPendingBreakpoint, scripts: ScriptContainer): Promise<void> {
+        return this.setBreakpoints(pendingBP.args, scripts, pendingBP.requestSeq, pendingBP.ids).then(response => {
             response.breakpoints.forEach((bp, i) => {
                 bp.id = pendingBP.ids[i];
                 this.adapter.session.sendEvent(new BreakpointEvent('changed', bp));
