@@ -41,16 +41,19 @@ export class ConnectedCDA extends BaseCDAState {
             'initialize': () => { throw new Error('The debug adapter is already initialized. Calling initialize again is not supported.'); },
             'launch': () => { throw new Error("Can't launch  to a new target while connected to a previous target"); },
             'attach': () => { throw new Error("Can't attach to a new target while connected to a previous target"); },
-            'disconnect': async (_args: DebugProtocol.DisconnectArguments) => {
-                // TODO: Add support for args.terminateDebuggee
-                this._ignoreNextDisconnectedFromWebSocket = true;
-                try {
-                    await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
-                } finally {
-                    await this.shutdown();
-                }
-            },
+            'disconnect': (args: DebugProtocol.DisconnectArguments) => this.disconnect(args),
         });
+    }
+
+    private async disconnect(_args: DebugProtocol.DisconnectArguments): Promise<void> {
+        // TODO: Add support for args.terminateDebuggee
+        this._ignoreNextDisconnectedFromWebSocket = true;
+
+        try {
+            await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
+        } finally {
+            await this.shutdown();
+        }
     }
 
     public async install(): Promise<this> {
