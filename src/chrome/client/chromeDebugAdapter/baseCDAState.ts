@@ -14,7 +14,10 @@ export abstract class BaseCDAState implements IDebugAdapterState {
     constructor(
         requestHandlerDeclarers: ICommandHandlerDeclarer[],
         requestHandlerMappings: RequestHandlerMappings) {
-        const allDeclarers = requestHandlerDeclarers.concat({ getCommandHandlerDeclarations: () => CommandHandlerDeclaration.fromLiteralObject(requestHandlerMappings) });
+        const requestHandlerMappingsWithDefault = { disconnect: () => this.shutdown(), ...requestHandlerMappings };
+        const allDeclarers = requestHandlerDeclarers.concat({
+            getCommandHandlerDeclarations: () => CommandHandlerDeclaration.fromLiteralObject(requestHandlerMappingsWithDefault)
+        });
         this._requestProcessor = new RequestProcessor(allDeclarers);
     }
 
@@ -24,14 +27,7 @@ export abstract class BaseCDAState implements IDebugAdapterState {
     }
 
     public async processRequest(requestName: CommandText, args: unknown): Promise<unknown> {
-        try {
-            return await this._requestProcessor.processRequest(requestName, args);
-        } finally {
-            if (requestName === 'disconnect') {
-                // Disconnect shuts down the session forcefully after executing the available request handler
-                await this.shutdown();
-            }
-        }
+        return await this._requestProcessor.processRequest(requestName, args);
     }
 
     public shutdown(): void {

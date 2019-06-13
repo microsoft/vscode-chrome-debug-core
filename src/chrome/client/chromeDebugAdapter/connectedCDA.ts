@@ -44,7 +44,11 @@ export class ConnectedCDA extends BaseCDAState {
             'disconnect': async (_args: DebugProtocol.DisconnectArguments) => {
                 // TODO: Add support for args.terminateDebuggee
                 this._ignoreNextDisconnectedFromWebSocket = true;
-                await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
+                try {
+                    await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
+                } finally {
+                    await this.shutdown();
+                }
             },
         });
     }
