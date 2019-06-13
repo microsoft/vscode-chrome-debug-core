@@ -50,7 +50,7 @@ export class ConnectedCDA extends BaseCDAState {
         this._ignoreNextDisconnectedFromWebSocket = true;
 
         try {
-            await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
+            await this.terminate(TerminatingReason.ClientRequestedToDisconnect);
         } finally {
             await this.shutdown();
         }
