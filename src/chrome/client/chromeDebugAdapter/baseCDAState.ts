@@ -14,6 +14,9 @@ export abstract class BaseCDAState implements IDebugAdapterState {
     constructor(
         requestHandlerDeclarers: ICommandHandlerDeclarer[],
         requestHandlerMappings: RequestHandlerMappings) {
+        // Based on the documentation it seems that at any point/state in time, the client can send a disconnect request to
+        // forcefully close the debug adapter. We add a default disconnect request handler to do that, for the states
+        // that don't declare their own disconnect handler
         const requestHandlerMappingsWithDefault = { disconnect: () => this.shutdown(), ...requestHandlerMappings };
         const allDeclarers = requestHandlerDeclarers.concat({
             getCommandHandlerDeclarations: () => CommandHandlerDeclaration.fromLiteralObject(requestHandlerMappingsWithDefault)
