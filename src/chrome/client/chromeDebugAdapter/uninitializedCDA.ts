@@ -11,13 +11,15 @@ import { BaseCDAState } from './baseCDAState';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { isNotEmpty } from '../../utils/typedOperators';
+import { ISession } from '../session';
 let localize = nls.loadMessageBundle(); // Initialize to an unlocalized version until we know which locale to use
 
 @injectable()
 export class UninitializedCDA extends BaseCDAState {
     constructor(
         @inject(TYPES.UnconnectedCDAProvider) private readonly _unconnectedCDAProvider: UnconnectedCDAProvider,
-        @inject(TYPES.IChromeDebugSessionOpts) private readonly _debugSessionOptions: IChromeDebugSessionOpts
+        @inject(TYPES.IChromeDebugSessionOpts) private readonly _debugSessionOptions: IChromeDebugSessionOpts,
+        @inject(TYPES.ISession) protected readonly _session: ISession
     ) {
         super([], { 'initialize': (args, telemetryPropertyCollector) => this.initialize(<IInitializeRequestArgs>args, telemetryPropertyCollector) });
     }

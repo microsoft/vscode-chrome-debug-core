@@ -10,11 +10,9 @@ import { logger, TerminatedEvent } from 'vscode-debugadapter';
 import { ISession } from '../session';
 import { telemetry } from '../../../telemetry';
 import { ChromeConnection } from '../../chromeConnection';
-import { IRestartRequestArgs, ILaunchRequestArgs } from '../../../debugAdapterInterfaces';
-import { ConnectedCDAConfiguration } from './cdaConfiguration';
-import { DisconnectedCDA } from './disconnectedCDA';
+import { IRestartRequestArgs } from '../../../debugAdapterInterfaces';
 import { IDebuggeeRunner, IDebuggeeLauncher } from '../../debugeeStartup/debugeeLauncher';
-import { isTrue } from '../../utils/typedOperators';
+import { TerminatedCDA } from './terminatedCDA';
 
 export enum TerminatingReason {
     DisconnectedFromWebsocket,
@@ -24,8 +22,7 @@ export enum TerminatingReason {
 export type TerminatingCDAProvider = (reason: TerminatingReason) => TerminatingCDA;
 export class TerminatingCDA extends BaseCDAState {
     constructor(
-        @inject(TYPES.ISession) private readonly _session: ISession,
-        @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
+        @inject(TYPES.ISession) protected readonly _session: ISession,
         @inject(TYPES.ChromeConnection) private readonly _chromeConnection: ChromeConnection,
         @inject(TYPES.TerminatingReason) private readonly _reason: TerminatingReason,
         @inject(TYPES.IDebuggeeRunner) public readonly _debuggeeRunner: IDebuggeeRunner,
@@ -42,21 +39,15 @@ export class TerminatingCDA extends BaseCDAState {
              ]
          }
      */
-    public async disconnect(): Promise<DisconnectedCDA> {
+    public async terminate(): Promise<TerminatedCDA> {
         telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
 
         // TODO: Wait until we don't have any more requests in flight.
         // TODO: Figure out if we need to do the stops that are inside terminate session before or after the shutdown
 
         await this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');
-        this.shutdown();
 
-        return new DisconnectedCDA();
-    }
-
-    public shutdown(): void {
-        // this._batchTelemetryReporter.finalize();
-        this._session.shutdown();
+        return new TerminatedCDA(this._session);
     }
 
     public async terminateSession(reason: string, restart?: IRestartRequestArgs): Promise<void> {
@@ -82,8 +73,7 @@ export class TerminatingCDA extends BaseCDAState {
             await this._chromeConnection.close();
         }
 
-        if (isTrue((<ILaunchRequestArgs>this._configuration.args).noDebug)) {
-            this._session.sendEvent(new TerminatedEvent(restart));
-        }
+        // TODO: Figure out when we shouldn't send a TerminatedEvent if (isTrue((<ILaunchRequestArgs>this._configuration.args).noDebug)) { }
+        this._session.sendEvent(new TerminatedEvent(restart));
     }
 }
