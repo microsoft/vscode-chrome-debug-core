@@ -14,7 +14,7 @@ import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces
  * Resolves a relative path in terms of another file
  */
 export function resolveRelativeToFile(absPath: string, relPath: string): string {
-    return path.resolve(path.dirname(absPath), relPath);
+    return utils.properResolve(path.dirname(absPath), relPath);
 }
 
 /**

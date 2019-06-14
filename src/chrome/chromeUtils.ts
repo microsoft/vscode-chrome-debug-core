@@ -73,7 +73,7 @@ export function applyPathMappingsToTargetUrl(scriptUrl: string, pathMapping: IPa
 function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): string {
     const rest = decodeURIComponent(scriptPath.substring(pattern.length));
     const mappedResult = rest ?
-        path.join(mappingRHS, rest) :
+        utils.properJoin(mappingRHS, rest) :
         mappingRHS;
 
     return mappedResult;

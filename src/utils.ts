@@ -669,3 +669,23 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
         properties.exceptionId = e.id.toString();
     }
 }
+
+export function properJoin(...segments: string[]): string {
+    if (path.win32.isAbsolute(segments[0])) {
+        return path.win32.join(...segments);
+    } else if (path.posix.isAbsolute(segments[0])) {
+        return path.posix.join(...segments);
+    } else {
+        return path.join(...segments);
+    }
+}
+
+export function properResolve(...segments: string[]): string {
+    if (path.win32.isAbsolute(segments[0])) {
+        return path.win32.resolve(...segments);
+    } else if (path.posix.isAbsolute(segments[0])) {
+        return path.posix.resolve(...segments);
+    } else {
+        return path.resolve(...segments);
+    }
+}
