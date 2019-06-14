@@ -126,7 +126,7 @@ suite('ChromeDebugAdapter', () => {
     function emitScriptParsed(url: string, scriptId: string, sources: string[] = []): void {
         mockPathTransformer.setup(m => m.scriptParsed(It.isValue(url)))
             .returns(() => Promise.resolve(url));
-        mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), It.isValue(undefined)))
+        mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), url, It.isValue(undefined)))
             .returns(() => Promise.resolve(sources));
         mockSourceMapTransformer.setup(m => m.getGeneratedPathFromAuthoredPath(It.isAnyString()))
             .returns(authoredPath => {
@@ -539,7 +539,7 @@ suite('ChromeDebugAdapter', () => {
         const FILE_NAME = 'file:///a.js';
         const SCRIPT_ID = '1';
         function emitScriptParsed(url = FILE_NAME, scriptId = SCRIPT_ID, otherArgs: any = {}): void {
-            mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), It.isValue(undefined)))
+            mockSourceMapTransformer.setup(m => m.scriptParsed(It.isValue(undefined), url, It.isValue(undefined)))
                 .returns(() => Promise.resolve([]));
             otherArgs.url = url;
             otherArgs.scriptId = scriptId;
@@ -554,7 +554,7 @@ suite('ChromeDebugAdapter', () => {
                         assert(!!url, 'Default url missing'); // Should be called with some default url
                         return url;
                     });
-                mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), It.isValue(undefined)))
+                mockSourceMapTransformer.setup(m => m.scriptParsed(It.isAny(), It.isAny(), It.isValue(undefined)))
                     .returns(() => {
                         done();
                         return Promise.resolve([]);

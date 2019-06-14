@@ -260,14 +260,14 @@ export class BaseSourceMapTransformer {
             this._sourceHandles.create({ contents, mappedPath });
     }
 
-    public async scriptParsed(pathToGenerated: string, sourceMapURL: string): Promise<string[]> {
+    public async scriptParsed(pathToGenerated: string, originalUrlToGenerated: string | undefined, sourceMapURL: string): Promise<string[]> {
         if (this._sourceMaps) {
             this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
 
             if (!sourceMapURL) return null;
 
             // Load the sourcemap for this new script and log its sources
-            const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL, this._isVSClient);
+            const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, originalUrlToGenerated, sourceMapURL, this._isVSClient);
             this._processingNewSourceMap = Promise.all([this._processingNewSourceMap, processNewSourceMapP]);
             await processNewSourceMapP;
 

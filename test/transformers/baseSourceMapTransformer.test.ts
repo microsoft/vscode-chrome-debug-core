@@ -162,7 +162,7 @@ suite('BaseSourceMapTransformer', () => {
                 .setup(x => x.allMappedSources(It.isValue(RUNTIME_PATH)))
                 .returns(() => [AUTHORED_PATH]).verifiable();
             mock
-                .setup(x => x.processNewSourceMap(It.isValue(RUNTIME_PATH), It.isValue(sourceMapURL)))
+                .setup(x => x.processNewSourceMap(It.isValue(RUNTIME_PATH), undefined, It.isValue(sourceMapURL)))
                 .returns(() => Promise.resolve()).verifiable();
             args.breakpoints.forEach((bp, i) => {
                 mock
@@ -175,7 +175,7 @@ suite('BaseSourceMapTransformer', () => {
             assert.deepEqual(args, expected);
             mock.verifyAll();
 
-            await transformer.scriptParsed(RUNTIME_PATH, sourceMapURL);
+            await transformer.scriptParsed(RUNTIME_PATH, undefined, sourceMapURL);
             // return setBreakpointsP;
         });
 
