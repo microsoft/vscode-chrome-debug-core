@@ -1082,6 +1082,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
         if (args.path) {
             args.path = utils.fileUrlToPath(args.path);
+            args.path = mapRemoteClientToInternalPath(args.path);
         }
 
         if (!await this.isInCurrentStack(args)) {
@@ -2079,13 +2080,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
-        return <DebugProtocol.Source>{
+        const source = <DebugProtocol.Source>{
             name: path.basename(displayPath),
             path: displayPath,
             // if the path exists, do not send the sourceReference
             sourceReference: exists ? undefined : sourceReference,
             origin
         };
+        mapInternalSourceToRemoteClient(source, this._launchAttachArgs.remoteAuthority);
+        return source;
     }
 
     private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {

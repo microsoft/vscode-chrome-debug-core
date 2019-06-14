@@ -38,7 +38,7 @@ export function mapRemoteClientToInternalPath(remoteUri: string): string {
 }
 
 export function mapInternalSourceToRemoteClient(source: DebugProtocol.Source, remoteAuthority: string | undefined): void {
-    if (source.path && isInternalRemotePath(source.path)) {
+    if (source.path && isInternalRemotePath(source.path) && remoteAuthority) {
         const remoteUri = URI.file(source.path.replace(new RegExp(remotePathComponent + '[\\/\\\\]'), ''))
             .with({
                 scheme: remoteUriScheme,
