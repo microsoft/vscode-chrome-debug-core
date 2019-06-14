@@ -67,7 +67,7 @@ suite('SourceMapFactory', () => {
             const encodedData = 'data:application/json;base64,' + Buffer.from(sourceMapData).toString('base64');
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, encodedData).then(sourceMap => {
                 assert(sourceMap);
             });
         });
@@ -77,14 +77,14 @@ suite('SourceMapFactory', () => {
             const encodedData = 'data:application/json,' + encodeURI(sourceMapData);
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, sourceMapData, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, encodedData).then(sourceMap => {
                 assert(sourceMap);
             });
         });
 
         test('returns null on malformed inline sourcemap', () => {
             const encodedData = 'data:application/json;base64,this is not base64-encoded data';
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, encodedData).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, encodedData).then(sourceMap => {
                 assert(!sourceMap);
             });
         });
@@ -95,7 +95,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockReadFile({ absPath: testUtils.pathResolve('/project/app/files/app.js.map'), data: FILEDATA});
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, absMapPath).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, absMapPath).then(sourceMap => {
                 assert(sourceMap);
             });
         });
@@ -104,7 +104,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockReadFile({ absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, 'script.js.map').then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, 'script.js.map').then(sourceMap => {
                 assert(sourceMap);
             });
         });
@@ -117,7 +117,7 @@ suite('SourceMapFactory', () => {
             testUtils.registerMockGetURL('../utils', GENERATED_SCRIPT_URL + '.map', FILEDATA, utilsMock);
             setExpectedConstructorArgs(GENERATED_SCRIPT_URL, FILEDATA, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_URL, 'script.js.map').then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_URL, undefined, 'script.js.map').then(sourceMap => {
                 assert(sourceMap);
                 utilsMock.verifyAll();
             });
@@ -130,7 +130,7 @@ suite('SourceMapFactory', () => {
                 { absPath: GENERATED_SCRIPT_PATH + '.map', data: FILEDATA });
             setExpectedConstructorArgs(GENERATED_SCRIPT_PATH, FILEDATA, PATHMAPPING);
 
-            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, badMapPath).then(sourceMap => {
+            return sourceMapFactory.getMapForGeneratedPath(GENERATED_SCRIPT_PATH, undefined, badMapPath).then(sourceMap => {
                 assert(sourceMap);
             });
         });

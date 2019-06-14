@@ -116,7 +116,7 @@ export class SourceMap {
 
             if (!path.isAbsolute(sourcePath)) {
                 // Overrides not applied, use the computed sourceRoot
-                sourcePath = path.resolve(computedSourceRoot, sourcePath);
+                sourcePath = utils.properResolve(computedSourceRoot, sourcePath);
             }
 
             return utils.canonicalizeUrl(sourcePath);

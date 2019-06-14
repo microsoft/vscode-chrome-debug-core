@@ -46,6 +46,9 @@ export interface ICommonRequestArgs {
     /** Private undocumented property for enabling break on load */
     breakOnLoadStrategy?: BreakOnLoadStrategy;
 
+    /** Inserted by chrome-debug when debugging from the ui side of a remote window */
+    remoteAuthority?: string;
+
     _suppressConsoleOutput?: boolean;
 }
 

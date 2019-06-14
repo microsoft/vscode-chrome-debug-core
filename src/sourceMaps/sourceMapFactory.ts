@@ -13,6 +13,7 @@ import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { SourceMap } from './sourceMap';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
+import { isInternalRemotePath } from '../remoteMapper';
 
 export class SourceMapFactory {
     constructor(
@@ -25,7 +26,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap> {
+    getMapForGeneratedPath(pathToGenerated: string, originalUrlToGenerated: string | undefined, mapPath: string, isVSClient = false): Promise<SourceMap> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (this._pathMapping) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
@@ -41,7 +42,10 @@ export class SourceMapFactory {
             logger.log(`SourceMaps.getMapForGeneratedPath: Using inlined sourcemap in ${pathToGenerated}`);
             sourceMapContentsP = Promise.resolve(this.getInlineSourceMapContents(mapPath));
         } else {
-            sourceMapContentsP = this.getSourceMapContent(pathToGenerated, mapPath);
+            const accessPath = isInternalRemotePath(pathToGenerated) && originalUrlToGenerated ?
+                originalUrlToGenerated :
+                pathToGenerated;
+            sourceMapContentsP = this.getSourceMapContent(accessPath, mapPath);
         }
 
         return sourceMapContentsP.then(contents => {

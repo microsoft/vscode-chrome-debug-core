@@ -28,7 +28,7 @@ function unhandledRejectionListener(reason: any, p: Promise<any>): void {
     console.log('****');
     console.log('*****');
     console.log(`ERROR!! Unhandled promise rejection, a previous test may have failed but reported success.`);
-    console.log(reason.toString());
+    console.log(reason.stack || reason.toString());
     console.log('*****');
     console.log('****');
     console.log('***');

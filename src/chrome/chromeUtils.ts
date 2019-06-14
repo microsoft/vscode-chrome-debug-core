@@ -11,6 +11,7 @@ import * as utils from '../utils';
 import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
+import { isInternalRemotePath } from '../remoteMapper';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -72,7 +73,7 @@ export function applyPathMappingsToTargetUrl(scriptUrl: string, pathMapping: IPa
 function toClientPath(pattern: string, mappingRHS: string, scriptPath: string): string {
     const rest = decodeURIComponent(scriptPath.substring(pattern.length));
     const mappedResult = rest ?
-        path.join(mappingRHS, rest) :
+        utils.properJoin(mappingRHS, rest) :
         mappingRHS;
 
     return mappedResult;
@@ -116,7 +117,9 @@ export async function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapp
     while (pathParts.length > 0) {
         const joinedPath = '/' + pathParts.join('/');
         const clientPath = applyPathMappingsToTargetUrlPath(joinedPath, pathMapping);
-        if (clientPath && await utils.exists(clientPath)) {
+        if (isInternalRemotePath(clientPath)) {
+            return clientPath;
+        } else if (clientPath && await utils.exists(clientPath)) {
             return utils.canonicalizeUrl(clientPath);
         }
 

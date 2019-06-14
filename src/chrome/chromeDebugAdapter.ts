@@ -38,6 +38,7 @@ import * as sourceMapUtils from '../sourceMaps/sourceMapUtils';
 import * as path from 'path';
 
 import * as nls from 'vscode-nls';
+import { mapRemoteClientToInternalPath, mapInternalSourceToRemoteClient } from '../remoteMapper';
 let localize = nls.loadMessageBundle();
 
 interface IPropCount {
@@ -881,7 +882,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
             };
 
-            const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.sourceMapURL).then(async sources => {
+            const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.url, script.sourceMapURL).then(async sources => {
                 if (this._hasTerminated) {
                     return undefined;
                 }
@@ -1081,6 +1082,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public async toggleSkipFileStatus(args: IToggleSkipFileStatusArgs): Promise<void> {
         if (args.path) {
             args.path = utils.fileUrlToPath(args.path);
+            args.path = mapRemoteClientToInternalPath(args.path);
         }
 
         if (!await this.isInCurrentStack(args)) {
@@ -1424,6 +1426,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public setBreakpoints(args: ISetBreakpointsArgs, _: ITelemetryPropertyCollector, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
+        if (args.source.path) {
+            args.source.path = mapRemoteClientToInternalPath(args.source.path);
+        }
+
         this.reportBpTelemetry(args);
         if (args.source.path) {
             args.source.path = this.displayPathToRealPath(args.source.path);
@@ -2023,6 +2029,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._lineColTransformer.stackTraceResponse(stackTraceResponse);
         stackTraceResponse.stackFrames.forEach(frame => frame.name = this.formatStackFrameName(frame, args.format));
+        stackTraceResponse.stackFrames.forEach(frame => {
+            mapInternalSourceToRemoteClient(frame.source, this._launchAttachArgs.remoteAuthority);
+        });
 
         return stackTraceResponse;
     }
@@ -2071,13 +2080,15 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
-        return <DebugProtocol.Source>{
+        const source = <DebugProtocol.Source>{
             name: path.basename(displayPath),
             path: displayPath,
             // if the path exists, do not send the sourceReference
             sourceReference: exists ? undefined : sourceReference,
             origin
         };
+        mapInternalSourceToRemoteClient(source, this._launchAttachArgs.remoteAuthority);
+        return source;
     }
 
     private formatStackFrameName(frame: DebugProtocol.StackFrame, formatArgs?: DebugProtocol.StackFrameFormat): string {
