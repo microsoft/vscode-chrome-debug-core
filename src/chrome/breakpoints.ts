@@ -24,6 +24,9 @@ export interface IHitConditionBreakpoint {
     shouldPause: (numHits: number) => boolean;
 }
 
+/**
+ * Encapsulates all the logic surrounding breakpoints (e.g. set, unset, hit count breakpoints, etc.)
+ */
 export class Breakpoints {
 
     private static SET_BREAKPOINTS_TIMEOUT = 5000;
@@ -55,7 +58,6 @@ export class Breakpoints {
 
     private get chrome() { return this._chromeConnection.api; }
 
-
     constructor(
         private readonly adapter: ChromeDebugAdapter,
         private readonly _chromeConnection: ChromeConnection,
@@ -71,6 +73,13 @@ export class Breakpoints {
         this._setBreakpointsRequestQ = Promise.resolve();
     }
 
+    /**
+     * Using the request object from the DAP, set all breakpoints on the target
+     * @param args
+     * @param scripts
+     * @param requestSeq
+     * @param ids
+     */
     public setBreakpoints(args: ISetBreakpointsArgs, scripts: ScriptContainer, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
 
         if (args.source.path) {
@@ -205,6 +214,14 @@ export class Breakpoints {
         return Promise.all(responsePs);
     }
 
+    /**
+     * Adds a single breakpoint in the target using the url for the script
+     * @param scriptId
+     * @param urlRegex
+     * @param lineNumber
+     * @param columnNumber
+     * @param condition
+     */
     async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId | undefined, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<ISetBreakpointResult> {
         let bpLocation = { lineNumber, columnNumber };
         if (this.adapter.columnBreakpointsEnabled && scriptId) { // scriptId undefined when script not yet loaded, can't fix up column BP :(
@@ -247,6 +264,13 @@ export class Breakpoints {
         };
     }
 
+    /**
+     * Transform breakpoint responses from the chrome devtools target to the DAP response
+     * @param url
+     * @param responses
+     * @param requestBps
+     * @param ids
+     */
     private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: InternalSourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses
         const committedBps = responses

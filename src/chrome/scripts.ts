@@ -21,6 +21,9 @@ export interface ISourceContainer {
     mappedPath?: string;
 }
 
+/**
+ * A container class for loaded script files
+ */
 export class ScriptContainer {
 
     private _scriptsById = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
@@ -159,15 +162,21 @@ export class ScriptContainer {
 
     public displayNameForSourceReference(sourceReference: number): string {
         const handle = this._sourceHandles.get(sourceReference);
-        return (handle && this.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
+        return (handle && Scripts.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
     }
 
-    public displayNameForScriptId(scriptId: number|string): string {
-        return `${ChromeUtils.EVAL_NAME_PREFIX}${scriptId}`;
-    }
+
 }
 
+/**
+ * A collection of pure functions dealing with scripts
+ */
 export namespace Scripts {
+
+    export function displayNameForScriptId(scriptId: number|string): string {
+        return `${ChromeUtils.EVAL_NAME_PREFIX}${scriptId}`;
+    }
+
     /**
      * Called when returning a stack trace, for the path for Sources that have a sourceReference, so consumers can
      * tweak it, since it's only for display.
@@ -180,6 +189,10 @@ export namespace Scripts {
         return realPath;
     }
 
+    /**
+     * Get the original path back from a displayPath created from `realPathToDisplayPath`
+     * @param displayPath
+     */
     export function displayPathToRealPath(displayPath: string): string {
         if (displayPath.startsWith(ChromeDebugAdapter.EVAL_ROOT)) {
             return displayPath.substr(ChromeDebugAdapter.EVAL_ROOT.length + 1); // Trim "<eval>/"
