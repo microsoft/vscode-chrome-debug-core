@@ -75,10 +75,10 @@ export class Breakpoints {
 
     /**
      * Using the request object from the DAP, set all breakpoints on the target
-     * @param args
-     * @param scripts
-     * @param requestSeq
-     * @param ids
+     * @param args The setBreakpointRequest arguments from the DAP client
+     * @param scripts The script container associated with this instance of the adapter
+     * @param requestSeq The request sequence number from the DAP
+     * @param ids IDs passed in for previously unverified breakpoints
      */
     public setBreakpoints(args: ISetBreakpointsArgs, scripts: ScriptContainer, requestSeq: number, ids?: number[]): Promise<ISetBreakpointsResponseBody> {
 
@@ -216,11 +216,11 @@ export class Breakpoints {
 
     /**
      * Adds a single breakpoint in the target using the url for the script
-     * @param scriptId
-     * @param urlRegex
-     * @param lineNumber
-     * @param columnNumber
-     * @param condition
+     * @param scriptId the chrome-devtools script id for the script on which we want to add a breakpoint
+     * @param urlRegex The regular expression string which will be used to find the correct url on which to set the breakpoint
+     * @param lineNumber Line number of the breakpoint
+     * @param columnNumber Column number of the breakpoint
+     * @param condition The (optional) breakpoint condition
      */
     async addOneBreakpointByUrl(scriptId: Crdp.Runtime.ScriptId | undefined, urlRegex: string, lineNumber: number, columnNumber: number, condition: string): Promise<ISetBreakpointResult> {
         let bpLocation = { lineNumber, columnNumber };
@@ -265,11 +265,11 @@ export class Breakpoints {
     }
 
     /**
-     * Transform breakpoint responses from the chrome devtools target to the DAP response
-     * @param url
-     * @param responses
-     * @param requestBps
-     * @param ids
+     * Transform breakpoint responses from the chrome-devtools target to the DAP response
+     * @param url The URL of the script for which we are translating breakpoint responses
+     * @param responses The setBreakpoint responses from the chrome-devtools target
+     * @param requestBps The list of requested breakpoints pending a response
+     * @param ids IDs passed in for previously unverified BPs
      */
     private targetBreakpointResponsesToBreakpointSetResults(url: string, responses: ISetBreakpointResult[], requestBps: InternalSourceBreakpoint[], ids?: number[]): BreakpointSetResult[] {
         // Don't cache errored responses

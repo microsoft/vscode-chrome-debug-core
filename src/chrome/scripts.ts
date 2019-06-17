@@ -42,7 +42,6 @@ export class ScriptContainer {
 
     /**
      * Get a script by its url
-     * @param url
      */
     public getScriptByUrl(url: string) {
         const canonUrl = utils.canonicalizeUrl(url);
@@ -59,7 +58,7 @@ export class ScriptContainer {
 
     /**
      * Add a newly parsed script to this container
-     * @param script The scriptParsed event
+     * @param script The scriptParsed event from the chrome-devtools target
      */
     public add(script: Crdp.Debugger.ScriptParsedEvent) {
         this._scriptsById.set(script.scriptId, script);
@@ -67,8 +66,8 @@ export class ScriptContainer {
     }
 
     /**
-     * Get a script by its CDP identifier
-     * @param id
+     * Get a script by its chrome-devtools script identifier
+     * @param id The script id which came from a chrome-devtools scriptParsed event
      */
     public getScriptById(id: string) {
         return this._scriptsById.get(id);
@@ -87,7 +86,6 @@ export class ScriptContainer {
 
     /**
      * Get a script string?
-     * @param runtimeScriptPath
      */
     public getOneScriptString(runtimeScriptPath: string, pathTransformer: BasePathTransformer, sourceMapTransformer: BaseSourceMapTransformer): Promise<string> {
         let result = '› ' + runtimeScriptPath;
@@ -111,7 +109,7 @@ export class ScriptContainer {
     }
 
     /**
-     * Get the existing handle for this script, identified by runtime scriptId, or create a new one
+     * Get the existing handle for this script, identified by the on-disk path it was mapped to, or create a new one
      */
     public getSourceReferenceForScriptPath(mappedPath: string, contents: string): number {
         return this._sourceHandles.lookupF(container => container.mappedPath === mappedPath) ||
@@ -120,8 +118,8 @@ export class ScriptContainer {
 
     /**
      * Map a chrome script to a DAP source
-     * @param script
-     * @param origin
+     * @param script The scriptParsed event object from chrome-devtools target
+     * @param origin The origin of the script (node only)
      */
     public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string, remoteAuthority?: string): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
@@ -146,7 +144,7 @@ export class ScriptContainer {
 
     /**
      * Get a source handle by it's reference number
-     * @param ref
+     * @param ref Reference number of a source object
      */
     public getSource(ref: number) {
         return this._sourceHandles.get(ref);
@@ -186,7 +184,6 @@ export namespace Scripts {
 
     /**
      * Get the original path back from a displayPath created from `realPathToDisplayPath`
-     * @param displayPath
      */
     export function displayPathToRealPath(displayPath: string): string {
         if (displayPath.startsWith(ChromeDebugAdapter.EVAL_ROOT)) {

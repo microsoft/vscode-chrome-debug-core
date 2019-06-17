@@ -37,7 +37,6 @@ export class StackFrames {
 
     /**
      * Get a stack frame by its id
-     * @param frameId
      */
     getFrame(frameId: number) {
         return this._frameHandles.get(frameId);

@@ -1309,6 +1309,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return stackTraceResponse;
     }
 
+    /**
+     * A stub method for overriding (used for the node debug adapter)
+     */
     protected getReadonlyOrigin(): string {
         // To override
         return undefined;
