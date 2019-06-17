@@ -72,9 +72,9 @@ export interface IOnPausedResult {
 }
 
 export interface Transformers {
-    lineColTransformer: LineColTransformer,
-    sourceMapTransformer: BaseSourceMapTransformer,
-    pathTransformer: BasePathTransformer
+    lineColTransformer: LineColTransformer;
+    sourceMapTransformer: BaseSourceMapTransformer;
+    pathTransformer: BasePathTransformer;
 }
 
 export abstract class ChromeDebugAdapter implements IDebugAdapter {
@@ -145,7 +145,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _smartStepper: SmartStepper;
     protected _scriptSkipper: ScriptSkipper;
 
-    private _transformers : Transformers;
+    private _transformers: Transformers;
 
     public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession) {
@@ -165,7 +165,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             lineColTransformer: this._lineColTransformer,
             sourceMapTransformer: this._sourceMapTransformer,
             pathTransformer: this._pathTransformer
-        }
+        };
 
         this._breakpoints = new Breakpoints(this, this._chromeConnection);
         this._variablesManager = new VariablesManager(this._chromeConnection);
@@ -543,7 +543,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             this.hookConnectionEvents();
 
-
             /* __GDPR__FRAGMENT__
                "StepNames" : {
                   "Attach.ConfigureDebuggingSession.Target" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
@@ -733,8 +732,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-
-
     protected onResumed(): void {
         this._currentPauseNotification = null;
 
@@ -860,9 +857,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._session.sendEvent(scriptEvent);
     }
-
-
-
 
     /* __GDPR__
         "ClientRequest/toggleSmartStep" : {
@@ -1032,8 +1026,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         })
         .catch(err => logger.error(err.toString()));
     }
-
-
 
     /**
      * For backcompat, also listen to Console.messageAdded, only if it looks like the old format.
@@ -1311,7 +1303,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             pauseEvent: this._currentPauseNotification });
 
         stackTraceResponse.stackFrames = stackTraceResponse.stackFrames.map(frame => {
-            return { ...frame, source: mapInternalSourceToRemoteClient(frame.source, this._launchAttachArgs.remoteAuthority) }
+            return { ...frame, source: mapInternalSourceToRemoteClient(frame.source, this._launchAttachArgs.remoteAuthority) };
         });
 
         return stackTraceResponse;
@@ -1569,7 +1561,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this.chrome.Debugger.evaluateOnCallFrame(args);
     }
 
-
     /* __GDPR__
         "ClientRequest/restartFrame" : {
             "${include}": [
@@ -1664,8 +1655,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         return items;
     }
-
-
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
         return this._scriptContainer.getScriptByUrl(url);

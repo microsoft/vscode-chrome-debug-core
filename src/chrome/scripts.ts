@@ -74,7 +74,6 @@ export class ScriptContainer {
         return this._scriptsById.get(id);
     }
 
-
     /**
      * Get a list of all loaded script urls (as a string)
      */
@@ -103,7 +102,7 @@ export class ScriptContainer {
         });
     }
 
-     /**
+    /**
      * Get the existing handle for this script, identified by runtime scriptId, or create a new one
      */
     public getSourceReferenceForScriptId(scriptId: Crdp.Runtime.ScriptId): number {
@@ -126,8 +125,6 @@ export class ScriptContainer {
      */
     public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string, remoteAuthority?: string): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
-
-
         const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
         const displayPath = Scripts.realPathToDisplayPath(properlyCasedScriptUrl);
 
@@ -140,7 +137,7 @@ export class ScriptContainer {
             origin
         };
 
-        if(remoteAuthority) {
+        if (remoteAuthority) {
             return mapInternalSourceToRemoteClient(source, remoteAuthority);
         } else {
             return source;
@@ -164,8 +161,6 @@ export class ScriptContainer {
         const handle = this._sourceHandles.get(sourceReference);
         return (handle && Scripts.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
     }
-
-
 }
 
 /**

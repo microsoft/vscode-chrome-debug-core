@@ -52,7 +52,6 @@ export class StackFrames {
                   transformers: Transformers;
                   pauseEvent: Crdp.Debugger.PausedEvent; }): Promise<IStackTraceResponseBody> {
 
-
         let stackFrames = pauseEvent.callFrames.map(frame => this.callFrameToStackFrame(frame, scripts, origin))
             .concat(this.asyncFrames(pauseEvent.asyncStackTrace, scripts, origin));
 
@@ -304,7 +303,7 @@ export class StackFrames {
         }
     }
 
-     /**
+    /**
      * Try to lookup the index of the frame with given ID. Returns -1 for async frames and unknown frames.
      */
     public lookupFrameIndex(frameId: number, pauseEvent: Crdp.Debugger.PausedEvent): number {

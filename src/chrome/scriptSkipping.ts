@@ -10,7 +10,6 @@ import { ScriptContainer, Scripts } from './scripts';
 import { Transformers } from './chromeDebugAdapter';
 import * as utils from '../utils';
 
-
 export class ScriptSkipper {
 
     private _skipFileStatuses = new Map<string, boolean>();
@@ -151,9 +150,6 @@ export class ScriptSkipper {
         }
     }
 
-
-
-
     private makeRegexesNotSkip(noSkipPath: string): void {
         let somethingChanged = false;
         this._blackboxedRegexes = this._blackboxedRegexes.map(regex => {
@@ -205,7 +201,6 @@ export class ScriptSkipper {
         return undefined;
     }
 
-
     /**
      * Returns true if this path matches one of the static skip patterns
      */
@@ -214,9 +209,6 @@ export class ScriptSkipper {
             return regex.test(sourcePath);
         });
     }
-
-
-
 
     /**
      * Returns the current skip status for this path, which is either an authored or generated script.
@@ -228,8 +220,6 @@ export class ScriptSkipper {
 
         return undefined;
     }
-
-
 
     private warnNoSkipFiles(): void {
         logger.log('Warning: this runtime does not support skipFiles');

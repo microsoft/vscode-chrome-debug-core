@@ -1,5 +1,6 @@
-import { DebugProtocol } from "vscode-debugprotocol";
-import { BasePathTransformer, BaseSourceMapTransformer } from "..";
+import { DebugProtocol } from 'vscode-debugprotocol';
+import { BasePathTransformer } from '../transformers/basePathTransformer';
+import { BaseSourceMapTransformer } from '../transformers/baseSourceMapTransformer';
 
 export class SmartStepper {
 
@@ -20,5 +21,4 @@ export class SmartStepper {
 
         return false;
     }
-
 }

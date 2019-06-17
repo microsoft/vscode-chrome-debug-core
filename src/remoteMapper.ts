@@ -50,7 +50,7 @@ export function mapInternalSourceToRemoteClient(source: DebugProtocol.Source, re
             path: remoteUri.toString(),
             origin: undefined,
             sourceReference: undefined
-        }
+        };
     } else {
         return source;
     }

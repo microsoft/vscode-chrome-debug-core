@@ -173,7 +173,6 @@ export class VariablesManager {
         error => Promise.reject(errors.errorFromEvaluate(error.message)));
     }
 
-
     /* __GDPR__
         "ClientRequest/setVariable" : {
             "{include}": [
