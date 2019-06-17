@@ -37,17 +37,22 @@ export function mapRemoteClientToInternalPath(remoteUri: string): string {
     }
 }
 
-export function mapInternalSourceToRemoteClient(source: DebugProtocol.Source, remoteAuthority: string | undefined): void {
+export function mapInternalSourceToRemoteClient(source: DebugProtocol.Source, remoteAuthority: string | undefined): DebugProtocol.Source {
     if (source && source.path && isInternalRemotePath(source.path) && remoteAuthority) {
         const remoteUri = URI.file(source.path.replace(new RegExp(remotePathComponent + '[\\/\\\\]'), ''))
             .with({
                 scheme: remoteUriScheme,
                 authority: remoteAuthority
             });
-        source.path = remoteUri.toString();
 
-        source.origin = undefined;
-        source.sourceReference = undefined;
+        return {
+            ...source,
+            path: remoteUri.toString(),
+            origin: undefined,
+            sourceReference: undefined
+        }
+    } else {
+        return source;
     }
 }
 

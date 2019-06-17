@@ -1310,8 +1310,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             transformers: this._transformers,
             pauseEvent: this._currentPauseNotification });
 
-        stackTraceResponse.stackFrames.forEach(frame => {
-            mapInternalSourceToRemoteClient(frame.source, this._launchAttachArgs.remoteAuthority);
+        stackTraceResponse.stackFrames = stackTraceResponse.stackFrames.map(frame => {
+            return { ...frame, source: mapInternalSourceToRemoteClient(frame.source, this._launchAttachArgs.remoteAuthority) }
         });
 
         return stackTraceResponse;

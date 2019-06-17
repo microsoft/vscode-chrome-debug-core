@@ -6,6 +6,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugAdapter } from './chromeDebugAdapter';
 import { BasePathTransformer, BaseSourceMapTransformer } from '..';
 import * as path from 'path';
+import { mapInternalSourceToRemoteClient } from '../remoteMapper';
 
 /**
  * Represents a reference to a source/script. `contents` is set if there are inlined sources.
@@ -120,7 +121,7 @@ export class ScriptContainer {
      * @param script
      * @param origin
      */
-    public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string): Promise<DebugProtocol.Source> {
+    public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string, remoteAuthority?: string): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
 
 
@@ -128,13 +129,19 @@ export class ScriptContainer {
         const displayPath = Scripts.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
-        return <DebugProtocol.Source>{
+        const source = <DebugProtocol.Source>{
             name: path.basename(displayPath),
             path: displayPath,
             // if the path exists, do not send the sourceReference
             sourceReference: exists ? undefined : sourceReference,
             origin
         };
+
+        if(remoteAuthority) {
+            return mapInternalSourceToRemoteClient(source, remoteAuthority);
+        } else {
+            return source;
+        }
     }
 
     /**
