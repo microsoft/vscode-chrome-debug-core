@@ -753,16 +753,21 @@ suite('ChromeDebugAdapter', () => {
             });
         });
 
-        test('calls Debugger.evaluateOnCallFrame when paused', () => {
-            const callFrameId = '1';
+        test('calls Debugger.evaluateOnCallFrame when paused', async () => {
+            await chromeDebugAdapter.attach(ATTACH_ARGS);
+            const callFrameId = 'id1';
             const expression = '1+1';
+            const scriptId = 'blub';
+            const location: Crdp.Debugger.Location = { lineNumber: 0, columnNumber: 0, scriptId };
+            const callFrame = { callFrameId: 'id1', location };
             const result: Crdp.Runtime.RemoteObject = { type: 'string', description: '2' };
             setupEvalOnCallFrameMock(expression, callFrameId, result);
 
-            // Sue me (just easier than sending a Debugger.paused event)
-            (<any>chromeDebugAdapter)._frameHandles = { get: () => ({ callFrameId })};
+            emitScriptParsed('', scriptId);
+            mockEventEmitter.emit('Debugger.paused', <Crdp.Debugger.PausedEvent>{ callFrames: [callFrame, callFrame] });
+            await chromeDebugAdapter.stackTrace({ threadId: THREAD_ID });
 
-            return chromeDebugAdapter.evaluate({ expression, frameId: 0 }).then(response => {
+            await chromeDebugAdapter.evaluate({ expression, frameId: 1000 }).then(response => {
                 assert.deepEqual(response, getExpectedValueResponse(result));
             });
         });

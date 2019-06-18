@@ -45,6 +45,8 @@
     "minimist": "^1.2.0",
     "mocha": "^5.2.0",
     "mockery": "^1.7.0",
+    "nyc": "^14.1.1",
+    "source-map-support": "^0.5.12",
     "tslint": "^5.9.1",
     "tslint-eslint-rules": "^1.5.0",
     "tslint-microsoft-contrib": "^5.0.3",
@@ -56,10 +58,23 @@
     "build": "gulp build",
     "watch": "gulp watch",
     "test": "mocha --exit --recursive -u tdd ./out/test/",
+    "testCoverage": "nyc mocha --require source-map-support/register  --exit --recursive -u tdd ./out/test/**/*.test.js",
     "prepare": "gulp build",
     "tslint": "gulp tslint",
     "patch": "npm version patch -m '%s'",
     "minor": "npm version minor -m '%s'",
     "major": "npm version major -m '%s'"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "**/coverage/**/*.*",
+      "**/testData/**/*.*"
+    ],
+    "reporter": "html",
+    "all": true
   }
 }

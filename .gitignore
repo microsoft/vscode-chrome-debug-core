@@ -6,3 +6,5 @@ lib/
 typings/
 npm-debug.log
 .nvmrc
+coverage/
+.nyc_output/

@@ -51,10 +51,10 @@ suite('remoteMapper', () => {
                 sourceReference: 1
             };
 
-            mapInternalSourceToRemoteClient(dpSource, authority);
-            assert.equal(dpSource.path, expectedUri);
-            assert.equal(dpSource.origin, undefined);
-            assert.equal(dpSource.sourceReference, undefined);
+            const mappedSource = mapInternalSourceToRemoteClient(dpSource, authority);
+            assert.equal(mappedSource.path, expectedUri);
+            assert.equal(mappedSource.origin, undefined);
+            assert.equal(mappedSource.sourceReference, undefined);
         }
 
         doTest(`/${remotePathComponent}/my/path`, 'foo', 'vscode-remote://foo/my/path');
