@@ -70,6 +70,8 @@ import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldB
 import { MakePropertyRequired } from './typeUtils';
 import { printClassDescription } from './chrome/utils/printing';
 import { IDebuggeeExecutionController } from './chrome/cdtpDebuggee/features/cdtpDebugeeExecutionController';
+import { CDTPScriptsRegistry } from './chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { EagerSourceMapTransformer } from './transformers/eagerSourceMapTransformer';
 
 export {
     chromeConnection,
@@ -201,5 +203,9 @@ export {
     BasePauseShouldBeAutoResumed,
 
     IDebuggeeExecutionController,
+
+    CDTPScriptsRegistry,
+
+    EagerSourceMapTransformer,
 
 };

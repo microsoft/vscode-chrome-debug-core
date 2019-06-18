@@ -107,7 +107,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
 
             const newStatus = isFalse(this.shouldSkipSource(resolvedSource));
             logger.log(`Setting the skip file status for: ${resolvedSource} to ${newStatus}`);
-            this._skipFileStatuses.setAndReplaceIfExist(resolvedSource.identifier, newStatus);
+            this._skipFileStatuses.setAndReplaceIfExists(resolvedSource.identifier, newStatus);
 
             const scripts = resolvedSource.scriptMapper().scripts;
             for (const script of scripts) {
@@ -190,7 +190,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                     ? parentIsSkipped // Inherit the parent's status
                     : skippingConfiguration;
 
-                this._skipFileStatuses.setAndReplaceIfExist(s.identifier, isTrue(isSkippedFile));
+                this._skipFileStatuses.setAndReplaceIfExists(s.identifier, isTrue(isSkippedFile));
 
                 if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
                     const sourcesMapper = script.sourceMapper;

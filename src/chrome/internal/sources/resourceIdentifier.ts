@@ -95,9 +95,7 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
     }
 
     public get textRepresentation(): TString {
-        // TODO: need to handle invalid chars, but we can't URLencode the entire path
-        // Need to replace backslashes with forward (even on windows) otherwise we can't match the path in Chrome
-        return `file:///${this._localResourcePath.textRepresentation.replace(/\\/g, '/')}` as TString;
+        return <TString>utils.pathToFileURL(this._localResourcePath.textRepresentation);
     }
 
     public get filePathRepresentation(): string {

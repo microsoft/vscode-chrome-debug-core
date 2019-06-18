@@ -12,18 +12,23 @@ import { logger } from 'vscode-debugadapter';
 import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
-import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { IResourceIdentifier } from '..';
 import { LocationInLoadedSource } from '../chrome/internal/locations/location';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
-import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined, isNotEmpty } from '../chrome/utils/typedOperators';
+import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
+import { parseResourceIdentifier, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
 
 export interface ISourceLocation {
     source: ILoadedSource;
     line: number;
     column: number;
     isSourceMapped?: boolean; // compat with stack frame
+}
+
+export interface SourceMapTransformerConfiguration {
+     args: ILaunchRequestArgs | IAttachRequestArgs;
+     clientCapabilities: { clientID?: string };
 }
 
 /**
@@ -34,7 +39,7 @@ export class BaseSourceMapTransformer {
     protected _sourceMaps: SourceMaps | undefined = undefined;
     private _enableSourceMapCaching: boolean;
 
-    private _allRuntimeScriptPaths = new Set<string>();
+    private _allRuntimeScriptPaths = newResourceIdentifierSet<string>();
 
     protected _preLoad = Promise.resolve();
     private _processingNewSourceMap: Promise<any> = Promise.resolve();
@@ -44,7 +49,7 @@ export class BaseSourceMapTransformer {
     protected _isVSClient = false;
 
     constructor(
-        @inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration,
+        @inject(TYPES.ConnectedCDAConfiguration) configuration: SourceMapTransformerConfiguration,
         private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         this._enableSourceMapCaching = isTrue(configuration.args.enableSourceMapCaching);
         this.init(configuration.args);
@@ -61,17 +66,16 @@ export class BaseSourceMapTransformer {
         if (areSourceMapsEnabled) {
             this._enableSourceMapCaching = isTrue(args.enableSourceMapCaching);
             this._sourceMaps = new SourceMaps(this._scriptsRegistry, args.pathMapping, args.sourceMapPathOverrides, this._enableSourceMapCaching);
-            this._allRuntimeScriptPaths = new Set<string>();
         }
     }
 
     public clearTargetContext(): void {
-        this._allRuntimeScriptPaths = new Set<string>();
+        this._allRuntimeScriptPaths =  newResourceIdentifierSet<string>();
     }
 
     public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap | null> {
         if (isDefined(this._sourceMaps)) {
-            this._allRuntimeScriptPaths.add(this.fixPathCasing(pathToGenerated));
+            this._allRuntimeScriptPaths.addAndReplaceIfExists(parseResourceIdentifier(pathToGenerated));
 
             if (isEmpty(sourceMapURL)) return null;
 
@@ -139,7 +143,7 @@ export class BaseSourceMapTransformer {
         return this._sourceMaps.mapToAuthored(pathToGenerated, line, column);
     }
 
-    public async getGeneratedPathFromAuthoredPath(authoredPath: string): Promise<string | null> {
+    public async getGeneratedPathFromAuthoredPath(authoredPath: IResourceIdentifier): Promise<IResourceIdentifier | null> {
         if (!this._sourceMaps) return authoredPath;
 
         await this.wait();
@@ -149,8 +153,8 @@ export class BaseSourceMapTransformer {
             (this.isRuntimeScript(authoredPath) ? authoredPath : null);
     }
 
-    private isRuntimeScript(scriptPath: string): boolean {
-        return this._allRuntimeScriptPaths.has(this.fixPathCasing(scriptPath));
+    private isRuntimeScript(scriptPath: IResourceIdentifier): boolean {
+        return this._allRuntimeScriptPaths.has(scriptPath);
     }
 
     public async allSources(pathToGenerated: string): Promise<IResourceIdentifier[]> {
@@ -169,9 +173,5 @@ export class BaseSourceMapTransformer {
 
     private wait(): Promise<any> {
         return Promise.all([this._preLoad, this._processingNewSourceMap]);
-    }
-
-    private fixPathCasing(str: string): string {
-        return isNotEmpty(str) && !this.caseSensitivePaths ? str.toLowerCase() : str;
     }
 }

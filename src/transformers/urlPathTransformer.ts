@@ -46,8 +46,8 @@ export class UrlPathTransformer extends BasePathTransformer {
             const canonicalizedClientPath = clientPath;
 
             // an HTML file with multiple script tags will call this method several times with the same scriptUrl, so we use setAndReplaceIfExist
-            this._clientPathToTargetUrl.setAndReplaceIfExist(canonicalizedClientPath, scriptUrl);
-            this._targetUrlToClientPath.setAndReplaceIfExist(scriptUrl, clientPath);
+            this._clientPathToTargetUrl.setAndReplaceIfExists(canonicalizedClientPath, scriptUrl);
+            this._targetUrlToClientPath.setAndReplaceIfExists(scriptUrl, clientPath);
 
             scriptUrl = clientPath;
         }

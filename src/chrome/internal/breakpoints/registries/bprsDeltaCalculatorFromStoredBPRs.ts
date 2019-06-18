@@ -31,7 +31,7 @@ export class BPRsDeltaCalculatorFromStoredBPRs {
     }
 
     private storeCurrentBPRecipes(requestedSourceIdentifier: IResourceIdentifier, bpRecipes: BPRecipeInSource[]): void {
-        this._requestedSourcePathToCurrentBPRecipes.setAndReplaceIfExist(requestedSourceIdentifier, Array.from(bpRecipes));
+        this._requestedSourcePathToCurrentBPRecipes.setAndReplaceIfExists(requestedSourceIdentifier, Array.from(bpRecipes));
     }
 
     public toString(): string {

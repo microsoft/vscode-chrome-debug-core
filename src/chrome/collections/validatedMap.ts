@@ -12,7 +12,7 @@ export interface IValidatedMap<K, V> extends Map<K, V> {
     tryGetting(key: K): V | undefined;
     getOr(key: K, elementDoesntExistAction: () => V): V;
     getOrAdd(key: K, obtainValueToAdd: () => V): V;
-    setAndReplaceIfExist(key: K, value: V): this;
+    setAndReplaceIfExists(key: K, value: V): this;
     replaceExisting(key: K, value: V): this;
     setAndIgnoreDuplicates(key: K, value: V, comparer?: ValueComparerFunction<V>): this;
 }
@@ -99,7 +99,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
             throw new Error(`Cannot set key ${key} because it already exists`);
         }
 
-        return this.setAndReplaceIfExist(key, value);
+        return this.setAndReplaceIfExists(key, value);
     }
 
     public replaceExisting(key: K, value: V): this {
@@ -108,10 +108,10 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
             throw new Error(`Cannot replace key ${key} because it doesn't exists`);
         }
 
-        return this.setAndReplaceIfExist(key, value);
+        return this.setAndReplaceIfExists(key, value);
     }
 
-    public setAndReplaceIfExist(key: K, value: V): this {
+    public setAndReplaceIfExists(key: K, value: V): this {
         this._wrappedMap.set(key, value);
         return this;
     }
@@ -123,7 +123,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
             throw new Error(`Cannot set key ${key} for value ${value} because it already exists and it's associated to a different value: ${existingValueOrUndefined}`);
         }
 
-        return this.setAndReplaceIfExist(key, value);
+        return this.setAndReplaceIfExists(key, value);
     }
 
     [Symbol.iterator](): IterableIterator<[K, V]> {

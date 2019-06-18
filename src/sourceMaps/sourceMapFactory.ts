@@ -121,8 +121,8 @@ export class SourceMapFactory {
             mapPathOrURL = utils.canonicalizeUrl(mapPathOrURL);
             contentsP = new Promise((resolve) => {
                 logger.log(`SourceMaps.loadSourceMapContents: Reading local sourcemap file from ${mapPathOrURL}`);
-                fs.readFile(mapPathOrURL, (err?: NodeJS.ErrnoException, data?: Buffer) => {
-                    if (isDefined(err)) {
+                fs.readFile(mapPathOrURL, (err: NodeJS.ErrnoException | null, data?: Buffer) => {
+                    if (isNotNull(err)) {
                         logger.log(`SourceMaps.loadSourceMapContents: Could not read sourcemap file - ` + err.message);
                         resolve(null);
                     } else {

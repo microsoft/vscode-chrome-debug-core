@@ -4,13 +4,12 @@
 
 import * as path from 'path';
 
-import { BaseSourceMapTransformer } from './baseSourceMapTransformer';
+import { BaseSourceMapTransformer, SourceMapTransformerConfiguration } from './baseSourceMapTransformer';
 
 import { ILaunchRequestArgs, IAttachRequestArgs } from '../debugAdapterInterfaces';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { injectable, inject } from 'inversify';
-import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { isDefined, isNotEmpty, isNotNull, hasMatches } from '../chrome/utils/typedOperators';
@@ -24,7 +23,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
     private static SOURCE_MAPPING_MATCHER = new RegExp('^//[#@] ?sourceMappingURL=(.+)$');
 
     constructor(
-        @inject(TYPES.ConnectedCDAConfiguration) configuration: IConnectedCDAConfiguration,
+        @inject(TYPES.ConnectedCDAConfiguration) configuration: SourceMapTransformerConfiguration,
         scriptsRegistry: CDTPScriptsRegistry) {
         super(configuration, scriptsRegistry);
     }
