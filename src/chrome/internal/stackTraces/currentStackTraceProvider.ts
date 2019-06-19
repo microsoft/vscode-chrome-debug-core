@@ -57,6 +57,10 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     public onResumed(changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
         changeStateTo(new CurrentStackTraceProviderWhenNotPaused());
     }
+
+    public toString(): string {
+        return `Paused on: ${this._currentPauseEvent}`;
+    }
 }
 
 class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProviderState {

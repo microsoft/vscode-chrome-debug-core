@@ -14,11 +14,23 @@ import { isNotNull } from '../chrome/utils/typedOperators';
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
     private _generatedPathToSourceMap = new Map<string, SourceMap>();
+    private _authoredPathToSourceMap = new Map<string, SourceMap>();
 
     private _sourceMapFactory: SourceMapFactory;
 
     public constructor(private readonly _scriptsRegistry: CDTPScriptsRegistry, pathMapping?: IPathMapping, sourceMapPathOverrides?: ISourceMapPathOverrides, enableSourceMapCaching?: boolean) {
         this._sourceMapFactory = new SourceMapFactory(pathMapping, sourceMapPathOverrides, enableSourceMapCaching);
+    }
+
+    /**
+     * Returns the generated script path for an authored source path
+     * @param pathToSource - The absolute path to the authored file
+     */
+    public getGeneratedPathFromAuthoredPath(authoredPath: string): string | null {
+        authoredPath = authoredPath.toLowerCase();
+        return this._authoredPathToSourceMap.has(authoredPath) ?
+            this._authoredPathToSourceMap.get(authoredPath)!.generatedPath() :
+            null;
     }
 
     public mapToAuthored(pathToGenerated: string, line: number, column: number): LocationInLoadedSource | null {

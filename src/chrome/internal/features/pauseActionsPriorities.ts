@@ -1,7 +1,6 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-import { ValidatedMap } from '../../collections/validatedMap';
 import { IActionToTakeWhenPaused } from './actionToTakeWhenPaused';
 import { ShouldStepInToAvoidSkippedSource } from './smartStep';
 import { HitBreakpoint, NoRecognizedBreakpoints } from '../breakpoints/features/bpRecipeAtLoadedSourceLogic';
@@ -13,7 +12,7 @@ import { PausedBecauseAsyncCallWasScheduled } from '../stepping/features/asyncSt
 
 export type ActionToTakeWhenPausedClass = { new(...args: any[]): IActionToTakeWhenPaused };
 
-const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
+export const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
     ShouldStepInToAvoidSkippedSource, // Stepping in to avoid a skipped source takes preference over hitting breakpoints, even user pausing, etc...
 
     UserPaused, // The user requesting to pause takes preferences over everything else
@@ -34,6 +33,3 @@ const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] = [
 
     NoRecognizedBreakpoints,
 ];
-
-const priorityIndexAndActionClassPairs = actionsFromHighestToLowestPriority.map((situationClass, index) => <[ActionToTakeWhenPausedClass, number]>[situationClass, index]);
-export const actionClassToPriorityIndexMapping = new ValidatedMap(priorityIndexAndActionClassPairs);

@@ -4,6 +4,7 @@
 
 import { ITelemetryPropertyCollector } from '../../telemetry';
 import { ILaunchRequestArgs } from '../../debugAdapterInterfaces';
+import { injectable } from 'inversify';
 
 export interface ILaunchResult {
     address?: string;
@@ -14,6 +15,15 @@ export interface ILaunchResult {
 export interface IDebuggeeLauncher {
     launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ILaunchResult>;
     stop(): Promise<void>;
+}
+
+export interface IDebuggeeInitializer {
+    initialize(): Promise<void>;
+}
+
+@injectable()
+export class NoDebuggeeInitializer implements IDebuggeeInitializer {
+    public async initialize(): Promise<void> {}
 }
 
 export interface IDebuggeeRunner {

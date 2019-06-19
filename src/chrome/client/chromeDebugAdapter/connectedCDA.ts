@@ -17,6 +17,7 @@ import { ChromeDebugAdapter } from './chromeDebugAdapterV2';
 import { TerminatingCDAProvider, TerminatingReason } from './terminatingCDA';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { IDebuggeeInitializer } from '../../debugeeStartup/debugeeLauncher';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 
@@ -29,6 +30,7 @@ export class ConnectedCDA extends BaseCDAState {
         @inject(TYPES.ChromeDebugLogic) private readonly _chromeDebugAdapterLogic: ChromeDebugLogic,
         @inject(TYPES.IDomainsEnabler) private readonly _domainsEnabler: IDomainsEnabler,
         @inject(TYPES.IRuntimeStarter) private readonly _runtimeStarter: IRuntimeStarter,
+        @inject(TYPES.IDebuggeeInitializer) private readonly _debuggeeInitializer: IDebuggeeInitializer,
         @inject(TYPES.ISession) protected readonly _session: ISession,
         @inject(TYPES.ChromeConnection) private readonly _chromeConnection: ChromeConnection,
         @inject(TYPES.TerminatingCDAProvider) private readonly _terminatingCDAProvider: TerminatingCDAProvider,
@@ -57,6 +59,15 @@ export class ConnectedCDA extends BaseCDAState {
     }
 
     public async install(): Promise<this> {
+        this._chromeConnection.onClose(async () => {
+            if (!this._ignoreNextDisconnectedFromWebSocket) {
+                // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
+                // To avoid processing the same disconnect twice, we ignore the first disconnect from websocket after the client requests a disconnect
+                await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
+                this._ignoreNextDisconnectedFromWebSocket = false;
+            }
+        });
+
         await this._domainsEnabler.enableDomains(); // Enables all the domains that were registered
         await super.install(); // Some of the components make CDTP calls on their install methods. We need to call this after enabling domings, to prevent a component hanging this method
         await this._chromeDebugAdapterLogic.install();
@@ -67,16 +78,11 @@ export class ConnectedCDA extends BaseCDAState {
         }
 
         await this._runtimeStarter.runIfWaitingForDebugger();
+
+        await this._debuggeeInitializer.initialize();
+
         this._session.sendEvent(new InitializedEvent());
 
-        this._chromeConnection.onClose(async () => {
-            if (!this._ignoreNextDisconnectedFromWebSocket) {
-                // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
-                // To avoid processing the same disconnect twice, we ignore the first disconnect from websocket after the client requests a disconnect
-                await this.terminate(TerminatingReason.DisconnectedFromWebsocket);
-                this._ignoreNextDisconnectedFromWebSocket = false;
-            }
-        });
         return this;
     }
 

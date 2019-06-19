@@ -36,6 +36,7 @@ const TYPES = {
     BasePathTransformer: Symbol.for('BasePathTransformer'),
     ChromeTargetDiscovery: Symbol.for('ChromeTargetDiscovery'),
     IRuntimeStarter: Symbol.for('IRuntimeStarter'),
+    IDebuggeeInitializer: Symbol.for('IDebuggeeInitializer'),
     SyncStepping: Symbol.for('SyncStepping'),
     AsyncStepping: Symbol.for('AsyncStepping'),
     ConnectedCDAConfiguration: Symbol.for('ConnectedCDAConfiguration'),

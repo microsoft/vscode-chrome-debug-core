@@ -35,9 +35,16 @@ export interface IStackTraceFormat {}
 
 export class StackTraceCustomFormat implements IStackTraceFormat {
     public constructor(public readonly formatOptions: DebugProtocol.StackFrameFormat) { }
+
+    public toString(): string {
+        return JSON.stringify(this.formatOptions);
+    }
 }
 
 export class StackTraceDefaultFormat implements IStackTraceFormat {
+    public toString(): string {
+        return `default format`;
+    }
 }
 
 /**

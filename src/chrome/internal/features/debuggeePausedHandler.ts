@@ -12,14 +12,18 @@ import { findBiggestItem } from '../../collections/findBiggestItem';
 import { Logging } from '../services/logging';
 import { printArray } from '../../collections/printing';
 import { IActionToTakeWhenPaused, HitDebuggerStatement, NoActionIsNeededForThisPause } from './actionToTakeWhenPaused';
-import { actionClassToPriorityIndexMapping, ActionToTakeWhenPausedClass } from './pauseActionsPriorities';
+import { ActionToTakeWhenPausedClass, actionsFromHighestToLowestPriority } from './pauseActionsPriorities';
 import { asyncMap } from '../../collections/async';
+import { IValidatedMap, ValidatedMap } from '../../collections/validatedMap';
 
 type ActionToTakeWhenPausedProvider = (paused: PausedEvent) => PromiseOrNot<IActionToTakeWhenPaused>;
 
 export interface IDebuggeePausedHandler {
+    actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[];
+
     registerActionProvider(provider: (paused: PausedEvent) => PromiseOrNot<IActionToTakeWhenPaused>): void;
     reprocessLatestPause(): Promise<void>; // TODO: Try to figure out a nicer way to do this without reprocessing the pause event
+    updatePauseActionsPriorities(updatedActionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[]): void;
 }
 
 /**
@@ -34,6 +38,8 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
 
     private latestPaused: PausedEvent | null = null;
     private isClientPaused = false;
+    private _actionsFromHighestToLowestPriority = actionsFromHighestToLowestPriority;
+    private _actionClassToPriorityIndexMapping = this.rebuildedPriorityIndex();
 
     constructor(
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggerEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
@@ -41,6 +47,15 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
         @inject(TYPES.ILogger) private readonly _logging: Logging) {
         this._cdtpDebuggerEventsProvider.onPaused(paused => this.onPause(paused));
         this._cdtpDebuggerEventsProvider.onResumed(() => this.onResumed());
+    }
+
+    public get actionsFromHighestToLowestPriority(): ActionToTakeWhenPausedClass[] {
+        return Array.from(this._actionsFromHighestToLowestPriority);
+    }
+
+    public updatePauseActionsPriorities(updatedActionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[]): void {
+        this._actionsFromHighestToLowestPriority = updatedActionsFromHighestToLowestPriority;
+        this._actionClassToPriorityIndexMapping = this.rebuildedPriorityIndex();
     }
 
     public registerActionProvider(provider: ActionToTakeWhenPausedProvider): void {
@@ -54,7 +69,7 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
 
         const highestPriorityAction = await findBiggestItem<IActionToTakeWhenPaused>(relevantActionsToTake,
             () => new HitDebuggerStatement(this._eventsToClientReporter), // If we don't have any information whatsoever, then we assume that we stopped due to a debugger statement
-            voteClass => actionClassToPriorityIndexMapping.get(<ActionToTakeWhenPausedClass>voteClass.constructor)); // Sort them by priority
+            voteClass => this._actionClassToPriorityIndexMapping.get(<ActionToTakeWhenPausedClass>voteClass.constructor)); // Sort them by priority
 
         this.logActionToTake(actionsToTake, highestPriorityAction);
 
@@ -81,5 +96,10 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
         if (this.latestPaused !== null) {
             await this.onPause(this.latestPaused);
         }
+    }
+
+    private rebuildedPriorityIndex(): IValidatedMap<ActionToTakeWhenPausedClass, number> {
+        const priorityIndexAndActionClassPairs = this._actionsFromHighestToLowestPriority.map((situationClass, index) => <[ActionToTakeWhenPausedClass, number]>[situationClass, index]);
+        return new ValidatedMap(priorityIndexAndActionClassPairs);
     }
 }

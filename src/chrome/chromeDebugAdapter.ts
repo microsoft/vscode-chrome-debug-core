@@ -42,7 +42,7 @@ import { FormattedExceptionParser } from './internal/formattedExceptionParser';
 import { injectable, inject } from 'inversify';
 import { TYPES } from './dependencyInjection.ts/types';
 import { ICDTPDebuggeeExecutionEventsProvider, PausedEvent } from './cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
-import { ILogEntry, CDTPLogEventsProvider } from './cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
+import { ILogEntry, ILogEventsProvider } from './cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
 import { IConsoleEventsProvider, IConsoleAPICalledEvent } from './cdtpDebuggee/eventsProviders/cdtpConsoleEventsProvider';
 import { IPauseOnExceptionsConfigurer } from './cdtpDebuggee/features/cdtpPauseOnExceptionsConfigurer';
 import { CDTPExceptionThrownEventsProvider, IExceptionThrownEvent } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
@@ -131,7 +131,7 @@ export class ChromeDebugLogic {
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _debuggerEvents: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.IConsoleEventsProvider) private readonly _consoleEventsProvider: IConsoleEventsProvider,
-        @inject(TYPES.ILogEventsProvider) private readonly _logEventsProvider: CDTPLogEventsProvider,
+        @inject(TYPES.ILogEventsProvider) private readonly _logEventsProvider: ILogEventsProvider,
         @inject(TYPES.IPauseOnExceptions) private readonly _pauseOnExceptions: IPauseOnExceptionsConfigurer,
     ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));

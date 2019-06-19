@@ -19,7 +19,7 @@ import * as _ from 'lodash';
 
 interface IRootsState {
     install(): Promise<void>;
-    getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier;
+    getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier | undefined;
     getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier;
 }
 
@@ -72,8 +72,8 @@ class BothRootsAreSet implements IRootsState {
 class MissingRoots implements IRootsState {
     public async install(): Promise<void> {}
 
-    public getClientPathFromTargetPath(_remotePath: IResourceIdentifier): IResourceIdentifier {
-        return parseResourceIdentifier('');
+    public getClientPathFromTargetPath(_remotePath: IResourceIdentifier): IResourceIdentifier | undefined {
+        return undefined;
     }
 
     public getTargetPathFromClientPath(localPath: IResourceIdentifier): IResourceIdentifier {
@@ -111,8 +111,8 @@ export class RemotePathTransformer extends UrlPathTransformer {
         return scriptPath;
     }
 
-    public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier {
-        remotePath = _.defaultTo(this.getClientPathFromTargetPath(remotePath), remotePath);
+    public getClientPathFromTargetPath(remotePath: IResourceIdentifier): IResourceIdentifier | undefined {
+        remotePath = _.defaultTo(super.getClientPathFromTargetPath(remotePath), remotePath);
 
         // Map as non-file-uri because remoteRoot won't expect a file uri
         remotePath = parseResourceIdentifier(utils.fileUrlToPath(remotePath.canonicalized));

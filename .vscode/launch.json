@@ -45,11 +45,23 @@
             "cwd": "${workspaceFolder}/../vscode-node-debug2",
             "program": "${workspaceFolder}/../vscode-node-debug2/out/src/nodeDebug.js",
             "args": [ "--server=4712" ],
-            "outFiles": ["${workspaceFolder}/out/**/*.js"],
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js",
+                "${workspaceFolder}/../vscode-node-debug2/out/src/**/*.js"],
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true,
+            "sourceMaps": true,
             "skipFiles": [
-                "<node_internals>/**"
+                "<node_internals>/**",
+                "async_hooks.js",
+                "transformedListenerRegistry.ts",
+                "logger.ts",
+                "methodsCalledLogger.ts",
+                "next_tick.js",
+                "inspector_async_hook.js",
+                "printObjectDescription.js",
+                "lodash.js",
+                "listeners.ts",
             ]
         },
         {
