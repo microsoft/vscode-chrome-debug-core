@@ -47,7 +47,7 @@ export class TerminatingCDA extends BaseCDAState {
 
         await this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');
 
-        return new TerminatedCDA(this._session);
+        return new TerminatedCDA(this._session).install();
     }
 
     public async terminateSession(reason: string, restart?: IRestartRequestArgs): Promise<void> {

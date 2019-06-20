@@ -56,6 +56,11 @@ export class SetUsingProjection<T, P> implements Set<T> {
         return this;
     }
 
+    public addAndReplaceIfExists(element: T): this {
+        this._projectionToElement.setAndReplaceIfExists(this._projection(element), element);
+        return this;
+    }
+
     public get size(): number {
         return this._projectionToElement.size;
     }

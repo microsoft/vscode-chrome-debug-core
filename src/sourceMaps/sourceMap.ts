@@ -150,8 +150,8 @@ export class SourceMap {
         return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumer);
     }
 
-    public generatedPath(): string {
-        return this._generatedPath;
+    public generatedPath(): IResourceIdentifier {
+        return parseResourceIdentifier(this._generatedPath);
     }
 
     /**
@@ -282,7 +282,7 @@ export class SourceMap {
                 const expandedRange = new Range(
                     Position.appearingFirstOf(range.start, positionInSource),
                     Position.appearingLastOf(range.exclusiveEnd, positionInSource));
-                sourceToRange.setAndReplaceIfExist(sourceIdentifier, expandedRange);
+                sourceToRange.setAndReplaceIfExists(sourceIdentifier, expandedRange);
             } else {
                 /**
                  * TODO: Report some telemetry. We've seen the line numbers and source be null in the Webpack scenario of our integration tests

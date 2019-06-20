@@ -7,14 +7,14 @@ import { SourceMapFactory } from './sourceMapFactory';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 import { Position, LocationInLoadedSource, LocationInScript } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber } from '../chrome/internal/locations/subtypes';
-import { parseResourceIdentifier, IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { parseResourceIdentifier, IResourceIdentifier, newResourceIdentifierMap } from '../chrome/internal/sources/resourceIdentifier';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { isNotNull } from '../chrome/utils/typedOperators';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
     private _generatedPathToSourceMap = new Map<string, SourceMap>();
-    private _authoredPathToSourceMap = new Map<string, SourceMap>();
+    private _authoredPathToSourceMap = newResourceIdentifierMap<SourceMap>();
 
     private _sourceMapFactory: SourceMapFactory;
 
@@ -26,8 +26,7 @@ export class SourceMaps {
      * Returns the generated script path for an authored source path
      * @param pathToSource - The absolute path to the authored file
      */
-    public getGeneratedPathFromAuthoredPath(authoredPath: string): string | null {
-        authoredPath = authoredPath.toLowerCase();
+    public getGeneratedPathFromAuthoredPath(authoredPath: IResourceIdentifier): IResourceIdentifier | null {
         return this._authoredPathToSourceMap.has(authoredPath) ?
             this._authoredPathToSourceMap.get(authoredPath)!.generatedPath() :
             null;
@@ -70,6 +69,7 @@ export class SourceMaps {
         const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
         if (isNotNull(sourceMap)) {
             this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
+            sourceMap.mappedSources.forEach(authoredSource => this._authoredPathToSourceMap.setAndReplaceIfExists(authoredSource, sourceMap));
             return sourceMap;
         } else {
             return null;

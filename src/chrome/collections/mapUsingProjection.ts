@@ -85,8 +85,8 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
         return this;
     }
 
-    public setAndReplaceIfExist(key: K, value: V): this {
-        this._projectionToKeyAndvalue.setAndReplaceIfExist(this._projection(key), new KeyAndValue(key, value));
+    public setAndReplaceIfExists(key: K, value: V): this {
+        this._projectionToKeyAndvalue.setAndReplaceIfExists(this._projection(key), new KeyAndValue(key, value));
         return this;
     }
 

@@ -39,6 +39,7 @@ import { ConnectedCDA } from '../client/chromeDebugAdapter/connectedCDA';
 import { SupportedDomains } from '../internal/domains/supportedDomains';
 import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
 import { isDefined } from '../utils/typedOperators';
+import { CompletionsRequestHandler } from '../internal/completions/completionsRequestHandler';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -76,6 +77,7 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.ICommandHandlerDeclarer, ThreadsRequestHandler, callback);
     bind(loggingConfiguration, di, TYPES.ICommandHandlerDeclarer, ToggleSkipFileStatusRequestHandler, callback);
     bind(loggingConfiguration, di, TYPES.ICommandHandlerDeclarer, VariablesRequestHandler, callback);
+    bind(loggingConfiguration, di, TYPES.ICommandHandlerDeclarer, CompletionsRequestHandler, callback);
 
     bind(loggingConfiguration, di, TYPES.BaseSourceMapTransformer, EagerSourceMapTransformer, callback);
     bind(loggingConfiguration, di, TYPES.BasePathTransformer, ConfigurationBasedPathTransformer, callback);

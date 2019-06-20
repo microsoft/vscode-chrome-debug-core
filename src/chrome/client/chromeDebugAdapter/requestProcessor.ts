@@ -26,6 +26,6 @@ export class RequestProcessor {
     }
 
     public toString(): string {
-        return printArray(`Request processor for`, Array.from(this._requestHandlerDeclarers.keys()));
+        return printArray(`Request processor for`, Array.from(this._requestNameToHandler.keys()));
     }
 }
