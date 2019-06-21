@@ -19,6 +19,7 @@ import { BreakpointsSetForScriptFinder } from './registries/breakpointsSetForScr
 import { PauseScriptLoadsToSetBPs } from './features/pauseScriptLoadsToSetBPs';
 import { BPRecipesForSourceRetriever } from './registries/bpRecipesForSourceRetriever';
 import { SourceToScriptMapper } from '../services/sourceToScriptMapper';
+import { BPAtNotLoadedScriptViaHeuristicSetter } from './features/bpAtNotLoadedScriptViaHeuristicSetter';
 
 const exportedIdentifierToClasses = new ValidatedMap<interfaces.ServiceIdentifier<any>, interfaces.Newable<any>>([
     [TYPES.IBreakpointsUpdater, BreakpointsUpdater],
@@ -38,6 +39,7 @@ const privatedentifierToClasses: IdentifierToClassPairs = [
     [PrivateTypes.PauseScriptLoadsToSetBPs, PauseScriptLoadsToSetBPs],
     [PrivateTypes.CurrentBPRecipesForSourceRegistry, BPRsDeltaCalculatorFromStoredBPRs],
     [PrivateTypes.ExistingBPsForJustParsedScriptSetter, ExistingBPsForJustParsedScriptSetter],
+    [PrivateTypes.BPAtNotLoadedScriptViaHeuristicSetter, BPAtNotLoadedScriptViaHeuristicSetter],
     [PrivateTypes.BPRecipeAtLoadedSourceSetter, BPRecipeAtLoadedSourceSetter]];
 
 export function addBreakpointsFeatureBindings(diContainer: DependencyInjection) {

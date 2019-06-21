@@ -40,6 +40,7 @@ import { SupportedDomains } from '../internal/domains/supportedDomains';
 import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
 import { isDefined } from '../utils/typedOperators';
 import { CompletionsRequestHandler } from '../internal/completions/completionsRequestHandler';
+import { SourceToClientConverter } from '../client/sourceToClientConverter';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -52,6 +53,7 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.IEventsToClientReporter, EventsToClientReporter, callback);
     bind(loggingConfiguration, di, TYPES.ChromeDebugLogic, ChromeDebugLogic, callback);
     bind(loggingConfiguration, di, TYPES.ISourcesRetriever, SourcesRetriever, callback);
+    bind(loggingConfiguration, di, TYPES.SourceToClientConverter, SourceToClientConverter, callback);
 
     bind(loggingConfiguration, di, TYPES.StackTracesLogic, StackTracePresenter, callback);
     bind(loggingConfiguration, di, TYPES.PauseOnExceptionOrRejection, PauseOnExceptionOrRejection, callback);

@@ -12,6 +12,7 @@ import { IResourceIdentifier, IURL, isResourceIdentifier } from '../sources/reso
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as _ from 'lodash';
 import { IMappedTokensInScript } from './mappedTokensInScript';
+import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 
 export type integer = number;
 
@@ -69,13 +70,14 @@ export class Position implements IEquivalenceComparable {
 export interface ILocation<T extends ScriptOrSourceOrURLOrURLRegexp> extends IEquivalenceComparable {
     readonly position: Position;
     readonly resource: T;
+    readonly resourceIdentifier: IResourceIdentifier;
 
     isEquivalentTo(right: this): boolean;
 }
 
 // The LocationInUrl is used with the URL that is associated with each Script in CDTP. This should be a URL, but it could also be a string that is not a valid URL
 // For that reason we use IResourceIdentifier<CDTPScriptUrl> for this type, instead of IURL<CDTPScriptUrl>
-export type ScriptOrSourceOrURLOrURLRegexp = ISource | ILoadedSource | IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
+export type ScriptOrSourceOrURLOrURLRegexp = ISource | ILoadedSource | IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl> | IHasSourceMappingInformation;
 
 export type Location<T extends ScriptOrSourceOrURLOrURLRegexp> = ILocation<T> &
     (T extends ISource ? LocationInSource : // Used when receiving locations from the client
@@ -103,6 +105,8 @@ export function createLocation<T extends ScriptOrSourceOrURLOrURLRegexp>(resourc
 }
 
 abstract class BaseLocation<T extends ScriptOrSourceOrURLOrURLRegexp> implements ILocation<T> {
+    public abstract get resourceIdentifier(): IResourceIdentifier;
+
     constructor(
         public readonly resource: T,
         public readonly position: Position) { }
@@ -125,6 +129,10 @@ abstract class BaseLocation<T extends ScriptOrSourceOrURLOrURLRegexp> implements
 }
 
 export class LocationInSource extends BaseLocation<ISource> implements ILocation<ISource> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        return this.resource.sourceIdentifier;
+    }
+
     public get identifier(): ISource {
         return this.resource;
     }
@@ -151,6 +159,10 @@ export class LocationInSource extends BaseLocation<ISource> implements ILocation
  * If the script is an inline script in an .html file, and it starts on line 10, then the first line of the script will be line 10.
  */
 export class LocationInScript extends BaseLocation<IScript> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        return this.resource.runtimeSource.identifier;
+    }
+
     public mappedToRuntimeSource(): LocationInLoadedSource {
         return new LocationInLoadedSource(this.script.runtimeSource, this.position);
     }
@@ -160,7 +172,7 @@ export class LocationInScript extends BaseLocation<IScript> {
     }
 
     public mappedToSource(): LocationInLoadedSource {
-        return this.script.sourceMapper.getPositionInSource(this);
+        return this.script.sourceMapper. getPositionInSource(this);
     }
 
     public isSameAs(locationInScript: LocationInScript): boolean {
@@ -174,22 +186,34 @@ export class LocationInScript extends BaseLocation<IScript> {
 }
 
 export class LocationInLoadedSource extends BaseLocation<ILoadedSource> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        return this.resource.identifier;
+    }
+
     public get source(): ILoadedSource {
         return this.resource;
     }
 
-    public tokensWhenMappedToScript(): IMappedTokensInScript[] {
+    public tokensWhenMappedToScript(): IMappedTokensInScript<IScript>[] {
         return this.source.scriptMapper().mapToScripts(this);
     }
 }
 
 export class LocationInUrl extends BaseLocation<IResourceIdentifier<CDTPScriptUrl>> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        return this.url;
+    }
+
     public get url(): IURL<CDTPScriptUrl> {
         return this.resource;
     }
 }
 
 export class LocationInUrlRegexp extends BaseLocation<URLRegexp> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        throw new Error(`A location in URL Regexp doesn't have a resource identifier: ${this.urlRegexp}`);
+    }
+
     public get urlRegexp(): URLRegexp {
         return this.resource;
     }

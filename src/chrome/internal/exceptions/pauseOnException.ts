@@ -63,7 +63,7 @@ export class PauseOnExceptionOrRejection {
 
     constructor(
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
-        private readonly _scriptsLogic: CDTPScriptsRegistry,
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsLogic: CDTPScriptsRegistry,
         @inject(TYPES.IPauseOnExceptions) private readonly _pauseOnExceptions: IPauseOnExceptionsConfigurer,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.onProvideActionForWhenPaused(paused));

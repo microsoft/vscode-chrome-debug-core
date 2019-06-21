@@ -1,6 +1,7 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+import { Protocol as CDTP } from 'devtools-protocol';
 import { PausedEvent, ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../features/actionToTakeWhenPaused';
 import { ScriptCallFrame, CallFrameWithState } from './callFrame';
@@ -9,6 +10,7 @@ import { ILoadedSource } from '../sources/loadedSource';
 import { isDefined } from '../../utils/typedOperators';
 
 interface ICurrentStackTraceProviderState {
+    ifExceptionWasThrown(exceptionWasThrownAction: (exception: CDTP.Runtime.RemoteObject) => void, noExceptionAction: () => void): void;
     isPaused(): boolean;
     syncStackFrames(): ScriptCallFrame<CallFrameWithState>[];
     asyncStackTrace(): CodeFlowStackTrace | undefined;
@@ -58,6 +60,12 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
         changeStateTo(new CurrentStackTraceProviderWhenNotPaused());
     }
 
+    public ifExceptionWasThrown(exceptionWasThrownAction: (exception: CDTP.Runtime.RemoteObject) => void, noExceptionAction: () => void): void {
+        return this._currentPauseEvent.reason === 'exception'
+        ? exceptionWasThrownAction(this._currentPauseEvent.data)
+        : noExceptionAction();
+    }
+
     public toString(): string {
         return `Paused on: ${this._currentPauseEvent}`;
     }
@@ -86,6 +94,10 @@ class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProvid
     }
 
     public onResumed(_changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
+        return this.throwItIsNotPaused();
+    }
+
+    public ifExceptionWasThrown(_exceptionWasThrownAction: (exception: CDTP.Runtime.RemoteObject) => void, _noExceptionAction: () => void): void {
         return this.throwItIsNotPaused();
     }
 
@@ -120,6 +132,10 @@ export class CurrentStackTraceProvider {
 
     public isSourceInCurrentStack(source: ILoadedSource): boolean {
         return this._state.isSourceInCurrentStack(source);
+    }
+
+    public ifExceptionWasThrown(exceptionWasThrownAction: (exception: CDTP.Runtime.RemoteObject) => void, noExceptionAction: () => void): void {
+        return this._state.ifExceptionWasThrown(exceptionWasThrownAction, noExceptionAction);
     }
 
     private onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {

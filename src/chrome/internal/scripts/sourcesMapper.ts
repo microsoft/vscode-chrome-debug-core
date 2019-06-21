@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { SourceMap } from '../../../sourceMaps/sourceMap';
-import { LocationInLoadedSource, LocationInScript, Position } from '../locations/location';
+import { LocationInLoadedSource, LocationInScript, Position, LocationInSource } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IResourceIdentifier } from '../sources/resourceIdentifier';
 import { IScript } from './script';
@@ -13,26 +13,27 @@ import { MappedTokensInScript, NoMappedTokensInScript, IMappedTokensInScript } f
 import { Range } from '../locations/rangeInScript';
 import { ScriptToHtmlPositionTranslator } from './scriptToHtmlPositionTranslator';
 import { HtmlToScriptPositionTranslator } from './htmlToScriptPositionTranslator';
+import { IHasSourceMappingInformation } from './IHasSourceMappingInformation';
 
-export interface ISourceToScriptMapper {
-    getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript;
+export interface ISourceToScriptMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> {
+    getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript<T>;
 }
 
 export interface IScriptToSourceMapper {
     getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource;
 }
 
-export interface ISourceMapper extends ISourceToScriptMapper, IScriptToSourceMapper { }
+export interface ISourceMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> extends ISourceToScriptMapper<T>, IScriptToSourceMapper { }
 
-export interface IMappedSourcesMapper extends ISourceMapper {
+export interface IMappedSourcesMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> extends ISourceMapper<T> {
     readonly sources: IResourceIdentifier[];
 }
 
 /** This class maps locations from a script into the sources form which it was compiled, and back. */
-export class MappedSourcesMapper implements IMappedSourcesMapper {
+export class MappedSourcesMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> implements IMappedSourcesMapper<T> {
     private readonly _rangeInSources: IValidatedMap<IResourceIdentifier, Range>;
 
-    constructor(private readonly _script: IScript, private readonly _sourceMap: SourceMap) {
+    constructor(private readonly _script: T, private readonly _sourceMap: SourceMap) {
         this._rangeInSources = this._sourceMap.rangesInSources();
     }
 
@@ -45,7 +46,7 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
             });
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+    public getPositionInScript(positionInSource: LocationInLoadedSource | LocationInSource): IMappedTokensInScript<T> {
         if (!this.canPositionPotentiallyHaveMappings(positionInSource)) {
             // The range of this script in the source doesn't has the position, so there won't be any mapping
             logger.log(`SourceMapper: ${positionInSource} is outside the range of ${this._script} so it doesn't map anywhere`);
@@ -70,8 +71,8 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
         return `Mapped sources mapper of ${this._script} into ${this._script.mappedSources}`;
     }
 
-    private canPositionPotentiallyHaveMappings(positionInSource: LocationInLoadedSource): boolean {
-        const range = this._rangeInSources.get(positionInSource.source.identifier);
+    private canPositionPotentiallyHaveMappings(positionInSource: LocationInLoadedSource | LocationInSource): boolean {
+        const range = this._rangeInSources.get(positionInSource.resourceIdentifier);
         return Position.isBetween(range.start, positionInSource.position, range.exclusiveEnd);
     }
 
@@ -80,7 +81,7 @@ export class MappedSourcesMapper implements IMappedSourcesMapper {
      * If this script is not an inline script, this value will be 0:0
      */
     private whereScriptStartsInHtml() {
-        return this._script.rangeInSource.start.position;
+        return this._script.startPositionInSource;
     }
 }
 
@@ -110,14 +111,14 @@ export class NoMappedSourcesMapper implements IMappedSourcesMapper {
     }
 }
 
-export class UnmappedSourceMapper implements ISourceMapper {
+export class UnmappedSourceMapper implements ISourceMapper<IScript> {
     constructor(private readonly _script: IScript, private readonly _source: ILoadedSource) { }
 
     public getPositionInSource(positionInScript: LocationInScript): LocationInLoadedSource {
         return new LocationInLoadedSource(this._source, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript<IScript> {
         return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
     }
 

@@ -55,6 +55,7 @@ import { EventsToClientReporter } from './client/eventsToClientReporter';
 import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
 import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
 import * as _ from 'lodash';
+import { CurrentStackTraceProvider } from './internal/stackTraces/currentStackTraceProvider';
 
 let localize = nls.loadMessageBundle();
 
@@ -94,7 +95,6 @@ export class ChromeDebugLogic {
 
     public _session: ISession;
     public _domains = new Map<CrdpDomain, CDTP.Schema.Domain>();
-    private _exception: CDTP.Runtime.RemoteObject | undefined;
     private _expectingResumedEvent = false;
     public _expectingStopReason: ReasonType | undefined;
     private _waitAfterStep = Promise.resolve();
@@ -116,19 +116,22 @@ export class ChromeDebugLogic {
     public _promiseRejectExceptionFilterEnabled = false;
     public _pauseOnPromiseRejections = true;
 
+    private readonly _currentStackStraceProvider = new CurrentStackTraceProvider(this._cdtpDebuggeeExecutionEventsProvider);
+
     public constructor(
         @inject(TYPES.LineColTransformer) lineColTransformer: LineColTransformer,
         @inject(TYPES.BaseSourceMapTransformer) sourceMapTransformer: BaseSourceMapTransformer,
         @inject(TYPES.BasePathTransformer) pathTransformer: BasePathTransformer,
         @inject(TYPES.ISession) session: ISession,
         @inject(TYPES.ChromeConnection) chromeConnection: ChromeConnection,
-        private readonly _scriptsLogic: CDTPScriptsRegistry,
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsLogic: CDTPScriptsRegistry,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventSender: EventsToClientReporter,
         @inject(TYPES.ExceptionThrownEventProvider) private readonly _exceptionThrownEventProvider: CDTPExceptionThrownEventsProvider,
         @inject(TYPES.ExecutionContextEventsProvider) private readonly _executionContextEventsProvider: CDTPExecutionContextEventsProvider,
         @inject(TYPES.IDebuggeeStateInspector) private readonly _inspectDebuggeeState: IDebuggeeStateInspector,
         @inject(TYPES.IUpdateDebuggeeState) private readonly _updateDebuggeeState: IDebuggeeStateSetter,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
+        @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _cdtpDebuggeeExecutionEventsProvider: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.ICDTPDebuggeeExecutionEventsProvider) private readonly _debuggerEvents: ICDTPDebuggeeExecutionEventsProvider,
         @inject(TYPES.IConsoleEventsProvider) private readonly _consoleEventsProvider: IConsoleEventsProvider,
         @inject(TYPES.ILogEventsProvider) private readonly _logEventsProvider: ILogEventsProvider,
@@ -441,11 +444,13 @@ export class ChromeDebugLogic {
             return resultScope;
         });
 
-        if (isDefined(this._exception) && currentFrame.index === 0) {
-            scopes.unshift(<DebugProtocol.Scope>{
-                name: localize('scope.exception', 'Exception'),
-                variablesReference: this._variableHandles.create(ExceptionContainer.create(this._exception))
-            });
+        if (currentFrame.index === 0) {
+            this._currentStackStraceProvider.ifExceptionWasThrown(exception => {
+                scopes.unshift(<DebugProtocol.Scope>{
+                    name: localize('scope.exception', 'Exception'),
+                    variablesReference: this._variableHandles.create(ExceptionContainer.create(exception))
+                });
+            }, () => {});
         }
 
         const scopesResponse = { scopes };

@@ -11,7 +11,7 @@ import * as utils from '../utils';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 import { IResourceIdentifier } from '..';
 import { parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
-import { isNotEmpty, hasNoMatches, isEmpty } from '../chrome/utils/typedOperators';
+import { isNotEmpty, hasNoMatches, isEmpty, defaultWhenEmpty } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
 
 /**
@@ -34,7 +34,7 @@ export function getComputedSourceRoot(sourceRoot: string | undefined, generatedP
             // sourceRoot is like "/src", should be like http://localhost/src, resolve to a local path using pathMaping.
             // If path mappings do not apply (e.g. node), assume that sourceRoot is actually a local absolute path.
             // Technically not valid but it's easy to end up with paths like this.
-            absSourceRoot = _.defaultTo(chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping), sourceRoot);
+            absSourceRoot = defaultWhenEmpty(chromeUtils.applyPathMappingsToTargetUrlPath(sourceRoot, pathMapping), sourceRoot);
 
             // If no pathMapping (node), use sourceRoot as is.
             // But we also should handle an absolute sourceRoot for chrome? Does CDT handle that? No it does not, it interprets it as "localhost/full path here"

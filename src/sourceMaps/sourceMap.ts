@@ -9,7 +9,7 @@ import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
-import { Position, LocationInLoadedSource, LocationInScript } from '../chrome/internal/locations/location';
+import { Position, LocationInLoadedSource, LocationInScript, LocationInSource } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber, LineNumber, ColumnNumber } from '../chrome/internal/locations/subtypes';
 import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier, parseResourceIdentifiers, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
@@ -133,7 +133,12 @@ export class SourceMap {
                 }
             }
 
-            return path.resolve(computedSourceRoot, sourcePath); // If no path override applies, just concatenate the source with the computed source root
+            if (!path.isAbsolute(sourcePath)) {
+                // Overrides not applied, use the computed sourceRoot
+                return path.resolve(computedSourceRoot, sourcePath);
+            } else {
+                return sourcePath;
+            }
         });
 
         const identifiers = parseResourceIdentifiers(normalizedSources);
@@ -150,7 +155,7 @@ export class SourceMap {
         return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumer);
     }
 
-    public generatedPath(): IResourceIdentifier {
+    public get generatedPath(): IResourceIdentifier {
         return parseResourceIdentifier(this._generatedPath);
     }
 
@@ -231,11 +236,11 @@ export class SourceMap {
         return position.line !== null && position.column !== null;
     }
 
-    public allGeneratedPositionFor(positionInSource: LocationInLoadedSource): Range[] {
+    public allGeneratedPositionFor(positionInSource: LocationInLoadedSource | LocationInSource): Range[] {
         const lookupArgs = {
             line: positionInSource.position.lineNumber + 1, // source-map lib uses 1-indexed lines.
             column: positionInSource.position.columnNumber,
-            source: positionInSource.source.identifier.canonicalized
+            source: positionInSource.resourceIdentifier.canonicalized
         };
 
         const positions = this.allGeneratedPositionsForBothDirections(lookupArgs);

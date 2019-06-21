@@ -2,7 +2,7 @@ import { IScript } from '../scripts/script';
 import { CDTPScriptUrl } from './resourceIdentifierSubtypes';
 import { IResourceIdentifier, parseResourceIdentifier, ResourceName } from './resourceIdentifier';
 import { ILoadedSource, IScriptMapper, SourceScriptRelationship, ImplementsLoadedSource, ScriptAndSourceMapper, ContentsLocation } from './loadedSource';
-import { ILoadedSourceToScriptRelationship, DevelopmentSourceOf, RuntimeSourceOf } from './loadedSourceToScriptRelationship';
+import { ILoadedSourceToScriptRelationship, UnmappedSourceOf } from './loadedSourceToScriptRelationship';
 import { UnmappedSourceMapper } from '../scripts/sourcesMapper';
 import { LocationInLoadedSource, LocationInScript } from '../locations/location';
 import { IMappedTokensInScript, MappedTokensInScript } from '../locations/mappedTokensInScript';
@@ -53,12 +53,13 @@ export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
 export class CurrentUnidentifiedSourceScriptRelationships implements IScriptMapper {
     constructor(private readonly _source: UnidentifiedLoadedSource, private readonly _script: IScript) { }
 
-    public mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript[] {
+    public mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript<IScript>[] {
         return [MappedTokensInScript.characterAt(new LocationInScript(this._script, position.position))];
     }
 
     public get relationships(): ILoadedSourceToScriptRelationship[] {
-        return [new DevelopmentSourceOf(this._source, this._source, this._source.script), new RuntimeSourceOf(this._source, this._source.script)];
+        const unmappedSourceRelationship = new UnmappedSourceOf(this._source, this._source.script);
+        return [unmappedSourceRelationship];
     }
 
     public get scriptsAndSourceMappers(): ScriptAndSourceMapper[] {

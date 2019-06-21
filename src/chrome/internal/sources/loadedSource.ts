@@ -46,12 +46,12 @@ export interface ICurrentScriptRelationshipsProvider {
 export class ScriptAndSourceMapper {
     constructor(
         public readonly script: IScript,
-        public readonly sourcesMapper: ISourceMapper) { }
+        public readonly sourcesMapper: ISourceMapper<IScript>) { }
 }
 
 export interface IScriptMapper {
     readonly scripts: IScript[];
-    mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript[];
+    mapToScripts(position: LocationInLoadedSource): IMappedTokensInScript<IScript>[];
 }
 
 export enum SourceScriptRelationship {

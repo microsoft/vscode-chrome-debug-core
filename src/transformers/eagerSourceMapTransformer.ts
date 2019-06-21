@@ -24,7 +24,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
 
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) configuration: SourceMapTransformerConfiguration,
-        scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.CDTPScriptsRegistry) scriptsRegistry: CDTPScriptsRegistry) {
         super(configuration, scriptsRegistry);
     }
 

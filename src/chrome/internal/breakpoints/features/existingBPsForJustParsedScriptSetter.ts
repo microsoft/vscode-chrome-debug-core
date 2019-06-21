@@ -23,6 +23,7 @@ import { IEventsConsumer, Synchronicity } from '../../../cdtpDebuggee/features/c
 import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 import { isDefined } from '../../../utils/typedOperators';
+import { BPAtNotLoadedScriptViaHeuristicSetter } from './bpAtNotLoadedScriptViaHeuristicSetter';
 
 class MakeAllEventsAsyncConsumer implements IEventsConsumer {
     public constructor(private readonly _wrappedEventsConsumer: IEventsConsumer) { }
@@ -47,6 +48,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         @inject(PrivateTypes.DebuggeeBPRsSetForClientBPRFinder) private readonly _debuggeeBPRsSetForClientBPRFinder: DebuggeeBPRsSetForClientBPRFinder,
         @inject(PrivateTypes.BPRecipesForSourceRetriever) private readonly _bpRecipesForSourceRetriever: BPRecipesForSourceRetriever,
         @inject(PrivateTypes.SourceToScriptMapper) private readonly _sourceToScriptMapper: SourceToScriptMapper,
+        @inject(PrivateTypes.BPAtNotLoadedScriptViaHeuristicSetter) private readonly _bpAtNotLoadedScriptViaHeuristicSetter: BPAtNotLoadedScriptViaHeuristicSetter,
         @inject(PrivateTypes.BPRecipeAtLoadedSourceSetter) private readonly _bpRecipeAtLoadedSourceSetter: BPRecipeAtLoadedSourceSetter) {
         this._scriptParsedProvider.onScriptParsed(scriptParsed => this.withLogging.setBPsForScript(scriptParsed.script));
     }
@@ -117,6 +119,9 @@ export class ExistingBPsForJustParsedScriptSetter {
             }
 
             await this._bpRecipeAtLoadedSourceSetter.addBreakpointAtLoadedSource(bprInRuntimeSource, this._bpRecipeWasResolvedEventsConsumer);
+
+            // After we set a a "client BPRecipe", we can remove all the heuristic BP Recipes we had for that "client BPRecipe"
+            await this._bpAtNotLoadedScriptViaHeuristicSetter.removeBPRecipeIfNeeded(bprInRuntimeSource.unmappedBPRecipe);
         }
     }
 

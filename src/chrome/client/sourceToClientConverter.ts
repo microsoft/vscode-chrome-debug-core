@@ -4,8 +4,14 @@ import { ILoadedSource } from '../internal/sources/loadedSource';
 import { HandlesRegistry } from './handlesRegistry';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LocalFileURL } from '../internal/sources/resourceIdentifier';
+import { injectable } from 'inversify';
 
-export class SourceToClientConverter {
+export interface ISourceToClientConverter {
+    toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source>;
+}
+
+@injectable()
+export class SourceToClientConverter implements ISourceToClientConverter {
     constructor(private readonly _handlesRegistry: HandlesRegistry) { }
 
     public async toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source> {

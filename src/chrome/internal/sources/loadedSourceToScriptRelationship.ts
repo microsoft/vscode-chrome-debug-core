@@ -12,8 +12,8 @@ abstract class BaseLoadedSourceToScriptRelationship implements ILoadedSourceToSc
     abstract get script(): IScript;
 }
 
-/// Script was created from this source
-export class RuntimeSourceOf extends BaseLoadedSourceToScriptRelationship {
+/// Script was created from this source and it doesn't need a source-map to be mapped
+export class UnmappedSourceOf extends BaseLoadedSourceToScriptRelationship {
     constructor(public readonly runtimeSource: ILoadedSource, public readonly script: IScript) {
         super();
     }
@@ -24,21 +24,6 @@ export class RuntimeSourceOf extends BaseLoadedSourceToScriptRelationship {
 
     public toString(): string {
         return `${this.runtimeSource} is runtime source of ${this.script}`;
-    }
-}
-
-/// The runtime source was generated from this source in the user's workspace
-export class DevelopmentSourceOf extends BaseLoadedSourceToScriptRelationship {
-    constructor(public readonly developmentSource: ILoadedSource, public readonly runtimeSource: ILoadedSource, public readonly script: IScript) {
-        super();
-    }
-
-    public get scriptAndSourceMapper(): ScriptAndSourceMapper {
-        return new ScriptAndSourceMapper(this.script, new UnmappedSourceMapper(this.script, this.developmentSource));
-    }
-
-    public toString(): string {
-        return `${this.developmentSource} is development source of ${this.runtimeSource}`;
     }
 }
 

@@ -9,11 +9,11 @@ import { CodeFlowStackTrace } from './internal/stackTraces/codeFlowStackTrace';
 import { IExceptionDetails } from './cdtpDebuggee/eventsProviders/cdtpExceptionThrownEventsProvider';
 import { functionDescription } from './internal/stackTraces/callFramePresentation';
 import * as _ from 'lodash';
-import { isNotEmpty, isFalse, isDefined, isUndefined } from './utils/typedOperators';
+import { isNotEmpty, isFalse, isDefined, isUndefined, defaultWhenEmpty } from './utils/typedOperators';
 
 export function formatExceptionDetails(e: IExceptionDetails): string {
     if (isUndefined(e.exception)) {
-        return `${_.defaultTo(e.text, 'Uncaught Error')}\n${stackTraceToString(e.stackTrace)}`;
+        return `${defaultWhenEmpty(e.text, 'Uncaught Error')}\n${stackTraceToString(e.stackTrace)}`;
     }
 
     return (`${e.exception.className}`.endsWith('Error') && isNotEmpty(e.exception.description))

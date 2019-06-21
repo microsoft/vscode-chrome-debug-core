@@ -16,17 +16,19 @@ import { RemoveProperty } from '../../../typeUtils';
 import { LocationInSourceToClientConverter } from '../../client/locationInSourceToClientConverter';
 import { LineColTransformer } from '../../../transformers/lineNumberTransformer';
 import { isDefined } from '../../utils/typedOperators';
+import { ISourceToClientConverter } from '../../client/sourceToClientConverter';
 
 /**
  * Handles and responds to the stackTrace requests from the client
  */
 @injectable()
 export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
-    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
+    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._sourceToClientConverter, this._lineColTransformer);
 
     public constructor(
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.StackTracesLogic) private readonly _stackTraceLogic: StackTracePresenter,
+        @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
         @inject(TYPES.ChromeDebugLogic) protected readonly _chromeDebugAdapter: ChromeDebugLogic) { }
 

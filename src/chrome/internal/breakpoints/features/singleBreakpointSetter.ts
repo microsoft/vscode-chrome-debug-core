@@ -1,7 +1,7 @@
 import { inject, injectable, LazyServiceIdentifer } from 'inversify';
 import { PrivateTypes } from '../diTypes';
 
-import { BPRecipeAtLoadedSourceSetter, OnPausedForBreakpointCallback } from './bpRecipeAtLoadedSourceLogic';
+import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusCalculator, BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { Listeners } from '../../../communication/listeners';
 import { BPRecipeInSource } from '../bpRecipeInSource';
@@ -16,6 +16,8 @@ import { IBPActionWhenHit } from '../bpActionWhenHit';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { ConnectedCDAConfiguration } from '../../../client/chromeDebugAdapter/cdaConfiguration';
 import { ISource } from '../../sources/source';
+import { BPAtNotLoadedScriptViaHeuristicSetter } from './bpAtNotLoadedScriptViaHeuristicSetter';
+import { OnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 
 export interface ISingleBreakpointSetter {
     readonly bpRecipeStatusChangedListeners: Listeners<BPRecipeStatusChanged, void>;
@@ -36,9 +38,12 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
     public readonly clientBPRecipeRemovedListeners = new Listeners<BPRecipeInSource, void>();
     public readonly bpRecipeIsResolvedListeners = new Listeners<BPRecipeWasResolved, void>();
     public readonly bpRecipeStatusChangedListeners = new Listeners<BPRecipeStatusChanged, void>();
+
     private _isBpsWhileLoadingEnable = false;
+
     public readonly _bpRecipeWasResolvedEventsConsumer: IEventsConsumer = {
-        bpRecipeWasResolved: (breakpoint, resolutionSynchronicity) => this.bpRecipeIsResolvedListeners.call(new BPRecipeWasResolved(breakpoint, resolutionSynchronicity))
+        bpRecipeWasResolved: (breakpoint, resolutionSynchronicity) =>
+            this.bpRecipeIsResolvedListeners.call(new BPRecipeWasResolved(breakpoint, resolutionSynchronicity))
     };
 
     public constructor(
@@ -46,6 +51,7 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
         @inject(new LazyServiceIdentifer(() => TYPES.ConnectedCDAConfiguration)) private readonly _configuration: ConnectedCDAConfiguration,
         @inject(PrivateTypes.IBreakpointsEventsListener) private readonly _breakpointsEventSystem: BreakpointsEventSystem,
         @inject(PrivateTypes.BPRecipesForSourceRetriever) private readonly _bpRecipesForSourceRetriever: BPRecipesForSourceRetriever,
+        @inject(PrivateTypes.BPAtNotLoadedScriptViaHeuristicSetter) private readonly _bpAtNotLoadedScriptViaHeuristicSetter: BPAtNotLoadedScriptViaHeuristicSetter,
         @inject(new LazyServiceIdentifer(() => PrivateTypes.PauseScriptLoadsToSetBPs)) private readonly _bpsWhileLoadingLogic: PauseScriptLoadsToSetBPs,
         @inject(PrivateTypes.ExistingBPsForJustParsedScriptSetter) private readonly _existingBPsForJustParsedScriptSetter: ExistingBPsForJustParsedScriptSetter,
         @inject(PrivateTypes.BPRecipeStatusCalculator) private readonly _bpRecipeStatusCalculator: BPRecipeStatusCalculator) {
@@ -81,11 +87,7 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
         this.clientBPRecipeAddedListeners.call(requestedBP);
 
         await this.setAlreadyRegisteredBPRecipe(requestedBP, async () => {
-            /**
-             * TODO: Implement setting breakpoints using an heuristic when we cannot resolve the source
-             * const existingUnboundBPs = bpsDelta.existingToLeaveAsIs.filter(bp => !this._singleBreakpointSetter.statusOfBPRecipe(bp).isVerified());
-             * const requestedBPsPendingToAdd = new BPRecipesInSource(bpsDelta.resource, bpsDelta.requestedToAdd.concat(existingUnboundBPs));
-             */
+            await this._bpAtNotLoadedScriptViaHeuristicSetter.addBPRecipe(requestedBP, this._bpRecipeWasResolvedEventsConsumer);
         });
     }
 
@@ -96,6 +98,7 @@ export class SingleBreakpointSetter implements ISingleBreakpointSetter {
     }
 
     public async removeBPRecipe(clientBPRecipe: BPRecipe<ISource>): Promise<void> {
+        await this._bpAtNotLoadedScriptViaHeuristicSetter.removeBPRecipeIfNeeded(clientBPRecipe);
         await this._breakpointsInLoadedSource.removeDebuggeeBPRs(clientBPRecipe);
         this.clientBPRecipeRemovedListeners.call(clientBPRecipe);
         this._bpRecipesForSourceRetriever.bpRecipeWasRemoved(clientBPRecipe);
