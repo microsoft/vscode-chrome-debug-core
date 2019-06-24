@@ -26,6 +26,7 @@ import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
 import { isNotEmpty, isNotNull } from '../../utils/typedOperators';
+import { CDTPExecutionContextEventsProvider } from './cdtpExecutionContextEventsProvider';
 
 /**
  * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
@@ -104,9 +105,13 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
         @inject(TYPES.BaseSourceMapTransformer) private readonly _sourceMapTransformer: BaseSourceMapTransformer,
         @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry,
         @inject(TYPES.IDomainsEnabler) domainsEnabler: CDTPDomainsEnabler,
+        @inject(TYPES.ExecutionContextEventsProvider) executionContextEventsProvider: CDTPExecutionContextEventsProvider,
         @inject(LoadedSourcesRegistry) private readonly _loadedSourcesRegistry: LoadedSourcesRegistry,
     ) {
         super(domainsEnabler);
+
+        // Discard the relationships of loaded sources to script after we reload the web-page
+        executionContextEventsProvider.onExecutionContextsCleared(() => this._loadedSourcesRegistry.clearAllRelationships());
     }
 
     private async toScriptParsedEvent(params: CDTP.Debugger.ScriptParsedEvent): Promise<IScriptParsedEvent> {
