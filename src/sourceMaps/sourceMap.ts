@@ -17,6 +17,7 @@ import { IValidatedMap } from '../chrome/collections/validatedMap';
 import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
+import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
 
 export type MappedPosition = MappedPosition;
 
@@ -151,8 +152,9 @@ export class SourceMap {
             });
 
         const consumer = await new SourceMapConsumer(normalizedSourceMap);
+        const consumerWithLogging = wrapWithMethodLogger(consumer, `SourceMap: ${path.basename(generatedPath)}`);
         consumer.computeColumnSpans(); // So allGeneratedPositionsFor will return the last column info
-        return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumer);
+        return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumerWithLogging);
     }
 
     public get generatedPath(): IResourceIdentifier {
