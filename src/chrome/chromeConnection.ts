@@ -17,7 +17,7 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { TYPES } from './dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
-import { IDebuggeeLauncher } from './debugeeStartup/debugeeLauncher';
+import { IDebuggeeLauncher, TerminatingReason } from './debugeeStartup/debugeeLauncher';
 import { ScenarioType } from './client/chromeDebugAdapter/unconnectedCDA';
 import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
@@ -189,12 +189,12 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             });
     }
 
-    public async close() {
+    public async close(reason: TerminatingReason) {
         this.validateConnectionIsOpen();
         this._socket!.close();
         this._socket = null;
         if (this._configuration.scenarioType === ScenarioType.Launch) {
-            await this._debuggeeLauncher.stop();
+            await this._debuggeeLauncher.stop(reason);
         }
     }
 

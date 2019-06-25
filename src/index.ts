@@ -36,7 +36,7 @@ import { Version } from './chrome/utils/version';
 import { parseResourceIdentifier, IResourceIdentifier } from './chrome/internal/sources/resourceIdentifier';
 import { ChromeDebugAdapter } from './chrome/client/chromeDebugAdapter/chromeDebugAdapterV2';
 import { IExtensibilityPoints, OnlyProvideCustomLauncherExtensibilityPoints } from './chrome/extensibility/extensibilityPoints';
-import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner, IDebuggeeInitializer } from './chrome/debugeeStartup/debugeeLauncher';
+import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner, IDebuggeeInitializer, TerminatingReason } from './chrome/debugeeStartup/debugeeLauncher';
 import { inject, injectable, postConstruct, interfaces, multiInject } from 'inversify';
 import { ConnectedCDAConfiguration, IConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent } from './chrome/internal/features/components';
@@ -217,4 +217,6 @@ export {
     BaseNotifyClientOfPause,
 
     IEventsToClientReporter,
+
+    TerminatingReason
 };
