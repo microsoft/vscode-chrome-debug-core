@@ -29,5 +29,6 @@ export class CDTPExecutionContextEventsProvider extends CDTPEventsEmitterDiagnos
         @inject(TYPES.IDomainsEnabler) domainsEnabler: CDTPDomainsEnabler,
     ) {
         super(domainsEnabler);
+        this.onExecutionContextsCleared(() => this._scriptsRegistry.clearExecutionContexts());
     }
 }

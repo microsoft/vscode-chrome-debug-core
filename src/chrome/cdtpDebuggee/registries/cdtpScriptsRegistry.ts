@@ -21,7 +21,7 @@ import { printMap } from '../../collections/printing';
 @injectable()
 export class CDTPScriptsRegistry {
     private readonly _idToExecutionContext = new ValidatedMap<CDTP.Runtime.ExecutionContextId, ExecutionContext>();
-    private readonly _scripts = new CDTPCurrentGeneration();
+    private _scripts = new CDTPCurrentGeneration();
 
     public registerExecutionContext(executionContextId: CDTP.Runtime.ExecutionContextId, frameId: FrameId): IExecutionContext {
         const executionContext = new ExecutionContext(frameId);
@@ -58,6 +58,17 @@ export class CDTPScriptsRegistry {
 
     public getScriptsByPath(nameOrLocation: IResourceIdentifier): IScript[] {
         return this._scripts.getScriptByPath(nameOrLocation);
+    }
+
+    // After we refresh the page, we discard all information about scripts
+    public clearExecutionContexts(): void {
+        // Warning: Throwing away the scripts' information here only prevents code executed in the future from accessing the scripts
+        // If we have any code currently on-flight, that already accessed the script, this method won't fix that. If that code uses
+        // the scriptId, or performs any operation that is invalid with that script because the execution context was cleared, that operation
+        // will most likely fail.
+        // If Users start seeing those kind of issues, we'll need to figure out what enhancements we need to do to handle those cases
+        // Also see: loadedSourcesRegistry.ts
+        this._scripts = new CDTPCurrentGeneration();
     }
 
     public toString(): string {

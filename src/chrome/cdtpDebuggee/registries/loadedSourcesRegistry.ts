@@ -32,6 +32,17 @@ export class LoadedSourcesRegistry implements ICurrentScriptRelationshipsProvide
         return new ScriptMapper(Array.from(this._loadedSourceToCurrentScriptRelationships.get(loadedSource)));
     }
 
+    // After we refresh the page, we discard all relationships to scripts
+    public clearAllRelationships(): void {
+        // Warning: Throwing away the scripts' information here only prevents code executed in the future from accessing the scripts
+        //      If we have any code currently on-flight, that already accessed the script, this method won't fix that. If that code uses
+        //      the scriptId, or performs any operation that is invalid with that script because the execution context was cleared, that operation
+        //      will most likely fail.
+        //      If Users start seeing those kind of issues, we'll need to figure out what enhancements we need to do to handle those cases
+        // Also see: cdtpScriptsRegistry.ts
+        this._loadedSourceToCurrentScriptRelationships.clear();
+    }
+
     public toString(): string {
         return `Loaded sources: ${this._loadedSourceByPath}\nRelationships:\n${this._loadedSourceToCurrentScriptRelationships}`;
     }
