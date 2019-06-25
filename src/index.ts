@@ -51,7 +51,7 @@ import { IDebuggeeRuntimeVersionProvider, CDTPComponentsVersions } from './chrom
 import { IBrowserNavigator } from './chrome/cdtpDebuggee/features/cdtpBrowserNavigator';
 import { ISourcesRetriever } from './chrome/internal/sources/sourcesRetriever';
 import { ISource } from './chrome/internal/sources/source';
-import { ILoadedSourceTreeNode, SourceScriptRelationship } from './chrome/internal/sources/loadedSource';
+import { ILoadedSourceTreeNode, SourceScriptRelationship, ILoadedSource } from './chrome/internal/sources/loadedSource';
 import { IScript } from './chrome/internal/scripts/script';
 import * as utilities from './chrome/collections/utilities';
 import { CDTPDomainsEnabler } from './chrome/cdtpDebuggee/infrastructure/cdtpDomainsEnabler';
@@ -66,12 +66,14 @@ import { IFinishedStartingUpEventArguments, StepProgressEventsEmitter } from './
 import { ILogEventsProvider, ILogEntry } from './chrome/cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
 import { IDOMInstrumentationBreakpointsSetter } from './chrome/cdtpDebuggee/features/cdtpDOMInstrumentationBreakpointsSetter';
 import { IDebuggeePausedHandler } from './chrome/internal/features/debuggeePausedHandler';
-import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldBeAutoResumed } from './chrome/internal/features/actionToTakeWhenPaused';
+import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldBeAutoResumed, BaseNotifyClientOfPause } from './chrome/internal/features/actionToTakeWhenPaused';
 import { MakePropertyRequired } from './typeUtils';
 import { printClassDescription } from './chrome/utils/printing';
 import { IDebuggeeExecutionController } from './chrome/cdtpDebuggee/features/cdtpDebugeeExecutionController';
 import { CDTPScriptsRegistry } from './chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EagerSourceMapTransformer } from './transformers/eagerSourceMapTransformer';
+import { ISourceToClientConverter } from './chrome/client/sourceToClientConverter';
+import { IEventsToClientReporter } from './chrome/client/eventsToClientReporter';
 
 export {
     chromeConnection,
@@ -208,4 +210,11 @@ export {
 
     EagerSourceMapTransformer,
 
+    ISourceToClientConverter,
+
+    ILoadedSource,
+
+    BaseNotifyClientOfPause,
+
+    IEventsToClientReporter,
 };

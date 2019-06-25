@@ -20,18 +20,20 @@ import { logger } from 'vscode-debugadapter';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
+import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     private _inFlightRequests = Promise.resolve<unknown>(null);
 
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesResolver);
-    private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
+    private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._sourceToClientConverter, this._lineColTransformer);
 
     public constructor(
         @inject(TYPES.IBreakpointsUpdater) protected readonly _breakpointsLogic: BreakpointsUpdater,
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
+        @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         private readonly _sourcesResolver: SourceResolver) {
         this._breakpointsLogic.bpRecipeStatusChangedListeners.add(status => this.onBPRecipeStatusChanged(status));

@@ -1,6 +1,5 @@
-import { HandlesRegistry } from './handlesRegistry';
 import { LocationInLoadedSource } from '../internal/locations/location';
-import { SourceToClientConverter } from './sourceToClientConverter';
+import { ISourceToClientConverter } from './sourceToClientConverter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 
@@ -11,10 +10,8 @@ interface IClientLocationInSource {
 }
 
 export class LocationInSourceToClientConverter {
-    private readonly _sourceToClientConverter = new SourceToClientConverter(this._handlesRegistry);
-
     constructor(
-        private readonly _handlesRegistry: HandlesRegistry,
+        private readonly _sourceToClientConverter: ISourceToClientConverter,
         private readonly _lineColTransformer: LineColTransformer) { }
 
     public async toLocationInSource<T = {}>(locationInSource: LocationInLoadedSource, objectToUpdate: T): Promise<T & IClientLocationInSource> {

@@ -10,6 +10,7 @@ export const PrivateTypes = {
     BPRecipeStatusCalculator: Symbol.for('BPRecipeStatusCalculator'),
     PauseScriptLoadsToSetBPs: Symbol.for('PauseScriptLoadsToSetBPs'),
     ExistingBPsForJustParsedScriptSetter: Symbol.for('ExistingBPsForJustParsedScriptSetter'),
+    BPAtNotLoadedScriptViaHeuristicSetter: Symbol.for('BPAtNotLoadedScriptViaHeuristicSetter'),
     BreakpointsSetForScriptFinder: Symbol.for('BreakpointsSetForScriptFinder'),
     BPRecipesForSourceRetriever: Symbol.for('BPRecipesForSourceRetriever'),
     SourceToScriptMapper: Symbol.for('SourceToScriptMapper'),

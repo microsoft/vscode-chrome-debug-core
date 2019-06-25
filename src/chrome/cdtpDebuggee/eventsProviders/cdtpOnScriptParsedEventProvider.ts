@@ -17,7 +17,7 @@ import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { LoadedSourcesRegistry } from '../registries/loadedSourcesRegistry';
 import { ILoadedSource, SourceScriptRelationship } from '../../internal/sources/loadedSource';
 import { IdentifiedLoadedSource } from '../../internal/sources/identifiedLoadedSource';
-import { DevelopmentSourceOf, RuntimeSourceOf, MappedSourceOf } from '../../internal/sources/loadedSourceToScriptRelationship';
+import { UnmappedSourceOf, MappedSourceOf } from '../../internal/sources/loadedSourceToScriptRelationship';
 import { Position } from '../../internal/locations/location';
 import { createLineNumber, createColumnNumber } from '../../internal/locations/subtypes';
 import { RangeInResource } from '../../internal/locations/rangeInScript';
@@ -200,7 +200,7 @@ class IdentifiedScriptCreator extends ScriptCreator {
     private readonly runtimeSource = _.memoize(() => this.obtainRuntimeSource());
     private readonly developmentSource = _.memoize(() => this.obtainDevelopmentSource());
 
-    protected async createScript(executionContext: IExecutionContext, sourceMapperProvider: (script: IScript) => IMappedSourcesMapper,
+    protected async createScript(executionContext: IExecutionContext, sourceMapperProvider: (script: IScript) => IMappedSourcesMapper<IScript>,
         mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource<string>[]): Promise<IScript> {
         return Script.create(executionContext, this.runtimeSource(), await this.developmentSource(), sourceMapperProvider, mappedSourcesProvider, this.scriptRange(this.runtimeSource()));
     }
@@ -223,16 +223,19 @@ class IdentifiedScriptCreator extends ScriptCreator {
     }
 
     protected async registerRuntimeAndDevelopmentSourcesRelationships(script: IScript): Promise<void> {
-        const developmentSource = await this.developmentSource();
-        this._loadedSourcesRegistry.registerRelationship(developmentSource, new DevelopmentSourceOf(developmentSource, this.runtimeSource(), script));
-
         const runtimeSource = await this.runtimeSource();
-        this._loadedSourcesRegistry.registerRelationship(runtimeSource, new RuntimeSourceOf(runtimeSource, script));
+        const runtimeSourceRelationship = new UnmappedSourceOf(runtimeSource, script);
+        this._loadedSourcesRegistry.registerRelationship(runtimeSource, runtimeSourceRelationship);
+
+        const developmentSource = await this.developmentSource();
+        if (runtimeSource !== developmentSource) {
+            this._loadedSourcesRegistry.registerRelationship(developmentSource, new UnmappedSourceOf(developmentSource, script));
+        }
     }
 }
 
 class UnidentifiedScriptCreator extends ScriptCreator {
-    protected async createScript(executionContext: IExecutionContext, sourceMapperProvider: (script: IScript) => IMappedSourcesMapper,
+    protected async createScript(executionContext: IExecutionContext, sourceMapperProvider: (script: IScript) => IMappedSourcesMapper<IScript>,
         mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource<string>[]): Promise<IScript> {
         return Script.createWithUnidentifiedSource(new ResourceName(createCDTPScriptUrl(`${this._scriptParsedEvent.scriptId}`)),
             executionContext, sourceMapperProvider, mappedSourcesProvider, (runtimeSource: ILoadedSource<CDTPScriptUrl>) => this.scriptRange(runtimeSource));

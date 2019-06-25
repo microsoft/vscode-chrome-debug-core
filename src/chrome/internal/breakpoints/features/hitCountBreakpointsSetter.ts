@@ -17,10 +17,10 @@ import { printClassDescription } from '../../../utils/printing';
 import { SingleBreakpointSetter, ISingleBreakpointSetter } from './singleBreakpointSetter';
 import { IBPRecipeStatus, ImplementsBPRecipeStatus } from '../bpRecipeStatus';
 import { Listeners } from '../../../communication/listeners';
-import { OnPausedForBreakpointCallback } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { LocationInLoadedSource } from '../../locations/location';
 import { logger } from 'vscode-debugadapter';
+import { OnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 
 @printClassDescription
 export class HitAndSatisfiedHitCountBreakpoint extends BaseNotifyClientOfPause {

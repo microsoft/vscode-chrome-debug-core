@@ -1,5 +1,5 @@
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { SourcesRetriever } from './sourcesRetriever';
@@ -8,17 +8,18 @@ import { ITelemetryPropertyCollector } from '../../../telemetry';
 import { ISourceResponseBody, IGetLoadedSourcesResponseBody } from '../../../debugAdapterInterfaces';
 import { ILoadedSourceTreeNode } from './loadedSource';
 import { asyncMap } from '../../collections/async';
-import { SourceToClientConverter } from '../../client/sourceToClientConverter';
+import { ISourceToClientConverter } from '../../client/sourceToClientConverter';
 import { SourceResolver } from './sourceResolver';
 import { isDefined } from '../../utils/typedOperators';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 @injectable()
 export class SourceRequestHandler implements ICommandHandlerDeclarer {
     private readonly _clientSourceParser = new ClientSourceParser(this._handlesRegistry, this._sourcesResolver);
-    private readonly _sourceToClientConverter = new SourceToClientConverter(this._handlesRegistry);
 
     public constructor(
         private readonly _handlesRegistry: HandlesRegistry,
+        @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         private readonly _sourcesResolver: SourceResolver,
         private readonly _sourcesLogic: SourcesRetriever) { }
 

@@ -13,7 +13,7 @@ import { isNotNull } from '../chrome/utils/typedOperators';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
-    private _generatedPathToSourceMap = new Map<string, SourceMap>();
+    private _generatedPathToSourceMap = newResourceIdentifierMap<SourceMap>();
     private _authoredPathToSourceMap = newResourceIdentifierMap<SourceMap>();
 
     private _sourceMapFactory: SourceMapFactory;
@@ -28,13 +28,23 @@ export class SourceMaps {
      */
     public getGeneratedPathFromAuthoredPath(authoredPath: IResourceIdentifier): IResourceIdentifier | null {
         return this._authoredPathToSourceMap.has(authoredPath) ?
-            this._authoredPathToSourceMap.get(authoredPath)!.generatedPath() :
+            this._authoredPathToSourceMap.get(authoredPath)!.generatedPath :
             null;
+    }
+
+    public getSourceMapFromAuthoredPath(authoredPath: IResourceIdentifier): SourceMap | null {
+        return this._authoredPathToSourceMap.has(authoredPath) ?
+            this._authoredPathToSourceMap.get(authoredPath) :
+            null;
+    }
+
+    public tryGettingSourceMapFromGeneratedPath(pathToGenerated: string): SourceMap | undefined {
+        return this._generatedPathToSourceMap.tryGetting(parseResourceIdentifier(pathToGenerated));
     }
 
     public mapToAuthored(pathToGenerated: string, line: number, column: number): LocationInLoadedSource | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        const sourceMap = this.tryGettingSourceMapFromGeneratedPath(pathToGenerated);
         const scripts = this._scriptsRegistry.getScriptsByPath(parseResourceIdentifier(pathToGenerated));
         if (scripts.length > 0) {
             const location = new LocationInScript(scripts[0], new Position(createLineNumber(line), createColumnNumber(column)));
@@ -48,7 +58,7 @@ export class SourceMaps {
 
     public allMappedSources(pathToGenerated: string): IResourceIdentifier[] | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        const sourceMap = this.tryGettingSourceMapFromGeneratedPath(pathToGenerated);
         return sourceMap !== undefined ?
             sourceMap.mappedSources :
             null;
@@ -56,7 +66,7 @@ export class SourceMaps {
 
     public allSourcePathDetails(pathToGenerated: string): ISourcePathDetails[] | null {
         pathToGenerated = pathToGenerated.toLowerCase();
-        const sourceMap = this._generatedPathToSourceMap.get(pathToGenerated);
+        const sourceMap = this.tryGettingSourceMapFromGeneratedPath(pathToGenerated);
         return sourceMap !== undefined ?
             sourceMap.allSourcePathDetails :
             null;
@@ -66,13 +76,22 @@ export class SourceMaps {
      * Given a new path to a new script file, finds and loads the sourcemap for that file
      */
     public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string, isVSClient = false): Promise<SourceMap | null> {
-        const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
-        if (isNotNull(sourceMap)) {
-            this._generatedPathToSourceMap.set(pathToGenerated.toLowerCase(), sourceMap);
-            sourceMap.mappedSources.forEach(authoredSource => this._authoredPathToSourceMap.setAndReplaceIfExists(authoredSource, sourceMap));
-            return sourceMap;
+        const pathToGeneratedIdentifier = parseResourceIdentifier(pathToGenerated);
+        const maybeSourceMap = this._generatedPathToSourceMap.tryGetting(pathToGeneratedIdentifier);
+
+        // If we use the eager source map reader processNewSourceMap will get twice for the same script, once from the eager reader, and
+        // once for script parsed
+        if (maybeSourceMap === undefined) {
+            const sourceMap = await this._sourceMapFactory.getMapForGeneratedPath(pathToGenerated, sourceMapURL, isVSClient);
+            if (isNotNull(sourceMap)) {
+                this._generatedPathToSourceMap.set(pathToGeneratedIdentifier, sourceMap);
+                sourceMap.mappedSources.forEach(authoredSource => this._authoredPathToSourceMap.setAndReplaceIfExists(authoredSource, sourceMap));
+                return sourceMap;
+            } else {
+                return null;
+            }
         } else {
-            return null;
+            return maybeSourceMap;
         }
     }
 }

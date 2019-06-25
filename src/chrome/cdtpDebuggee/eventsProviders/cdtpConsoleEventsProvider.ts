@@ -59,7 +59,7 @@ class CDTPConsoleEventsFromRuntimeProvider extends CDTPEventsEmitterDiagnosticsM
 
     constructor(
         private readonly _protocolApi: CDTP.ProtocolApi,
-        private _scriptsRegistry: CDTPScriptsRegistry,
+        @inject(TYPES.CDTPScriptsRegistry) private _scriptsRegistry: CDTPScriptsRegistry,
         domainsEnabler: CDTPDomainsEnabler,
     ) {
         super(domainsEnabler);

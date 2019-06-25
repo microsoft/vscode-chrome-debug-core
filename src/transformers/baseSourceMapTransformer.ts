@@ -50,7 +50,7 @@ export class BaseSourceMapTransformer {
 
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) configuration: SourceMapTransformerConfiguration,
-        private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
         this._enableSourceMapCaching = isTrue(configuration.args.enableSourceMapCaching);
         this.init(configuration.args);
         this.isVSClient = configuration.clientCapabilities.clientID === 'visualstudio';
@@ -77,7 +77,11 @@ export class BaseSourceMapTransformer {
         if (isDefined(this._sourceMaps)) {
             this._allRuntimeScriptPaths.addAndReplaceIfExists(parseResourceIdentifier(pathToGenerated));
 
-            if (isEmpty(sourceMapURL)) return null;
+            if (isEmpty(sourceMapURL)) {
+                // We've seen some cases where Node.js doesn't return the SourceMapURL when the file has one. We use our
+                // cache in case we were able to read it with the EagerSourceMapReader
+                return _.defaultTo(this._sourceMaps.tryGettingSourceMapFromGeneratedPath(pathToGenerated), null);
+            }
 
             // Load the sourcemap for this new script and log its sources
             const processNewSourceMapP = this._sourceMaps.processNewSourceMap(pathToGenerated, sourceMapURL, this._isVSClient);
@@ -151,6 +155,14 @@ export class BaseSourceMapTransformer {
         // Find the generated path, or check whether this script is actually a runtime path - if so, return that
         return this._sourceMaps.getGeneratedPathFromAuthoredPath(authoredPath) ||
             (this.isRuntimeScript(authoredPath) ? authoredPath : null);
+    }
+
+    public async getSourceMapFromAuthoredPath(authoredPath: IResourceIdentifier): Promise<SourceMap | null> {
+        if (!this._sourceMaps) return null;
+
+        await this.wait();
+
+        return this._sourceMaps.getSourceMapFromAuthoredPath(authoredPath);
     }
 
     private isRuntimeScript(scriptPath: IResourceIdentifier): boolean {

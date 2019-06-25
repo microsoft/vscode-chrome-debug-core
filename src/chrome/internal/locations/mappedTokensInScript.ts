@@ -1,17 +1,18 @@
-import { RangeInScript, RangeInResource, Range } from './rangeInScript';
+import { RangeInResource, Range } from './rangeInScript';
 import { LocationInScript } from './location';
 import { printArray } from '../../collections/printing';
+import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 import { IScript } from '../scripts/script';
 
-export interface IMappedTokensInScript {
-    readonly script: IScript;
-    readonly enclosingRange: RangeInScript;
+export interface IMappedTokensInScript<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> {
+    readonly script: T;
+    readonly enclosingRange: RangeInResource<T>;
 
     isEmpty(): boolean;
 }
 
-export class MappedTokensInScript implements IMappedTokensInScript {
-    public constructor(public readonly script: IScript, private readonly _ranges: Range[]) {
+export class MappedTokensInScript<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> implements IMappedTokensInScript<T> {
+    public constructor(public readonly script: T, private readonly _ranges: Range[]) {
         if (this._ranges.length === 0) {
             throw new Error(`Expected the mapped tokens to have a non empty list of ranges where the tokens are located`);
         }
@@ -22,15 +23,15 @@ export class MappedTokensInScript implements IMappedTokensInScript {
         }
     }
 
-    public static characterAt(characterLocation: LocationInScript): IMappedTokensInScript {
+    public static characterAt(characterLocation: LocationInScript): IMappedTokensInScript<IScript> {
         return new MappedTokensInScript(characterLocation.script, [Range.at(characterLocation.position)]);
     }
 
-    public static untilNextLine(characterLocation: LocationInScript): IMappedTokensInScript {
+    public static untilNextLine(characterLocation: LocationInScript): IMappedTokensInScript<IScript> {
         return new MappedTokensInScript(characterLocation.script, [Range.untilNextLine(characterLocation.position)]);
     }
 
-    public get enclosingRange(): RangeInScript {
+    public get enclosingRange(): RangeInResource<T> {
         return new RangeInResource(this.script, Range.enclosingAll(this._ranges));
     }
 
@@ -43,8 +44,8 @@ export class MappedTokensInScript implements IMappedTokensInScript {
     }
 }
 
-export class NoMappedTokensInScript implements IMappedTokensInScript {
-    public constructor(public readonly script: IScript) { }
+export class NoMappedTokensInScript<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> implements IMappedTokensInScript<T> {
+    public constructor(public readonly script: T) { }
 
     public get ranges(): never {
         throw new Error(`Can't get the ranges when the source mapped to no tokens on the script`);

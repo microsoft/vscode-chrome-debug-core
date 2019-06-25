@@ -17,7 +17,7 @@ import { ChromeDebugLogic } from '../chromeDebugAdapter';
 import { ExceptionStackTracePrinter } from '../internal/exceptions/exceptionStackTracePrinter';
 import { LocationInSourceToClientConverter } from './locationInSourceToClientConverter';
 import { HandlesRegistry } from './handlesRegistry';
-import { SourceToClientConverter } from './sourceToClientConverter';
+import { ISourceToClientConverter } from './sourceToClientConverter';
 import { BPRecipieStatusToClientConverter } from '../internal/breakpoints/features/bpRecipieStatusToClientConverter';
 import { ConnectedCDAConfiguration } from './chromeDebugAdapter/cdaConfiguration';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
@@ -67,14 +67,14 @@ export interface IEventsToClientReporter {
 @injectable()
 export class EventsToClientReporter implements IEventsToClientReporter {
     private readonly _exceptionStackTracePrinter = new ExceptionStackTracePrinter(this._configuration);
-    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
-    private readonly _sourceToClientConverter = new SourceToClientConverter(this._handlesRegistry);
-    private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._lineColTransformer);
+    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._sourceToClientConverter, this._lineColTransformer);
+    private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._sourceToClientConverter, this._lineColTransformer);
 
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
         @inject(TYPES.ISession) private readonly _session: ISession,
         private readonly _handlesRegistry: HandlesRegistry,
+        @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
     public async sendOutput(params: IOutputParameters) {

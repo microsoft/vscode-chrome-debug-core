@@ -69,6 +69,7 @@ const TYPES = {
     UnconnectedCDA: Symbol.for('UnconnectedCDA'),
     ConnectingCDA: Symbol.for('ConnectingCDA'),
     ConnectedCDA: Symbol.for('ConnectedCDA'),
+    SourceToClientConverter: Symbol.for('SourceToClientConverter'),
     TerminatingCDA: Symbol.for('TerminatingCDA'),
     UnconnectedCDAProvider: Symbol.for('UnconnectedCDAProvider'),
     ConnectedCDAProvider: Symbol.for('ConnectedCDAProvider'),

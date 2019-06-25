@@ -5,8 +5,8 @@ import { Listeners } from '../../../communication/listeners';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { IBPRecipeStatus } from '../bpRecipeStatus';
 import { ISingleBreakpointSetter, SingleBreakpointSetter } from './singleBreakpointSetter';
-import { OnPausedForBreakpointCallback } from './bpRecipeAtLoadedSourceLogic';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
+import { OnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 
 @injectable()
 export class SingleBreakpointSetterWithHitCountSupport implements ISingleBreakpointSetter {

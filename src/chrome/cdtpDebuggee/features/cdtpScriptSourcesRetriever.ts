@@ -19,8 +19,7 @@ export class CDTPScriptSourcesRetriever implements IScriptSourcesRetriever {
     constructor(
         @inject(TYPES.CDTPClient)
         private readonly _protocolApi: CDTP.ProtocolApi,
-        @inject(TYPES.CDTPScriptsRegistry)
-        private readonly _scriptsRegistry: CDTPScriptsRegistry) {
+        @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsRegistry: CDTPScriptsRegistry) {
     }
 
     public async getScriptSource(script: IScript): Promise<string> {

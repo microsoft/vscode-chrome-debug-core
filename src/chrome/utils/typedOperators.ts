@@ -98,3 +98,7 @@ export function ifDefinedDo<T extends object | string, R>(somethingOrUndefined: 
         ? whenDefinedAction(somethingOrUndefined)
         : resultIfUndefined;
 }
+
+export function defaultWhenEmpty(value: string, defaultWhenEmpty: string): string {
+    return value !== '' ? value : defaultWhenEmpty;
+}

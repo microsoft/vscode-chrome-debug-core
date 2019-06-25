@@ -15,16 +15,16 @@ import { BPRecipe } from '../bpRecipe';
 import { ISource } from '../../sources/source';
 import { asyncMap } from '../../../collections/async';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
-import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseActionToTakeWhenPaused } from '../../features/actionToTakeWhenPaused';
+import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../../features/actionToTakeWhenPaused';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
 import { Listeners } from '../../../communication/listeners';
-import { inject, injectable, LazyServiceIdentifer } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PrivateTypes } from '../diTypes';
 import { printClassDescription } from '../../../utils/printing';
-import { BPRecipeInSource } from '../bpRecipeInSource';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
+import { OnPausedForBreakpointCallback, defaultOnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 
 @printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
@@ -41,26 +41,11 @@ export interface IBPRecipeAtLoadedSourceSetter {
 }
 
 @printClassDescription
-export class NoRecognizedBreakpoints extends BaseActionToTakeWhenPaused {
+export class NoRecognizedBreakpoints extends NoActionIsNeededForThisPause {
     constructor(public readonly actionProvider: unknown /* Used for debugging purposes only */) {
-        super();
-    }
-
-    public async execute(): Promise<void> {
-        // We don't need to do anything
-    }
-
-    public isAutoResuming(): boolean {
-        return false;
-    }
-
-    public toString(): string {
-        return `${this.actionProvider} doesn't need to do any action for this pause because none of the breakpoints that were hit were recognized`;
+        super(actionProvider);
     }
 }
-
-export type OnPausedForBreakpointCallback = (bpRecipes: BPRecipeInSource[]) => Promise<IActionToTakeWhenPaused>;
-const defaultOnPausedForBreakpointCallback: OnPausedForBreakpointCallback = () => { throw new Error(`No callback was specified for pauses for breakpoints`); };
 
 /**
  * Handles setting breakpoints on sources that are associated with scripts already loaded
@@ -75,7 +60,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     public readonly withLogging = wrapWithMethodLogger(this);
 
     constructor(
-        @inject(new LazyServiceIdentifer(() => PrivateTypes.DebuggeeBPRsSetForClientBPRFinder)) private readonly _bpRecipesRegistry: DebuggeeBPRsSetForClientBPRFinder,
+        @inject(PrivateTypes.DebuggeeBPRsSetForClientBPRFinder) private readonly _debuggeeBPRsSetForClientBPRFinder: DebuggeeBPRsSetForClientBPRFinder,
         @inject(TYPES.IDebuggeeBreakpointsSetter) private readonly _targetBreakpoints: IDebuggeeBreakpointsSetter,
         @inject(PrivateTypes.SourceToScriptMapper) private readonly _sourceToScriptMapper: SourceToScriptMapper,
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler) {
@@ -92,7 +77,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (paused.hitBreakpoints.length > 0) {
-            const bpRecipes = paused.hitBreakpoints.filter(bp => this._bpRecipesRegistry.containsBPRecipe(bp.unmappedBPRecipe));
+            const bpRecipes = paused.hitBreakpoints.filter(bp => this._debuggeeBPRsSetForClientBPRFinder.containsBPRecipe(bp.unmappedBPRecipe));
             if (bpRecipes.length >= 1) {
                 return this._onPausedForBreakpointCallback(bpRecipes.map(bpRecipe => bpRecipe.unmappedBPRecipe));
             } else {
@@ -141,7 +126,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     }
 
     public async removeDebuggeeBPRs(clientBPRecipe: BPRecipe<ISource>): Promise<void> {
-        const debuggeeBPRecipes = this._bpRecipesRegistry.findDebuggeeBPRsSet(clientBPRecipe);
+        const debuggeeBPRecipes = this._debuggeeBPRsSetForClientBPRFinder.findDebuggeeBPRsSet(clientBPRecipe);
         await asyncMap(debuggeeBPRecipes, async bpr => {
             await this._targetBreakpoints.removeBreakpoint(bpr);
             await this.debuggeeBPRecipeRemovedListeners.call(bpr);

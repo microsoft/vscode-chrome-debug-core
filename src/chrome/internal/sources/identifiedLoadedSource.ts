@@ -63,7 +63,7 @@ export class IdentifiedLoadedSource<TString extends string = string> implements 
 export class ScriptMapper implements IScriptMapper {
     constructor(public readonly relationships: ILoadedSourceToScriptRelationship[]) { }
 
-    public mapToScripts(locationToMap: LocationInLoadedSource): IMappedTokensInScript[] {
+    public mapToScripts(locationToMap: LocationInLoadedSource): IMappedTokensInScript<IScript>[] {
         return this.relationships.map(relationship => relationship.scriptAndSourceMapper.sourcesMapper.getPositionInScript(locationToMap))
             .filter(mappedTokensInScript => !mappedTokensInScript.isEmpty());
     }

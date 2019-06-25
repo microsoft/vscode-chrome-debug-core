@@ -1,4 +1,4 @@
-import { Location, ScriptOrSourceOrURLOrURLRegexp, LocationInScript, LocationInUrlRegexp, LocationInUrl, LocationInLoadedSource } from '../locations/location';
+import { Location, ScriptOrSourceOrURLOrURLRegexp, LocationInScript, LocationInUrlRegexp, LocationInUrl, LocationInLoadedSource, Position } from '../locations/location';
 import { IBPActionWhenHit, AlwaysPause } from './bpActionWhenHit';
 import { BaseBPRecipe, IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
@@ -61,7 +61,6 @@ export interface IBPRecipeForRuntimeSource<TResource extends ScriptOrSourceOrURL
 
 export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupportedHitActions>
     implements IBPRecipeForRuntimeSource<IScript, BPInScriptSupportedHitActions> {
-    private static nextBPGuid = 89000000;
 
     public get runtimeSourceLocation(): LocationInLoadedSource {
         return this.location.mappedToRuntimeSource();
@@ -79,8 +78,7 @@ export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupp
      * We use mappedToUrlRegexp to transform this BP Recipe into a similar recipe specified in an URL Regexp instead.
      */
     public mappedToUrlRegexp(): BPRecipeInUrlRegexp {
-        const urlRegexp = createURLRegexp(utils.pathToRegex(this.location.script.url, `${BPRecipeInScript.nextBPGuid++}`));
-        return new BPRecipeInUrlRegexp(this.unmappedBPRecipe, new LocationInUrlRegexp(urlRegexp, this.location.position), this.runtimeSourceLocation);
+        return mapToUrlRegexp(this.unmappedBPRecipe, this.location.script.url, this.location.position, this.runtimeSourceLocation);
     }
 
     public mappedToUrl(): BPRecipeInUrl {
@@ -91,6 +89,13 @@ export class BPRecipeInScript extends BaseMappedBPRecipe<IScript, BPInScriptSupp
     public mappedToRuntimeSource(): BPRecipeInLoadedSource<BPInScriptSupportedHitActions> {
         return new BPRecipeInLoadedSource(this.unmappedBPRecipe, this.location.mappedToRuntimeSource());
     }
+}
+
+let nextBPGuid = 89000000;
+
+export function mapToUrlRegexp(unmappedBPRecipe: BPRecipeInSource, scriptUrl: string, position: Position, runtimeSourceLocation: LocationInLoadedSource): BPRecipeInUrlRegexp {
+    const urlRegexp = createURLRegexp(utils.pathToRegex(scriptUrl, `${nextBPGuid++}`));
+    return new BPRecipeInUrlRegexp(unmappedBPRecipe, new LocationInUrlRegexp(urlRegexp, position), runtimeSourceLocation);
 }
 
 export class BPRecipeInUrl extends BaseMappedBPRecipe<IURL<CDTPScriptUrl>, BPInScriptSupportedHitActions>

@@ -10,6 +10,8 @@ import { IExecutionContext } from './executionContext';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import { RangeInResource } from '../locations/rangeInScript';
 import * as _ from 'lodash';
+import { IHasSourceMappingInformation } from './IHasSourceMappingInformation';
+import { Position } from '../locations/location';
 
 /**
  * Multiplicity:
@@ -38,19 +40,17 @@ import * as _ from 'lodash';
  * This interface solves the problem of finding the different loaded sources associated with a script, and being able to identify and compare both scripts and sources easily.
  */
 const ImplementsScript = Symbol();
-export interface IScript extends IEquivalenceComparable {
+export interface IScript extends IEquivalenceComparable, IHasSourceMappingInformation {
     [ImplementsScript]: string;
 
     readonly executionContext: IExecutionContext;
     readonly runtimeSource: ILoadedSource<CDTPScriptUrl>; // Source in Webserver
-    readonly rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>; // Range in runtimeSource (e.g.: In an .html file with inline scripts one script might start in line 10, and another one in line 20)
 
     readonly developmentSource: ILoadedSource; // Source in Workspace
-    readonly mappedSources: IdentifiedLoadedSource[]; // Sources before compilation
     readonly allSources: ILoadedSource[]; // runtimeSource + developmentSource + mappedSources
     readonly url: CDTPScriptUrl;
 
-    readonly sourceMapper: ISourceMapper;
+    readonly sourceMapper: ISourceMapper<IScript>;
 
     getSource(sourceIdentifier: IResourceIdentifier): ILoadedSource;
 
@@ -68,10 +68,10 @@ export class Script implements IScript {
     public readonly runtimeSource: ILoadedSource<CDTPScriptUrl>;
     public readonly rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>;
     public readonly developmentSource: ILoadedSource;
-    public readonly sourceMapper: ISourceMapper;
+    public readonly sourceMapper: ISourceMapper<IScript>;
 
     constructor(public readonly executionContext: IExecutionContext, runtimeSourceProvider: (script: IScript) => ILoadedSource<CDTPScriptUrl>, developmentSourceProvider: (script: IScript) => ILoadedSource,
-        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], sourceMapperProvider: (script: IScript) => ISourceMapper,
+        mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], sourceMapperProvider: (script: IScript) => ISourceMapper<IScript>,
         rangeInSourceProvider: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>) {
         this.runtimeSource = runtimeSourceProvider(this);
         this.developmentSource = developmentSourceProvider(this);
@@ -82,11 +82,11 @@ export class Script implements IScript {
     }
 
     public static create(executionContext: IExecutionContext, runtimeSource: ILoadedSource<CDTPScriptUrl>, developmentSource: ILoadedSource,
-        sourcesMapperProvider: (script: IScript) => ISourceMapper, mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
+        sourcesMapperProvider: (script: IScript) => ISourceMapper<IScript>, mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
         return new Script(executionContext, () => runtimeSource, () => developmentSource, mappedSourcesProvider, sourcesMapperProvider, () => rangeInSource);
     }
 
-    public static createWithUnidentifiedSource(name: ResourceName<CDTPScriptUrl>, executionContext: IExecutionContext, sourcesMapperProvider: (script: IScript) => ISourceMapper,
+    public static createWithUnidentifiedSource(name: ResourceName<CDTPScriptUrl>, executionContext: IExecutionContext, sourcesMapperProvider: (script: IScript) => ISourceMapper<IScript>,
         mappedSourcesProvider: (script: IScript) => IdentifiedLoadedSource[], rangeInSource: (runtimeSource: ILoadedSource<CDTPScriptUrl>) => RangeInResource<ILoadedSource<CDTPScriptUrl>>): Script {
 
         // We use memoize to ensure that the function returns always the same instance for the same script, so the runtime source and the development source will be the same object/identity
@@ -113,6 +113,10 @@ export class Script implements IScript {
 
     public get url(): CDTPScriptUrl {
         return this.runtimeSource.identifier.textRepresentation;
+    }
+
+    public get startPositionInSource(): Position {
+        return this.rangeInSource.start.position;
     }
 
     public isEquivalentTo(script: Script): boolean {

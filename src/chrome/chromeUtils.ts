@@ -13,7 +13,7 @@ import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
 import { LocationInScript } from './internal/locations/location';
 import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
-import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined } from './utils/typedOperators';
+import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined, defaultWhenEmpty } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { notEmpty } from '../validation';
 
@@ -269,7 +269,7 @@ export function descriptionFromExceptionDetails(exceptionDetails: CDTP.Runtime.E
         description = exceptionDetails.text;
     }
 
-    return _.defaultTo(description, '');
+    return defaultWhenEmpty(description, '');
 }
 
 /**

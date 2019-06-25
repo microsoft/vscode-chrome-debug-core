@@ -9,16 +9,18 @@ import { LocationInSourceToClientConverter } from '../../../client/locationInSou
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { LineColTransformer } from '../../../../transformers/lineNumberTransformer';
+import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 
 /**
  * Convert the status of a breakpoint recipe to a format that the client can understand
  */
 @injectable()
 export class BPRecipieStatusToClientConverter {
-    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._handlesRegistry, this._lineColTransformer);
+    private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._sourceToClientConverter, this._lineColTransformer);
 
     constructor(
         private readonly _handlesRegistry: HandlesRegistry,
+        @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
     public async toExistingBreakpoint(bpRecipeStatus: IBPRecipeStatus): Promise<DebugProtocol.Breakpoint> {
