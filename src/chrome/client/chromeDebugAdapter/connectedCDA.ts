@@ -14,10 +14,10 @@ import { InitializedEvent } from 'vscode-debugadapter';
 import { ISession } from '../session';
 import { ChromeConnection } from '../../chromeConnection';
 import { ChromeDebugAdapter } from './chromeDebugAdapterV2';
-import { TerminatingCDAProvider, TerminatingReason } from './terminatingCDA';
+import { TerminatingCDAProvider } from './terminatingCDA';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { IDebuggeeInitializer } from '../../debugeeStartup/debugeeLauncher';
+import { IDebuggeeInitializer, TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 

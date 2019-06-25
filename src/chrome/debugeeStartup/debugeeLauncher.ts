@@ -12,9 +12,14 @@ export interface ILaunchResult {
     url?: string;
 }
 
+export enum TerminatingReason {
+    DisconnectedFromWebsocket,
+    ClientRequestedToDisconnect
+}
+
 export interface IDebuggeeLauncher {
     launch(args: ILaunchRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<ILaunchResult>;
-    stop(): Promise<void>;
+    stop(reasonToStop: TerminatingReason): Promise<void>;
 }
 
 export interface IDebuggeeInitializer {

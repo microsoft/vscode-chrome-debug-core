@@ -15,11 +15,12 @@ import { ConnectedCDAConfiguration } from './cdaConfiguration';
 import { ReplacementInstruction } from '../../logging/methodsCalledLogger';
 import { Logging } from '../../internal/services/logging';
 import { ChromeDebugAdapter } from './chromeDebugAdapterV2';
-import { TerminatingCDA, TerminatingReason } from './terminatingCDA';
+import { TerminatingCDA } from './terminatingCDA';
 import { ChromeTargetDiscovery } from '../../chromeTargetDiscoveryStrategy';
 import { ChromeConnection } from '../../chromeConnection';
 import { telemetry } from '../../../telemetry';
 import { isDefined, isNotEmpty } from '../../utils/typedOperators';
+import { TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
 
 export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDebugSession: ChromeDebugSession, debugSessionOptions: IChromeDebugSessionOpts): DependencyInjection {
     const session = new DelayMessagesUntilInitializedSession(new DoNotPauseWhileSteppingSession(rawDebugSession));

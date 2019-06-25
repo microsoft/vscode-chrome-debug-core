@@ -11,13 +11,8 @@ import { ISession } from '../session';
 import { telemetry } from '../../../telemetry';
 import { ChromeConnection } from '../../chromeConnection';
 import { IRestartRequestArgs } from '../../../debugAdapterInterfaces';
-import { IDebuggeeRunner, IDebuggeeLauncher } from '../../debugeeStartup/debugeeLauncher';
+import { IDebuggeeRunner, IDebuggeeLauncher, TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
 import { TerminatedCDA } from './terminatedCDA';
-
-export enum TerminatingReason {
-    DisconnectedFromWebsocket,
-    ClientRequestedToDisconnect
-}
 
 export type TerminatingCDAProvider = (reason: TerminatingReason) => TerminatingCDA;
 export class TerminatingCDA extends BaseCDAState {
@@ -45,12 +40,12 @@ export class TerminatingCDA extends BaseCDAState {
         // TODO: Wait until we don't have any more requests in flight.
         // TODO: Figure out if we need to do the stops that are inside terminate session before or after the shutdown
 
-        await this.terminateSession(this._reason === TerminatingReason.DisconnectedFromWebsocket ? 'Got disconnect request' : 'Disconnected from websocket');
+        await this.terminateSession(this._reason);
 
         return new TerminatedCDA(this._session).install();
     }
 
-    public async terminateSession(reason: string, restart?: IRestartRequestArgs): Promise<void> {
+    public async terminateSession(reason: TerminatingReason, restart?: IRestartRequestArgs): Promise<void> {
         // TODO: Review the order of calls in this method, and make sure it's the proper one
         logger.log(`Terminated: ${reason}`);
 
@@ -70,7 +65,7 @@ export class TerminatingCDA extends BaseCDAState {
 
         if (this._chromeConnection.isAttached) {
             await this._debuggeeRunner.stop();
-            await this._chromeConnection.close();
+            await this._chromeConnection.close(reason);
         }
 
         // TODO: Figure out when we shouldn't send a TerminatedEvent if (isTrue((<ILaunchRequestArgs>this._configuration.args).noDebug)) { }
