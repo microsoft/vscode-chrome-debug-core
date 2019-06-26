@@ -10,12 +10,13 @@ import { IScriptParsedEvent, IScriptParsedProvider } from '../../../cdtpDebuggee
 import { ILoadedSource, ContentsLocation } from '../loadedSource';
 import { newResourceIdentifierMap } from '../resourceIdentifier';
 import { LoadedSourceEventReason } from '../../../chromeDebugAdapter';
+import { IServiceComponent } from '../../features/components';
 
 /**
  * This class will keep the client updated of the sources that are associated with the scripts that are currently loaded in the debuggee
  */
 @injectable()
-export class NotifyClientOfLoadedSources {
+export class NotifyClientOfLoadedSources implements IServiceComponent {
     // TODO DIEGO: Ask VS what index do they use internally to verify if the source is the same or a new one
     private _notifiedSourceByIdentifier = newResourceIdentifierMap<ILoadedSource>();
 
@@ -23,6 +24,10 @@ export class NotifyClientOfLoadedSources {
         @inject(TYPES.IScriptParsedProvider) public readonly _cdtpOnScriptParsedEventProvider: IScriptParsedProvider,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter) {
         this._cdtpOnScriptParsedEventProvider.onScriptParsed(scriptParsed => this.onScriptParsed(scriptParsed));
+    }
+
+    public install(): this {
+        return this;
     }
 
     public async onScriptParsed(scriptParsed: IScriptParsedEvent): Promise<void> {

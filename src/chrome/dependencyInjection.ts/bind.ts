@@ -41,6 +41,7 @@ import { TerminatingCDA } from '../client/chromeDebugAdapter/terminatingCDA';
 import { isDefined } from '../utils/typedOperators';
 import { CompletionsRequestHandler } from '../internal/completions/completionsRequestHandler';
 import { SourceToClientConverter } from '../client/sourceToClientConverter';
+import { NotifyClientOfLoadedSources } from '../internal/sources/features/notifyClientOfLoadedSources';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -89,6 +90,9 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.ConnectedCDA, ConnectedCDA, callback);
     bind(loggingConfiguration, di, TYPES.ISupportedDomains, SupportedDomains, callback);
     bind(loggingConfiguration, di, TYPES.TerminatingCDA, TerminatingCDA, callback);
+
+    // Services
+    bind(loggingConfiguration, di, TYPES.IServiceComponent, NotifyClientOfLoadedSources, callback);
 }
 
 function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration, container: Container,
