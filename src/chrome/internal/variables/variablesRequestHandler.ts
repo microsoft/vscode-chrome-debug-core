@@ -10,7 +10,8 @@ export class VariablesRequestHandler implements ICommandHandlerDeclarer {
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {
         return CommandHandlerDeclaration.fromLiteralObject({
-            variables: (args: DebugProtocol.VariablesArguments) => this._chromeDebugAdapter.variables(args)
+            variables: (args: DebugProtocol.VariablesArguments) => this._chromeDebugAdapter.variables(args),
+            setVariable: (args: DebugProtocol.SetVariableArguments) => this._chromeDebugAdapter.setVariable(args)
         });
     }
 }
