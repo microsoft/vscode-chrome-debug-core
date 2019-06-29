@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../features/actionToTakeWhenPaused';
+import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BasePauseShouldBeAutoResumed } from '../features/actionToTakeWhenPaused';
 import * as errors from '../../../errors';
 import { FormattedExceptionParser, IFormattedExceptionLineDescription } from '../formattedExceptionParser';
 import { IPauseOnPromiseRejectionsStrategy, IPauseOnExceptionsStrategy, DoNotPauseOnAnyRejections } from './strategies';
@@ -17,6 +17,7 @@ import { CDTPScriptsRegistry } from '../../cdtpDebuggee/registries/cdtpScriptsRe
 import { printClassDescription } from '../../utils/printing';
 import * as _ from 'lodash';
 import { isDefined } from '../../utils/typedOperators';
+import { IDebuggeeExecutionController } from '../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
 
 type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -52,6 +53,13 @@ export class PromiseWasRejected extends BaseNotifyClientOfPause {
     }
 }
 
+@printClassDescription
+export class PromiseWasRejectedWithFeatureTurnedOff extends BasePauseShouldBeAutoResumed {
+    constructor(protected _debuggeeExecutionControl: IDebuggeeExecutionController) {
+        super();
+    }
+}
+
 /**
  * Class used to configure the debugger behavior when an exception is thrown, or a promise gets rejected
  */
@@ -65,6 +73,7 @@ export class PauseOnExceptionOrRejection {
         @inject(TYPES.IDebuggeePausedHandler) private readonly _debuggeePausedHandler: IDebuggeePausedHandler,
         @inject(TYPES.CDTPScriptsRegistry) private readonly _scriptsLogic: CDTPScriptsRegistry,
         @inject(TYPES.IPauseOnExceptions) private readonly _pauseOnExceptions: IPauseOnExceptionsConfigurer,
+        @inject(TYPES.IDebuggeeExecutionController) private readonly _debuggeeExecutionController: IDebuggeeExecutionController,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.onProvideActionForWhenPaused(paused));
     }
@@ -82,10 +91,14 @@ export class PauseOnExceptionOrRejection {
             // If we are here is because we either configured the debugee to pauser on unhandled or handled exceptions
             this._lastException = paused.data;
             return new ExceptionWasThrown(this._eventsToClientReporter);
-        } else if (paused.reason === 'promiseRejection' && this._promiseRejectionsStrategy.shouldPauseOnRejections()) {
-            // TODO: Figure out if it makes sense to move this into it's own class
-            this._lastException = paused.data;
-            return new PromiseWasRejected(this._eventsToClientReporter);
+        } else if (paused.reason === 'promiseRejection') {
+            if (this._promiseRejectionsStrategy.shouldPauseOnRejections()) {
+                // TODO: Figure out if it makes sense to move this into it's own class
+                this._lastException = paused.data;
+                return new PromiseWasRejected(this._eventsToClientReporter);
+            } else {
+                return new PromiseWasRejectedWithFeatureTurnedOff(this._debuggeeExecutionController);
+            }
         } else {
             this._lastException = null;
             return new NoActionIsNeededForThisPause(this);

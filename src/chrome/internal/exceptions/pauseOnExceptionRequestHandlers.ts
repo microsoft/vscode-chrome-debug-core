@@ -3,7 +3,7 @@ import { injectable, inject } from 'inversify';
 import { PauseOnExceptionOrRejection, IExceptionInformation } from './pauseOnException';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { IPauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions, IPauseOnPromiseRejectionsStrategy, PauseOnAllRejections, DoNotPauseOnAnyRejections } from './strategies';
+import { IPauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions, IPauseOnPromiseRejectionsStrategy, PauseOnAllRejections } from './strategies';
 import { ExceptionStackTracePrinter } from './exceptionStackTracePrinter';
 import { ConnectedCDAConfiguration } from '../../client/chromeDebugAdapter/cdaConfiguration';
 import { TYPES } from '../../dependencyInjection.ts/types';
@@ -44,12 +44,14 @@ export class PauseOnExceptionRequestHandlers implements ICommandHandlerDeclarer 
         }
     }
 
-    private toPauseOnPromiseRejectionsStrategy(exceptionFilters: string[]): IPauseOnPromiseRejectionsStrategy {
-        if (exceptionFilters.indexOf('promise_reject') >= 0) {
-            return new PauseOnAllRejections();
-        } else {
-            return new DoNotPauseOnAnyRejections();
-        }
+    private toPauseOnPromiseRejectionsStrategy(_exceptionFilters: string[]): IPauseOnPromiseRejectionsStrategy {
+        return new PauseOnAllRejections();
+        // TODO: Figure out how to implement this for node-debug
+        // if (exceptionFilters.indexOf('promise_reject') >= 0) {
+        //     return new PauseOnAllRejections();
+        // } else {
+        //     return new DoNotPauseOnAnyRejections();
+        // }
     }
 
     private toExceptionInfo(info: IExceptionInformation): IExceptionInfoResponseBody {
