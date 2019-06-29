@@ -2,7 +2,7 @@ import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerD
 import { injectable, inject } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
 import { HandlesRegistry } from '../../client/handlesRegistry';
-import { SourcesRetriever } from './sourcesRetriever';
+import { ISourcesRetriever } from './sourcesRetriever';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ITelemetryPropertyCollector } from '../../../telemetry';
 import { ISourceResponseBody, IGetLoadedSourcesResponseBody } from '../../../debugAdapterInterfaces';
@@ -21,7 +21,7 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         private readonly _sourcesResolver: SourceResolver,
-        private readonly _sourcesLogic: SourcesRetriever) { }
+        @inject(TYPES.ISourcesRetriever) private readonly _sourcesRetriever: ISourcesRetriever) { }
 
     public getCommandHandlerDeclarations(): ICommandHandlerDeclaration[] {
         return CommandHandlerDeclaration.fromLiteralObject({
@@ -31,13 +31,13 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
     }
 
     public async loadedSources(): Promise<IGetLoadedSourcesResponseBody> {
-        return { sources: await asyncMap(await this._sourcesLogic.loadedSourcesTrees(), st => this.toSourceTree(st)) };
+        return { sources: await asyncMap(await this._sourcesRetriever.loadedSourcesTrees(), st => this.toSourceTree(st)) };
     }
 
     public async source(args: DebugProtocol.SourceArguments, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<ISourceResponseBody> {
         if (isDefined(args.source)) {
             const source = this._clientSourceParser.toSource(args.source);
-            const sourceText = await this._sourcesLogic.text(source);
+            const sourceText = await this._sourcesRetriever.text(source);
             return {
                 content: sourceText,
                 mimeType: 'text/javascript'

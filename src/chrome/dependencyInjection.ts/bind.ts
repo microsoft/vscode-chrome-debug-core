@@ -42,6 +42,7 @@ import { isDefined } from '../utils/typedOperators';
 import { CompletionsRequestHandler } from '../internal/completions/completionsRequestHandler';
 import { SourceToClientConverter } from '../client/sourceToClientConverter';
 import { NotifyClientOfLoadedSources } from '../internal/sources/features/notifyClientOfLoadedSources';
+import { logger } from 'vscode-debugadapter';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -102,8 +103,8 @@ function bind<T extends object>(configuration: MethodsCalledLoggerConfiguration,
 
 export function createWrapWithLoggerActivator<T extends object>(configuration: MethodsCalledLoggerConfiguration,
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
-    callback?: ComponentCustomizationCallback) {
-    return (_context: interfaces.Context, injectable: object) => {
+    callback?: ComponentCustomizationCallback): (context: interfaces.Context, injectable: T) => T {
+    return (_context: interfaces.Context, injectable: T) => {
         (<IHasContainerName>injectable).__containerName = configuration.containerName;
         const objectWithLogging = wrapWithLogging(configuration, injectable, `${configuration.containerName}.${getName(serviceIdentifier)}`);
         const possibleOverwrittenComponent = isDefined(callback)
@@ -112,7 +113,8 @@ export function createWrapWithLoggerActivator<T extends object>(configuration: M
         if (objectWithLogging === possibleOverwrittenComponent) {
             return objectWithLogging;
         } else {
-            return wrapWithLogging(configuration, possibleOverwrittenComponent, `${configuration.containerName}.${getName<T>(serviceIdentifier)}_Override`);
+            logger.log(`Dependency Injection component customization: for interface ${serviceIdentifier.toString()} replaced ${objectWithLogging} with ${possibleOverwrittenComponent}`);
+            return <T>wrapWithLogging(configuration, possibleOverwrittenComponent, `${configuration.containerName}.${getName<T>(serviceIdentifier)}_Override`);
         }
     };
 }
