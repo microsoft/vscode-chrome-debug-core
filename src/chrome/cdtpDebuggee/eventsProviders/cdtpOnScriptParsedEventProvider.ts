@@ -7,7 +7,7 @@ import { CDTPEventsEmitterDiagnosticsModule } from '../infrastructure/cdtpDiagno
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { IScript, Script } from '../../internal/scripts/script';
 import { createCDTPScriptUrl, CDTPScriptUrl } from '../../internal/sources/resourceIdentifierSubtypes';
-import { MappedSourcesMapper, IMappedSourcesMapper, NoMappedSourcesMapper } from '../../internal/scripts/sourcesMapper';
+import { MappedSourcesMapper, IMappedSourcesMapper } from '../../internal/scripts/sourcesMapper';
 import { IResourceIdentifier, ResourceName, parseResourceIdentifier } from '../../internal/sources/resourceIdentifier';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject } from 'inversify';
@@ -25,7 +25,7 @@ import * as _ from 'lodash';
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
-import { isNotEmpty, isNotNull } from '../../utils/typedOperators';
+import { isNotEmpty } from '../../utils/typedOperators';
 import { CDTPExecutionContextEventsProvider } from './cdtpExecutionContextEventsProvider';
 
 /**
@@ -181,10 +181,7 @@ abstract class ScriptCreator {
     }
 
     private sourceMapper(script: IScript, sourceMap: SourceMap | null): IMappedSourcesMapper {
-        const sourceMapper = isNotNull(sourceMap)
-            ? new MappedSourcesMapper(script, sourceMap)
-            : new NoMappedSourcesMapper(script);
-        return sourceMapper;
+        return MappedSourcesMapper.tryParsing(script, sourceMap);
     }
 
     protected scriptRange(runtimeSource: ILoadedSource<CDTPScriptUrl>) {

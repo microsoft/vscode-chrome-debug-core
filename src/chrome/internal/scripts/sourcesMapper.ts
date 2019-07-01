@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import { SourceMap } from '../../../sourceMaps/sourceMap';
-import { LocationInLoadedSource, LocationInScript, Position, LocationInSource } from '../locations/location';
+import { LocationInLoadedSource, LocationInScript, Position, LocationInSource, createLocation } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IResourceIdentifier } from '../sources/resourceIdentifier';
 import { IScript } from './script';
@@ -14,9 +14,11 @@ import { Range } from '../locations/rangeInScript';
 import { ScriptToHtmlPositionTranslator } from './scriptToHtmlPositionTranslator';
 import { HtmlToScriptPositionTranslator } from './htmlToScriptPositionTranslator';
 import { IHasSourceMappingInformation } from './IHasSourceMappingInformation';
+import { isNotNull } from '../../utils/typedOperators';
+import { telemetry } from '../../../telemetry';
 
 export interface ISourceToScriptMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> {
-    getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript<T>;
+    getPositionInScript(positionInSource: LocationInLoadedSource | LocationInSource): IMappedTokensInScript<T>;
 }
 
 export interface IScriptToSourceMapper {
@@ -33,8 +35,20 @@ export interface IMappedSourcesMapper<T extends IHasSourceMappingInformation = I
 export class MappedSourcesMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> implements IMappedSourcesMapper<T> {
     private readonly _rangeInSources: IValidatedMap<IResourceIdentifier, Range>;
 
-    constructor(private readonly _script: T, private readonly _sourceMap: SourceMap) {
+    private constructor(private readonly _script: T, private readonly _sourceMap: SourceMap) {
         this._rangeInSources = this._sourceMap.rangesInSources();
+    }
+
+    public static tryParsing<T extends IHasSourceMappingInformation>(script: T, sourceMap: SourceMap | null): IMappedSourcesMapper<T> {
+        if (isNotNull(sourceMap)) {
+            try {
+                return new MappedSourcesMapper<T>(script, sourceMap);
+            } catch (exception) {
+                telemetry.reportError('MappedSourcesMapper.tryParsing', exception);
+            }
+        }
+
+        return new NoMappedSourcesMapper(script);
     }
 
     public getPositionInSource(positionRelativeToHtml: LocationInScript): LocationInLoadedSource {
@@ -85,8 +99,8 @@ export class MappedSourcesMapper<T extends IHasSourceMappingInformation = IHasSo
     }
 }
 
-export class NoMappedSourcesMapper implements IMappedSourcesMapper {
-    constructor(private readonly _script: IScript) {
+export class NoMappedSourcesMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> implements IMappedSourcesMapper<T> {
+    constructor(private readonly _script: T) {
 
     }
 
@@ -94,9 +108,9 @@ export class NoMappedSourcesMapper implements IMappedSourcesMapper {
         return new LocationInLoadedSource(this._script.developmentSource, positionInScript.position);
     }
 
-    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript {
+    public getPositionInScript(positionInSource: LocationInLoadedSource): IMappedTokensInScript<T> {
         if (positionInSource.resource === this._script.developmentSource || positionInSource.resource === this._script.runtimeSource) {
-            return MappedTokensInScript.characterAt(new LocationInScript(this._script, positionInSource.position));
+            return MappedTokensInScript.characterAt(createLocation(this._script, positionInSource.position));
         } else {
             throw new Error(`This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
         }

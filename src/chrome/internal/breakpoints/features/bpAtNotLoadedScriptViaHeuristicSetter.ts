@@ -54,7 +54,7 @@ export class BPAtNotLoadedScriptViaHeuristicSetter {
         const sourceMap = await this._sourceMapTransformer.getSourceMapFromAuthoredPath(sourceIdentifier);
         if (sourceMap !== null) {
             const script = new SourceWithSourceMap(sourceMap);
-            const sourceMapper = new MappedSourcesMapper(script, sourceMap);
+            const sourceMapper = MappedSourcesMapper.tryParsing(script, sourceMap);
             const mappedLocation = sourceMapper.getPositionInScript(requestedBP.location);
             return new LocationInUrl(<IResourceIdentifier<CDTPScriptUrl>>sourceMap.generatedPath, mappedLocation.enclosingRange.range.start);
         }
@@ -70,6 +70,9 @@ export class BPAtNotLoadedScriptViaHeuristicSetter {
  * that will correctly help map typescript files to javascript files for non .html files.
  */
 export class SourceWithSourceMap implements IHasSourceMappingInformation {
+    public readonly runtimeSource = new NoLoadedSourceAvailable();
+    public readonly developmentSource = new NoLoadedSourceAvailable();
+
     public constructor(private readonly _sourceMap: SourceMap) { }
 
     public get mappedSources(): IdentifiedLoadedSource<string>[] {

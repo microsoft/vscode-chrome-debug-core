@@ -13,6 +13,7 @@ import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as _ from 'lodash';
 import { IMappedTokensInScript } from './mappedTokensInScript';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
+import { SourceWithSourceMap } from '../breakpoints/features/bpAtNotLoadedScriptViaHeuristicSetter';
 
 export type integer = number;
 
@@ -77,12 +78,13 @@ export interface ILocation<T extends ScriptOrSourceOrURLOrURLRegexp> extends IEq
 
 // The LocationInUrl is used with the URL that is associated with each Script in CDTP. This should be a URL, but it could also be a string that is not a valid URL
 // For that reason we use IResourceIdentifier<CDTPScriptUrl> for this type, instead of IURL<CDTPScriptUrl>
-export type ScriptOrSourceOrURLOrURLRegexp = ISource | ILoadedSource | IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl> | IHasSourceMappingInformation;
+export type ScriptOrSourceOrURLOrURLRegexp = ISource | ILoadedSource | IScript | URLRegexp | IResourceIdentifier<CDTPScriptUrl> | IHasSourceMappingInformation | SourceWithSourceMap;
 
 export type Location<T extends ScriptOrSourceOrURLOrURLRegexp> = ILocation<T> &
     (T extends ISource ? LocationInSource : // Used when receiving locations from the client
         T extends ILoadedSource ? LocationInLoadedSource : // Used to translate between locations on the client and the debuggee
         T extends IScript ? LocationInScript : // Used when receiving locations from the debuggee
+        T extends SourceWithSourceMap ? LocationInSourceWithSourceMap : // Used for setting heuristic breakpoints
         T extends URLRegexp ? LocationInUrlRegexp : // Used when setting a breakpoint by URL in a local file path in windows, to make it case insensitive
         T extends IURL<CDTPScriptUrl> ? LocationInUrl : // Used when setting a breakpoint by URL for case-insensitive URLs
         ILocation<never>); // TODO: Figure out how to replace this by never (We run into some issues with the isEquivalentTo call if we do)
@@ -94,6 +96,8 @@ export function createLocation<T extends ScriptOrSourceOrURLOrURLRegexp>(resourc
         return <Location<T>>new LocationInLoadedSource(resource, position); // TODO: Figure out way to remove this cast
     } else if (resource instanceof Script) {
         return <Location<T>>new LocationInScript(resource, position); // TODO: Figure out way to remove this cast
+    } else if (resource instanceof SourceWithSourceMap) {
+        return <Location<T>>new LocationInSourceWithSourceMap(resource, position); // TODO: Figure out way to remove this cast
     } else if (typeof resource === 'string') {
         return <Location<T>>new LocationInUrlRegexp(createURLRegexp(<string>resource), position); // TODO: Figure out way to remove this cast
     } else if (isResourceIdentifier(resource)) {
@@ -176,6 +180,33 @@ export class LocationInScript extends BaseLocation<IScript> {
     }
 
     public isSameAs(locationInScript: LocationInScript): boolean {
+        return this.script === locationInScript.script &&
+            this.position.isEquivalentTo(locationInScript.position);
+    }
+
+    public toString(): string {
+        return `${this.resource}:${this.position}`;
+    }
+}
+
+export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSourceMap> {
+    public get resourceIdentifier(): IResourceIdentifier {
+        return this.resource.runtimeSource.identifier;
+    }
+
+    public mappedToRuntimeSource(): LocationInLoadedSource {
+        return new LocationInLoadedSource(this.script.runtimeSource, this.position);
+    }
+
+    public get script(): SourceWithSourceMap {
+        return this.resource;
+    }
+
+    public mappedToSource(): LocationInLoadedSource {
+        throw new Error(`LocationInSourceWithSourceMap.mappedToSource: Not yet implemented`);
+    }
+
+    public isSameAs(locationInScript: LocationInSourceWithSourceMap): boolean {
         return this.script === locationInScript.script &&
             this.position.isEquivalentTo(locationInScript.position);
     }

@@ -1,5 +1,5 @@
 import { RangeInResource, Range } from './rangeInScript';
-import { LocationInScript } from './location';
+import { LocationInScript, Location } from './location';
 import { printArray } from '../../collections/printing';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 import { IScript } from '../scripts/script';
@@ -23,8 +23,8 @@ export class MappedTokensInScript<T extends IHasSourceMappingInformation = IHasS
         }
     }
 
-    public static characterAt(characterLocation: LocationInScript): IMappedTokensInScript<IScript> {
-        return new MappedTokensInScript(characterLocation.script, [Range.at(characterLocation.position)]);
+    public static characterAt<T extends IHasSourceMappingInformation>(characterLocation: Location<T>): IMappedTokensInScript<T> {
+        return new MappedTokensInScript<T>(characterLocation.resource, [Range.at(characterLocation.position)]);
     }
 
     public static untilNextLine(characterLocation: LocationInScript): IMappedTokensInScript<IScript> {
