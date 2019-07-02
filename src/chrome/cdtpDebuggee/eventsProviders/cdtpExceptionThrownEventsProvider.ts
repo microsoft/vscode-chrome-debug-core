@@ -60,15 +60,23 @@ export class CDTPExceptionThrownEventsProvider extends CDTPEventsEmitterDiagnost
     private async toExceptionDetails(exceptionDetails: CDTP.Runtime.ExceptionDetails): Promise<IExceptionDetails> {
         const scriptId = exceptionDetails.scriptId;
 
+        // We've seen scriptId contain invalid script ids. If that happens, we just ignore it
+        const scriptIfAvailable = isNotEmpty(scriptId)
+            ? await asyncUndefinedOnFailure(() => this._scriptsRegistry.getScriptByCdtpId(scriptId))
+            : undefined;
+
+        const stackTraceIfAvailable = isDefined(exceptionDetails.stackTrace)
+            ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace)
+            : undefined;
+
         return {
             exceptionId: exceptionDetails.exceptionId,
             text: exceptionDetails.text,
             lineNumber: exceptionDetails.lineNumber,
             columnNumber: exceptionDetails.columnNumber,
-            // We've seen scriptId contain invalid script ids. If that happens, we just ignore it
-            script: isNotEmpty(scriptId) ? await asyncUndefinedOnFailure(() => this._scriptsRegistry.getScriptByCdtpId(scriptId)) : undefined,
+            script: scriptIfAvailable,
             url: exceptionDetails.url,
-            stackTrace: isDefined(exceptionDetails.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace) : undefined,
+            stackTrace: stackTraceIfAvailable,
             exception: exceptionDetails.exception,
             executionContextId: exceptionDetails.executionContextId,
         };
