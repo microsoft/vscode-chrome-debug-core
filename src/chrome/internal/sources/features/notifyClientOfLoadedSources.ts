@@ -33,7 +33,8 @@ export class NotifyClientOfLoadedSources implements IServiceComponent {
     public async onScriptParsed(scriptParsed: IScriptParsedEvent): Promise<void> {
         // We processed the events out of order. If this event got here after we destroyed the context then ignore it.
         if (!scriptParsed.script.executionContext.isDestroyed()) {
-            scriptParsed.script.allSources.forEach(source => this.sendLoadedSourceEvent(source, 'new'));
+            // We only send the runtime .js files to the client
+            await this.sendLoadedSourceEvent(scriptParsed.script.runtimeSource, 'new');
         }
     }
 
@@ -42,8 +43,8 @@ export class NotifyClientOfLoadedSources implements IServiceComponent {
      */
     protected async onExecutionContextsCleared(): Promise<void[]> {
         let sourceEvents = [];
-        for (const script of this._notifiedSourceByIdentifier.values()) {
-            sourceEvents.push(this.sendLoadedSourceEvent(script, 'removed'));
+        for (const loadedSource of this._notifiedSourceByIdentifier.values()) {
+            sourceEvents.push(this.sendLoadedSourceEvent(loadedSource, 'removed'));
         }
         return Promise.all(sourceEvents);
     }
