@@ -154,6 +154,8 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
             }
         } else if (object.type === 'undefined') {
             value = 'undefined';
+        } else if (object.type === 'boolean') {
+            value = object.value;
         } else if (object.type === 'function') {
             if (object.description === undefined) {
                 throw new Error(`Expected a function to have a description yet it didn't: ${JSON.stringify(object)}`);
@@ -170,7 +172,7 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
             }
         } else {
             if (object.description === undefined) {
-                throw new Error(`Expected an object that is neither objecr, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
+                throw new Error(`Expected an object that is neither object, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
             }
 
             // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
