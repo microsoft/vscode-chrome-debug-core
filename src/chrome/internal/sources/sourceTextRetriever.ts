@@ -23,7 +23,8 @@ export class SourceTextRetriever {
 
     constructor(@inject(TYPES.IScriptSources) private readonly _scriptSources: IScriptSourcesRetriever) { }
 
-    // We want this method to be sync, so if we get 2 simultaneous calls, the second call will return the promise of the first call
+    // We want this method to add an entry to the map this._sourceToText atomically, so if we get 2 simultaneous calls,
+    // the second call will return the promise/result of the first call
     public text(loadedSource: ILoadedSource): Promise<string> {
         let text = this._sourceToText.tryGetting(loadedSource);
 
