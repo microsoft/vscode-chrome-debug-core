@@ -169,15 +169,14 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
                     object.description;
             }
         } else {
-            if (object.description === undefined) {
-                throw new Error(`Expected an object that is neither objecr, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
-            }
-
             // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
-            if (typeof object.value === 'undefined') {
-                value = object.description;
-            } else if (object.type === 'number') {
-                // .value is truncated, so use .description, the full string representation
+            if (typeof object.value === 'undefined' || object.type === 'number') {
+                if (object.description === undefined) {
+                    throw new Error(`Expected an object that is neither object, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
+                }
+
+                // If this is undefined, use a description.
+                // If this is a number .value is truncated, so use .description, the full string representation
                 // Should be like '3' or 'Infinity'.
                 value = object.description;
             } else {
