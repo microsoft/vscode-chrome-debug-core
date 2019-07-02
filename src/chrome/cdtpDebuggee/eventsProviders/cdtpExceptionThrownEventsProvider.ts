@@ -14,6 +14,7 @@ import { IScript } from '../../internal/scripts/script';
 import { CodeFlowStackTrace } from '../../internal/stackTraces/codeFlowStackTrace';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { isDefined, isNotEmpty } from '../../utils/typedOperators';
+import { asyncUndefinedOnFailure } from '../../utils/failures';
 
 export interface IExceptionThrownEvent {
     readonly timestamp: CDTP.Runtime.Timestamp;
@@ -57,14 +58,25 @@ export class CDTPExceptionThrownEventsProvider extends CDTPEventsEmitterDiagnost
     }
 
     private async toExceptionDetails(exceptionDetails: CDTP.Runtime.ExceptionDetails): Promise<IExceptionDetails> {
+        const scriptId = exceptionDetails.scriptId;
+
+        // We've seen scriptId contain invalid script ids. If that happens, we just ignore it
+        const scriptIfAvailable = isNotEmpty(scriptId)
+            ? await asyncUndefinedOnFailure(() => this._scriptsRegistry.getScriptByCdtpId(scriptId))
+            : undefined;
+
+        const stackTraceIfAvailable = isDefined(exceptionDetails.stackTrace)
+            ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace)
+            : undefined;
+
         return {
             exceptionId: exceptionDetails.exceptionId,
             text: exceptionDetails.text,
             lineNumber: exceptionDetails.lineNumber,
             columnNumber: exceptionDetails.columnNumber,
-            script: isNotEmpty(exceptionDetails.scriptId) ? await this._scriptsRegistry.getScriptByCdtpId(exceptionDetails.scriptId) : undefined,
+            script: scriptIfAvailable,
             url: exceptionDetails.url,
-            stackTrace: isDefined(exceptionDetails.stackTrace) ? await this._stackTraceParser.toStackTraceCodeFlow(exceptionDetails.stackTrace) : undefined,
+            stackTrace: stackTraceIfAvailable,
             exception: exceptionDetails.exception,
             executionContextId: exceptionDetails.executionContextId,
         };

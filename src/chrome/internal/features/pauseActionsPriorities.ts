@@ -5,7 +5,7 @@ import { IActionToTakeWhenPaused } from './actionToTakeWhenPaused';
 import { ShouldStepInToAvoidSkippedSource } from './smartStep';
 import { HitBreakpoint, NoRecognizedBreakpoints } from '../breakpoints/features/bpRecipeAtLoadedSourceLogic';
 import { HitStillPendingBreakpoint, PausedWhileLoadingScriptToResolveBreakpoints } from '../breakpoints/features/pauseScriptLoadsToSetBPs';
-import { ExceptionWasThrown, PromiseWasRejected } from '../exceptions/pauseOnException';
+import { ExceptionWasThrown, PromiseWasRejected, PromiseWasRejectedWithFeatureTurnedOff } from '../exceptions/pauseOnException';
 import { HitAndSatisfiedHitCountBreakpoint, HitCountBreakpointWhenConditionWasNotSatisfied } from '../breakpoints/features/hitCountBreakpointsSetter';
 import { FinishedStepping, UserPaused } from '../stepping/features/syncStepping';
 import { PausedBecauseAsyncCallWasScheduled } from '../stepping/features/asyncStepping';
@@ -32,4 +32,6 @@ export const actionsFromHighestToLowestPriority: ActionToTakeWhenPausedClass[] =
     HitCountBreakpointWhenConditionWasNotSatisfied,
 
     NoRecognizedBreakpoints,
+
+    PromiseWasRejectedWithFeatureTurnedOff,
 ];
