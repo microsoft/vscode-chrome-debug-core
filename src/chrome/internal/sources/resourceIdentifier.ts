@@ -86,7 +86,7 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
 
     constructor(fileUrl: TString) {
         super();
-        let filePath = decodeURIComponent(fileUrl.replace(/^file:\/\/\//, ''));
+        let filePath = utils.fileUrlToPath(fileUrl);
         this._localResourcePath = parseLocalResourcePath(filePath);
     }
 
