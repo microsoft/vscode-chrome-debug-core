@@ -90,21 +90,23 @@ export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg?: 
     });
 }
 
-export function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDelay = 0): Promise<any> {
+export async function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDelay = 0): Promise<any> {
     const startTime = Date.now();
 
-    function tryUntilTimeout(): Promise<any> {
-        return fn().catch(
-            e => {
-                if (Date.now() - startTime < (timeoutMs - intervalDelay)) {
-                    return promiseTimeout(undefined, intervalDelay).then(tryUntilTimeout);
-                } else {
-                    return errP(e);
-                }
-            });
+    async function tryUntilTimeout(): Promise<any> {
+        try {
+            return await fn();
+        } catch (e) {
+            if (Date.now() - startTime < (timeoutMs - intervalDelay)) {
+                await promiseTimeout(undefined, intervalDelay);
+                return await tryUntilTimeout();
+            } else {
+                return errP(e);
+            }
+        }
     }
 
-    return tryUntilTimeout();
+    return await tryUntilTimeout();
 }
 
 let caseSensitivePaths = true;
