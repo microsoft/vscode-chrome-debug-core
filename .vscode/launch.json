@@ -86,13 +86,21 @@
             "internalConsoleOptions": "openOnSessionStart",
             "smartStep": true,
             "skipFiles": [
+                "<node_internals>/**",
                 "async_hooks.js",
+                "transformedListenerRegistry.ts",
+                "loggingDebugSession.ts",
+                "debugSession.ts",
+                "messages.ts",
+                "protocol.ts",
+                "decorators.ts",
+                "logger.ts",
                 "methodsCalledLogger.ts",
                 "next_tick.js",
                 "inspector_async_hook.js",
                 "printObjectDescription.js",
                 "lodash.js",
-                "listeners.ts",
+                "listeners.ts"
             ]
         },
         {
