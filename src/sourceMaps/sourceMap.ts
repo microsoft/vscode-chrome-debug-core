@@ -11,7 +11,7 @@ import { logger } from 'vscode-debugadapter';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { Position, LocationInLoadedSource, LocationInScript, LocationInSource } from '../chrome/internal/locations/location';
 import { createLineNumber, createColumnNumber, LineNumber, ColumnNumber } from '../chrome/internal/locations/subtypes';
-import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier, parseResourceIdentifiers, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
+import { newResourceIdentifierMap, IResourceIdentifier, parseResourceIdentifier, parseResourceIdentifiers, newResourceIdentifierSet, LocalFileURL } from '../chrome/internal/sources/resourceIdentifier';
 import * as _ from 'lodash';
 import { IValidatedMap } from '../chrome/collections/validatedMap';
 import { Range } from '../chrome/internal/locations/rangeInScript';
@@ -132,6 +132,11 @@ export class SourceMap {
                 if (fullSourceEntry.textRepresentation !== mappedFullSourceEntry) {
                     return mappedFullSourceEntry; // If we found a path override that applies, return the result of applying it
                 }
+            }
+
+            if (sourcePath.startsWith('file://')) {
+                // strip file://
+                return new LocalFileURL(sourcePath).filePathRepresentation;
             }
 
             if (!path.isAbsolute(sourcePath)) {
