@@ -93,10 +93,19 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     protected readonly api = this._protocolApi.Debugger;
 
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: CDTP.Debugger.ScriptParsedEvent) => {
-        const creator = isNotEmpty(params.url) ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
-        await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
+        await this.createAndRegisterScript(params);
 
         return await this.toScriptParsedEvent(params);
+    });
+
+    public readonly onScriptFailedToParse = this.addApiListener('scriptFailedToParse', async (params: CDTP.Debugger.ScriptFailedToParseEvent) => {
+        // Even though we failed to parse the script, the erroneous-script is quite similar to a succesful script. It can have source-maps, etc...
+        // We register the script so when Runtime.onExceptionThrown send us the exception about the parsing failed, we'll be able to find this script and use it
+
+        // TODO: If we find any scenario where we need to differenciate between succesful and failed script, we'll have to modify the Script class or store
+        // the information about the script parsing failed somewhere.
+        await this.createAndRegisterScript(params);
+        return params;
     });
 
     constructor(
@@ -112,6 +121,11 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
 
         // Discard the relationships of loaded sources to script after we reload the web-page
         executionContextEventsProvider.onExecutionContextsCleared(() => this._loadedSourcesRegistry.clearAllRelationships());
+    }
+
+    private async createAndRegisterScript(params: CDTP.Debugger.ScriptParsedEvent) {
+        const creator = isNotEmpty(params.url) ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
+        await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
     }
 
     private async toScriptParsedEvent(params: CDTP.Debugger.ScriptParsedEvent): Promise<IScriptParsedEvent> {
