@@ -84,9 +84,9 @@ export interface IURL<TString extends string = string> extends IResourceLocation
 export class LocalFileURL<TString extends string = string> extends IsEquivalentCommonLogic implements IURL<TString> {
     private _localResourcePath: ILocalFilePath;
 
-    constructor(fileUrl: TString) {
+    constructor(private readonly _fileUrl: TString) {
         super();
-        let filePath = decodeURIComponent(fileUrl.replace(/^file:\/\/\//, ''));
+        let filePath = decodeURIComponent(_fileUrl.replace(/^file:\/\/\//, ''));
         this._localResourcePath = parseLocalResourcePath(filePath);
     }
 
@@ -95,7 +95,7 @@ export class LocalFileURL<TString extends string = string> extends IsEquivalentC
     }
 
     public get textRepresentation(): TString {
-        return <TString>utils.pathToFileURL(this._localResourcePath.textRepresentation);
+        return this._fileUrl; // We preserve the exact representation that was given to us. If we unescape a character, CRDP will consider it to be a different url
     }
 
     public get filePathRepresentation(): string {
