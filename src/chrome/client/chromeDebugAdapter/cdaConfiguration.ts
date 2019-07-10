@@ -19,7 +19,7 @@ export interface IConnectedCDAConfiguration {
     session: ISession;
     clientCapabilities: IClientCapabilities;
     scenarioType: ScenarioType;
-    userRequestedUrl: string;
+    userRequestedUrl: string | null;
 }
 
 @injectable()
@@ -53,10 +53,11 @@ export class ConnectedCDAConfiguration implements IConnectedCDAConfiguration {
             launchUrl = utils.pathToFileURL(this.args.file);
         } else if (this.args.url) {
             launchUrl = this.args.url;
-        } else {
-            throw new Error(`You must specify either file or url to launch Chrome against a local file or a url. None were specified. `
-                + `The specified parameterse are: ${JSON.stringify(this.args)}`);
         }
+
+        // TODO: Move this to chrome-debug and re-enable this with
+        // else if (isUndefined(config.runtimeExecutable)) throw new Error(`You must specify either file or url to launch Chrome against a local file or a url. None were specified. ` + `The specified parameterse are: ${JSON.stringify(this.args)}`);
+
         return launchUrl;
     }
 
