@@ -18,6 +18,7 @@ import { TerminatingCDAProvider } from './terminatingCDA';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { IDebuggeeInitializer, TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
+import { ISupportedDomains } from '../../internal/domains/supportedDomains';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 
@@ -38,6 +39,7 @@ export class ConnectedCDA extends BaseCDAState {
         @multiInject(TYPES.IServiceComponent) private readonly _serviceComponents: IServiceComponent[],
         @inject(TYPES.BasePathTransformer) private readonly _basePathTransformer: BasePathTransformer,
         @multiInject(TYPES.ICommandHandlerDeclarer) requestHandlerDeclarers: ICommandHandlerDeclarer[],
+        @inject(TYPES.ISupportedDomains) private readonly _supportedDomains: ISupportedDomains,
     ) {
         super(requestHandlerDeclarers, {
             'initialize': () => { throw new Error('The debug adapter is already initialized. Calling initialize again is not supported.'); },
@@ -72,6 +74,7 @@ export class ConnectedCDA extends BaseCDAState {
         await super.install(); // Some of the components make CDTP calls on their install methods. We need to call this after enabling domings, to prevent a component hanging this method
         await this._chromeDebugAdapterLogic.install();
         await this._basePathTransformer.install();
+        await this._supportedDomains.install();
 
         for (const serviceComponent of this._serviceComponents) {
             await serviceComponent.install();

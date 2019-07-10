@@ -9,12 +9,12 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPSchemaProvider } from '../../cdtpDebuggee/features/cdtpSchemaProvider';
 
-export interface ISupportedDomains {
+export interface ISupportedDomains extends IInstallableComponent {
     isSupported(domainName: string): boolean;
 }
 
 @injectable()
-export class SupportedDomains implements IInstallableComponent, ISupportedDomains {
+export class SupportedDomains implements ISupportedDomains {
     private readonly _domains = new Map<string, CDTP.Schema.Domain>();
 
     constructor(@inject(TYPES.ISchemaProvider) private readonly _cdtpSchemaProvider: CDTPSchemaProvider) { }

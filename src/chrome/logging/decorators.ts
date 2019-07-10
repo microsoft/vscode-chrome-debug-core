@@ -1,5 +1,4 @@
-// tslint:disable-next-line: no-var-requires
-const util = require('util');
+import * as util from 'util';
 
 const DoNotLogMark = Symbol();
 

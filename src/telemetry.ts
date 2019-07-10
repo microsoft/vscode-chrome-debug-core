@@ -37,6 +37,7 @@ export interface ITelemetryReporter {
     reportEvent(name: string, data?: any): void;
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void;
     addCustomGlobalProperty(additionalGlobalTelemetryProperties: any): void;
+    reportError(scenarioDescription: string, rejection: any): void;
 }
 
 export class TelemetryReporter implements ITelemetryReporter {
@@ -57,6 +58,10 @@ export class TelemetryReporter implements ITelemetryReporter {
 
     public addCustomGlobalProperty(additionalGlobalTelemetryProperties: any): void {
         Object.assign(this._globalTelemetryProperties, additionalGlobalTelemetryProperties);
+    }
+
+    public reportError(scenarioDescription: string, rejection: any): void {
+        return reportError(this, scenarioDescription, rejection);
     }
 }
 
@@ -91,11 +96,6 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
     }
 
     private reportErrorWhileWaitingForProperty(rejection: any): void {
-        let properties: IExecutionResultTelemetryProperties = {};
-        properties.successful = 'false';
-        properties.exceptionType = 'firstChance';
-        fillErrorDetails(properties, rejection);
-
         /* __GDPR__
            "error-while-adding-custom-global-property" : {
              "${include}": [
@@ -103,8 +103,20 @@ export class AsyncGlobalPropertiesTelemetryReporter implements ITelemetryReporte
              ]
            }
          */
-        this._telemetryReporter.reportEvent('error-while-adding-custom-global-property', properties);
+        this._telemetryReporter.reportError('error-while-adding-custom-global-property', rejection);
     }
+
+    public reportError(scenarioDescription: string, rejection: any): void {
+        return reportError(this, scenarioDescription, rejection);
+    }
+}
+
+function reportError(telemetryReporter: ITelemetryReporter, scenarioDescription: string, rejection: any): void {
+    let properties: IExecutionResultTelemetryProperties = {};
+    properties.successful = 'false';
+    properties.exceptionType = 'firstChance';
+    fillErrorDetails(properties, rejection);
+    telemetryReporter.reportEvent(scenarioDescription, properties);
 }
 
 export class NullTelemetryReporter implements ITelemetryReporter {
@@ -116,6 +128,9 @@ export class NullTelemetryReporter implements ITelemetryReporter {
         // no-op
     }
     addCustomGlobalProperty(_additionalGlobalTelemetryProperties: any): void {
+        // no-op
+    }
+    reportError(_scenarioDescription: string, _rejection: any): void {
         // no-op
     }
 }

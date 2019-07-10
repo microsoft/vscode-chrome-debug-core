@@ -16,7 +16,6 @@ const del = require('del');
 const plumber = require('gulp-plumber');
 const nls = require('vscode-nls-dev');
 const es = require('event-stream');
-const runSequence = require('run-sequence');
 
 const transifexApiHostname = 'www.transifex.com'
 const transifexApiName = 'api';
@@ -107,10 +106,10 @@ gulp.task('_dev-build', () => {
     return doBuild(false, false);
 });
 
-gulp.task('watch', gulp.series('clean'), () => {
+gulp.task('watch', gulp.series('clean', '_dev-build', () => {
     log('Watching build sources...');
-    return runSequence('_dev-build', () => gulp.watch(sources, ['_dev-build']));
-});
+    return gulp.watch(sources, gulp.series('_dev-build'));
+}));
 
 gulp.task('default', gulp.series('build'));
 

@@ -7,7 +7,7 @@ import { CDTPEventsEmitterDiagnosticsModule } from '../infrastructure/cdtpDiagno
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { IScript, Script } from '../../internal/scripts/script';
 import { createCDTPScriptUrl, CDTPScriptUrl } from '../../internal/sources/resourceIdentifierSubtypes';
-import { MappedSourcesMapper, IMappedSourcesMapper, NoMappedSourcesMapper } from '../../internal/scripts/sourcesMapper';
+import { MappedSourcesMapper, IMappedSourcesMapper } from '../../internal/scripts/sourcesMapper';
 import { IResourceIdentifier, ResourceName, parseResourceIdentifier } from '../../internal/sources/resourceIdentifier';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject } from 'inversify';
@@ -25,7 +25,7 @@ import * as _ from 'lodash';
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
-import { isNotEmpty, isNotNull } from '../../utils/typedOperators';
+import { isNotEmpty } from '../../utils/typedOperators';
 import { CDTPExecutionContextEventsProvider } from './cdtpExecutionContextEventsProvider';
 
 /**
@@ -93,10 +93,19 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
     protected readonly api = this._protocolApi.Debugger;
 
     public onScriptParsed = this.addApiListener('scriptParsed', async (params: CDTP.Debugger.ScriptParsedEvent) => {
-        const creator = isNotEmpty(params.url) ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
-        await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
+        await this.createAndRegisterScript(params);
 
         return await this.toScriptParsedEvent(params);
+    });
+
+    public readonly onScriptFailedToParse = this.addApiListener('scriptFailedToParse', async (params: CDTP.Debugger.ScriptFailedToParseEvent) => {
+        // Even though we failed to parse the script, the erroneous-script is quite similar to a succesful script. It can have source-maps, etc...
+        // We register the script so when Runtime.onExceptionThrown send us the exception about the parsing failed, we'll be able to find this script and use it
+
+        // TODO: If we find any scenario where we need to differenciate between succesful and failed script, we'll have to modify the Script class or store
+        // the information about the script parsing failed somewhere.
+        await this.createAndRegisterScript(params);
+        return params;
     });
 
     constructor(
@@ -112,6 +121,11 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
 
         // Discard the relationships of loaded sources to script after we reload the web-page
         executionContextEventsProvider.onExecutionContextsCleared(() => this._loadedSourcesRegistry.clearAllRelationships());
+    }
+
+    private async createAndRegisterScript(params: CDTP.Debugger.ScriptParsedEvent) {
+        const creator = isNotEmpty(params.url) ? IdentifiedScriptCreator : UnidentifiedScriptCreator;
+        await new creator(this._scriptsRegistry, this._loadedSourcesRegistry, this._pathTransformer, this._sourceMapTransformer, params).createAndRegisterScript();
     }
 
     private async toScriptParsedEvent(params: CDTP.Debugger.ScriptParsedEvent): Promise<IScriptParsedEvent> {
@@ -181,10 +195,7 @@ abstract class ScriptCreator {
     }
 
     private sourceMapper(script: IScript, sourceMap: SourceMap | null): IMappedSourcesMapper {
-        const sourceMapper = isNotNull(sourceMap)
-            ? new MappedSourcesMapper(script, sourceMap)
-            : new NoMappedSourcesMapper(script);
-        return sourceMapper;
+        return MappedSourcesMapper.tryParsing(script, sourceMap);
     }
 
     protected scriptRange(runtimeSource: ILoadedSource<CDTPScriptUrl>) {

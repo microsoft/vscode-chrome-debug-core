@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { Protocol as CDTP } from 'devtools-protocol';
+import { Protocol as CDTP } from 'devtools-protocol';
 import { IScript } from '../../internal/scripts/script';
 import { ValidatedMap } from '../../collections/validatedMap';
 import { ExecutionContext, IExecutionContext } from '../../internal/scripts/executionContext';
@@ -12,12 +12,15 @@ import { FrameId } from '../cdtpPrimitives';
 import * as _ from 'lodash';
 import { DoNotLog } from '../../logging/decorators';
 import { printMap } from '../../collections/printing';
+import { retryAsync } from '../../../utils';
+
+const WAIT_FOR_SCRIPT_PARSED_TIMEOUT_IN_MS = 5000;
+const WAIT_FOR_SCRIPT_PARSED_INTERVAL_IN_MS = 100;
 
 /**
  * TODO: The CDTPScriptsRegistry is still a work in progress. We need to understand exactly how the ExecutionContexts, the Scripts, and the script "generations" work to figure out the best way to implement this
  * Is ExecutionContext == Generation? Or is a Generation a set of ExecutionContexts?
  */
-
 @injectable()
 export class CDTPScriptsRegistry {
     private readonly _idToExecutionContext = new ValidatedMap<CDTP.Runtime.ExecutionContextId, ExecutionContext>();
@@ -110,7 +113,10 @@ class CDTPCurrentGeneration {
     }
 
     public getScriptByCdtpId(runtimeScriptCrdpId: string): Promise<IScript> {
-        return this._cdtpIdByScript.get(runtimeScriptCrdpId);
+        // When we attach to a page, we may get Runtime.consoleAPICalled messages with a reference to a ScriptId before we get
+        // the corresponding Debugger.ScriptParsed event. Wait for some time before failing this method, to give time for the message to be parsed
+        return retryAsync(() => this._cdtpIdByScript.get(runtimeScriptCrdpId),
+            WAIT_FOR_SCRIPT_PARSED_TIMEOUT_IN_MS, WAIT_FOR_SCRIPT_PARSED_INTERVAL_IN_MS);
     }
 
     public getAllScripts(): IterableIterator<Promise<IScript>> {
