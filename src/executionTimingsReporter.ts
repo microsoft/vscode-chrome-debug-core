@@ -4,8 +4,9 @@
 
 import { HighResTimer, calculateElapsedTime } from './utils';
 import { EventEmitter } from 'events';
-import { notNullNorUndefinedElements } from './validation';
 import * as _ from 'lodash';
+import { injectable } from 'inversify';
+import { Listeners } from './chrome/communication/listeners';
 
 export type TimingsReport = {[stepName: string]: [number] | number};
 
@@ -13,6 +14,11 @@ export const stepStartedEventName = 'stepStarted';
 export const milestoneReachedEventName = 'milestoneReached';
 export const stepCompletedEventName = 'stepCompleted';
 export const requestCompletedEventName = 'requestCompleted';
+export const FinishedStartingUpEventName = 'finishedStartingUp';
+
+/**
+ * TODO: Review all this class and how we send telemetry. In V2 this model doesn't make much sense any more
+ */
 
 export interface IStepStartedEventArguments {
     stepName: string;
@@ -56,9 +62,8 @@ export interface IFinishedStartingUpEventsEmitter {
 }
 
 export class StepProgressEventsEmitter extends EventEmitter implements IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter {
-    constructor(private readonly _nestedEmitters: IStepStartedEventsEmitter[] = [] as IStepStartedEventsEmitter[]) {
+    constructor() {
         super();
-        notNullNorUndefinedElements('_nestedEmitters', this._nestedEmitters);
     }
 
     public emitStepStarted(stepName: string): void {
@@ -77,15 +82,17 @@ export class StepProgressEventsEmitter extends EventEmitter implements IStepStar
         this.emit(requestCompletedEventName, { requestName: requestName, startTime: requestStartTime, timeTakenInMilliseconds: timeTakenByRequestInMilliseconds } as IRequestCompletedEventArguments);
     }
 
+    public emitFinishedStartingUp(requestedContentWasDetected: boolean, reasonForNotDetected?: string): void {
+        this.emit(FinishedStartingUpEventName, { reasonForNotDetected, requestedContentWasDetected } as IFinishedStartingUpEventArguments);
+    }
+
     public on(event: string, listener: (...args: any[]) => void): this {
         super.on(event, listener);
-        this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.on(event as any, listener as any));
         return this;
     }
 
     public removeListener(event: string, listener: (...args: any[]) => void): this {
         super.removeListener(event, listener);
-        this._nestedEmitters.forEach(nestedEmitter => nestedEmitter.removeListener(event as any, listener as any));
         return this;
     }
 }
@@ -111,6 +118,7 @@ export interface IAllRequestProperties {
     [propertyName: string]: number[];
 }
 
+@injectable()
 export class ExecutionTimingsReporter {
     private readonly _allStartTime: HighResTimer;
     private readonly _eventsExecutionTimesInMilliseconds: {[stepName: string]: [number]} = {};
@@ -127,7 +135,9 @@ export class ExecutionTimingsReporter {
      */
     private _currentStepName = 'BeforeFirstStep';
 
-    constructor() {
+    private _finishedStartingUpListeners = new Listeners<IFinishedStartingUpEventArguments, void>();
+
+    public constructor() {
         this._currentStepStartTime = this._allStartTime = process.hrtime();
     }
 
@@ -225,5 +235,13 @@ export class ExecutionTimingsReporter {
         this._subscriptionManager.on(eventEmitter, requestCompletedEventName, (args: IRequestCompletedEventArguments) => {
             this.recordRequestCompleted(args.requestName, args.startTime, args.timeTakenInMilliseconds);
         });
+
+        this._subscriptionManager.on(eventEmitter, FinishedStartingUpEventName, (args: IFinishedStartingUpEventArguments) => {
+            this._finishedStartingUpListeners.call(args);
+        });
+    }
+
+    public onceFinishedStartingUpEventName(listener: (args: IFinishedStartingUpEventArguments) => void) {
+        this._finishedStartingUpListeners.add(listener);
     }
 }

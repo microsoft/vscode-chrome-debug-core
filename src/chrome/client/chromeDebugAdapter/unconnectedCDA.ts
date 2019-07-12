@@ -41,6 +41,8 @@ export class UnconnectedCDA implements IDebugAdapterState {
                 return this.launch(<ILaunchRequestArgs>args, telemetryPropertyCollector);
             case 'attach':
                 return this.attach(<IAttachRequestArgs>args, telemetryPropertyCollector);
+            case 'disconnect':
+                throw new Error(`The debug adapter is already disconnected`);
             default:
                 throw new Error(`The unconnected debug adapter is not prepared to respond to the request ${requestName}`);
         }

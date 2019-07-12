@@ -23,7 +23,6 @@ import { stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { telemetry } from '../telemetry';
-import { StepProgressEventsEmitter } from '../executionTimingsReporter';
 
 import { LineColTransformer } from '../transformers/lineNumberTransformer';
 import { BasePathTransformer } from '../transformers/basePathTransformer';
@@ -109,8 +108,6 @@ export class ChromeDebugLogic {
     private _currentLogMessage = Promise.resolve();
     privaRejectExceptionFilterEnabled = false;
 
-    public readonly events: StepProgressEventsEmitter;
-
     private readonly _chromeConnection: ChromeConnection;
     private readonly _sourceMapTransformer: BaseSourceMapTransformer;
     public _promiseRejectExceptionFilterEnabled = false;
@@ -140,7 +137,6 @@ export class ChromeDebugLogic {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._session = session;
         this._chromeConnection = chromeConnection;
-        this.events = new StepProgressEventsEmitter(isDefined(this._chromeConnection.events) ? [this._chromeConnection.events] : []);
 
         this._variableHandles = new variables.VariableHandles();
 

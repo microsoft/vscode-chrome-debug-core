@@ -7,6 +7,7 @@ import 'reflect-metadata';
 // TODO: Add all necesary types so we can use inversifyjs to create our components
 const TYPES = {
     ISession: Symbol.for('ISession'),
+    ExecutionTimingsReporter: Symbol.for('ExecutionTimingsReporter'),
     ITelemetryReporter: Symbol.for('ITelemetryReporter'),
     ChromeDebugAdapter: Symbol.for('ChromeDebugAdapter'),
     TerminatingReason: Symbol.for('TerminatingReason'),

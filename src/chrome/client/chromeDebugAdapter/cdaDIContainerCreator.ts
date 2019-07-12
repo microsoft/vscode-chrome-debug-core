@@ -28,6 +28,7 @@ export function createDIContainer(chromeDebugAdapter: ChromeDebugAdapter, rawDeb
     const diContainer = new DependencyInjection('ChromeDebugAdapter', debugSessionOptions.extensibilityPoints.componentCustomizationCallback);
 
     return diContainer
+    .configureValue(TYPES.ExecutionTimingsReporter, rawDebugSession.reporter)
     .configureValue(TYPES.ISession, session)
     .configureValue(TYPES.ITelemetryReporter, telemetry)
     .configureValue(TYPES.ChromeDebugAdapter, chromeDebugAdapter)

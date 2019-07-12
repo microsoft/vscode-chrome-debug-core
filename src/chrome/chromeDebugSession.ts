@@ -44,14 +44,12 @@ function isChromeError(e: RequestHandleError): e is IChromeError {
 }
 
 export class ChromeDebugSession extends LoggingDebugSession implements IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter> {
-    public static readonly FinishedStartingUpEventName = 'finishedStartingUp';
-
     private readonly _readyForUserTimeoutInMilliseconds = 5 * 60 * 1000; // 5 Minutes = 5 * 60 seconds = 5 * 60 * 1000 milliseconds
 
     private _debugAdapter: IDebugAdapter & IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>;
     private _extensionName: string;
-    public readonly events: StepProgressEventsEmitter;
-    private reporter = new ExecutionTimingsReporter();
+    public readonly events = new StepProgressEventsEmitter();
+    public reporter = new ExecutionTimingsReporter();
     private haveTimingsWhileStartingUpBeenReported = false;
 
     public constructor(obsolete_debuggerLinesAndColumnsStartAt1: boolean, obsolete_isServer: boolean, opts: IChromeDebugSessionOpts) {
@@ -59,8 +57,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
         logVersionInfo();
         this._extensionName = opts.extensionName;
-        this._debugAdapter = new (<any>opts.adapter)(opts, this);
-        this.events = new StepProgressEventsEmitter([this._debugAdapter.events]);
+        this._debugAdapter = new (<any>opts.adapter)(opts, this, this.reporter);
         this.configureExecutionTimingsReporting();
 
         const safeGetErrDetails = (err: any) => {
@@ -256,7 +253,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
 
     private configureExecutionTimingsReporting(): void {
         this.reporter.subscribeTo(this.events);
-        this._debugAdapter.events.once(ChromeDebugSession.FinishedStartingUpEventName, args => {
+        this.reporter.onceFinishedStartingUpEventName(args => {
             this.reportTimingsWhileStartingUpIfNeeded(isDefined(args) ? args.requestedContentWasDetected : true, isDefined(args) ? args.reasonForNotDetected : undefined);
         });
 
