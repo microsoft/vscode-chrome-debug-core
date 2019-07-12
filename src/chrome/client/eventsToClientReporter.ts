@@ -22,6 +22,7 @@ import { BPRecipieStatusToClientConverter } from '../internal/breakpoints/featur
 import { ConnectedCDAConfiguration } from './chromeDebugAdapter/cdaConfiguration';
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { isDefined } from '../utils/typedOperators';
+import { DoNotLog } from '../logging/decorators';
 
 export interface IOutputParameters {
     readonly output: string;
@@ -77,7 +78,8 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer) { }
 
-    public async sendOutput(params: IOutputParameters) {
+        @DoNotLog()
+        public async sendOutput(params: IOutputParameters) {
         const event = new OutputEvent(params.output, params.category) as DebugProtocol.OutputEvent;
 
         if (isDefined(params.variablesReference)) {
@@ -91,6 +93,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         this._session.sendEvent(event);
     }
 
+    @DoNotLog()
     public async sendSourceWasLoaded(params: ISourceWasLoadedParameters): Promise<void> {
         const clientSource = await this._sourceToClientConverter.toSource(params.source);
         const event = new LoadedSourceEvent(params.reason, <Source>clientSource); // TODO: Update source to have an optional sourceReference so we don't need to do this cast
@@ -98,6 +101,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         this._session.sendEvent(event);
     }
 
+    @DoNotLog()
     public async sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void> {
         const breakpointStatus = await this._bpRecipieStatusToClientConverter.toExistingBreakpoint(params.bpRecipeStatus);
         const event = new BreakpointEvent(params.reason, breakpointStatus);
@@ -105,6 +109,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         this._session.sendEvent(event);
     }
 
+    @DoNotLog()
     public async sendExceptionThrown(params: IExceptionThrownParameters): Promise<void> {
         return this.sendOutput({
             output: this._exceptionStackTracePrinter.toStackTraceString(params.exceptionStackTrace),
@@ -113,10 +118,12 @@ export class EventsToClientReporter implements IEventsToClientReporter {
         });
     }
 
+    @DoNotLog()
     public async sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void> {
         return this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
     }
 
+    @DoNotLog()
     public async sendDebuggeeIsResumed(): Promise<void> {
         return this._session.sendEvent(new ContinuedEvent(ChromeDebugLogic.THREAD_ID));
     }

@@ -64,7 +64,7 @@ export class MethodsCalledLogger<T extends object> {
         const handler = {
             get: <K extends keyof T>(target: T, propertyKey: K, receiver: any) => {
                 const originalPropertyValue = target[propertyKey];
-                if (!shouldLog(originalPropertyValue)) {
+                if (!shouldLog(originalPropertyValue, propertyKey)) {
                     return originalPropertyValue;
                 }
 
@@ -115,8 +115,12 @@ export class MethodsCalledLogger<T extends object> {
         return MethodsCalledLogger._nextCallId++;
     }
 
+    private printMethodName(propertyKey: PropertyKey): string {
+        return `${this._objectToWrapName}.${String(propertyKey)}`;
+    }
+
     private printMethodCall(propertyKey: PropertyKey, methodCallArguments: any[]): string {
-        return `${this._objectToWrapName}.${String(propertyKey)}(${this.printArguments(methodCallArguments)})`;
+        return `${this.printMethodName(propertyKey)}(${this.printArguments(methodCallArguments)})`;
     }
 
     private printMethodResponse(outcome: Outcome, resultOrException: unknown): string {
@@ -128,17 +132,17 @@ export class MethodsCalledLogger<T extends object> {
     }
 
     private logCallStart(propertyKey: PropertyKey, methodCallArguments: any[], callId: number): void {
-        const message = `START            ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
+        const message = `START ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
         logger.verbose(message);
     }
 
-    private logSyncPartFinished(propertyKey: PropertyKey, methodCallArguments: any[], callId: number): void {
-        const message = `PROMISE-RETURNED ${callId}: ${this.printMethodCall(propertyKey, methodCallArguments)}`;
+    private logSyncPartFinished(propertyKey: PropertyKey, _methodCallArguments: any[], callId: number): void {
+        const message = `SNRET ${callId}: ${this.printMethodName(propertyKey)}`;
         logger.verbose(message);
     }
 
     private logCall(propertyKey: PropertyKey, synchronicity: Synchronicity, methodCallArguments: any[], outcome: Outcome, resultOrException: unknown, callId: number): void {
-        const endPrefix = callId ? `END              ${callId}: ` : '';
+        const endPrefix = callId ? `END   ${callId}: ` : '';
         const message = `${endPrefix}${this.printMethodCall(propertyKey, methodCallArguments)} ${this.printMethodSynchronicity(synchronicity)}  ${this.printMethodResponse(outcome, resultOrException)}`;
         logger.verbose(message);
     }

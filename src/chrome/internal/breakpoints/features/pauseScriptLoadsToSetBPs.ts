@@ -18,6 +18,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { printClassDescription } from '../../../utils/printing';
 import { PrivateTypes } from '../diTypes';
+import { DoNotLog } from '../../../logging/decorators';
 
 @printClassDescription
 export class HitStillPendingBreakpoint extends BaseNotifyClientOfPause {
@@ -82,6 +83,7 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
         }
     }
 
+    @DoNotLog()
     private async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (this.isInstrumentationPause(paused)) {
             await this._existingBPsForJustParsedScriptSetter.waitUntilBPsAreSet(paused.callFrames[0].location.script);

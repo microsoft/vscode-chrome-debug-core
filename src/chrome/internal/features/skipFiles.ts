@@ -5,7 +5,7 @@
 import * as nls from 'vscode-nls';
 import { inject, injectable } from 'inversify';
 import * as utils from '../../../utils';
-import { logger } from 'vscode-debugadapter/lib/logger';
+import { logger } from 'vscode-debugadapter';
 import { IStackTracePresentationDetailsProvider } from '../stackTraces/stackTracePresenter';
 import { newResourceIdentifierMap, IResourceIdentifier } from '../sources/resourceIdentifier';
 import { LocationInLoadedSource, LocationInScript, Position } from '../locations/location';
@@ -21,6 +21,7 @@ import { ISource } from '../sources/source';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { isTrue, isFalse, isDefined } from '../../utils/typedOperators';
+import { DoNotLog } from '../../logging/decorators';
 const localize = nls.loadMessageBundle();
 
 export interface ISkipFilesConfiguration {
@@ -50,6 +51,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
      * If the source has a saved skip status, return that, whether true or false.
      * If not, check it against the patterns list.
      */
+    @DoNotLog()
     public shouldSkipSource(sourcePath: ILoadedSource): boolean | undefined {
         const status = this.getSkipStatus(sourcePath);
         if (typeof status === 'boolean') {
@@ -63,6 +65,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
         return undefined;
     }
 
+    @DoNotLog()
     public callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[] {
         return isTrue(this.shouldSkipSource(locationInLoadedSource.source))
             ? [{

@@ -8,6 +8,7 @@ import { CDTPCallFrameRegistry } from '../registries/cdtpCallFrameRegistry';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { ScriptCallFrame, CallFrameWithState } from '../../internal/stackTraces/callFrame';
+import { DoNotLog } from '../../logging/decorators';
 
 export interface IEvaluateOnCallFrameRequest {
     readonly frame: ScriptCallFrame<CallFrameWithState>;
@@ -57,6 +58,7 @@ export class CDTPDebuggeeStateInspector implements IDebuggeeStateInspector {
         return this.api.Runtime.callFunctionOn(params);
     }
 
+    @DoNotLog()
     public getProperties(params: CDTP.Runtime.GetPropertiesRequest): Promise<CDTP.Runtime.GetPropertiesResponse> {
         return this.api.Runtime.getProperties(params);
     }

@@ -82,7 +82,7 @@ export class ExistingBPsForJustParsedScriptSetter {
 
     private async setBPsForScript(justParsedScript: IScript): Promise<void> {
         const defer = this.finishedSettingBPsForScriptDefer(justParsedScript);
-        await asyncMap(justParsedScript.allSources, source => this.withLogging.setBPsFromSourceIntoScript(source, justParsedScript));
+        await asyncMap(justParsedScript.allSources, source => this.setBPsFromSourceIntoScript(source, justParsedScript));
         defer.resolve();
     }
 
@@ -90,7 +90,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         const bpRecipesInSource = this._bpRecipesForSourceRetriever.bpRecipesForSource(sourceWhichMayHaveBPs.identifier);
 
         for (const bpRecipe of bpRecipesInSource) {
-            await this.withLogging.setBPFromSourceIntoScriptIfNeeded(bpRecipe, justParsedScript, sourceWhichMayHaveBPs);
+            await this.setBPFromSourceIntoScriptIfNeeded(bpRecipe, justParsedScript, sourceWhichMayHaveBPs);
         }
     }
 
@@ -100,7 +100,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         const runtimeLocationsWhichAlreadyHaveThisBPR = debuggeeBPRecipes.map(recipe => recipe.runtimeSourceLocation);
 
         const manyBPRecipesInScripts = await this._sourceToScriptMapper.mapBPRecipe(bpRecipeResolved, script => script === justParsedScript);
-        await this.withLogging.setBPRsInScriptIfNeeded(manyBPRecipesInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
+        await this.setBPRsInScriptIfNeeded(manyBPRecipesInScripts, runtimeLocationsWhichAlreadyHaveThisBPR);
     }
 
     private async setBPRsInScriptIfNeeded(bprInScripts: BPRecipeInScript[], runtimeLocationsWhichAlreadyHaveThisBPR: LocationInLoadedSource[]) {
