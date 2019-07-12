@@ -94,10 +94,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     protected _expectingStopReason: ReasonType;
     private _waitAfterStep = Promise.resolve();
 
-    private _lineColTransformer: LineColTransformer;
     protected _chromeConnection: ChromeConnection;
-    protected _sourceMapTransformer: BaseSourceMapTransformer;
-    protected _pathTransformer: BasePathTransformer;
 
     protected _clientRequestedSessionEnd: boolean;
     protected _hasTerminated: boolean;
@@ -157,14 +154,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         this._scriptContainer = new ScriptContainer();
 
-        this._lineColTransformer = new (lineColTransformer || LineColTransformer)(this._session);
-        this._sourceMapTransformer = new (sourceMapTransformer || EagerSourceMapTransformer)(this._scriptContainer);
-        this._pathTransformer = new (pathTransformer || RemotePathTransformer)();
-
         this._transformers = {
-            lineColTransformer: this._lineColTransformer,
-            sourceMapTransformer: this._sourceMapTransformer,
-            pathTransformer: this._pathTransformer
+            lineColTransformer: new (lineColTransformer || LineColTransformer)(this._session),
+            sourceMapTransformer: new (sourceMapTransformer || EagerSourceMapTransformer)(this._scriptContainer),
+            pathTransformer: new (pathTransformer || RemotePathTransformer)()
         };
 
         this._breakpoints = new Breakpoints(this, this._chromeConnection);
@@ -186,19 +179,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._scriptContainer.scriptsByIdMap;
     }
 
-    public get pathTransformer(): BasePathTransformer {
-        return this._pathTransformer;
-    }
-
     public get committedBreakpointsByUrl(): Map<string, ISetBreakpointResult[]> {
         return this._breakpoints.committedBreakpointsByUrl;
     }
 
-    public get sourceMapTransformer(): BaseSourceMapTransformer {
-        return this._sourceMapTransformer;
-    }
-
-    public get lineColTransformer(): LineColTransformer { return this._lineColTransformer; }
+    public get pathTransformer(): BasePathTransformer { return this._transformers.pathTransformer; }
+    public get sourceMapTransformer(): BaseSourceMapTransformer { return this._transformers.sourceMapTransformer; }
+    public get lineColTransformer(): LineColTransformer { return this._transformers.lineColTransformer; }
 
     public get session() { return this._session; }
 
@@ -206,7 +193,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
      * Called on 'clearEverything' or on a navigation/refresh
      */
     protected clearTargetContext(): void {
-        this._sourceMapTransformer.clearTargetContext();
+        this.sourceMapTransformer.clearTargetContext();
 
         this._scriptContainer.reset();
 
@@ -214,7 +201,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._breakpoints.reset();
         }
 
-        this._pathTransformer.clearTargetContext();
+        this.pathTransformer.clearTargetContext();
     }
 
     /* __GDPR__
@@ -227,12 +214,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     */
     public initialize(args: IInitializeRequestArgs): DebugProtocol.Capabilities {
         if (args.supportsMapURLToFilePathRequest) {
-            this._pathTransformer = new FallbackToClientPathTransformer(this._session);
+            this._transformers.pathTransformer = new FallbackToClientPathTransformer(this._session);
         }
 
         this._isVSClient = args.clientID === 'visualstudio';
         utils.setCaseSensitivePaths(!this._isVSClient);
-        this._sourceMapTransformer.isVSClient = this._isVSClient;
+        this.sourceMapTransformer.isVSClient = this._isVSClient;
 
         if (args.pathFormat !== 'path') {
             throw errors.pathFormat();
@@ -320,8 +307,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
         }
 
-        this._sourceMapTransformer.launch(args);
-        await this._pathTransformer.launch(args);
+        this.sourceMapTransformer.launch(args);
+        await this.pathTransformer.launch(args);
 
         if (!args.__restart) {
             /* __GDPR__
@@ -346,8 +333,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public async attach(args: IAttachRequestArgs): Promise<void> {
         this._attachMode = true;
         this.commonArgs(args);
-        this._sourceMapTransformer.attach(args);
-        await this._pathTransformer.attach(args);
+        this.sourceMapTransformer.attach(args);
+        await this.pathTransformer.attach(args);
 
         if (!args.port) {
             args.port = 9229;
@@ -759,7 +746,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             this._columnBreakpointsEnabled = false;
         }
 
-        this._lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
+        this.lineColTransformer.columnBreakpointsEnabled = this._columnBreakpointsEnabled;
     }
 
     public getBreakpointsResolvedDefer(scriptId: string): PromiseDefer<void> {
@@ -801,9 +788,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
             this._scriptContainer.add(script);
 
-            const mappedUrl = await this._pathTransformer.scriptParsed(script.url);
+            const mappedUrl = await this.pathTransformer.scriptParsed(script.url);
 
-            const sourceMapsP = this._sourceMapTransformer.scriptParsed(mappedUrl, script.url, script.sourceMapURL).then(async sources => {
+            const sourceMapsP = this.sourceMapTransformer.scriptParsed(mappedUrl, script.url, script.sourceMapURL).then(async sources => {
                 if (this._hasTerminated) {
                     return undefined;
                 }
@@ -1492,7 +1479,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 outputStringP = Promise.resolve(`No runtime script with url: ${scriptsRest}\n`);
             }
         } else {
-            outputStringP = this._scriptContainer.getAllScriptsString(this._pathTransformer, this._sourceMapTransformer);
+            outputStringP = this._scriptContainer.getAllScriptsString(this.pathTransformer, this.sourceMapTransformer);
         }
 
         return outputStringP.then(scriptsStr => {
@@ -1506,7 +1493,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async _shouldSmartStepCallFrame(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
         const stackFrame = this._stackFrames.callFrameToStackFrame(frame, this._scriptContainer, this.getReadonlyOrigin());
-        return this._smartStepper.shouldSmartStep(stackFrame, this._pathTransformer, this._sourceMapTransformer);
+        return this._smartStepper.shouldSmartStep(stackFrame, this.pathTransformer, this.sourceMapTransformer);
     }
 
     /**
