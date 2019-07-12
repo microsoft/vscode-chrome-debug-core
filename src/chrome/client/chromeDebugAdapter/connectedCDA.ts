@@ -94,4 +94,8 @@ export class ConnectedCDA extends BaseCDAState {
         await terminatingCDA.install();
         await this._chromeDebugAdapter.terminate(terminatingCDA);
     }
+
+    public toString(): string {
+        return `Connected to the debuggee`;
+    }
 }

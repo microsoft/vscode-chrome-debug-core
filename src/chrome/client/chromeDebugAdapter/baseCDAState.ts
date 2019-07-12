@@ -21,7 +21,7 @@ export abstract class BaseCDAState implements IDebugAdapterState {
         const allDeclarers = requestHandlerDeclarers.concat({
             getCommandHandlerDeclarations: () => CommandHandlerDeclaration.fromLiteralObject(requestHandlerMappingsWithDefault)
         });
-        this._requestProcessor = new RequestProcessor(allDeclarers);
+        this._requestProcessor = new RequestProcessor(`${this}`, allDeclarers);
     }
 
     public async install(): Promise<this> {
