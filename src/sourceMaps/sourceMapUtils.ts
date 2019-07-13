@@ -116,7 +116,7 @@ export function applySourceMapPathOverrides(sourcePath: string, sourceMapPathOve
         mappedPath = utils.properJoin(mappedPath); // Fix any ..
         if (isVSClient && leftPattern === 'webpack:///./*' && !utils.existsSync(mappedPath)) {
             // This is a workaround for a bug in ASP.NET debugging in VisualStudio because the wwwroot is not properly configured
-            const pathFixingASPNETBug = utils.properJoin(rightPattern.replace(/\*/g, utils.properJoin('../ClientApp', wildcardValue)));
+            const pathFixingASPNETBug = path.join(rightPattern.replace(/\*/g, path.join('../ClientApp', wildcardValue)));
             if (utils.existsSync(pathFixingASPNETBug)) {
                 ++aspNetFallbackCount;
                 mappedPath = pathFixingASPNETBug;
