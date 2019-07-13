@@ -16,7 +16,6 @@ import { IResourceIdentifier } from './internal/sources/resourceIdentifier';
 import { isNotEmpty, isEmpty, isDefined, hasMatches, isUndefined, defaultWhenEmpty } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { notEmpty } from '../validation';
-import isNull = require('lodash/isNull');
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -110,8 +109,8 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping | 
     }
 
     // Search the filesystem under the webRoot for the file that best matches the given url
-    let pathName = url.parse(canonicalUrl).pathname; // This can be null
-    if (isNull(pathName) || isEmpty(pathName) || pathName === '/') {
+    let pathName = <string | undefined | null>url.parse(canonicalUrl).pathname; // This can be null even though the typing says otherwise
+    if (pathName === null || isEmpty(pathName) || pathName === '/') {
         return '';
     }
 
