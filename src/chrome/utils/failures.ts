@@ -1,3 +1,5 @@
+import { telemetry } from '../../telemetry';
+
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
@@ -11,7 +13,7 @@ export function undefinedOnFailure<R>(operation: () => R): R | undefined {
     try {
         return operation();
     } catch (exception) {
-        // TODO DIEGO: Report telemetry for this
+        telemetry.reportError('undefinedOnFailure', exception);
         return undefined;
     }
 }
@@ -20,7 +22,7 @@ export async function asyncUndefinedOnFailure<R>(operation: () => Promise<R>): P
     try {
         return await operation();
     } catch (exception) {
-        // TODO DIEGO: Report telemetry for this
+        telemetry.reportError('asyncUndefinedOnFailure', exception);
         return undefined;
     }
 }
