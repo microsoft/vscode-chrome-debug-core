@@ -34,20 +34,24 @@ export class ClientLifecycleRequestsHandler implements ICommandHandlerDeclarer {
     }
 
     public async configurationDone(): Promise<void> {
+        // At the moment it doesn't make sense to use the runner for attaching, so we only use it for launching
         if (this._configuration.scenarioType === ScenarioType.Launch) {
-            // At the moment it doesn't make sense to use the runner for attaching, so we only use it for launching
-            try {
-                await this._debuggeeRunner.run(new TelemetryPropertyCollector());
-                this.events.emitMilestoneReached('RequestedNavigateToUserPage');
 
+            // We split the debuggeeRunner into run and waitUntilDebuggeeIsRunning because we don't want to fail or block the configurationDone
+            // based on whether the debuggee succesfully starts to run or not (in Chrome case if loading the web-page fails we want
+            // to leave the debug session open, so the user can see the error message in Chrome)
+            await this._debuggeeRunner.run(new TelemetryPropertyCollector());
+
+            // We don't want to block on this promise
+            this._debuggeeRunner.waitUntilRunning().then(() => {
+                this.events.emitMilestoneReached('RequestedNavigateToUserPage');
                 this.events.emitFinishedStartingUp(true);
-            } catch (exception) {
+            }, (exception: unknown) => {
                 const reason = exception instanceof UserPageLaunchedError
                     ? exception.reason
                     : 'UnspecifiedReason';
-                    this.events.emitFinishedStartingUp(false, reason);
-                throw exception;
-            }
+                this.events.emitFinishedStartingUp(false, reason);
+            });
         }
     }
 }
