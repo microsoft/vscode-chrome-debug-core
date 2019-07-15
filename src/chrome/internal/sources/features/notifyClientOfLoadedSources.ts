@@ -80,4 +80,8 @@ export class NotifyClientOfLoadedSources implements IServiceComponent {
 
         return this._eventsToClientReporter.sendSourceWasLoaded({ reason: loadedSourceEventReason, source: source });
     }
+
+    public toString(): string {
+        return 'NotifyClientOfLoadedSources';
+    }
 }

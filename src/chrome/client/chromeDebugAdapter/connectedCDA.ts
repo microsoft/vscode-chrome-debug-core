@@ -66,7 +66,7 @@ export class ConnectedCDA extends BaseCDAState {
     }
 
     public async install(): Promise<this> {
-        this.events.emitStepStarted('Attach.ConfigureDebuggingSession');
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.onClose');
         this._chromeConnection.onClose(async () => {
             if (!this._ignoreNextDisconnectedFromWebSocket) {
                 // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
@@ -76,18 +76,28 @@ export class ConnectedCDA extends BaseCDAState {
             }
         });
 
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.enableDomains');
         await this._domainsEnabler.enableDomains(); // Enables all the domains that were registered
+
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.super.install');
         await super.install(); // Some of the components make CDTP calls on their install methods. We need to call this after enabling domings, to prevent a component hanging this method
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.daLogic.install');
         await this._chromeDebugAdapterLogic.install();
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.pathTransfofmer.install');
         await this._basePathTransformer.install();
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.supportedDomains.install');
         await this._supportedDomains.install();
 
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.serviceComponents.install');
         for (const serviceComponent of this._serviceComponents) {
+            this.events.emitStepStarted(`Attach.ConfigureDebuggingSession.${serviceComponent}.install`);
             await serviceComponent.install();
         }
 
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.runIfWaitingForDebugger');
         await this._runtimeStarter.runIfWaitingForDebugger();
 
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.debuggeeInitializer');
         await this._debuggeeInitializer.initialize();
 
         this._session.sendEvent(new InitializedEvent());
