@@ -8,6 +8,7 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPSchemaProvider } from '../../cdtpDebuggee/features/cdtpSchemaProvider';
+import { DoNotLog } from '../../logging/decorators';
 
 export interface ISupportedDomains extends IInstallableComponent {
     isSupported(domainName: string): boolean;
@@ -19,6 +20,7 @@ export class SupportedDomains implements ISupportedDomains {
 
     constructor(@inject(TYPES.ISchemaProvider) private readonly _cdtpSchemaProvider: CDTPSchemaProvider) { }
 
+    @DoNotLog()
     public isSupported(domainName: string): boolean {
         return this._domains.has(domainName);
     }

@@ -6,8 +6,9 @@ interface HasLoggingMarks {
     [DoNotLogMark]?: boolean;
 }
 
-export function shouldLog(object: HasLoggingMarks) {
-    return util.types.isProxy(object) || !object || object[DoNotLogMark] !== true;
+export function shouldLog<T extends HasLoggingMarks>(object: T, property: string | symbol | number) {
+    return property !== 'toString'
+        && (util.types.isProxy(object) || !object || object[DoNotLogMark] !== true);
 }
 
 export function DoNotLog(): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void {

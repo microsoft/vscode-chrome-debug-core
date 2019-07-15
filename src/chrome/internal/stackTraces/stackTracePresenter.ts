@@ -26,6 +26,7 @@ import { CurrentStackTraceProvider } from './currentStackTraceProvider';
 import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import * as _ from 'lodash';
 import { isDefined, isNotEmpty } from '../../utils/typedOperators';
+import { DoNotLog } from '../../logging/decorators';
 
 export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];
@@ -62,6 +63,7 @@ export class StackTracePresenter implements IInstallableComponent {
         @multiInject(TYPES.IStackTracePresentationLogicProvider) private readonly _stackTracePresentationLogicProviders: IStackTracePresentationDetailsProvider[],
         @inject(TYPES.IAsyncDebuggingConfiguration) private readonly _breakpointFeaturesSupport: IAsyncDebuggingConfigurer) { }
 
+    @DoNotLog()
     public async stackTrace(format: IStackTraceFormat, firstFrameIndex: number, framesCountOrNull: number | null): Promise<IStackTracePresentation> {
         if (!this._currentStackStraceProvider.isPaused()) {
             return Promise.reject(errors.noCallStackAvailable());

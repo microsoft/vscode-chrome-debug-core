@@ -5,6 +5,7 @@ import { HandlesRegistry } from './handlesRegistry';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LocalFileURL } from '../internal/sources/resourceIdentifier';
 import { injectable } from 'inversify';
+import { DoNotLog } from '../logging/decorators';
 
 export interface ISourceToClientConverter {
     toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source>;
@@ -14,6 +15,7 @@ export interface ISourceToClientConverter {
 export class SourceToClientConverter implements ISourceToClientConverter {
     constructor(private readonly _handlesRegistry: HandlesRegistry) { }
 
+    @DoNotLog()
     public async toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source> {
         const exists = await utils.existsAsync(loadedSource.identifier.canonicalized);
 

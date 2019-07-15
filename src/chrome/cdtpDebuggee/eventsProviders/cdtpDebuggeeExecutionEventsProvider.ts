@@ -95,13 +95,19 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
 
     private async toScope(scope: CDTP.Debugger.Scope): Promise<Scope> {
         if (validateNonPrimitiveRemoteObject(scope.object)) {
+            // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
+            const possiblyStartLocation = await asyncUndefinedOnFailure(async () => isDefined(scope.startLocation) && scope.startLocation.lineNumber !== -1
+                ? await this._cdtpLocationParser.getLocationInScript(scope.startLocation)
+                : undefined);
+            const possiblyEndLocation = await asyncUndefinedOnFailure(async () => isDefined(scope.endLocation) && scope.endLocation.lineNumber !== -1
+                ? await this._cdtpLocationParser.getLocationInScript(scope.endLocation)
+                : undefined);
             return new Scope(
                 scope.type,
                 scope.object,
                 scope.name,
-                // TODO FILE BUG: Chrome sometimes returns line -1 when the doc says it's 0 based
-                await asyncUndefinedOnFailure(async () => isDefined(scope.startLocation) ? await this._cdtpLocationParser.getLocationInScript(scope.startLocation) : undefined),
-                await asyncUndefinedOnFailure(async () => isDefined(scope.endLocation) ? await this._cdtpLocationParser.getLocationInScript(scope.endLocation) : undefined));
+                possiblyStartLocation,
+                possiblyEndLocation);
         } else {
             throw new Error(`Expected the remote object of a scope to be of type object yet it wasn't: ${JSON.stringify(scope.object)}`);
         }

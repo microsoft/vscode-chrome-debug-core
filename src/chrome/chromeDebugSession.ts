@@ -276,7 +276,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
                     const clonedResponse = Object.assign({}, response);
                     clonedResponse.body = Object.assign({}, response.body);
                     clonedResponse.body.content = '<removed script source for logs>';
-                    return originalLogVerbose.call(logger, `To client: ${JSON.stringify(clonedResponse)}`);
+                    return originalLogVerbose.call(logger, `To   client: ${JSON.stringify(clonedResponse)}`);
                 } else {
                     return originalLogVerbose.call(logger, textToLog);
                 }

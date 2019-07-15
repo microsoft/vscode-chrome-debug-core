@@ -29,7 +29,7 @@ export function printObjectDescription(objectToPrint: unknown, fallbackPrintDesc
                 } else if (objectToPrint.constructor === Object) {
                     printed = fallbackPrintDescription(objectToPrint);
                 } else {
-                    printed = `${objectToPrint}(${objectToPrint.constructor.name})`;
+                    printed = `a ${objectToPrint.constructor.name}`;
                 }
             }
         }

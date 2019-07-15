@@ -9,6 +9,7 @@ import { inject, injectable } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { ConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isTrue } from '../chrome/utils/typedOperators';
+import { DoNotLog } from '../chrome/logging/decorators';
 
 /**
  * Converts from 1 based lines/cols on the client side to 0 based lines/cols on the target side
@@ -52,6 +53,7 @@ export class LineColTransformer implements IDebugTransformer {
         }
     }
 
+    @DoNotLog()
     public convertDebuggerLocationToClient(location: { line?: number; column?: number }): void {
         if (typeof location.line === 'number') {
             location.line = this.convertDebuggerLineToClient(location.line);

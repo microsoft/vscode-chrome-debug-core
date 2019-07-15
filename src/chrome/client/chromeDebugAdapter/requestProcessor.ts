@@ -2,12 +2,14 @@ import { ValidatedMap } from '../../collections/validatedMap';
 import { CommandText } from '../requests';
 import { RequestHandler, ICommandHandlerDeclarer } from '../../internal/features/components';
 import { printArray } from '../../collections/printing';
+import { DoNotLog } from '../../logging/decorators';
 
 export class RequestProcessor {
     private readonly _requestNameToHandler = new ValidatedMap<CommandText, RequestHandler>();
 
     public constructor(private readonly _stateDescription: string, private readonly _requestHandlerDeclarers: ICommandHandlerDeclarer[]) { }
 
+    @DoNotLog()
     public async processRequest(requestName: CommandText, args: unknown): Promise<unknown> {
         const requestHandler = this._requestNameToHandler.tryGetting(requestName);
         if (requestHandler !== undefined) {

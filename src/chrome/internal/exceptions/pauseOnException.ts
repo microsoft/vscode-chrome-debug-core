@@ -18,6 +18,7 @@ import { printClassDescription } from '../../utils/printing';
 import * as _ from 'lodash';
 import { isDefined } from '../../utils/typedOperators';
 import { IDebuggeeExecutionController } from '../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
+import { DoNotLog } from '../../logging/decorators';
 
 type ExceptionBreakMode = 'never' | 'always' | 'unhandled' | 'userUnhandled';
 
@@ -86,6 +87,7 @@ export class PauseOnExceptionOrRejection {
         this._promiseRejectionsStrategy = promiseRejectionsStrategy;
     }
 
+    @DoNotLog()
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (paused.reason === 'exception') {
             // If we are here is because we either configured the debugee to pauser on unhandled or handled exceptions

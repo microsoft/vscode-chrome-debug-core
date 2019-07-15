@@ -21,6 +21,7 @@ import { IDebuggeeSteppingController } from '../../cdtpDebuggee/features/cdtpDeb
 import { printClassDescription } from '../../utils/printing';
 import * as _ from 'lodash';
 import { isNotNull } from '../../utils/typedOperators';
+import { DoNotLog } from '../../logging/decorators';
 const localize = nls.loadMessageBundle();
 
 export interface ISmartStepLogicConfiguration {
@@ -58,6 +59,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         this.configure();
     }
 
+    @DoNotLog()
     public isEnabled(): boolean {
         return this._isEnabled;
     }
@@ -75,6 +77,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         await this.stepInIfOnSkippedSource();
     }
 
+    @DoNotLog()
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (this.isEnabled() && await this.shouldSkip(paused.callFrames[0])) {
             this._smartStepCount++;
@@ -110,6 +113,7 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
         return false;
     }
 
+    @DoNotLog()
     public callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[] {
         return this.isEnabled() && !locationInLoadedSource.source.isMappedSource()
             ? [{

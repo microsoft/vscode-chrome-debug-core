@@ -25,6 +25,7 @@ import { PrivateTypes } from '../diTypes';
 import { printClassDescription } from '../../../utils/printing';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 import { OnPausedForBreakpointCallback, defaultOnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
+import { DoNotLog } from '../../../logging/decorators';
 
 @printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
@@ -75,6 +76,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
         }
     }
 
+    @DoNotLog()
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (paused.hitBreakpoints.length > 0) {
             const bpRecipes = paused.hitBreakpoints.filter(bp => this._debuggeeBPRsSetForClientBPRFinder.containsBPRecipe(bp.unmappedBPRecipe));

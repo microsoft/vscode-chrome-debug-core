@@ -5,6 +5,7 @@ import { IDebugAdapterState } from '../../../debugAdapterInterfaces';
 import { ICommandHandlerDeclarer, CommandHandlerDeclaration, RequestHandlerMappings } from '../../internal/features/components';
 import { injectable } from 'inversify';
 import { ISession } from '../session';
+import { DoNotLog } from '../../logging/decorators';
 
 @injectable()
 export abstract class BaseCDAState implements IDebugAdapterState {
@@ -29,6 +30,7 @@ export abstract class BaseCDAState implements IDebugAdapterState {
         return this;
     }
 
+    @DoNotLog()
     public async processRequest(requestName: CommandText, args: unknown): Promise<unknown> {
         return await this._requestProcessor.processRequest(requestName, args);
     }

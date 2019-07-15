@@ -13,6 +13,7 @@ import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
 import { printClassDescription, printInstanceDescription } from '../../../utils/printing';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { logger } from 'vscode-debugadapter';
+import { DoNotLog } from '../../../logging/decorators';
 
 type SteppingAction = () => Promise<void>;
 
@@ -133,6 +134,7 @@ class UnknownState extends CurrentlyIdle { }
  * This class provides functionality to step thorugh the debuggee's code
  */
 @injectable()
+@printClassDescription
 export class SyncStepping {
     private _status: SyncSteppingStatus = new CurrentlyIdle(s => this.changeStatus(s), this._eventsToClientReporter);
 
@@ -162,6 +164,7 @@ export class SyncStepping {
         return this._debugeeExecutionControl.pause();
     }
 
+    @DoNotLog()
     private async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         const result = await this._status.onProvideActionForWhenPaused(paused);
         logger.log(`${this}.onProvideActionForWhenPaused() returns ${result}`);
