@@ -71,4 +71,8 @@ export class TerminatingCDA extends BaseCDAState {
         // TODO: Figure out when we shouldn't send a TerminatedEvent if (isTrue((<ILaunchRequestArgs>this._configuration.args).noDebug)) { }
         this._session.sendEvent(new TerminatedEvent(restart));
     }
+
+    public toString(): string {
+        return `Terminating the debug session`;
+    }
 }

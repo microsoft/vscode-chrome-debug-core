@@ -23,7 +23,7 @@ const WAIT_FOR_SCRIPT_PARSED_INTERVAL_IN_MS = 100;
  */
 @injectable()
 export class CDTPScriptsRegistry {
-    private readonly _idToExecutionContext = new ValidatedMap<CDTP.Runtime.ExecutionContextId, ExecutionContext>();
+    private _idToExecutionContext = new ValidatedMap<CDTP.Runtime.ExecutionContextId, ExecutionContext>();
     private _scripts = new CDTPCurrentGeneration();
 
     public registerExecutionContext(executionContextId: CDTP.Runtime.ExecutionContextId, frameId: FrameId): IExecutionContext {
@@ -72,6 +72,9 @@ export class CDTPScriptsRegistry {
         // If Users start seeing those kind of issues, we'll need to figure out what enhancements we need to do to handle those cases
         // Also see: loadedSourcesRegistry.ts
         this._scripts = new CDTPCurrentGeneration();
+
+        // The same execution context id can be used after a cleared message
+        this._idToExecutionContext = new ValidatedMap<CDTP.Runtime.ExecutionContextId, ExecutionContext>();
     }
 
     public toString(): string {

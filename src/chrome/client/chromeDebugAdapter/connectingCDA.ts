@@ -29,4 +29,8 @@ export class ConnectingCDA extends BaseCDAState {
         await newState.install();
         return newState;
     }
+
+    public toString(): string {
+        return `Connecting to the debuggee`;
+    }
 }

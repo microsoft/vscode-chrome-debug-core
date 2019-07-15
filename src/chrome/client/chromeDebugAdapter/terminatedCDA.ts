@@ -12,4 +12,8 @@ export class TerminatedCDA extends BaseCDAState {
     constructor(@inject(TYPES.ISession) protected readonly _session: ISession) {
         super([], {});
     }
+
+    public toString(): string {
+        return `Terminated the debug session`;
+    }
 }

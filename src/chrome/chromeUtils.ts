@@ -109,8 +109,8 @@ export function targetUrlToClientPath(aUrl: string, pathMapping: IPathMapping | 
     }
 
     // Search the filesystem under the webRoot for the file that best matches the given url
-    let pathName = url.parse(canonicalUrl).pathname;
-    if (isEmpty(pathName) || pathName === '/') {
+    let pathName = <string | undefined | null>url.parse(canonicalUrl).pathname; // This can be null even though the typing says otherwise
+    if (pathName === null || isEmpty(pathName) || pathName === '/') {
         return '';
     }
 

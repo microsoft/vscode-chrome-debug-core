@@ -69,4 +69,8 @@ export class UninitializedCDA extends BaseCDAState {
         const newState = this._unconnectedCDAProvider(args);
         return { capabilities, newState };
     }
+
+    public toString(): string {
+        return `Waiting for the debug session to be initialized`;
+    }
 }
