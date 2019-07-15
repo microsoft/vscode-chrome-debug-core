@@ -2,6 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import { telemetry } from '../../telemetry';
+
 /**
  * We use these functions to handle recoverable exceptions and rejections (Instead of throwing or rejecting and ending the debugger
  * experience, we just default to returning undefined or another value because the operation isn't critical for the debugging experience)
@@ -11,7 +13,7 @@ export function undefinedOnFailure<R>(operation: () => R): R | undefined {
     try {
         return operation();
     } catch (exception) {
-        // TODO DIEGO: Report telemetry for this
+        telemetry.reportError('undefinedOnFailure', exception);
         return undefined;
     }
 }
@@ -20,7 +22,7 @@ export async function asyncUndefinedOnFailure<R>(operation: () => Promise<R>): P
     try {
         return await operation();
     } catch (exception) {
-        // TODO DIEGO: Report telemetry for this
+        telemetry.reportError('asyncUndefinedOnFailure', exception);
         return undefined;
     }
 }
