@@ -1,8 +1,8 @@
-import { telemetry } from '../../telemetry';
-
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import { telemetry } from '../../telemetry';
 
 /**
  * We use these functions to handle recoverable exceptions and rejections (Instead of throwing or rejecting and ending the debugger
