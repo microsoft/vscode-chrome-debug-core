@@ -62,7 +62,7 @@ import { SourceResolver } from './chrome/internal/sources/sourceResolver';
 import { ICDTPDebuggeeExecutionEventsProvider, PausedEvent } from './chrome/cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { ScenarioType } from './chrome/client/chromeDebugAdapter/unconnectedCDA';
 import { ILoggingConfiguration } from './chrome/internal/services/logging';
-import { IFinishedStartingUpEventArguments, StepProgressEventsEmitter } from './executionTimingsReporter';
+import { IFinishedStartingUpEventArguments, StepProgressEventsEmitter, ExecutionTimingsReporter } from './executionTimingsReporter';
 import { ILogEventsProvider, ILogEntry } from './chrome/cdtpDebuggee/eventsProviders/cdtpLogEventsProvider';
 import { IDOMInstrumentationBreakpointsSetter } from './chrome/cdtpDebuggee/features/cdtpDOMInstrumentationBreakpointsSetter';
 import { IDebuggeePausedHandler } from './chrome/internal/features/debuggeePausedHandler';
@@ -74,6 +74,7 @@ import { CDTPScriptsRegistry } from './chrome/cdtpDebuggee/registries/cdtpScript
 import { EagerSourceMapTransformer } from './transformers/eagerSourceMapTransformer';
 import { ISourceToClientConverter } from './chrome/client/sourceToClientConverter';
 import { IEventsToClientReporter } from './chrome/client/eventsToClientReporter';
+import { UserPageLaunchedError } from './chrome/client/clientLifecycleRequestsHandler';
 
 export {
     chromeConnection,
@@ -218,5 +219,9 @@ export {
 
     IEventsToClientReporter,
 
-    TerminatingReason
+    TerminatingReason,
+
+    UserPageLaunchedError,
+
+    ExecutionTimingsReporter,
 };

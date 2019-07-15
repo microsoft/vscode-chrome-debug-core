@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as utils from '../utils';
-import { IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents } from '../executionTimingsReporter';
+import { IStepStartedEventsEmitter, StepProgressEventsEmitter, IObservableEvents, ExecutionTimingsReporter } from '../executionTimingsReporter';
 
 import * as chromeUtils from './chromeUtils';
 
@@ -28,7 +28,12 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
 
     public constructor(
         @inject(TYPES.ILogger) private logger: ILogger,
-        @inject(TYPES.ITelemetryReporter) private readonly telemetry: ITelemetryReporter) {}
+        @inject(TYPES.ITelemetryReporter) private readonly telemetry: ITelemetryReporter,
+        @inject(TYPES.ExecutionTimingsReporter) reporter?: ExecutionTimingsReporter) { // The extension uses null here
+            if (isDefined(reporter)) {
+                reporter.subscribeTo(this.events);
+            }
+        }
 
     async getTarget(address: string, port: number, targetFilter?: ITargetFilter, targetUrl?: string): Promise<ITarget> {
         const targets = await this.getAllTargets(address, port, targetFilter, targetUrl);

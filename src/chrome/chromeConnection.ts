@@ -4,7 +4,7 @@
 
 import * as WebSocket from 'ws';
 
-import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter } from '../executionTimingsReporter';
+import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, ExecutionTimingsReporter } from '../executionTimingsReporter';
 import * as errors from '../errors';
 import * as utils from '../utils';
 import { logger } from 'vscode-debugadapter';
@@ -106,16 +106,15 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     private _socket: WebSocket | null = null;
     private _client?: Client;
     private _targetFilter: ITargetFilter | undefined;
-    private _targetDiscoveryStrategy: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>;
     private _attachedTarget: ITarget | undefined = undefined;
-    public readonly events: StepProgressEventsEmitter;
+    public readonly events: StepProgressEventsEmitter = new StepProgressEventsEmitter();
 
-    constructor(@inject(TYPES.ChromeTargetDiscovery) targetDiscovery: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>,
+    constructor(@inject(TYPES.ChromeTargetDiscovery) private readonly _targetDiscoveryStrategy: ITargetDiscoveryStrategy & IObservableEvents<IStepStartedEventsEmitter>,
         @inject(TYPES.IDebuggeeLauncher) private readonly _debuggeeLauncher: IDebuggeeLauncher,
+        @inject(TYPES.ExecutionTimingsReporter) reporter: ExecutionTimingsReporter,
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration) {
         this._targetFilter = _configuration.extensibilityPoints.targetFilter;
-        this._targetDiscoveryStrategy = targetDiscovery;
-        this.events = new StepProgressEventsEmitter([this._targetDiscoveryStrategy.events]);
+        reporter.subscribeTo(this.events);
     }
 
     public get isAttached(): boolean { return isDefined(this._client); }
@@ -156,6 +155,12 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
      * Attach the websocket to the first available tab in the chrome instance with the given remote debugging port number.
      */
     public attach(address = '127.0.0.1', port = 9222, targetUrl?: string, timeout?: number, extraCRDPChannelPort?: number): Promise<void> {
+        /* __GDPR__FRAGMENT__
+           "StepNames" : {
+              "Attach" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+           }
+         */
+        this.events.emitStepStarted('Attach');
         return this._attach(address, port, targetUrl, timeout, extraCRDPChannelPort)
             .then(() => { });
     }

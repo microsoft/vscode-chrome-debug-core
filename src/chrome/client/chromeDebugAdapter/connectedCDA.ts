@@ -19,6 +19,7 @@ import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { IDebuggeeInitializer, TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
 import { ISupportedDomains } from '../../internal/domains/supportedDomains';
+import { StepProgressEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 
@@ -26,6 +27,8 @@ export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedC
 export class ConnectedCDA extends BaseCDAState {
     public static SCRIPTS_COMMAND = '.scripts';
     private _ignoreNextDisconnectedFromWebSocket = false;
+
+    private readonly events = new StepProgressEventsEmitter();
 
     constructor(
         @inject(TYPES.ChromeDebugLogic) private readonly _chromeDebugAdapterLogic: ChromeDebugLogic,
@@ -39,6 +42,7 @@ export class ConnectedCDA extends BaseCDAState {
         @multiInject(TYPES.IServiceComponent) private readonly _serviceComponents: IServiceComponent[],
         @inject(TYPES.BasePathTransformer) private readonly _basePathTransformer: BasePathTransformer,
         @multiInject(TYPES.ICommandHandlerDeclarer) requestHandlerDeclarers: ICommandHandlerDeclarer[],
+        @inject(TYPES.ExecutionTimingsReporter) reporter: ExecutionTimingsReporter,
         @inject(TYPES.ISupportedDomains) private readonly _supportedDomains: ISupportedDomains,
     ) {
         super(requestHandlerDeclarers, {
@@ -47,6 +51,7 @@ export class ConnectedCDA extends BaseCDAState {
             'attach': () => { throw new Error("Can't attach to a new target while connected to a previous target"); },
             'disconnect': (args: DebugProtocol.DisconnectArguments) => this.disconnect(args),
         });
+        reporter.subscribeTo(this.events);
     }
 
     private async disconnect(_args: DebugProtocol.DisconnectArguments): Promise<void> {
@@ -61,6 +66,7 @@ export class ConnectedCDA extends BaseCDAState {
     }
 
     public async install(): Promise<this> {
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession');
         this._chromeConnection.onClose(async () => {
             if (!this._ignoreNextDisconnectedFromWebSocket) {
                 // When the client requests a disconnect, we kill Chrome, which will in turn disconnect the websocket, so we'll also get this event.
@@ -85,6 +91,7 @@ export class ConnectedCDA extends BaseCDAState {
         await this._debuggeeInitializer.initialize();
 
         this._session.sendEvent(new InitializedEvent());
+        this.events.emitStepCompleted('NotifyInitialized');
 
         return this;
     }

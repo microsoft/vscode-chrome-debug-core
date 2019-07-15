@@ -3,24 +3,28 @@
  *--------------------------------------------------------*/
 
 import { Protocol as CDTP } from 'devtools-protocol';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export interface INetworkCacheConfigurer {
     setCacheDisabled(params: CDTP.Network.SetCacheDisabledRequest): Promise<void>;
 }
 
+@injectable()
 export class CDTPNetworkCacheConfigurer implements INetworkCacheConfigurer {
-    constructor(protected api: CDTP.NetworkApi) {
-    }
+    private _api: CDTP.NetworkApi = this._protocolApi.Network;
+
+    constructor(@inject(TYPES.CDTPClient) private readonly _protocolApi: CDTP.ProtocolApi) {}
 
     public enable(parameters: CDTP.Network.EnableRequest): Promise<void> {
-        return this.api.enable(parameters);
+        return this._api.enable(parameters);
     }
 
     public disable(): Promise<void> {
-        return this.api.disable();
+        return this._api.disable();
     }
 
     public setCacheDisabled(params: CDTP.Network.SetCacheDisabledRequest): Promise<void> {
-        return this.api.setCacheDisabled(params);
+        return this._api.setCacheDisabled(params);
     }
 }

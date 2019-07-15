@@ -3,15 +3,15 @@
  *--------------------------------------------------------*/
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from '../../chromeDebugSession';
-import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../../../executionTimingsReporter';
+import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
 import { UninitializedCDA } from './uninitializedCDA';
 import { IDebugAdapter, IDebugAdapterState, ITelemetryPropertyCollector } from '../../../debugAdapterInterfaces';
 import { CommandText } from '../requests';
 import { createDIContainer } from './cdaDIContainerCreator';
-import { TYPES } from '../../dependencyInjection.ts/types';
 import { TerminatingCDA } from './terminatingCDA';
 import { logger } from 'vscode-debugadapter';
 import { isUndefined } from '../../utils/typedOperators';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -22,10 +22,12 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
 
     private _state: IDebugAdapterState;
 
-    constructor(private readonly _debugSessionOptions: IChromeDebugSessionOpts, private readonly _rawDebugSession: ChromeDebugSession) {
+    constructor(private readonly _debugSessionOptions: IChromeDebugSessionOpts, private readonly _rawDebugSession: ChromeDebugSession,
+        reporter: ExecutionTimingsReporter) {
         const uninitializedCDA = this._diContainer.createComponent<UninitializedCDA>(TYPES.UninitializedCDA);
         this.waitUntilInitialized = uninitializedCDA.install();
         this._state = uninitializedCDA;
+        reporter.subscribeTo(this.events);
     }
 
     public async processRequest(requestName: CommandText, args: unknown, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<unknown> {

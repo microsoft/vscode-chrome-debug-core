@@ -27,6 +27,7 @@ import { ValidatedMap } from '../collections/validatedMap';
 import { TYPES } from '../dependencyInjection.ts/types';
 import { interfaces } from 'inversify';
 import { DependencyInjection } from '../dependencyInjection.ts/di';
+import { CDTPNetworkCacheConfigurer } from './features/cdtpNetworkCacheConfigurer';
 
 const exportedIdentifierToClassMapping = new ValidatedMap<symbol, interfaces.Newable<any>>([
     [TYPES.IDebuggeeExecutionController, CDTPDebuggeeExecutionController],
@@ -52,6 +53,7 @@ const exportedIdentifierToClassMapping = new ValidatedMap<symbol, interfaces.New
     [TYPES.IDomainsEnabler, CDTPDomainsEnabler],
     [TYPES.IRuntimeStarter, CDTPRuntimeStarter],
     [TYPES.IPausedOverlayConfigurer, CDTPPausedOverlayConfigurer],
+    [TYPES.INetworkCacheConfiguration, CDTPNetworkCacheConfigurer],
     [TYPES.ISchemaProvider, CDTPSchemaProvider],
 ]);
 
