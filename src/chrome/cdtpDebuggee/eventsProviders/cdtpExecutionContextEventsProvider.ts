@@ -11,8 +11,12 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { FrameId } from '../cdtpPrimitives';
 
+export interface IExecutionContextEventsProvider {
+    onExecutionContextsCleared(listener: (args: void) => void): void;
+}
+
 @injectable()
-export class CDTPExecutionContextEventsProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.RuntimeApi> {
+export class CDTPExecutionContextEventsProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.RuntimeApi> implements IExecutionContextEventsProvider {
     protected readonly api = this._protocolApi.Runtime;
 
     public readonly onExecutionContextsCleared = this.addApiListener('executionContextsCleared', (params: void) => params);

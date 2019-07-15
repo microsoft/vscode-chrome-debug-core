@@ -11,6 +11,7 @@ import { ILoadedSource, ContentsLocation } from '../loadedSource';
 import { newResourceIdentifierMap } from '../resourceIdentifier';
 import { LoadedSourceEventReason } from '../../../chromeDebugAdapter';
 import { IServiceComponent } from '../../features/components';
+import { IExecutionContextEventsProvider } from '../../../cdtpDebuggee/eventsProviders/cdtpExecutionContextEventsProvider';
 
 /**
  * This class will keep the client updated of the sources that are associated with the scripts that are currently loaded in the debuggee
@@ -22,9 +23,11 @@ export class NotifyClientOfLoadedSources implements IServiceComponent {
 
     constructor(
         @inject(TYPES.IScriptParsedProvider) public readonly _cdtpOnScriptParsedEventProvider: IScriptParsedProvider,
+        @inject(TYPES.ExecutionContextEventsProvider) public readonly _executionContextEventsProvider: IExecutionContextEventsProvider,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter) {
-        this._cdtpOnScriptParsedEventProvider.onScriptParsed(scriptParsed => this.onScriptParsed(scriptParsed));
-    }
+            this._cdtpOnScriptParsedEventProvider.onScriptParsed(scriptParsed => this.onScriptParsed(scriptParsed));
+            this._executionContextEventsProvider.onExecutionContextsCleared(() => this.onExecutionContextsCleared());
+        }
 
     public install(): this {
         return this;
