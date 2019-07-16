@@ -27,6 +27,7 @@ import { BasePathTransformer } from '../../../transformers/basePathTransformer';
 import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTransformer';
 import { isNotEmpty } from '../../utils/typedOperators';
 import { CDTPExecutionContextEventsProvider } from './cdtpExecutionContextEventsProvider';
+import { DebuggerInternalSourceUrlPrefix } from '../features/cdtpDebugeeStateInspector';
 
 /**
  * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
@@ -91,8 +92,8 @@ export interface IScriptParsedProvider {
 
 export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnosticsModule<CDTP.DebuggerApi, void, CDTP.Debugger.EnableResponse> implements IScriptParsedProvider {
     protected readonly api = this._protocolApi.Debugger;
-
-    public onScriptParsed = this.addApiListener('scriptParsed', async (params: CDTP.Debugger.ScriptParsedEvent) => {
+    // We ignore scripts that we generated ourselves while evaluating expressions in the debuggee context
+    public onScriptParsed = this.addApiListenerWithFilter('scriptParsed', script => !script.url.startsWith(DebuggerInternalSourceUrlPrefix), async (params: CDTP.Debugger.ScriptParsedEvent) => {
         await this.createAndRegisterScript(params);
 
         return await this.toScriptParsedEvent(params);
