@@ -29,6 +29,8 @@ export interface IDebuggeeStateInspector {
     evaluateOnCallFrame(params: IEvaluateOnCallFrameRequest): Promise<CDTP.Debugger.EvaluateOnCallFrameResponse>;
 }
 
+export const DebuggerInternalSourceUrlPrefix = '<debugger-internal>';
+
 export class AddSourceUriToExpession {
     private nextEvaluateScriptId = 0;
 
@@ -38,7 +40,7 @@ export class AddSourceUriToExpession {
         const sourceUrlPrefix = '\n//# sourceURL=';
 
         if (expression.indexOf(sourceUrlPrefix) < 0) {
-            expression += `${sourceUrlPrefix}<debugger-internal>/${this._prefix}/id=${this.nextEvaluateScriptId++}`;
+            expression += `${sourceUrlPrefix}${DebuggerInternalSourceUrlPrefix}/${this._prefix}/id=${this.nextEvaluateScriptId++}`;
         }
 
         return expression;

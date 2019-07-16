@@ -29,9 +29,17 @@ export abstract class CDTPEnableableDiagnosticsModule<T extends IEnableableApi<E
 export abstract class CDTPEventsEmitterDiagnosticsModule<T extends {} & IEnableableApi<EnableParameters, EnableResponse>, EnableParameters = void, EnableResponse = void>
     extends CDTPEnableableDiagnosticsModule<T, EnableParameters, EnableResponse> {
     public addApiListener<O, T>(eventName: string, transformation: (params: O) => PromiseOrNot<T>): (transformedListener: ((params: T) => void)) => void {
+        return this.addApiListenerWithFilter(eventName, () => true, transformation);
+    }
+
+    public addApiListenerWithFilter<O, T>(eventName: string, filter: (params: O) => boolean, transformation: (params: O) => PromiseOrNot<T>): (transformedListener: ((params: T) => void)) => void {
 
         const transformedListenerRegistryPromise = new TransformedListenerRegistry<O, T>(this.constructor.name, async originalListener => {
-            this.api.on(eventName, originalListener);
+            this.api.on(eventName, (args: O) => {
+                if (filter(args)) {
+                    return originalListener(args);
+                }
+            });
         }, transformation).install();
 
         this.enable(); // The domain will be enabled eventually (Assuming this happens during the startup/initial configuration phase). We don't block on it.
