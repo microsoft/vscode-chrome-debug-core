@@ -52,6 +52,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     public reporter = new ExecutionTimingsReporter();
     private haveTimingsWhileStartingUpBeenReported = false;
 
+    private shouldSendExtensiveTelemetry = true; // Until we know what the client is, we send telemetry by default
+
     public constructor(obsolete_debuggerLinesAndColumnsStartAt1: boolean, obsolete_isServer: boolean, opts: IChromeDebugSessionOpts) {
         super(undefined, obsolete_debuggerLinesAndColumnsStartAt1, obsolete_isServer);
 
@@ -123,6 +125,10 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
      * Overload dispatchRequest to the debug adapters' Promise-based methods instead of DebugSession's callback-based methods
      */
     public dispatchRequest(request: DebugProtocol.Request): Promise<void> {
+        if (request.command === 'initialize') {
+            this.shouldSendExtensiveTelemetry = (<DebugProtocol.InitializeRequestArguments>request.arguments).clientID === 'visualstudio';
+        }
+
         // We want the request to be non-blocking, so we won't await for reportTelemetry
         return this.reportTelemetry(`ClientRequest/${request.command}`, async (reportFailure, telemetryPropertyCollector) => {
             const response: DebugProtocol.Response = new Response(request);
@@ -167,7 +173,9 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             Object.assign(properties, telemetryPropertyCollector.getProperties());
 
             // GDPR annotations go with each individual request type
-            telemetry.reportEvent(eventName, properties);
+            if (this.shouldSendExtensiveTelemetry) {
+                telemetry.reportEvent(eventName, properties);
+            }
         };
 
         const reportFailure = (e: any) => {
