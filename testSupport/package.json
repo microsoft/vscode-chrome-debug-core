@@ -1,6 +1,6 @@
 {
   "name": "vscode-chrome-debug-core-testsupport",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Tools for tests that use vscode-debugadapter-testsupport and vscode-chrome-debug-core",
   "main": "out/index.js",
   "typings": "out/index.d.ts",
