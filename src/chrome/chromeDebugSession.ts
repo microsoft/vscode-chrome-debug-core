@@ -128,7 +128,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             const response: DebugProtocol.Response = new Response(request);
 
             try {
-                logger.verbose(`From client: ${request.command}(${JSON.stringify(request.arguments)})`);
+                logger.log(`From client: ${request.command}(${JSON.stringify(request.arguments)})`);
                 telemetryPropertyCollector.addTelemetryProperty('requestType', request.type);
                 response.body = await this._debugAdapter.processRequest(<CommandText>request.command, request.arguments, telemetryPropertyCollector);
                 this.sendResponse(response);
@@ -269,9 +269,9 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
     }
 
     public sendResponse(response: DebugProtocol.Response): void {
-        const originalLogVerbose = logger.verbose;
+        const originalLogVerbose = logger.log;
         try {
-            logger.verbose = textToLog => {
+            logger.log = textToLog => {
                 if (isDefined(response) && response.command === 'source' && response.body && response.body.content) {
                     const clonedResponse = Object.assign({}, response);
                     clonedResponse.body = Object.assign({}, response.body);
@@ -283,7 +283,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
             };
             super.sendResponse(response);
         } finally {
-            logger.verbose = originalLogVerbose;
+            logger.log = originalLogVerbose;
         }
     }
 }
