@@ -78,6 +78,12 @@ function patchLaunchFn(patchLaunchArgsCb: PatchLaunchArgsCb): void {
         return patchLaunchArgs(launchArgs)
             .then(() => origLaunch.call(dc, launchArgs));
     };
+
+    const origAttachRequest = dc.attachRequest;
+    dc.attachRequest = (attachArgs: any) => {
+        return patchLaunchArgs(attachArgs)
+            .then(() => origAttachRequest.call(dc, attachArgs));
+    };
 }
 
 export interface ISetupOpts {
