@@ -10,12 +10,12 @@
   "author": "Microsoft Corporation",
   "license": "MIT",
   "dependencies": {
-    "vscode-debugadapter-testsupport": "^1.24.0"
+    "vscode-debugadapter-testsupport": "^1.35.0"
   },
   "devDependencies": {
     "@types/node": "^7.0.8",
     "typescript": "^2.4.2",
-    "vscode-chrome-debug-core": "^3.17.8",
-    "vscode-debugprotocol": "^1.24.0"
+    "vscode-chrome-debug-core": "^6.7.52",
+    "vscode-debugprotocol": "^1.32.0"
   }
 }
