@@ -40,9 +40,9 @@ export class SourceToScriptMapper {
             // I'm assuming that the first location will always be the earliest/leftmost location. If that is not the case we'll need to fix this code
             const choosenLocation = possibleLocations[0];
             if (possibleLocations.length === 1) {
-                logger.verbose(`Breakpoint at ${range} mapped to the only option: ${choosenLocation}`);
+                logger.log(`Breakpoint at ${range} mapped to the only option: ${choosenLocation}`);
             } else {
-                logger.verbose(`Breakpoint at ${range} can be mapped to ${printArray('many options:', possibleLocations)}. Chose the first one: ${choosenLocation}`);
+                logger.log(`Breakpoint at ${range} can be mapped to ${printArray('many options:', possibleLocations)}. Chose the first one: ${choosenLocation}`);
             }
 
             return choosenLocation;

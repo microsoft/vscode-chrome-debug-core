@@ -43,8 +43,8 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
 
         const selectedTarget = targets[0];
 
-        this.logger.verbose(`Attaching to target: ${JSON.stringify(selectedTarget)}`);
-        this.logger.verbose(`WebSocket Url: ${selectedTarget.webSocketDebuggerUrl}`);
+        this.logger.log(`Attaching to target: ${JSON.stringify(selectedTarget)}`);
+        this.logger.log(`WebSocket Url: ${selectedTarget.webSocketDebuggerUrl}`);
 
         return selectedTarget;
     }

@@ -86,7 +86,7 @@ class LoggingSocket extends WebSocket {
         }
 
         super.send(data, _opts, cb);
-        logger.verbose('→ To target: ' + msgStr);
+        logger.log('→ To target: ' + msgStr);
     }
 }
 
