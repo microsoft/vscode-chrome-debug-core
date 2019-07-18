@@ -175,9 +175,9 @@ export class VariablesManager {
 
     /* __GDPR__
         "ClientRequest/setVariable" : {
-            "{include}": [
-                "{IExecutionResultTelemetryProperties}",
-                "{DebugCommonProperties}"
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
             ]
         }
     */
