@@ -33,5 +33,6 @@ export class NoDebuggeeInitializer implements IDebuggeeInitializer {
 
 export interface IDebuggeeRunner {
     run(telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<void>;
+    waitUntilRunning(): Promise<void>;
     stop(): Promise<void>;
 }
