@@ -501,7 +501,7 @@ export class ChromeDebugLogic {
             if (isDefined(response.exceptionDetails)) {
                 // Not an error, getter could be `get foo() { throw new Error('bar'); }`
                 const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
-                logger.verbose('Exception thrown evaluating getter - ' + exceptionMessage);
+                logger.log('Exception thrown evaluating getter - ' + exceptionMessage);
                 return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
             } else {
                 return this.remoteObjectToVariable(propDesc.name, response.result, parentEvaluateName);
@@ -907,7 +907,7 @@ export class ChromeDebugLogic {
         }
 
         if (isDefined(args.frame) && isEmpty(expression)) {
-            logger.verbose(`Completions: Returning global completions`);
+            logger.log(`Completions: Returning global completions`);
 
             const callFrame = args.frame;
 
@@ -922,7 +922,7 @@ export class ChromeDebugLogic {
         } else {
             expression = _.defaultTo(expression, 'this');
 
-            logger.verbose(`Completions: Returning for expression '${expression}'`);
+            logger.log(`Completions: Returning for expression '${expression}'`);
             const getCompletionsFn = `(function(x){var a=[];for(var o=x;o!==null&&typeof o !== 'undefined';o=o.__proto__){a.push(Object.getOwnPropertyNames(o))};return a})(${expression})`;
             const response = await this.waitThenDoEvaluate(getCompletionsFn, args.frame, { returnByValue: true });
             if (isDefined(response.exceptionDetails)) {

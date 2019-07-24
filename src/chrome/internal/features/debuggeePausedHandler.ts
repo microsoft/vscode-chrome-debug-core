@@ -89,7 +89,7 @@ export class DebuggeePausedHandler implements IDebuggeePausedHandler {
         const nonExecutedRelevantActions = allActionsToTake.filter(action => !(action === highestPriorityActionToTake));
 
         // TODO: Report telemetry here
-        this._logging.verbose(printArray(`Paused - choosen: ${highestPriorityActionToTake} other actions = `, nonExecutedRelevantActions));
+        this._logging.info(printArray(`Paused - choosen: ${highestPriorityActionToTake} other actions = `, nonExecutedRelevantActions));
     }
 
     public async reprocessLatestPause(): Promise<void> {

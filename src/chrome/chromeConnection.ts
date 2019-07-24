@@ -70,9 +70,9 @@ class LoggingSocket extends WebSocket {
                 if ((msgObj.result && msgObj.result.scriptSource)) {
                     // If this message contains the source of a script, we log everything but the source
                     msgObj.result.scriptSource = '<removed script source for logs>';
-                    logger.verbose('← From target: ' + JSON.stringify(msgObj));
+                    logger.log('← From target: ' + JSON.stringify(msgObj));
                 } else {
-                    logger.verbose('← From target: ' + msgStr);
+                    logger.log('← From target: ' + msgStr);
                 }
             }
         });
@@ -133,12 +133,12 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
     public async open(telemetryPropertyCollector: ITelemetryPropertyCollector) {
 
         if (this._configuration.scenarioType === ScenarioType.Launch) {
-            logger.verbose('[ChromeConnection]: Launching debugee...');
+            logger.log('[ChromeConnection]: Launching debugee...');
             const result = await this._debuggeeLauncher.launch(this._configuration.args, telemetryPropertyCollector);
             await this.attach(result.address, result.port, result.url, this._configuration.args.timeout, this._configuration.args.extraCRDPChannelPort);
         }
         else if (this._configuration.scenarioType === ScenarioType.Attach) {
-            logger.verbose('[ChromeConnection]: Attaching to an existing instance of debugee...');
+            logger.log('[ChromeConnection]: Attaching to an existing instance of debugee...');
             const attachArgs = <IAttachRequestArgs>this._configuration.args;
             await this.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
         }
