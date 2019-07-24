@@ -47,11 +47,20 @@ export class Logging implements ILogger {
             *
             * Note that any logger.verbose call done before we call logger.setup will get logged anyways
             */
-            this.patchLoggerToFilterOutVerboseMessages();
+            this.patchLoggerToFilterOutVerboseMessages(configuration.logLevel);
         }
     }
 
-    private patchLoggerToFilterOutVerboseMessages(): void {
-        logger.verbose = () => {};
+    private patchLoggerToFilterOutVerboseMessages(logLevel: LogLevel): void {
+        const originalLoggerVerbose = logger.verbose;
+        logger.verbose = function (msg: string) {
+            /* vscode-debugadapter logs the vscode protocol messages to/from the client as verbose. We want to consider it info in this extension.
+             * We override logger.verbose to drop everything else, but keep these messages when we are logging on level 'info'/'log'
+             */
+            // See https://github.com/microsoft/vscode-debugadapter-node/blob/768e505c7d362f733a29c89fa973c6285ce8fb27/adapter/src/loggingDebugSession.ts#L50
+            if (logLevel === LogLevel.Log && msg.startsWith('To client:') || msg.startsWith('From client:')) {
+                originalLoggerVerbose.call(this, msg);
+            }
+        };
     }
 }
