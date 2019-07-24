@@ -40,5 +40,18 @@ export class Logging implements ILogger {
         // "legacy" log file path from the CDA subclass
         const logFilePath = _.defaultTo(configuration.logFilePath, _.defaultTo(extensibilityPoints.logFilePath, logToFile));
         logger.setup(configuration.logLevel, logFilePath, configuration.shouldLogTimestamps);
+
+        if (configuration.logLevel !== LogLevel.Verbose) {
+            /* We want the logger.verbose message to not appear when we configure the logger to only log info level. The logger doesn't support this
+            * so we monkey-patch it.
+            *
+            * Note that any logger.verbose call done before we call logger.setup will get logged anyways
+            */
+            this.patchLoggerToFilterOutVerboseMessages();
+        }
+    }
+
+    private patchLoggerToFilterOutVerboseMessages(): void {
+        logger.verbose = () => {};
     }
 }

@@ -60,11 +60,21 @@ export class UnconnectedCDA implements IDebugAdapterState {
     private parseLoggingConfiguration(args: ILaunchRequestArgs | IAttachRequestArgs): ILoggingConfiguration {
         let traceValue: Logger.LogLevel;
         switch (args.trace) {
+            case true:
             case 'verbose':
                 traceValue = Logger.LogLevel.Verbose;
                 break;
-            default:
+            case 'info':
+                traceValue = Logger.LogLevel.Log;
+                break;
+            case 'warn':
                 traceValue = Logger.LogLevel.Warn;
+                break;
+            case 'error':
+                traceValue = Logger.LogLevel.Error;
+                break;
+            default:
+                traceValue = Logger.LogLevel.Stop; // By default we don't log
         }
 
         return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: isTrue(args.logTimestamps) };
