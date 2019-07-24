@@ -61,7 +61,6 @@ export class UnconnectedCDA implements IDebugAdapterState {
         let traceValue: Logger.LogLevel;
         switch (args.trace) {
             case true:
-            case 'true':
             case 'verbose':
                 traceValue = Logger.LogLevel.Verbose;
                 break;
