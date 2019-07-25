@@ -199,7 +199,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                     const sourcesMapper = script.sourceMapper;
                     const pos = sourcesMapper.getPositionInScript(new LocationInLoadedSource(s, Position.origin));
                     if (pos.isEmpty()) {
-                        throw new Error(`Source '${s}' start not found in script.`);
+                        throw new Error(localize('error.skipFiles.couldntFindSourceStartInScript', `Source '{0}' start not found in script.`, s.toString()));
                     }
 
                     libPositions.push(pos.enclosingRange.start);

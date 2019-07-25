@@ -84,7 +84,7 @@ export function errorFromEvaluate(errMsg: string): DebugProtocol.Message {
 export function sourceRequestIllegalHandle(): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2027,
-        format: 'sourceRequest error: illegal handle',
+        format: localize('error.source.requestedIllegalHandle', 'sourceRequest error: illegal handle'),
         sendTelemetry: true
     });
 }
@@ -99,7 +99,7 @@ export function sourceRequestCouldNotRetrieveContent(): DebugProtocol.Message {
 export function pathFormat(): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2018,
-        format: 'debug adapter only supports native paths',
+        format: localize('error.path.onlyNativePaths', 'debug adapter only supports native paths'),
         sendTelemetry: true
     });
 }
@@ -115,7 +115,7 @@ export function runtimeConnectionTimeout(timeoutMs: number, errMsg: string): Deb
 export function stackFrameNotValid(): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2020,
-        format: 'stack frame not valid',
+        format: localize('error.stackFrame.notValid', 'stack frame not valid'),
         sendTelemetry: true
     });
 }
@@ -130,7 +130,7 @@ export function noCallStackAvailable(): DebugProtocol.Message {
 export function invalidThread(threadId: number): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2030,
-        format: 'Invalid thread {_thread}',
+        format: localize('error.thread.invalid', 'Invalid thread {_thread}'),
         variables: { _thread: threadId + '' },
         sendTelemetry: true
     });
@@ -139,7 +139,7 @@ export function invalidThread(threadId: number): DebugProtocol.Message {
 export function exceptionInfoRequestError(): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2031,
-        format: 'exceptionInfoRequest error',
+        format: localize('error.exceptionInfoRequest.error', 'exceptionInfoRequest error'),
         sendTelemetry: true
     });
 }
@@ -147,7 +147,7 @@ export function exceptionInfoRequestError(): DebugProtocol.Message {
 export function noStoredException(): DebugProtocol.Message {
     return new ErrorWithMessage({
         id: 2032,
-        format: 'exceptionInfoRequest error: no stored exception',
+        format: localize('error.exceptionInfoRequest.noStoredException', 'exceptionInfoRequest error: no stored exception'),
         sendTelemetry: true
     });
 }

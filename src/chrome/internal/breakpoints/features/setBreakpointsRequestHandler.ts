@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { injectable, inject } from 'inversify';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../../features/components';
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -45,22 +52,18 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             const bpRecipesStatus = await this._breakpointsLogic.updateBreakpointsForFile(desiredBPRecipes, telemetryPropertyCollector);
             const response = { breakpoints: await asyncMap(bpRecipesStatus, bprs => this._bpRecipieStatusToClientConverter.toBreakpoint(bprs)) };
             if (response.breakpoints.length !== args.breakpoints.length) {
-                throw new Error(`The response the debug adapter generated for setBreakpoints have ${response.breakpoints.length} breakpoints in the response yet ${args.breakpoints.length} breakpoints were set. Response: ${JSON.stringify(response.breakpoints)}`);
+                throw new Error(localize('error.setBreakpoints.expectedResponseToMatchRequestLength', 'The response the debug adapter generated for setBreakpoints have {0} breakpoints in the response yet {1} breakpoints were set. Response: {1}, response.breakpoints.length', args.breakpoints.length, JSON.stringify(response.breakpoints)));
             }
 
             return response;
         } else {
-            throw new Error(`Expected the set breakpoints arguments to have a list of breakpoints yet it was ${args.breakpoints}`);
+            throw new Error(localize('error.setBreakpoints.argumentNotDefined', `Expected the set breakpoints arguments to have a list of breakpoints yet it was {0}`, args.breakpoints));
         }
     }
 
     private toBPRecipes(args: DebugProtocol.SetBreakpointsArguments): BPRecipesInSource {
-        if (args.breakpoints === undefined) {
-            throw new Error(`Expected the set breakpoints arguments to include a breakpoints list on the 'breakpoints' variable. The arguments are: ${JSON.stringify(args)}`);
-        }
-
         const source = this._clientSourceParser.toSource(args.source);
-        const breakpoints = args.breakpoints.map(breakpoint => this.toBPRecipe(source, breakpoint));
+        const breakpoints = args.breakpoints!.map(breakpoint => this.toBPRecipe(source, breakpoint));
         return new BPRecipesInSource(source, breakpoints);
     }
 
@@ -85,10 +88,10 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             } else if (isNotEmpty(actionWhenHit.logMessage)) {
                 return new ConditionalPause(actionWhenHit.logMessage);
             } else {
-                throw new Error(`Couldn't parse the desired action when hit for the breakpoint: 'condition' (${actionWhenHit.condition}), 'hitCondition' (${actionWhenHit.hitCondition}) or 'logMessage' (${actionWhenHit.logMessage})`);
+                throw new Error(localize('error.setBreakpoints.failedToParseActionWhenHit', `Couldn't parse the requested action when hit for the breakpoint: 'condition' ({0}), 'hitCondition' ({1}) or 'logMessage' ({2}), actionWhenHit.condition`, actionWhenHit.hitCondition, actionWhenHit.logMessage));
             }
         } else { // howManyDefined >= 2
-            throw new Error(`Expected a single one of 'condition' (${actionWhenHit.condition}), 'hitCondition' (${actionWhenHit.hitCondition}) and 'logMessage' (${actionWhenHit.logMessage}) to be defined, yet multiple were defined.`);
+            throw new Error(localize('error.setBreakpoints.cantHaveTwoActions', `Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.`, actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
         }
     }
 

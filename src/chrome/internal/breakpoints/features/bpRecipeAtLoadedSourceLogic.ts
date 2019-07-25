@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as _ from 'lodash';
 import { IDebuggeeBreakpointsSetter, IEventsConsumer } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
@@ -72,7 +75,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
         if (this._onPausedForBreakpointCallback === defaultOnPausedForBreakpointCallback) {
             this._onPausedForBreakpointCallback = onPausedForBreakpointCallback;
         } else {
-            throw new Error(`setOnPausedForBreakpointCallback was already configured to a different value`);
+            throw new Error(localize('error.loadedSourceSetter.callbacAlreadyConfigured', 'setOnPausedForBreakpointCallback was already configured to a different value'));
         }
     }
 

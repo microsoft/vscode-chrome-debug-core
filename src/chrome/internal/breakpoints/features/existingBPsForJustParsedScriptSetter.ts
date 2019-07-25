@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ILoadedSource } from '../../sources/loadedSource';
 import { asyncMap } from '../../../collections/async';
 import { promiseDefer, IPromiseDefer } from '../../../../utils';
@@ -62,7 +65,7 @@ export class ExistingBPsForJustParsedScriptSetter {
              */
             this._bpRecipeWasResolvedEventsConsumer = new MakeAllEventsAsyncConsumer(eventsConsumer);
         } else {
-            throw new Error(`setEventsConsumer was already configured to a different value`);
+            throw new Error(localize('error.existingBPsForScriptSetter.setEventsConsumerAlreadyConfigured', 'setEventsConsumer was already configured to a different value'));
         }
     }
 
@@ -115,7 +118,7 @@ export class ExistingBPsForJustParsedScriptSetter {
         // Was the breakpoint already set for the runtime source of this script? (This will happen if we include the same script twice in the same debuggee)
         if (!runtimeLocationsWhichAlreadyHaveThisBPR.some(location => location.isEquivalentTo(bprInRuntimeSource.location))) {
             if (this._bpRecipeWasResolvedEventsConsumer === undefined) {
-                throw new Error(`Expected the events consumer to be configured by now`);
+                throw new Error(localize('error.existingBPsForScriptSetter.expectedEventsConsumerToBeSet', 'Expected the events consumer to be configured by now'));
             }
 
             await this._bpRecipeAtLoadedSourceSetter.addBreakpointAtLoadedSource(bprInRuntimeSource, this._bpRecipeWasResolvedEventsConsumer);

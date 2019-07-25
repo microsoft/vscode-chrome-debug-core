@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { SourceMapConsumer, MappedPosition, NullablePosition, RawSourceMap } from 'source-map';
 import * as path from 'path';
 
@@ -224,7 +227,7 @@ export class SourceMap {
                 source: parseResourceIdentifier(this._generatedPath)
             };
         } else {
-            throw new Error(`Couldn't find generated position for ${JSON.stringify(lookupArgs)}`);
+            throw new Error(localize('error.sourceMap.cantFindGeneratedPosition', `Couldn't find generated position for {0}`, JSON.stringify(lookupArgs)));
         }
     }
 

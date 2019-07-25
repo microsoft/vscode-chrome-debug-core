@@ -2,7 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { Protocol as CDTP } from 'devtools-protocol';
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
+import { Protocol as CDTP } from 'devtools-protocol';
 import { IPauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../../internal/exceptions/strategies';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
@@ -32,7 +35,7 @@ export class CDTPPauseOnExceptionsConfigurer implements IPauseOnExceptionsConfig
         } else if (strategy instanceof DoNotPauseOnAnyExceptions) {
             state = 'none';
         } else {
-            throw new Error(`Can't pause on exception using an unknown strategy ${strategy}`);
+            throw new Error(localize('error.pauseOnException.unknownStrategy', `Can't pause on exception using an unknown strategy {0}`, strategy.toString()));
         }
 
         return this.api.setPauseOnExceptions({ state });

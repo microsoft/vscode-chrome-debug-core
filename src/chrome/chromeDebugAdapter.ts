@@ -499,7 +499,7 @@ export class ChromeDebugLogic {
             }
 
             if (isDefined(response.exceptionDetails)) {
-                // Not an error, getter could be `get foo() { throw new Error('bar'); }`
+                // Not an error, getter could be `get foo() { throw new Error(localize('error.bar', 'bar')); }`
                 const exceptionMessage = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
                 logger.log('Exception thrown evaluating getter - ' + exceptionMessage);
                 return { name: propDesc.name, value: exceptionMessage, variablesReference: 0 };
@@ -617,7 +617,7 @@ export class ChromeDebugLogic {
                 return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
                     .then(variables => variables.filter(variable => isIndexedPropName(variable.name)));
             } else {
-                throw new Error(`Expected the response to the evaluate to be an array with an objectId, yet the object it was missing. Response: ${JSON.stringify(evalResponse)}`);
+                throw new Error(localize('error.variables.evaluateResponseLacksId', `Expected the response to the evaluate to be an array with an objectId, yet the object was missing the id. Response: {0}`, JSON.stringify(evalResponse)));
             }
         },
             error => Promise.reject(errors.errorFromEvaluate(error.message)));
@@ -643,7 +643,7 @@ export class ChromeDebugLogic {
     }
 
     protected threadName(): string {
-        return 'Thread ' + ChromeDebugLogic.THREAD_ID;
+        return localize('thread.prefix', 'Thread ') + ChromeDebugLogic.THREAD_ID;
     }
 
     /* __GDPR__
@@ -803,7 +803,7 @@ export class ChromeDebugLogic {
 
     public createFunctionVariable(name: string, object: CDTPNonPrimitiveRemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
         if (object.description === undefined) {
-            throw new Error(`Expected to find a description property in the remote object of a function: ${JSON.stringify(object)}`);
+            throw new Error(localize('error.createFunctionVariable.objectLacksDescriptionProperty', `Expected to find a description property in the remote object of a function: {0}`, JSON.stringify(object)));
         }
 
         let value: string;
@@ -967,7 +967,7 @@ export class ChromeDebugLogic {
 
     private getArrayNumPropsByPreview(object: CDTP.Runtime.RemoteObject): IPropCount {
         if (object.preview === undefined) {
-            throw new Error(`Expected to find a preview property in the remote object of an array: ${JSON.stringify(object)}`);
+            throw new Error(localize('error.getArrayNumPropsByPreview.objectLacksPreviewProperty', 'Expected to find a preview property in the remote object of an array: {0}', JSON.stringify(object)));
         }
 
         let indexedVariables = 0;
@@ -1008,7 +1008,8 @@ export class ChromeDebugLogic {
             } else {
                 const resultProps = response.result.value;
                 if (resultProps.length !== 2) {
-                    return Promise.reject<IPropCount>(errors.errorFromEvaluate('Did not get expected props, got ' + JSON.stringify(resultProps)));
+                    const message = localize('properties.unexpected', 'Did not get expected props, got {0}', JSON.stringify(resultProps));
+                    return Promise.reject<IPropCount>(errors.errorFromEvaluate(message));
                 }
 
                 return { indexedVariables: resultProps[0], namedVariables: resultProps[1] };

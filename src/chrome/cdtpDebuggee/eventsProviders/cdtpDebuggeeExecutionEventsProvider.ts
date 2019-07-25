@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { CDTPEventsEmitterDiagnosticsModule } from '../infrastructure/cdtpDiagnosticsModule';
 import { asyncMap } from '../../collections/async';
 import { CDTPStackTraceParser } from '../protocolParsers/cdtpStackTraceParser';
@@ -53,7 +56,7 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
 
     public readonly onPaused = this.addApiListener('paused', async (params: CDTP.Debugger.PausedEvent) => {
         if (params.callFrames.length === 0) {
-            throw new Error(`Expected a pause event to have at least a single call frame: ${JSON.stringify(params)}`);
+            throw new Error(localize('error.debuggeeExecution.pauseEventLacksCallFrames', 'Expected a pause event to have at least a single call frame: {0}', JSON.stringify(params)));
         }
 
         const callFrames = await asyncMap(params.callFrames, (callFrame, index) => this.toCallFrame(index, callFrame));
@@ -109,7 +112,7 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
                 possiblyStartLocation,
                 possiblyEndLocation);
         } else {
-            throw new Error(`Expected the remote object of a scope to be of type object yet it wasn't: ${JSON.stringify(scope.object)}`);
+            throw new Error(localize('error.debuggeeExecution.remoteObjectIsNotTypeObject', `Expected the remote object of a scope to be of type object yet it wasn't: {0}`, JSON.stringify(scope.object)));
         }
     }
 }

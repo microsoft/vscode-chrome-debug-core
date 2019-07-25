@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as semver from 'semver';
 
 export class Version {
@@ -12,7 +15,7 @@ export class Version {
         if (semVerOrNull !== null) {
             return new Version(semVerOrNull);
         } else {
-            throw new Error(`Couldn't parse a version number from ${versionString}`);
+            throw new Error(localize('error.version.invalid', `Couldn't parse a version number from {0}`, versionString));
         }
     }
 

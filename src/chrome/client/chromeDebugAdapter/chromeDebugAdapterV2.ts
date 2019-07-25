@@ -1,6 +1,10 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+ import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from '../../chromeDebugSession';
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
@@ -34,9 +38,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
         await this.waitUntilInitialized;
 
         const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs => {
-            if (isUndefined(this._state.processRequest)) {
-                throw new Error(`Invalid state: ${this._state}`);
-            }
+            this.validateProcessRequestIsDefined();
             return this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector);
         });
         switch (requestName) {
@@ -62,8 +64,12 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     private changeStateTo(newState: IDebugAdapterState) {
         logger.log(`Changing ChromeDebugAdapter state to ${newState}`);
         this._state = newState;
+        this.validateProcessRequestIsDefined();
+    }
+
+    private validateProcessRequestIsDefined() {
         if (isUndefined(this._state.processRequest)) {
-            throw new Error(`Invalid state: ${this._state}`);
+            throw new Error(localize('error.da.cantChangeToStateLackingProcessRequest', 'Invalid state: {0}', `${this._state}`));
         }
     }
 }

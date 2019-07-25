@@ -1,6 +1,10 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { logger } from 'vscode-debugadapter';
 
 import { UrlPathTransformer } from './urlPathTransformer';
@@ -47,7 +51,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${filePath}"`);
                     resolve(filePath !== null ? parseResourceIdentifier(filePath) : url);
                 } else {
-                    reject(new Error(`The client responded that the url "${url}" couldn't be mapped to a file path due to: ${response.message}`));
+                    reject(new Error(localize('error.fallbackToClientPathTransformer.mappingFailed', `The client responded that the url "{0}" couldn't be mapped to a file path due to: {1}`, url.textRepresentation, response.message)));
                 }
             });
         });

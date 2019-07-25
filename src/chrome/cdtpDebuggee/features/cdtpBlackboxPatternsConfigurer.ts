@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { Protocol as CDTP } from 'devtools-protocol';
 import { IScript } from '../../internal/scripts/script';
 import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
@@ -29,7 +32,7 @@ export class CDTPBlackboxPatternsConfigurer extends CDTPEnableableDiagnosticsMod
 
     public async setBlackboxedRanges(script: IScript, positions: LocationInScript[]): Promise<void> {
         if (!positions.every(location => location.script === script)) {
-            throw new Error(`Expected all the position: ${positions} to be in the script ${script}`);
+            throw new Error(localize('error.blackBox.expectedAllRangesToBeInScript', 'Expected all the position: {0} to be in the script {1}', positions.toString(), `${script}`));
         }
 
         const cdtpPositions: CDTP.Debugger.ScriptPosition[] = positions.map(p => ({

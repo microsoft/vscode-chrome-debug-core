@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as WebSocket from 'ws';
 
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, ExecutionTimingsReporter } from '../executionTimingsReporter';
@@ -123,7 +126,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         if (this._client !== undefined) {
             return this._client.api();
         } else {
-            throw new Error(`Can't access the CDTP API when the client is not attach to a debuggee`);
+            throw new Error(localize('error.connection.cantAccessCDTPWhenNotAttached', "Can't access the CDTP API when the client is not attach to a debuggee"));
         }
     }
 
@@ -143,7 +146,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             await this.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
         }
         else {
-            throw new Error(`Unexpected launch scenario type. Expected either ScenarioType.Launch (${ScenarioType.Launch}) or ScenarioType.Attach (${ScenarioType.Attach}) but got: ${this._configuration.scenarioType} `);
+            throw new Error(localize('error.connection.unrecognizedScenarioType', 'Unrecognized scenario type. Expected either ScenarioType.Launch ({0}) or ScenarioType.Attach ({1}) but got: {2} ', ScenarioType.Launch, ScenarioType.Attach, this._configuration.scenarioType));
         }
     }
 
@@ -213,13 +216,13 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             return this._attachedTarget.version
                 .then(version => version, () => new TargetVersions(Version.unknownVersion(), Version.unknownVersion()));
         } else {
-            throw new Error(`Can't request the version before we are attached to a target`);
+            throw new Error(localize('error.connection.cantRequestVersionBeforeAttaching', `Can't request the version before we are attached to a target`));
         }
     }
 
     private validateConnectionIsOpen(): void {
         if (this._socket === null) {
-            throw new Error(`Can't perform this operation on a connection that is not opened`);
+            throw new Error(localize('error.connection.cantPerformOperationWhenClosed', `Can't perform this operation on a connection that is not opened`));
         }
     }
 }

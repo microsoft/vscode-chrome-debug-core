@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as errors from '../../../errors';
 import * as utils from '../../../utils';
 import { Logger } from 'vscode-debugadapter';
@@ -41,9 +44,9 @@ export class UnconnectedCDA implements IDebugAdapterState {
             case 'attach':
                 return this.attach(<IAttachRequestArgs>args, telemetryPropertyCollector);
             case 'disconnect':
-                throw new Error(`The debug adapter is already disconnected`);
+                throw new Error(localize('error.unconnectedDA.alreadyDisconnected', 'The debug adapter is already disconnected'));
             default:
-                throw new Error(`The unconnected debug adapter is not prepared to respond to the request ${requestName}`);
+                throw new Error(localize('error.unconnectedDA.unexpectedRequestWhileUnconnected', 'The unconnected debug adapter is not prepared to respond to the request {0}', requestName));
         }
     }
 

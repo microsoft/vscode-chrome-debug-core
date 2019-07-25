@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ISource } from '../sources/source';
 import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
@@ -34,7 +41,7 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
     public resolvedToLoadedSource(): BPRecipeInLoadedSource<TBPActionWhenHit> {
         return this.tryResolving(
             breakpointInLoadedSource => breakpointInLoadedSource,
-            () => { throw new Error(`Failed to convert ${this} into a breakpoint in a loaded source`); });
+            () => { throw new Error(localize('error.bpRecipeInSource.failedToResolve', 'Failed to convert {0} into a breakpoint in a loaded source', this.toString())); });
     }
 
     public resolvedWithLoadedSource(source: ILoadedSource<string>): BPRecipeInLoadedSource<TBPActionWhenHit> {

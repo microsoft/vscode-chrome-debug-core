@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ICommandHandlerDeclarer, ICommandHandlerDeclaration, CommandHandlerDeclaration } from '../features/components';
 import { AsyncStepping } from './features/asyncStepping';
 import { SyncStepping } from './features/syncStepping';
@@ -24,7 +27,7 @@ export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
         if (callFrame instanceof CallFramePresentation && callFrame.callFrame.hasState()) {
             return this._syncStepping.restartFrame(callFrame.callFrame.unmappedCallFrame);
         } else {
-            throw new Error(`Cannot restart to a frame that doesn't have state information`);
+            throw new Error(localize('error.stepping.frameLacksStateInfo', `Cannot restart to a frame that doesn't have state information`));
         }
     }
 

@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { FrameId } from '../../cdtpDebuggee/cdtpPrimitives';
 
 /**
@@ -26,7 +29,7 @@ export class ExecutionContext implements IExecutionContext {
         if (this._isDestroyed === false) {
             this._isDestroyed = true;
         } else {
-            throw new Error(`The execution context ${this} was already marked as destroyed`);
+            throw new Error(localize('error.executionContext.alreadyMarkedAsDestroyed', 'The execution context {0} was already marked as destroyed', this.toString()));
         }
     }
 }
