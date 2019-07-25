@@ -43,7 +43,7 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
     public delete(key: K): boolean {
         if (!this._wrappedSet.delete(key)) {
             breakWhileDebugging();
-            throw new Error(localize('error.set.cantDeleteNonExistantElement', `Couldn't delete element with key {0} because it wasn't present in the set`, `${key}`));
+            throw new Error(localize('error.set.cantDeleteNonExistantElement', "Couldn't delete element with key {0} because it wasn't present in the set", `${key}`));
         }
 
         return true;

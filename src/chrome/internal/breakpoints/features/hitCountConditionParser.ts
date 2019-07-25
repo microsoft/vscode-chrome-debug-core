@@ -23,7 +23,7 @@ export class HitCountConditionParser {
             const shouldPause: HitCountConditionFunction = <any>new Function('numHits', this.javaScriptCodeToEvaluateCondition(patternMatches));
             return shouldPause;
         } else {
-            throw new Error(localize('error.hitCountParser.unrecognizedCondition', `Didn't recognize <{0}> as a valid hit count condition`, this._hitCountCondition));
+            throw new Error(localize('error.hitCountParser.unrecognizedCondition', "Didn't recognize <{0}> as a valid hit count condition", this._hitCountCondition));
         }
     }
 

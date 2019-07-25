@@ -40,6 +40,6 @@ export function validateCDTPRemoteObjectOfTypeObject(remoteObject: CDTP.Runtime.
     if (remoteObject.type === 'object' && isNotEmpty(remoteObject.objectId) && isDefined(remoteObject.preview)) {
         return true;
     } else {
-        throw new Error(localize('error.validateCDTPRemoteObjectOfTypeObject.invalid', `Expected remote object to be of type == 'object' and to have an object id and a preview, yet it doesn't: {0}`, JSON.stringify(remoteObject)));
+        throw new Error(localize('error.validateCDTPRemoteObjectOfTypeObject.invalid', "Expected remote object to be of type == 'object' and to have an object id and a preview, yet it doesn't: {0}", JSON.stringify(remoteObject)));
     }
 }

@@ -84,7 +84,7 @@ export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
                 presentationHint: 'label'
             } as DebugProtocol.StackFrame;
         } else {
-            throw new Error(localize('error.stackTrace.unrecognizedStackFrameInstance', `Expected stack frames to be either call frame presentations or label frames, yet it was: {0}`, stackFrame.toString()));
+            throw new Error(localize('error.stackTrace.unrecognizedStackFrameInstance', 'Expected stack frames to be either call frame presentations or label frames, yet it was: {0}', stackFrame.toString()));
         }
     }
 }

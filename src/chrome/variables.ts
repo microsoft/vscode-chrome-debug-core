@@ -278,7 +278,7 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
         if (isNotEmpty(object.description)) {
             return object.description;
         } else {
-            throw new Error(localize('error.primitivePreview.lacksDescription', `Expected a remote object representing a number to have a description, yet it didn't: {0}`, JSON.stringify(object)));
+            throw new Error(localize('error.primitivePreview.lacksDescription', "Expected a remote object representing a number to have a description, yet it didn't: {0}", JSON.stringify(object)));
         }
     } else if (object.type === 'boolean') {
         // Never stringified
@@ -290,7 +290,7 @@ export function getRemoteObjectPreview_primitive(object: CDTP.Runtime.RemoteObje
 
 export function getRemoteObjectPreview_function(object: CDTP.Runtime.RemoteObject, _context?: string): string {
     if (object.description === undefined) {
-        throw new Error(localize('error.functionPreview.lacksDescription', `Expected to find a description property in the remote object of a function: {0}`, JSON.stringify(object)));
+        throw new Error(localize('error.functionPreview.lacksDescription', 'Expected to find a description property in the remote object of a function: {0}', JSON.stringify(object)));
     }
 
     const firstBraceIdx = object.description.indexOf('{');

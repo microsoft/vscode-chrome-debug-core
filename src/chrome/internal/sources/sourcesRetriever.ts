@@ -37,7 +37,7 @@ export class SourcesRetriever implements ISourcesRetriever {
         return await source.tryResolving(
             async loadedSource => await this._sourceTextRetriever.text(loadedSource),
             identifier => {
-                throw new Error(localize('error.source.cantResolve', `Couldn't resolve the source with the path: {0}`, identifier.textRepresentation));
+                throw new Error(localize('error.source.cantResolve', "Couldn't resolve the source with the path: {0}", identifier.textRepresentation));
             });
     }
 

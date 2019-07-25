@@ -56,7 +56,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public delete(key: K): boolean {
         if (!this._wrappedMap.delete(key)) {
             breakWhileDebugging();
-            throw new Error(localize('error.map.cantDeleteKeyNotPresent', `Couldn't delete element with key {0} because it wasn't present in the map`, `${key}`));
+            throw new Error(localize('error.map.cantDeleteKeyNotPresent', "Couldn't delete element with key {0} because it wasn't present in the map", `${key}`));
         }
 
         return true;
@@ -70,7 +70,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
         const value = this._wrappedMap.get(key);
         if (value === undefined) {
             breakWhileDebugging();
-            throw new Error(localize('error.map.keyDoesntExistInMap', `Couldn't get the element with key '{0}' because it wasn't present in this map <{1}>`, `${key}`, this.toString()));
+            throw new Error(localize('error.map.keyDoesntExistInMap', "Couldn't get the element with key '{0}' because it wasn't present in this map <{1}>", `${key}`, this.toString()));
         }
         return value;
     }
@@ -108,7 +108,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public replaceExisting(key: K, value: V): this {
         if (!this.has(key)) {
             breakWhileDebugging();
-            throw new Error(localize('error.map.cantReplaceNonExistantKey', `Cannot replace key {0} because it doesn't exists`, `${key}`));
+            throw new Error(localize('error.map.cantReplaceNonExistantKey', "Cannot replace key {0} because it doesn't exists", `${key}`));
         }
 
         return this.setAndReplaceIfExists(key, value);
@@ -123,7 +123,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
         const existingValueOrUndefined = this.tryGetting(key);
         if (existingValueOrUndefined !== undefined && !comparer(existingValueOrUndefined, value)) {
             breakWhileDebugging();
-            throw new Error(localize('error.map.cantResetKeyToDifferentValue', `Cannot set key {0} for value {1} because it already exists and it's associated to a different value: {2}`, `${key}`, `${value}`, `${existingValueOrUndefined}`));
+            throw new Error(localize('error.map.cantResetKeyToDifferentValue', "Cannot set key {0} for value {1} because it already exists and it's associated to a different value: {2}", `${key}`, `${value}`, `${existingValueOrUndefined}`));
         }
 
         return this.setAndReplaceIfExists(key, value);

@@ -82,7 +82,7 @@ class GatheringDomainsToEnableDuringStartup implements IState {
         if (name !== undefined) {
             return name;
         } else {
-            throw new Error(localize('error.domainEnabler.cantGetDomainNameForApi', `Couldn't get the domain name for {0}`, api.toString()));
+            throw new Error(localize('error.domainEnabler.cantGetDomainNameForApi', "Couldn't get the domain name for {0}", api.toString()));
         }
     }
 }

@@ -26,7 +26,7 @@ export class MappedTokensInScript<T extends IHasSourceMappingInformation = IHasS
 
         const emptyRanges = this._ranges.filter(range => range.isEmpty());
         if (emptyRanges.length > 0) {
-            throw new Error(localize('error..mappedTokens.rangesAreEmpty', `Expected all the ranges of mapped tokens to have a list of non empty ranges, yet these ranges were empty: {0}`, printArray('', emptyRanges)));
+            throw new Error(localize('error..mappedTokens.rangesAreEmpty', 'Expected all the ranges of mapped tokens to have a list of non empty ranges, yet these ranges were empty: {0}', printArray('', emptyRanges)));
         }
     }
 
@@ -55,11 +55,11 @@ export class NoMappedTokensInScript<T extends IHasSourceMappingInformation = IHa
     public constructor(public readonly script: T) { }
 
     public get ranges(): never {
-        throw new Error(localize('error.noMappedTokens.cantGetRanges', `Can't get the ranges when the source mapped to no tokens on the script`));
+        throw new Error(localize('error.noMappedTokens.cantGetRanges', "Can't get the ranges when the source mapped to no tokens on the script"));
     }
 
     public get enclosingRange(): never {
-        throw new Error(localize('error.noMappedTokens.cantGetEnclosingRange', `Can't get the enclosing range when the source mapped to no tokens on the script`));
+        throw new Error(localize('error.noMappedTokens.cantGetEnclosingRange', "Can't get the enclosing range when the source mapped to no tokens on the script"));
     }
 
     public isEmpty(): boolean {

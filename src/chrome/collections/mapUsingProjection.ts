@@ -58,7 +58,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
         if (underlyingValueOrUndefined !== undefined) {
             return underlyingValueOrUndefined.value;
         } else {
-            throw new Error(localize('error.mapUsingProjection.cantGetNonExistantKey', `Couldn't get the value for key: {0} because it doesn't exist on the map: {1}`, `${key}`, this.toString()));
+            throw new Error(localize('error.mapUsingProjection.cantGetNonExistantKey', "Couldn't get the value for key: {0} because it doesn't exist on the map: {1}", `${key}`, this.toString()));
         }
     }
 

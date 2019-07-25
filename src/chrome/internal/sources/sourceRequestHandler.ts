@@ -50,7 +50,7 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
                 mimeType: 'text/javascript'
             };
         } else {
-            throw new Error(localize('error.source.lacksSourceArg', `Expected the source request to have a source argument yet it was {0}`, args.source));
+            throw new Error(localize('error.source.lacksSourceArg', 'Expected the source request to have a source argument yet it was {0}', args.source));
         }
     }
 

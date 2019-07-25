@@ -86,12 +86,12 @@ export class BidirectionalMap<Left, Right> {
 
         if (existingRightForLeft !== undefined) {
             breakWhileDebugging();
-            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnLeft', `Can't set the pair left ({0}) and right ({1}) because there is already a right element ({2}) associated with the left element`, `${left}`, `${right}`, `${existingRightForLeft}`));
+            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnLeft', "Can't set the pair left ({0}) and right ({1}) because there is already a right element ({2}) associated with the left element", `${left}`, `${right}`, `${existingRightForLeft}`));
         }
 
         if (existingLeftForRight !== undefined) {
             breakWhileDebugging();
-            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnRight', `Can't set the pair left ({0}) and right ({1}) because there is already a left element ({2}) associated with the right element`, `${left}`, `${right}`, `${existingLeftForRight}`));
+            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnRight', "Can't set the pair left ({0}) and right ({1}) because there is already a left element ({2}) associated with the right element", `${left}`, `${right}`, `${existingLeftForRight}`));
         }
 
         this._leftToRight.set(left, right);

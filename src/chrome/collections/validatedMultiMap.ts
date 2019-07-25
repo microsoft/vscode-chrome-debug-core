@@ -101,7 +101,7 @@ export class ValidatedMultiMap<K, V> {
     public removeValue(key: K, value: V): Set<V> {
         const existingValues = this._wrappedMap.get(key);
         if (!existingValues.delete(value)) {
-            throw new Error(localize('error.multiMap.cantRemoveNonExistantValue', `Failed to delete the value {0} under key {1} because it wasn't present`, `${value}`, `${key}`));
+            throw new Error(localize('error.multiMap.cantRemoveNonExistantValue', "Failed to delete the value {0} under key {1} because it wasn't present", `${value}`, `${key}`));
         }
 
         return existingValues;

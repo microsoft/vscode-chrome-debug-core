@@ -15,7 +15,7 @@ export class Version {
         if (semVerOrNull !== null) {
             return new Version(semVerOrNull);
         } else {
-            throw new Error(localize('error.version.invalid', `Couldn't parse a version number from {0}`, versionString));
+            throw new Error(localize('error.version.invalid', "Couldn't parse a version number from {0}", versionString));
         }
     }
 

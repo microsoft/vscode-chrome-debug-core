@@ -135,6 +135,6 @@ class NoLoadedSourceAvailable implements ILoadedSource<CDTPScriptUrl> {
     }
 
     private throwError(): never {
-        throw new Error(localize('error.noLoadedSourceAvailable.invalidMethod', `Can't request this when the runtime source is not available`));
+        throw new Error(localize('error.noLoadedSourceAvailable.invalidMethod', "Can't request this when the runtime source is not available"));
     }
 }

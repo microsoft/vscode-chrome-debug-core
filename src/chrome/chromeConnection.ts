@@ -216,13 +216,13 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             return this._attachedTarget.version
                 .then(version => version, () => new TargetVersions(Version.unknownVersion(), Version.unknownVersion()));
         } else {
-            throw new Error(localize('error.connection.cantRequestVersionBeforeAttaching', `Can't request the version before we are attached to a target`));
+            throw new Error(localize('error.connection.cantRequestVersionBeforeAttaching', "Can't request the version before we are attached to a target"));
         }
     }
 
     private validateConnectionIsOpen(): void {
         if (this._socket === null) {
-            throw new Error(localize('error.connection.cantPerformOperationWhenClosed', `Can't perform this operation on a connection that is not opened`));
+            throw new Error(localize('error.connection.cantPerformOperationWhenClosed', "Can't perform this operation on a connection that is not opened"));
         }
     }
 }

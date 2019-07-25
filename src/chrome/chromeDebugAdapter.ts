@@ -617,7 +617,7 @@ export class ChromeDebugLogic {
                 return this.getVariablesForObjectId(evalResponse.result.objectId, evaluateName, filter)
                     .then(variables => variables.filter(variable => isIndexedPropName(variable.name)));
             } else {
-                throw new Error(localize('error.variables.evaluateResponseLacksId', `Expected the response to the evaluate to be an array with an objectId, yet the object was missing the id. Response: {0}`, JSON.stringify(evalResponse)));
+                throw new Error(localize('error.variables.evaluateResponseLacksId', 'Expected the response to the evaluate to be an array with an objectId, yet the object was missing the id. Response: {0}', JSON.stringify(evalResponse)));
             }
         },
             error => Promise.reject(errors.errorFromEvaluate(error.message)));
@@ -803,7 +803,7 @@ export class ChromeDebugLogic {
 
     public createFunctionVariable(name: string, object: CDTPNonPrimitiveRemoteObject, context: VariableContext, parentEvaluateName?: string): DebugProtocol.Variable {
         if (object.description === undefined) {
-            throw new Error(localize('error.createFunctionVariable.objectLacksDescriptionProperty', `Expected to find a description property in the remote object of a function: {0}`, JSON.stringify(object)));
+            throw new Error(localize('error.createFunctionVariable.objectLacksDescriptionProperty', 'Expected to find a description property in the remote object of a function: {0}', JSON.stringify(object)));
         }
 
         let value: string;

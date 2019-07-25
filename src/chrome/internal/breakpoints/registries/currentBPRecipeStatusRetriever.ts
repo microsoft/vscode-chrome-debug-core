@@ -13,7 +13,7 @@ class JustCreatedBPRecipeStatus implements IBPRecipeStatus {
     public constructor(public readonly recipe: BPRecipeInSource) { }
 
     public get statusDescription(): string {
-        return localize('breakpointStatus.notYetProcessed', `The breakpoint hasn't been processed yet`);
+        return localize('breakpointStatus.notYetProcessed', "The breakpoint hasn't been processed yet");
     }
 
     public isVerified(): boolean {

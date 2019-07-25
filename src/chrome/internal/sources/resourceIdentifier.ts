@@ -242,7 +242,7 @@ export function parseResourceIdentifier<TString extends string = string>(textRep
             }
         }
     } else {
-        throw new Error(localize('error.resourceIdentifier.textRepresentationNotAString', `Can't parse the resource identifier because the text representation was expected to be a string yet it was: {0}`, textRepresentation));
+        throw new Error(localize('error.resourceIdentifier.textRepresentationNotAString', "Can't parse the resource identifier because the text representation was expected to be a string yet it was: {0}", textRepresentation));
     }
 }
 

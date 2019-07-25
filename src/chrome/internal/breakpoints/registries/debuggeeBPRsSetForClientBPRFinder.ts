@@ -58,8 +58,7 @@ export class DebuggeeBPRsSetForClientBPRFinder {
     private clientBPRWasRemoved(clientBPRecipe: ClientBPRecipe): void {
         const debuggeBPRecipies = this._clientBPRToDebuggeeBPRItSet.get(clientBPRecipe);
         if (debuggeBPRecipies.size >= 1) {
-            throw new Error(localize('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences', 'Tried to remove a Client breakpoint recipe ({0}) which still had some '
-                + `associated debuggee breakpoint recipes ({1})`, `${clientBPRecipe}`, `${debuggeBPRecipies}`));
+            throw new Error(localize('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences', 'Tried to remove a Client breakpoint recipe ({0}) which still had some associated debuggee breakpoint recipes ({1})', `${clientBPRecipe}`, `${debuggeBPRecipies}`));
         }
 
         this._clientBPRToDebuggeeBPRItSet.delete(clientBPRecipe);

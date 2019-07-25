@@ -16,7 +16,7 @@ export class Range {
         readonly exclusiveEnd: Position) {
         if (start.lineNumber > exclusiveEnd.lineNumber
             || (start.lineNumber === exclusiveEnd.lineNumber && start.columnNumber > exclusiveEnd.columnNumber)) {
-            throw new Error(localize('error.range.endBeforeStart', `Can't create a range in where the end position ({0}) happens before the start position {1}`, exclusiveEnd.toString(), start.toString()));
+            throw new Error(localize('error.range.endBeforeStart', "Can't create a range in where the end position ({0}) happens before the start position {1}", exclusiveEnd.toString(), start.toString()));
         }
     }
 
@@ -38,7 +38,7 @@ export class Range {
 
     public static enclosingAll(manyRanges: Range[]) {
         if (manyRanges.length === 0) {
-            throw new Error(localize('error.range.cantFindEnclosingOfEmptyList', `Can't find the enclosing range of an empty list of ranges`));
+            throw new Error(localize('error.range.cantFindEnclosingOfEmptyList', "Can't find the enclosing range of an empty list of ranges"));
         } else {
             const firstPosition = Position.appearingFirstOf(...manyRanges.map(range => range.start));
             const lastPosition = Position.appearingLastOf(...manyRanges.map(range => range.exclusiveEnd));

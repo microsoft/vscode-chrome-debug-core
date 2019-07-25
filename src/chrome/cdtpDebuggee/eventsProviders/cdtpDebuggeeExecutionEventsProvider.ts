@@ -112,7 +112,7 @@ export class CDTPDebuggeeExecutionEventsProvider extends CDTPEventsEmitterDiagno
                 possiblyStartLocation,
                 possiblyEndLocation);
         } else {
-            throw new Error(localize('error.debuggeeExecution.remoteObjectIsNotTypeObject', `Expected the remote object of a scope to be of type object yet it wasn't: {0}`, JSON.stringify(scope.object)));
+            throw new Error(localize('error.debuggeeExecution.remoteObjectIsNotTypeObject', "Expected the remote object of a scope to be of type object yet it wasn't: {0}", JSON.stringify(scope.object)));
         }
     }
 }

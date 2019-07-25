@@ -29,7 +29,7 @@ export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
     constructor(public readonly script: IScript, public readonly name: ResourceName<CDTPScriptUrl>, public readonly origin: string) { }
 
     public get url(): never {
-        throw Error(localize('error.unidentifiedLoadedSource.cantGetUrl', `Can't get the url for {0} because it doesn't have one`, this.toString()));
+        throw Error(localize('error.unidentifiedLoadedSource.cantGetUrl', "Can't get the url for {0} because it doesn't have one", this.toString()));
     }
 
     public get identifier(): IResourceIdentifier<CDTPScriptUrl> {

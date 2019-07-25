@@ -57,7 +57,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
 
             return response;
         } else {
-            throw new Error(localize('error.setBreakpoints.argumentNotDefined', `Expected the set breakpoints arguments to have a list of breakpoints yet it was {0}`, args.breakpoints));
+            throw new Error(localize('error.setBreakpoints.argumentNotDefined', 'Expected the set breakpoints arguments to have a list of breakpoints yet it was {0}', args.breakpoints));
         }
     }
 
@@ -88,10 +88,10 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             } else if (isNotEmpty(actionWhenHit.logMessage)) {
                 return new ConditionalPause(actionWhenHit.logMessage);
             } else {
-                throw new Error(localize('error.setBreakpoints.failedToParseActionWhenHit', `Couldn't parse the requested action when hit for the breakpoint: 'condition' ({0}), 'hitCondition' ({1}) or 'logMessage' ({2}), actionWhenHit.condition`, actionWhenHit.hitCondition, actionWhenHit.logMessage));
+                throw new Error(localize('error.setBreakpoints.failedToParseActionWhenHit', "Couldn't parse the requested action when hit for the breakpoint: 'condition' ({0}), 'hitCondition' ({1}) or 'logMessage' ({2}), actionWhenHit.condition", actionWhenHit.hitCondition, actionWhenHit.logMessage));
             }
         } else { // howManyDefined >= 2
-            throw new Error(localize('error.setBreakpoints.cantHaveTwoActions', `Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.`, actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
+            throw new Error(localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
         }
     }
 
