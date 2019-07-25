@@ -1,0 +1,20 @@
+Fields to localized on the vs code debug protocol. Extracted manually by looking at this file https://microsoft.github.io/debug-adapter-protocol/specification which should match https://github.com/microsoft/vscode-debugadapter-node/blob/98326c7b9dd26715b2c7050598cbf14ac3cac43c/protocol/src/debugProtocol.ts
+
+Breakpoint.message
+BreakpointEvent.reason
+ColumnDescriptor.label
+DataBreakpointInfoResponse.description
+ExceptionBreakpointsFilter.label
+ExceptionDetails.message
+ExceptionInfoResponse.description
+GotoTarget.label
+Message.urlLabel
+Module.symbolStatus
+Response.message
+RunInTerminalRequestArguments.title
+Scope.name
+Source.origin
+StepInTarget.label
+StoppedEvent.description
+StoppedEvent.text
+Thread.name
