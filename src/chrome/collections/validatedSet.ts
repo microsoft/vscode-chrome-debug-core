@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { printSet } from './printing';
 import { breakWhileDebugging } from '../../validation';
 import { isDefined } from '../utils/typedOperators';
@@ -36,7 +43,7 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
     public delete(key: K): boolean {
         if (!this._wrappedSet.delete(key)) {
             breakWhileDebugging();
-            throw new Error(`Couldn't delete element with key ${key} because it wasn't present in the set`);
+            throw new Error(localize('error.set.cantDeleteNonExistantElement', "Couldn't delete element with key {0} because it wasn't present in the set", `${key}`));
         }
 
         return true;
@@ -57,7 +64,7 @@ export class ValidatedSet<K> implements IValidatedSet<K> {
     public add(key: K): this {
         if (this.has(key)) {
             breakWhileDebugging();
-            throw new Error(`Cannot add key ${key} because it already exists`);
+            throw new Error(localize('error.set.cantAddDuplicatedKey', 'Cannot add key {0} because it already exists', `${key}`));
         }
 
         return this.addOrReplaceIfExists(key);

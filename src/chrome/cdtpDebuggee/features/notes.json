@@ -1,0 +1,10 @@
+{
+    "description": "",
+    "devtoolsFrontendUrl": "/devtools/inspector.html?ws=localhost/devtools/page/D74F12885808B1C0063FC8A8848C3C01",
+    "id": "D74F12885808B1C0063FC8A8848C3C01",
+    "title": "",
+    "type": "page",
+    "url": "http://localhost:1662/",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:1663/devtools/page/D74F12885808B1C0063FC8A8848C3C01",
+    "version": {}
+}

@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ValidatedMap, IValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { ValidatedSet, IValidatedSet } from './validatedSet';
@@ -98,7 +101,7 @@ export class ValidatedMultiMap<K, V> {
     public removeValue(key: K, value: V): Set<V> {
         const existingValues = this._wrappedMap.get(key);
         if (!existingValues.delete(value)) {
-            throw new Error(`Failed to delete the value ${value} under key ${key} because it wasn't present`);
+            throw new Error(localize('error.multiMap.cantRemoveNonExistantValue', "Failed to delete the value {0} under key {1} because it wasn't present", `${value}`, `${key}`));
         }
 
         return existingValues;

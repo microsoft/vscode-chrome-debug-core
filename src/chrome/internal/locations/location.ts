@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as Validation from '../../../validation';
 import { IScript, Script } from '../scripts/script';
 import { ISource, isSource } from '../sources/source';
@@ -32,7 +35,7 @@ export class Position implements IEquivalenceComparable {
         if (lastPosition !== undefined) {
             return lastPosition;
         } else {
-            throw new Error(`Couldn't find the position appearing last from the list: ${positions}. Is it possible the list was empty?`);
+            throw new Error(localize('error.position.failedToFindLast', "Couldn't find the position appearing last from the list: {0}. Is it possible the list was empty?", positions.toString()));
         }
     }
 
@@ -41,7 +44,7 @@ export class Position implements IEquivalenceComparable {
         if (firstPosition !== undefined) {
             return firstPosition;
         } else {
-            throw new Error(`Couldn't find the position appearing first from the list: ${positions}. Is it possible the list was empty?`);
+            throw new Error(localize('error.position.failedToFindFirst', "Couldn't find the position appearing first from the list: {0}. Is it possible the list was empty?", positions.toString()));
         }
     }
 
@@ -104,7 +107,7 @@ export function createLocation<T extends ScriptOrSourceOrURLOrURLRegexp>(resourc
         return <Location<T>>new LocationInUrl(<IURL<CDTPScriptUrl>>resource, position); // TODO: Figure out way to remove this cast
     } else {
         Validation.breakWhileDebugging();
-        throw Error(`Can't create a location because the type of resource ${resource} wasn't recognized`);
+        throw Error(localize('error.location.unrecognizedResource', "Can't create a location because the type of resource {0} wasn't recognized", resource.toString()));
     }
 }
 
@@ -153,7 +156,7 @@ export class LocationInSource extends BaseLocation<ISource> implements ILocation
         if (this.resource.sourceIdentifier.isEquivalentTo(loadedSource.identifier)) {
             return new LocationInLoadedSource(loadedSource, this.position);
         } else {
-            throw new Error(`Can't resolve a location with a source (${this}) to a location with a loaded source that doesn't match the unresolved source: ${loadedSource}`);
+            throw new Error(localize('error.locationInSource.resolvedToIncorrectSource', "Can't resolve a location with a source ({0}) to a location with a loaded source that doesn't match the unresolved source: {1}", this.toString(), loadedSource.toString()));
         }
     }
 }
@@ -203,7 +206,7 @@ export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSource
     }
 
     public mappedToSource(): LocationInLoadedSource {
-        throw new Error(`LocationInSourceWithSourceMap.mappedToSource: Not yet implemented`);
+        throw new Error(localize('error.locationInSourceWithSourceMap.mappedToSource.notImplemented', 'LocationInSourceWithSourceMap.mappedToSource: Not yet implemented'));
     }
 
     public isSameAs(locationInScript: LocationInSourceWithSourceMap): boolean {
@@ -242,7 +245,7 @@ export class LocationInUrl extends BaseLocation<IResourceIdentifier<CDTPScriptUr
 
 export class LocationInUrlRegexp extends BaseLocation<URLRegexp> {
     public get resourceIdentifier(): IResourceIdentifier {
-        throw new Error(`A location in URL Regexp doesn't have a resource identifier: ${this.urlRegexp}`);
+        throw new Error(localize('error.locationInUrlRegexp.noResourceIdentifier', "A location in URL Regexp doesn't have a resource identifier: {0}", this.urlRegexp));
     }
 
     public get urlRegexp(): URLRegexp {

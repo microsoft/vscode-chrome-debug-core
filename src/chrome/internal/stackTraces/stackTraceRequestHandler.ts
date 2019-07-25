@@ -1,6 +1,10 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ChromeDebugLogic } from '../../chromeDebugAdapter';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
 import { injectable, inject } from 'inversify';
@@ -80,7 +84,7 @@ export class StackTraceRequestHandler implements ICommandHandlerDeclarer {
                 presentationHint: 'label'
             } as DebugProtocol.StackFrame;
         } else {
-            throw new Error(`Expected stack frames to be either call frame presentations or label frames, yet it was: ${stackFrame}`);
+            throw new Error(localize('error.stackTrace.unrecognizedStackFrameInstance', 'Expected stack frames to be either call frame presentations or label frames, yet it was: {0}', stackFrame.toString()));
         }
     }
 }

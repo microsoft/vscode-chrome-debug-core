@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ISource } from '../../sources/source';
 import { IBPRecipe } from '../bpRecipe';
 import { CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
@@ -55,8 +58,7 @@ export class DebuggeeBPRsSetForClientBPRFinder {
     private clientBPRWasRemoved(clientBPRecipe: ClientBPRecipe): void {
         const debuggeBPRecipies = this._clientBPRToDebuggeeBPRItSet.get(clientBPRecipe);
         if (debuggeBPRecipies.size >= 1) {
-            throw new Error(`Tried to remove a Client breakpoint recipe (${clientBPRecipe}) which still had some `
-                + `associated debuggee breakpoint recipes (${debuggeBPRecipies})`);
+            throw new Error(localize('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences', 'Tried to remove a Client breakpoint recipe ({0}) which still had some associated debuggee breakpoint recipes ({1})', `${clientBPRecipe}`, `${debuggeBPRecipies}`));
         }
 
         this._clientBPRToDebuggeeBPRItSet.delete(clientBPRecipe);

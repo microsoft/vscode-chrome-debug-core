@@ -53,7 +53,7 @@ export class StoppedEvent2 extends StoppedEvent {
                 this.body.reason = 'exception';
                 break;
             default:
-                (<DebugProtocol.StoppedEvent>this).body.description = 'Unknown pause reason';
+                (<DebugProtocol.StoppedEvent>this).body.description = localize('reason.description.unknownPauseReason', 'Unknown pause reason');
                 break;
         }
     }

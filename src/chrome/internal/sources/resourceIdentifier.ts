@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as path from 'path';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { MapUsingProjection } from '../../collections/mapUsingProjection';
@@ -239,7 +242,7 @@ export function parseResourceIdentifier<TString extends string = string>(textRep
             }
         }
     } else {
-        throw new Error(`Can't parse the resource identifier because the text representation was expected to be a string yet it was: ${textRepresentation}`);
+        throw new Error(localize('error.resourceIdentifier.textRepresentationNotAString', "Can't parse the resource identifier because the text representation was expected to be a string yet it was: {0}", textRepresentation));
     }
 }
 

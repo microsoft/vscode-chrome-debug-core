@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ScriptCallFrame, CallFrameWithState } from '../../stackTraces/callFrame';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseNotifyClientOfPause } from '../../features/actionToTakeWhenPaused';
 import { injectable, inject } from 'inversify';
@@ -71,7 +74,7 @@ class CurrentlyStepping implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new Error('Cannot start stepping again while the program is already stepping');
+        throw new Error(localize('error.stepping.alreadyStepping', 'Cannot start stepping again while the program is already stepping'));
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
@@ -102,7 +105,7 @@ class CurrentlyPausing implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new Error('Cannot start stepping while the debugger is trying to pause the program');
+        throw new Error(localize('error.stepping.currentlyPausing', 'Cannot start stepping while the debugger is trying to pause the program'));
     }
 
     public async onProvideActionForWhenPaused(_paused: PausedEvent): Promise<IActionToTakeWhenPaused> {

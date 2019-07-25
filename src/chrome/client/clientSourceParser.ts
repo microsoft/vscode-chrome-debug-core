@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { SourceAlreadyResolvedToLoadedSource, ISource } from '../internal/sources/source';
 import { HandlesRegistry } from './handlesRegistry';
@@ -22,7 +29,7 @@ export class ClientSourceParser {
             const source = this.getSourceFromId(clientSource.sourceReference);
             return new SourceAlreadyResolvedToLoadedSource(source);
         } else {
-            throw new Error(`Expected the source to have a path (${clientSource.path}) either-or a source reference (${clientSource.sourceReference})`);
+            throw new Error(localize('error.clientSourceParser.doesntHaveExactlyOneOfPathOrReference', 'Expected the source to have a path ({0}) either-or a source reference ({1})', clientSource.path, clientSource.sourceReference));
         }
     }
 

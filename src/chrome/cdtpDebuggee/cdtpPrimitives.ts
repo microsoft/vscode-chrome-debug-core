@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { Protocol as CDTP } from 'devtools-protocol';
 import { IScript } from '../internal/scripts/script';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
@@ -29,7 +32,7 @@ export function validateNonPrimitiveRemoteObject(remoteObject: CDTP.Runtime.Remo
     if (isNotEmpty(remoteObject.objectId)) {
         return true;
     } else {
-        throw new Error(`Expected a non-primitive value to have an object id, yet it doesn't: ${JSON.stringify(remoteObject)}`);
+        throw new Error(localize('error.validateNonPrimitiveRemoteObject.invalid', "Expected a non-primitive value to have an object id, yet it doesn't: {0}", JSON.stringify(remoteObject)));
     }
 }
 

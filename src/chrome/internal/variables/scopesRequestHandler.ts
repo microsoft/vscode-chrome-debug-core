@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+ import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ChromeDebugLogic } from '../../chromeDebugAdapter';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
 import { injectable, inject } from 'inversify';
@@ -25,7 +32,7 @@ export class ScopesRequestHandler implements ICommandHandlerDeclarer {
         if (frame instanceof CallFramePresentation && frame.callFrame.hasState()) {
             return this._chromeDebugAdapter.scopes(frame.callFrame);
         } else {
-            throw new Error(`Can't get scopes for a frame that has no associated state`);
+            throw new Error(localize('error.scopes.frameLacksStateInfo', "Can't get scopes for a frame that has no associated state"));
         }
     }
 

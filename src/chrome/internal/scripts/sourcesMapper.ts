@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { SourceMap } from '../../../sourceMaps/sourceMap';
 import { LocationInLoadedSource, LocationInScript, Position, LocationInSource, createLocation } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
@@ -112,7 +115,7 @@ export class NoMappedSourcesMapper<T extends IHasSourceMappingInformation = IHas
         if (positionInSource.resource === this._script.developmentSource || positionInSource.resource === this._script.runtimeSource) {
             return MappedTokensInScript.characterAt(createLocation(this._script, positionInSource.position));
         } else {
-            throw new Error(`This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
+            throw new Error(localize('error.noMappedSourcesMapper.invalidSourceOrScript', 'This source mapper can only map locations from the runtime or development scripts of {0} yet the location provided was {1}', `${this._script}`, positionInSource.toString()));
         }
     }
 

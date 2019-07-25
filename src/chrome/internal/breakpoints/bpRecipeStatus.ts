@@ -8,6 +8,9 @@ import { BPRecipeIsBoundInRuntimeLocation, BPRecipeIsUnbound } from './bpRecipeS
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { breakWhileDebugging } from '../../../validation';
 
+import * as nls from 'vscode-nls';
+const localize = nls.loadMessageBundle();
+
 /** These interface and classes represent the status of a BP Recipe (Is it bound or not?) */
 export const ImplementsBPRecipeStatus = Symbol();
 export interface IBPRecipeStatus {
@@ -32,7 +35,7 @@ export class BPRecipeIsUnboundDueToNoSubstatuses implements IBPRecipeStatus {
     }
 
     public get statusDescription(): string {
-        return `unbound because none of the scripts already loaded are associated with this source`;
+        return localize('breakpointStatus.noScriptBoundToSource', 'unbound because none of the scripts already loaded are associated with this source');
     }
 
     public ifHasActualLocation<T>(_ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T {
@@ -53,7 +56,7 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
         public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.boundSubstatuses.length === 0) {
             breakWhileDebugging();
-            throw new Error(`At least one bound substatus was expected`);
+            throw new Error(localize('error.breakpointStatus.expectedAtLeastOneBoundSubstatus', 'At least one bound substatus was expected'));
         }
     }
 
@@ -67,7 +70,7 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
     }
 
     public get statusDescription(): string {
-        return `bound with ${printArray('', this.boundSubstatuses)}`;
+        return localize('breakpointStatus.substatusesPrefix', 'bound with {0}'), printArray('', this.boundSubstatuses);
     }
 
     public ifHasActualLocation<T>(ifHasAction: (actualLocation: LocationInLoadedSource) => T, _ifDoesNotHaveAction: () => T): T {
@@ -87,7 +90,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
         public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.unboundSubstatuses.length === 0) {
             breakWhileDebugging();
-            throw new Error(`At least the substatus for a single runtime source was expected`);
+            throw new Error(localize('error.breakpointStatus.expectedAtLeastOneUnboundSubstatus', 'At least the substatus for a single runtime source was expected'));
         }
     }
 
@@ -96,7 +99,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
     }
 
     public get statusDescription(): string {
-        return `unbound because ${printArray('', this.unboundSubstatuses)}`;
+        return localize('breakpointStatus.unboundReasonPrefix', 'unbound because {0}'), printArray('', this.unboundSubstatuses);
     }
 
     public ifHasActualLocation<T>(_ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T {

@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
 import { injectable, inject } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
@@ -43,7 +50,7 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
                 mimeType: 'text/javascript'
             };
         } else {
-            throw new Error(`Expected the source request to have a source argument yet it was ${args.source}`);
+            throw new Error(localize('error.source.lacksSourceArg', 'Expected the source request to have a source argument yet it was {0}', args.source));
         }
     }
 

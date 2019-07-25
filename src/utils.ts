@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
@@ -72,7 +75,7 @@ export function reversedArr(arr: any[]): any[] {
 
 export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg?: string): Promise<any> {
     if (timeoutMsg === undefined) {
-        timeoutMsg = `Promise timed out after ${timeoutMs}ms`;
+        timeoutMsg = localize('error.promiseTimeout.timedOut', 'Promise timed out after {0}ms', timeoutMs);
     }
 
     return new Promise((resolve, reject) => {
@@ -246,7 +249,7 @@ export function errP(msg?: string): Promise<never> {
 
     let e: Error;
     if (isEmpty(msg)) {
-        e = new Error('Unknown error');
+        e = new Error(localize('error.unknownError', 'Unknown error'));
     } else if (isErrorLike(msg)) {
         // msg is already an Error object
         e = msg;
@@ -555,8 +558,8 @@ export interface IPromiseDefer<T> {
 
 export function promiseDefer<T>(): IPromiseDefer<T> {
     // If we hit any of these two functions, it means that the variables weren't initialized inside the new Promise(){ ... }
-    let resolveCallback: ResolveType<T> = () => { throw new Error(`promiseDefer is not initializing resolveCallback properly`); };
-    let rejectCallback: RejectType = () => { throw new Error(`promiseDefer is not initializing rejectCallback properly`); };
+    let resolveCallback: ResolveType<T> = () => { throw new Error(localize('error.promiseDefer.uninitializedResolve', 'promiseDefer is not initializing resolveCallback properly')); };
+    let rejectCallback: RejectType = () => { throw new Error(localize('error.promiseDefer.uninitializedReject', 'promiseDefer is not initializing rejectCallback properly')); };
 
     const promise = new Promise<T>((resolve, reject) => {
         resolveCallback = resolve;
