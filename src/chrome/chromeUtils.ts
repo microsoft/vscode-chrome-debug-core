@@ -266,7 +266,7 @@ export function descriptionFromExceptionDetails(exceptionDetails: CDTP.Runtime.E
     let description: string;
     if (isDefined(exceptionDetails.exception)) {
         // Take exception object description, or if a value was thrown, the value
-        description = _.defaultTo(exceptionDetails.exception.description, localize('error.prefix', 'Error: ') + exceptionDetails.exception.value);
+        description = _.defaultTo(exceptionDetails.exception.description, localize('error.prefix', 'Error: {0}', exceptionDetails.exception.value));
     } else {
         description = exceptionDetails.text;
     }

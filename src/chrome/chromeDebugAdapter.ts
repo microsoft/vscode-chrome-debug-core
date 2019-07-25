@@ -643,7 +643,7 @@ export class ChromeDebugLogic {
     }
 
     protected threadName(): string {
-        return localize('thread.prefix', 'Thread ') + ChromeDebugLogic.THREAD_ID;
+        return localize('thread.prefix', 'Thread {0}', ChromeDebugLogic.THREAD_ID);
     }
 
     /* __GDPR__

@@ -70,7 +70,7 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
     }
 
     public get statusDescription(): string {
-        return localize('breakpointStatus.substatusesPrefix', 'bound with ') + printArray('', this.boundSubstatuses);
+        return localize('breakpointStatus.substatusesPrefix', 'bound with {0}'), printArray('', this.boundSubstatuses);
     }
 
     public ifHasActualLocation<T>(ifHasAction: (actualLocation: LocationInLoadedSource) => T, _ifDoesNotHaveAction: () => T): T {
@@ -99,7 +99,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
     }
 
     public get statusDescription(): string {
-        return localize('breakpointStatus.unboundReasonPrefix', 'unbound because ') + printArray('', this.unboundSubstatuses);
+        return localize('breakpointStatus.unboundReasonPrefix', 'unbound because {0}'), printArray('', this.unboundSubstatuses);
     }
 
     public ifHasActualLocation<T>(_ifHasAction: (actualLocation: LocationInLoadedSource) => T, ifDoesNotHaveAction: () => T): T {

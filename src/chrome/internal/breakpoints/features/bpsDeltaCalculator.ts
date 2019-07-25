@@ -89,9 +89,7 @@ export class BPRsDeltaCalculator {
                 existingToLeaveAsIs: this.printLocations(match.existingToLeaveAsIs)
             };
 
-            const additionalDetails = `\nRequested breakpoints = ${JSON.stringify(this._requestedBPRecipes.breakpoints.map(canonicalizeBPLocation))}`
-                + `\Existing breakpoints = ${JSON.stringify(Array.from(this._currentBPRecipes).map(canonicalizeBPLocation))}`
-                + `\nMatch = ${JSON.stringify(matchJson)}`;
+            const additionalDetails = localize(`\nRequested breakpoints = {0}\nExisting breakpoints = ${1}\nMatch = ${2}`, JSON.stringify(this._requestedBPRecipes.breakpoints.map(canonicalizeBPLocation)), JSON.stringify(Array.from(this._currentBPRecipes).map(canonicalizeBPLocation)), JSON.stringify(matchJson));
             throw new Error(localize('error.deltaCalculator.deltaCalculatorInvalidResult', '{0}\nmatch: {1}', errorMessage, additionalDetails));
         }
     }
