@@ -39,7 +39,8 @@ export class Logging implements ILogger {
         // The debug configuration provider should have set logFilePath on the launch config. If not, default to 'true' to use the
         // "legacy" log file path from the CDA subclass
         const logFilePath = _.defaultTo(configuration.logFilePath, _.defaultTo(extensibilityPoints.logFilePath, logToFile));
-        logger.setup(configuration.logLevel, logFilePath, configuration.shouldLogTimestamps);
+        logger.setup(LogLevel.Warn /* This controls the console logging not the file logging */,
+            logFilePath, configuration.shouldLogTimestamps);
 
         if (configuration.logLevel !== LogLevel.Verbose) {
             /* We want the logger.verbose message to not appear when we configure the logger to only log info level. The logger doesn't support this
