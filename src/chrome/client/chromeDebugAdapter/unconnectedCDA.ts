@@ -14,7 +14,6 @@ import { CommandText } from '../requests';
 import { injectable, inject } from 'inversify';
 import { ConnectingCDAProvider } from './connectingCDA';
 import { ISession } from '../session';
-import { isTrue } from '../../utils/typedOperators';
 
 export enum ScenarioType {
     Launch,
@@ -77,7 +76,7 @@ export class UnconnectedCDA implements IDebugAdapterState {
                 traceValue = Logger.LogLevel.Stop; // By default we don't log
         }
 
-        return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: isTrue(args.logTimestamps) };
+        return { logLevel: traceValue, logFilePath: args.logFilePath, shouldLogTimestamps: args.logTimestamps !== false };
     }
 
     private async createConnection(scenarioType: ScenarioType, args: ILaunchRequestArgs | IAttachRequestArgs, telemetryPropertyCollector: ITelemetryPropertyCollector): Promise<IDebugAdapterState> {
