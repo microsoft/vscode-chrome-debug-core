@@ -6,6 +6,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { Protocol as CDTP } from 'devtools-protocol';
 import * as utils from '../../../utils';
+import * as _ from 'lodash';
 
 export interface IBreakpointFeaturesSupport {
     supportsColumnBreakpoints: Promise<boolean>;
@@ -13,16 +14,11 @@ export interface IBreakpointFeaturesSupport {
 
 @injectable()
 export class CDTPBreakpointFeaturesSupport implements IBreakpointFeaturesSupport {
-    private result = utils.promiseDefer<boolean>();
+    private readonly result = utils.promiseDefer<boolean>();
 
-    public supportsColumnBreakpoints = this.result.promise;
+    public readonly supportsColumnBreakpoints = this.result.promise;
 
-    constructor(
-        @inject(TYPES.CDTPClient) private readonly api: CDTP.ProtocolApi) {
-        api.Debugger.on('scriptParsed', params => this.onScriptParsed(params));
-    }
-
-    private async onScriptParsed(params: CDTP.Debugger.ScriptParsedEvent): Promise<void> {
+    private onScriptParsed = _.once(async (params: CDTP.Debugger.ScriptParsedEvent) => {
         const scriptId = params.scriptId;
 
         try {
@@ -36,5 +32,10 @@ export class CDTPBreakpointFeaturesSupport implements IBreakpointFeaturesSupport
         } catch (e) {
             this.result.resolve(false);
         }
+    });
+
+    constructor(
+        @inject(TYPES.CDTPClient) private readonly api: CDTP.ProtocolApi) {
+        api.Debugger.on('scriptParsed', params => this.onScriptParsed(params));
     }
 }
