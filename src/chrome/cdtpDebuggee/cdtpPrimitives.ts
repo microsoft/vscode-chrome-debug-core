@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { Protocol as CDTP } from 'devtools-protocol';
 import { IScript } from '../internal/scripts/script';
 import { CDTPScriptUrl } from '../internal/sources/resourceIdentifierSubtypes';
@@ -15,6 +12,7 @@ import { IBPRecipeForRuntimeSource } from '../internal/breakpoints/baseMappedBPR
 import { MappableBreakpoint } from '../internal/breakpoints/breakpoint';
 import { MakePropertyRequired } from '../../typeUtils';
 import { isNotEmpty, isDefined } from '../utils/typedOperators';
+import { InternalError } from '../utils/internalError';
 
 export type integer = number;
 // The IResourceIdentifier<CDTPScriptUrl> is used with the URL that is associated with each Script in CDTP. This should be a URL, but it could also be a string that is not a valid URL
@@ -32,7 +30,7 @@ export function validateNonPrimitiveRemoteObject(remoteObject: CDTP.Runtime.Remo
     if (isNotEmpty(remoteObject.objectId)) {
         return true;
     } else {
-        throw new Error(localize('error.validateNonPrimitiveRemoteObject.invalid', "Expected a non-primitive value to have an object id, yet it doesn't: {0}", JSON.stringify(remoteObject)));
+        throw new InternalError('error.validateNonPrimitiveRemoteObject.invalid', `Expected a non-primitive value to have an object id, yet it doesn't: ${JSON.stringify(remoteObject)}`);
     }
 }
 

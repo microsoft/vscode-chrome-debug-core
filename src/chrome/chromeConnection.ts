@@ -25,6 +25,7 @@ import { ScenarioType } from './client/chromeDebugAdapter/unconnectedCDA';
 import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
+import { InternalError } from './utils/internalError';
 
 export interface ITarget {
     description: string;
@@ -126,7 +127,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
         if (this._client !== undefined) {
             return this._client.api();
         } else {
-            throw new Error(localize('error.connection.cantAccessCDTPWhenNotAttached', "Can't access the CDTP API when the client is not attach to a debuggee"));
+            throw new InternalError('error.connection.cantAccessCDTPWhenNotAttached', "Can't access the CDTP API when the client is not attach to a debuggee");
         }
     }
 
@@ -216,13 +217,13 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             return this._attachedTarget.version
                 .then(version => version, () => new TargetVersions(Version.unknownVersion(), Version.unknownVersion()));
         } else {
-            throw new Error(localize('error.connection.cantRequestVersionBeforeAttaching', "Can't request the version before we are attached to a target"));
+            throw new InternalError('error.connection.cantRequestVersionBeforeAttaching', "Can't request the version before we are attached to a target");
         }
     }
 
     private validateConnectionIsOpen(): void {
         if (this._socket === null) {
-            throw new Error(localize('error.connection.cantPerformOperationWhenClosed', "Can't perform this operation on a connection that is not opened"));
+            throw new InternalError('error.connection.cantPerformOperationWhenClosed', "Can't perform this operation on a connection that is not opened");
         }
     }
 }

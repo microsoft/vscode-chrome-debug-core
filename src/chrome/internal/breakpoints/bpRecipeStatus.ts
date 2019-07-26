@@ -9,6 +9,7 @@ import { BPRecipeInSource } from './bpRecipeInSource';
 import { breakWhileDebugging } from '../../../validation';
 
 import * as nls from 'vscode-nls';
+import { InternalError } from '../../utils/internalError';
 const localize = nls.loadMessageBundle();
 
 /** These interface and classes represent the status of a BP Recipe (Is it bound or not?) */
@@ -56,7 +57,7 @@ export class BPRecipeHasBoundSubstatuses implements IBPRecipeStatus {
         public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.boundSubstatuses.length === 0) {
             breakWhileDebugging();
-            throw new Error(localize('error.breakpointStatus.expectedAtLeastOneBoundSubstatus', 'At least one bound substatus was expected'));
+            throw new InternalError('error.breakpointStatus.expectedAtLeastOneBoundSubstatus', 'At least one bound substatus was expected');
         }
     }
 
@@ -90,7 +91,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
         public readonly unboundSubstatuses: BPRecipeIsUnbound[]) {
         if (this.unboundSubstatuses.length === 0) {
             breakWhileDebugging();
-            throw new Error(localize('error.breakpointStatus.expectedAtLeastOneUnboundSubstatus', 'At least the substatus for a single runtime source was expected'));
+            throw new InternalError('error.breakpointStatus.expectedAtLeastOneUnboundSubstatus', 'At least the substatus for a single runtime source was expected');
         }
     }
 

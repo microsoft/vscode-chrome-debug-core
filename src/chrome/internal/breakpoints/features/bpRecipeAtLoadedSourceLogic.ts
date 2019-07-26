@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import * as _ from 'lodash';
 import { IDebuggeeBreakpointsSetter, IEventsConsumer } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
@@ -29,6 +26,7 @@ import { printClassDescription } from '../../../utils/printing';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 import { OnPausedForBreakpointCallback, defaultOnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 import { DoNotLog } from '../../../logging/decorators';
+import { InternalError } from '../../../utils/internalError';
 
 @printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
@@ -75,7 +73,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
         if (this._onPausedForBreakpointCallback === defaultOnPausedForBreakpointCallback) {
             this._onPausedForBreakpointCallback = onPausedForBreakpointCallback;
         } else {
-            throw new Error(localize('error.loadedSourceSetter.callbacAlreadyConfigured', 'setOnPausedForBreakpointCallback was already configured to a different value'));
+            throw new InternalError('error.loadedSourceSetter.callbacAlreadyConfigured', 'setOnPausedForBreakpointCallback was already configured to a different value');
         }
     }
 

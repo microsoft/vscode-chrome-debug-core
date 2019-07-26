@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { BPRecipe } from '../bpRecipe';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipesInSource } from '../bpRecipes';
@@ -15,6 +12,7 @@ import { SetUsingProjection } from '../../../collections/setUsingProjection';
 import assert = require('assert');
 import { ValidatedSet } from '../../../collections/validatedSet';
 import { printArray } from '../../../collections/printing';
+import { InternalError } from '../../../utils/internalError';
 
 function canonicalizeBPLocation(breakpoint: BPRecipeInSource): string {
     return `${breakpoint.location.position.lineNumber}:${breakpoint.location.position.columnNumber}[${breakpoint.bpActionWhenHit}]`;
@@ -70,15 +68,15 @@ export class BPRsDeltaCalculator {
     private validateResult(match: BPRsDeltaInRequestedSource): void {
         let errorMessage = '';
         if (match.matchesForRequested.length !== this._requestedBPRecipes.breakpoints.length) {
-            errorMessage += localize('error.deltaCalculator.requestedDifferMatches', 'Expected the matches for requested breakpoints list to have the same length as the requested breakpoints list\n');
+            errorMessage += 'Expected the matches for requested breakpoints list to have the same length as the requested breakpoints list\n';
         }
 
         if (match.requestedToAdd.length + match.existingToLeaveAsIs.length !== this._requestedBPRecipes.breakpoints.length) {
-            errorMessage += localize('error.deltaCalculator.toAddPlusExistantDifferTotalRequested', 'Expected the requested breakpoints to add plus the existing breakpoints to leave as-is to have the same quantity as the total requested breakpoints\n');
+            errorMessage += 'Expected the requested breakpoints to add plus the existing breakpoints to leave as-is to have the same quantity as the total requested breakpoints\n';
         }
 
         if (match.existingToLeaveAsIs.length + match.existingToRemove.length !== this._currentBPRecipes.size) {
-            errorMessage += localize('error.deltaCalculator.toBeRemovedPlusLeaveAsIsDifferExistingOnes', 'Expected the existing breakpoints to leave as-is plus the existing breakpoints to remove to have the same quantity as the total existing breakpoints\n');
+            errorMessage += 'Expected the existing breakpoints to leave as-is plus the existing breakpoints to remove to have the same quantity as the total existing breakpoints\n';
         }
 
         if (errorMessage !== '') {
@@ -89,8 +87,9 @@ export class BPRsDeltaCalculator {
                 existingToLeaveAsIs: this.printLocations(match.existingToLeaveAsIs)
             };
 
-            const additionalDetails = localize('error.deltaCalculator.invalidResultDetails', '\nRequested breakpoints = {0}\nExisting breakpoints = ${1}\nMatch = ${2}', JSON.stringify(this._requestedBPRecipes.breakpoints.map(canonicalizeBPLocation)), JSON.stringify(Array.from(this._currentBPRecipes).map(canonicalizeBPLocation)), JSON.stringify(matchJson));
-            throw new Error(localize('error.deltaCalculator.invalidResult', '{0}\nmatch: {1}', errorMessage, additionalDetails));
+            const additionalDetails = `\nRequested breakpoints = ${JSON.stringify(this._requestedBPRecipes.breakpoints.map(canonicalizeBPLocation))}`
+                + `\nExisting breakpoints = ${JSON.stringify(Array.from(this._currentBPRecipes).map(canonicalizeBPLocation))}\nMatch = ${JSON.stringify(matchJson)}`;
+            throw new InternalError('error.deltaCalculator.invalidResult', `${errorMessage}\nmatch: ${additionalDetails}`);
         }
     }
 

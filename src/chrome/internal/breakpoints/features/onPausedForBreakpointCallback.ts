@@ -4,9 +4,7 @@
 
  import { BPRecipeInSource } from '../bpRecipeInSource';
 import { IActionToTakeWhenPaused } from '../../features/actionToTakeWhenPaused';
-
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
+import { InternalError } from '../../../utils/internalError';
 
 export type OnPausedForBreakpointCallback = (bpRecipes: BPRecipeInSource[]) => Promise<IActionToTakeWhenPaused>;
-export const defaultOnPausedForBreakpointCallback: OnPausedForBreakpointCallback = () => { throw new Error(localize('error.pauseForBPPause.noCallback', 'No callback was specified for pauses for breakpoints')); };
+export const defaultOnPausedForBreakpointCallback: OnPausedForBreakpointCallback = () => { throw new InternalError('error.pauseForBPPause.noCallback', 'No callback was specified for pauses for breakpoints'); };

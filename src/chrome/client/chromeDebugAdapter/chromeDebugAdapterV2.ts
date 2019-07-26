@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from '../../chromeDebugSession';
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
@@ -16,6 +13,7 @@ import { TerminatingCDA } from './terminatingCDA';
 import { logger } from 'vscode-debugadapter';
 import { isUndefined } from '../../utils/typedOperators';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { InternalError } from '../../utils/internalError';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -69,7 +67,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
 
     private validateProcessRequestIsDefined() {
         if (isUndefined(this._state.processRequest)) {
-            throw new Error(localize('error.da.cantChangeToStateLackingProcessRequest', 'Invalid state: {0}', `${this._state}`));
+            throw new InternalError('error.da.cantChangeToStateLackingProcessRequest', `Invalid state: ${this._state}`);
         }
     }
 }

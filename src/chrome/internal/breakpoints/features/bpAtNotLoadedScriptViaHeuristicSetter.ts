@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { IBPActionWhenHit } from '../bpActionWhenHit';
 import { BaseSourceMapTransformer } from '../../../../transformers/baseSourceMapTransformer';
@@ -21,6 +18,7 @@ import { IdentifiedLoadedSource } from '../../sources/identifiedLoadedSource';
 import { SourceMap } from '../../../../sourceMaps/sourceMap';
 import { ValidatedMap } from '../../../collections/validatedMap';
 import { ILoadedSource, ImplementsLoadedSource, SourceScriptRelationship, ContentsLocation, IScriptMapper } from '../../sources/loadedSource';
+import { InternalError } from '../../../utils/internalError';
 
 /**
  * When the user sets a breakpoint on a source file that is not associated with any loaded script, we use this heuristic to set a breakpoint
@@ -84,7 +82,7 @@ export class SourceWithSourceMap implements IHasSourceMappingInformation {
 
     public get mappedSources(): IdentifiedLoadedSource<string>[] {
         // It doesn't seem this method is needed when calling sourceMapper.getPositionInScript, so we don't need to implement it
-        throw new Error(localize('error.sourceWithSourceMap.mappedSources.notImplemented', 'Not yet implemented: SourceWithSourceMap.mappedSources'));
+        throw new InternalError('error.sourceWithSourceMap.mappedSources.notImplemented', 'Not yet implemented: SourceWithSourceMap.mappedSources');
     }
 
     public get startPositionInSource(): Position {
@@ -135,6 +133,6 @@ class NoLoadedSourceAvailable implements ILoadedSource<CDTPScriptUrl> {
     }
 
     private throwError(): never {
-        throw new Error(localize('error.noLoadedSourceAvailable.invalidMethod', "Can't request this when the runtime source is not available"));
+        throw new InternalError('error.noLoadedSourceAvailable.invalidMethod', "Can't request this when the runtime source is not available");
     }
 }

@@ -28,6 +28,7 @@ import { IEventsToClientReporter } from '../../../client/eventsToClientReporter'
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
+import { InternalError } from '../../../utils/internalError';
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
@@ -52,12 +53,12 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             const bpRecipesStatus = await this._breakpointsLogic.updateBreakpointsForFile(desiredBPRecipes, telemetryPropertyCollector);
             const response = { breakpoints: await asyncMap(bpRecipesStatus, bprs => this._bpRecipieStatusToClientConverter.toBreakpoint(bprs)) };
             if (response.breakpoints.length !== args.breakpoints.length) {
-                throw new Error(localize('error.setBreakpoints.expectedResponseToMatchRequestLength', 'The response the debug adapter generated for setBreakpoints have {0} breakpoints in the response yet {1} breakpoints were set. Response: {1}, response.breakpoints.length', args.breakpoints.length, JSON.stringify(response.breakpoints)));
+                throw new InternalError('error.setBreakpoints.expectedResponseToMatchRequestLength', `The response the debug adapter generated for setBreakpoints have ${args.breakpoints.length} breakpoints in the response yet {1} breakpoints were set. Response: ${JSON.stringify(response.breakpoints)}, response.breakpoints.length`);
             }
 
             return response;
         } else {
-            throw new Error(localize('error.setBreakpoints.argumentNotDefined', 'Expected the set breakpoints arguments to have a list of breakpoints yet it was {0}', args.breakpoints));
+            throw new InternalError('error.setBreakpoints.argumentNotDefined', `Expected the set breakpoints arguments to have a list of breakpoints yet it was ${args.breakpoints}`);
         }
     }
 
@@ -88,7 +89,9 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
             } else if (isNotEmpty(actionWhenHit.logMessage)) {
                 return new ConditionalPause(actionWhenHit.logMessage);
             } else {
-                throw new Error(localize('error.setBreakpoints.failedToParseActionWhenHit', "Couldn't parse the requested action when hit for the breakpoint: 'condition' ({0}), 'hitCondition' ({1}) or 'logMessage' ({2}), actionWhenHit.condition", actionWhenHit.hitCondition, actionWhenHit.logMessage));
+                throw new InternalError('error.setBreakpoints.failedToParseActionWhenHit',
+                    `Couldn't parse the requested action when hit for the breakpoint: 'condition' (${actionWhenHit.condition}),`
+                    + ` 'hitCondition' (${actionWhenHit.hitCondition}) or 'logMessage' (${actionWhenHit.logMessage})`);
             }
         } else { // howManyDefined >= 2
             throw new Error(localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));

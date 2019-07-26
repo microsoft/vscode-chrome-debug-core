@@ -2,10 +2,8 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import * as semver from 'semver';
+import { InternalError } from './internalError';
 
 export class Version {
     constructor(private readonly _semverVersion: semver.SemVer) { }
@@ -15,7 +13,7 @@ export class Version {
         if (semVerOrNull !== null) {
             return new Version(semVerOrNull);
         } else {
-            throw new Error(localize('error.version.invalid', "Couldn't parse a version number from {0}", versionString));
+            throw new InternalError('error.version.invalid', `Couldn't parse a version number from ${versionString}`);
         }
     }
 

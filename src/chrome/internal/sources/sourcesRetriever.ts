@@ -2,15 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { SourceTextRetriever } from './sourceTextRetriever';
 import { LoadedSourcesTreeRetriever } from './loadedSourcesTreeRetriever';
 import { ILoadedSourceTreeNode } from './loadedSource';
 import { ISource } from './source';
 import { IScript } from '../scripts/script';
 import { injectable } from 'inversify';
+import { InternalError } from '../../utils/internalError';
 
 export interface ISourcesRetriever {
     loadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]>;
@@ -37,7 +35,7 @@ export class SourcesRetriever implements ISourcesRetriever {
         return await source.tryResolving(
             async loadedSource => await this._sourceTextRetriever.text(loadedSource),
             identifier => {
-                throw new Error(localize('error.source.cantResolve', "Couldn't resolve the source with the path: {0}", identifier.textRepresentation));
+                throw new InternalError('error.source.cantResolve', `Couldn't resolve the source with the path: ${identifier.textRepresentation}`);
             });
     }
 

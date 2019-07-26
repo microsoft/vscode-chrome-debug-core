@@ -2,8 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { IEnableableApi } from './cdtpDiagnosticsModule';
 import { Protocol as CDTP } from 'devtools-protocol';
@@ -13,6 +11,7 @@ import * as utils from '../../../utils';
 import { asyncMap } from '../../collections/async';
 import { ValidatedMap } from '../../collections/validatedMap';
 import * as _ from 'lodash';
+import { InternalError } from '../../utils/internalError';
 
 export interface IDomainsEnabler {
     registerToEnable<T extends IEnableableApi<EnableParameters, EnableResponse>, EnableParameters, EnableResponse>
@@ -71,7 +70,8 @@ class GatheringDomainsToEnableDuringStartup implements IState {
             new EnableDomainFunctionAndResultPromise(enableDomain, parameters, utils.promiseDefer<EnableResponse>()));
 
         if (entry.parameters !== parameters) {
-            throw new Error(localize('error.domainEnabler.cannotReregisterWithDifferentParameters', 'Cannot register enable({0}) for domain {1} because it was registered previously with enable({2})', `${parameters}`, this.getDomainName(api), `${entry.parameters}`));
+            throw new InternalError('error.domainEnabler.cannotReregisterWithDifferentParameters',
+                `Cannot register enable(${parameters}) for domain ${this.getDomainName(api)} because it was registered previously with enable(${entry.parameters})`);
         }
 
         return await entry.defer.promise;
@@ -82,7 +82,7 @@ class GatheringDomainsToEnableDuringStartup implements IState {
         if (name !== undefined) {
             return name;
         } else {
-            throw new Error(localize('error.domainEnabler.cantGetDomainNameForApi', "Couldn't get the domain name for {0}", api.toString()));
+            throw new InternalError('error.domainEnabler.cantGetDomainNameForApi', `Couldn't get the domain name for ${api}`);
         }
     }
 }
@@ -94,7 +94,7 @@ class DomainsAlreadyEnabledAfterStartup implements IState {
     }
 
     public enableDomains(): Promise<IState> {
-        throw new Error(localize('error.domainEnabler.startupAlreadyFinished', 'Startup was already finished'));
+        throw new InternalError('error.domainEnabler.startupAlreadyFinished', 'Startup was already finished');
     }
 }
 

@@ -2,14 +2,12 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import * as assert from 'assert';
 import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { breakWhileDebugging } from '../../validation';
 import { isDefined } from '../utils/typedOperators';
+import { InternalError } from '../utils/internalError';
 
 /** A map where we can efficiently get the key from the value or the value from the key */
 export class BidirectionalMap<Left, Right> {
@@ -86,12 +84,14 @@ export class BidirectionalMap<Left, Right> {
 
         if (existingRightForLeft !== undefined) {
             breakWhileDebugging();
-            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnLeft', "Can't set the pair left ({0}) and right ({1}) because there is already a right element ({2}) associated with the left element", `${left}`, `${right}`, `${existingRightForLeft}`));
+            throw new InternalError('error.bidirectionalMap.elementAlreadyExistOnLeft',
+                `Can't set the pair left (${left}) and right (${right}) because there is already a right element (${existingRightForLeft}) associated with the left element`);
         }
 
         if (existingLeftForRight !== undefined) {
             breakWhileDebugging();
-            throw new Error(localize('error.bidirectionalMap.elementAlreadyExistOnRight', "Can't set the pair left ({0}) and right ({1}) because there is already a left element ({2}) associated with the right element", `${left}`, `${right}`, `${existingLeftForRight}`));
+            throw new InternalError('error.bidirectionalMap.elementAlreadyExistOnRight',
+                `Can't set the pair left (${left}) and right (${right}) because there is already a left element (${existingLeftForRight}) associated with the right element`);
         }
 
         this._leftToRight.set(left, right);

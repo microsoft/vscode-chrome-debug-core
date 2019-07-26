@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { Protocol as CDTP } from 'devtools-protocol';
 import { inject, injectable, multiInject } from 'inversify';
 import { ChromeDebugLogic } from '../../chromeDebugAdapter';
@@ -23,6 +20,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { IDebuggeeInitializer, TerminatingReason } from '../../debugeeStartup/debugeeLauncher';
 import { ISupportedDomains } from '../../internal/domains/supportedDomains';
 import { StepProgressEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
+import { InternalError } from '../../utils/internalError';
 
 export type ConnectedCDAProvider = (protocolApi: CDTP.ProtocolApi) => ConnectedCDA;
 
@@ -49,9 +47,12 @@ export class ConnectedCDA extends BaseCDAState {
         @inject(TYPES.ISupportedDomains) private readonly _supportedDomains: ISupportedDomains,
     ) {
         super(requestHandlerDeclarers, {
-            'initialize': () => { throw new Error(localize('error.connectedDA.cantCallInitializeYetAgain', 'The debug adapter is already initialized. Calling initialize again is not supported.')); },
-            'launch': () => { throw new Error(localize('error.connectedDA.cantLaunchWhileAlreadyConnected', "Can't launch  to a new target while connected to a previous target")); },
-            'attach': () => { throw new Error(localize('error.connectedDA.cantAttachWhileAlreadyConnected', "Can't attach to a new target while connected to a previous target")); },
+            'initialize': () => { throw new InternalError('error.connectedDA.cantCallInitializeYetAgain',
+                'The debug adapter is already initialized. Calling initialize again is not supported.'); },
+            'launch': () => { throw new InternalError('error.connectedDA.cantLaunchWhileAlreadyConnected',
+                "Can't launch  to a new target while connected to a previous target"); },
+            'attach': () => { throw new InternalError('error.connectedDA.cantAttachWhileAlreadyConnected',
+                "Can't attach to a new target while connected to a previous target"); },
             'disconnect': (args: DebugProtocol.DisconnectArguments) => this.disconnect(args),
         });
         reporter.subscribeTo(this.events);

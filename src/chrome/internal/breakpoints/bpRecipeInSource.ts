@@ -2,15 +2,13 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { ISource } from '../sources/source';
 import { Location } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
 import { IBPActionWhenHit, PauseOnHitCount, AlwaysPause } from './bpActionWhenHit';
 import { BPRecipeInLoadedSource } from './baseMappedBPRecipe';
 import { BaseBPRecipe, IBPRecipe } from './bpRecipe';
+import { InternalError } from '../../utils/internalError';
 
 export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPActionWhenHit> extends BaseBPRecipe<ISource, TBPActionWhenHit> {
     constructor(public readonly location: Location<ISource>, public readonly bpActionWhenHit: TBPActionWhenHit) {
@@ -41,7 +39,7 @@ export class BPRecipeInSource<TBPActionWhenHit extends IBPActionWhenHit = IBPAct
     public resolvedToLoadedSource(): BPRecipeInLoadedSource<TBPActionWhenHit> {
         return this.tryResolving(
             breakpointInLoadedSource => breakpointInLoadedSource,
-            () => { throw new Error(localize('error.bpRecipeInSource.failedToResolve', 'Failed to convert {0} into a breakpoint in a loaded source', this.toString())); });
+            () => { throw new InternalError('error.bpRecipeInSource.failedToResolve', `Failed to convert ${this} into a breakpoint in a loaded source`); });
     }
 
     public resolvedWithLoadedSource(source: ILoadedSource<string>): BPRecipeInLoadedSource<TBPActionWhenHit> {

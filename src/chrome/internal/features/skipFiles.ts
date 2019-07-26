@@ -22,6 +22,7 @@ import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsP
 import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { isTrue, isFalse, isDefined } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
+import { InternalError } from '../../utils/internalError';
 const localize = nls.loadMessageBundle();
 
 export interface ISkipFilesConfiguration {
@@ -199,7 +200,7 @@ export class SkipFilesLogic implements IStackTracePresentationDetailsProvider {
                     const sourcesMapper = script.sourceMapper;
                     const pos = sourcesMapper.getPositionInScript(new LocationInLoadedSource(s, Position.origin));
                     if (pos.isEmpty()) {
-                        throw new Error(localize('error.skipFiles.couldntFindSourceStartInScript', "Source '{0}' start not found in script.", s.toString()));
+                        throw new InternalError('error.skipFiles.couldntFindSourceStartInScript', `Source '${s}' start not found in script.`);
                     }
 
                     libPositions.push(pos.enclosingRange.start);

@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import * as os from 'os';
 import * as fs from 'fs';
 import * as url from 'url';
@@ -19,6 +16,7 @@ import { ValidatedSet } from './chrome/collections/validatedSet';
 import { promisify } from 'util';
 import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
 import * as _ from 'lodash';
+import { InternalError } from './chrome/utils/internalError';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -73,11 +71,7 @@ export function reversedArr(arr: any[]): any[] {
     }, []);
 }
 
-export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg?: string): Promise<any> {
-    if (timeoutMsg === undefined) {
-        timeoutMsg = localize('error.promiseTimeout.timedOut', 'Promise timed out after {0}ms', timeoutMs);
-    }
-
+export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg = `Promise timed out after ${timeoutMs}ms`): Promise<any> {
     return new Promise((resolve, reject) => {
         if (isDefined(p)) {
             p.then(resolve, reject);
@@ -85,7 +79,7 @@ export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg?: 
 
         setTimeout(() => {
             if (isDefined(p)) {
-                reject(new Error(timeoutMsg));
+                reject(new InternalError('error.promiseTimeout.timedOut', timeoutMsg));
             } else {
                 resolve();
             }
@@ -249,7 +243,7 @@ export function errP(msg?: string): Promise<never> {
 
     let e: Error;
     if (isEmpty(msg)) {
-        e = new Error(localize('error.unknownError', 'Unknown error'));
+        e = new InternalError('error.unknownError', 'Unknown error');
     } else if (isErrorLike(msg)) {
         // msg is already an Error object
         e = msg;
@@ -558,8 +552,8 @@ export interface IPromiseDefer<T> {
 
 export function promiseDefer<T>(): IPromiseDefer<T> {
     // If we hit any of these two functions, it means that the variables weren't initialized inside the new Promise(){ ... }
-    let resolveCallback: ResolveType<T> = () => { throw new Error(localize('error.promiseDefer.uninitializedResolve', 'promiseDefer is not initializing resolveCallback properly')); };
-    let rejectCallback: RejectType = () => { throw new Error(localize('error.promiseDefer.uninitializedReject', 'promiseDefer is not initializing rejectCallback properly')); };
+    let resolveCallback: ResolveType<T> = () => { throw new InternalError('error.promiseDefer.uninitializedResolve', 'promiseDefer is not initializing resolveCallback properly'); };
+    let rejectCallback: RejectType = () => { throw new InternalError('error.promiseDefer.uninitializedReject', 'promiseDefer is not initializing rejectCallback properly'); };
 
     const promise = new Promise<T>((resolve, reject) => {
         resolveCallback = resolve;
@@ -603,6 +597,10 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     }
     if (e.id) {
         properties.exceptionId = e.id.toString();
+    }
+    if (e instanceof InternalError) {
+        properties.exceptionId = e.errorCode;
+        properties.errorDetails = e.errorDetails;
     }
 }
 

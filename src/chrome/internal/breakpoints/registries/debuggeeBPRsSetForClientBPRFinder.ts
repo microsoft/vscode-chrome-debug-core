@@ -2,9 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { ISource } from '../../sources/source';
 import { IBPRecipe } from '../bpRecipe';
 import { CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
@@ -12,6 +9,7 @@ import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
 import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { injectable, inject, LazyServiceIdentifer } from 'inversify';
 import { PrivateTypes } from '../diTypes';
+import { InternalError } from '../../../utils/internalError';
 
 type ClientBPRecipe = IBPRecipe<ISource>;
 type DebuggeeBPRecipe = CDTPBPRecipe;
@@ -58,7 +56,8 @@ export class DebuggeeBPRsSetForClientBPRFinder {
     private clientBPRWasRemoved(clientBPRecipe: ClientBPRecipe): void {
         const debuggeBPRecipies = this._clientBPRToDebuggeeBPRItSet.get(clientBPRecipe);
         if (debuggeBPRecipies.size >= 1) {
-            throw new Error(localize('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences', 'Tried to remove a Client breakpoint recipe ({0}) which still had some associated debuggee breakpoint recipes ({1})', `${clientBPRecipe}`, `${debuggeBPRecipies}`));
+            throw new InternalError('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences',
+                `Tried to remove a Client breakpoint recipe (${clientBPRecipe}) which still had some associated debuggee breakpoint recipes (${debuggeBPRecipies})`);
         }
 
         this._clientBPRToDebuggeeBPRItSet.delete(clientBPRecipe);

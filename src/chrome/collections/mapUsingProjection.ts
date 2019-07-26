@@ -2,13 +2,11 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { ValidatedMap, IValidatedMap, ValueComparerFunction } from './validatedMap';
 import { IProjection } from './setUsingProjection';
 import { printMap } from './printing';
 import * as _ from 'lodash';
+import { InternalError } from '../utils/internalError';
 
 class KeyAndValue<K, V> {
     constructor(public readonly key: K, public readonly value: V) { }
@@ -58,7 +56,7 @@ export class MapUsingProjection<K, V, P> implements IValidatedMap<K, V> {
         if (underlyingValueOrUndefined !== undefined) {
             return underlyingValueOrUndefined.value;
         } else {
-            throw new Error(localize('error.mapUsingProjection.cantGetNonExistantKey', "Couldn't get the value for key: {0} because it doesn't exist on the map: {1}", `${key}`, this.toString()));
+            throw new InternalError('error.mapUsingProjection.cantGetNonExistantKey', `Couldn't get the value for key: ${key} because it doesn't exist on the map: ${this}`);
         }
     }
 

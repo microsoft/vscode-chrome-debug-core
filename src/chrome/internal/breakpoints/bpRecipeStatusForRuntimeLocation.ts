@@ -2,12 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
-
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { BreakpointInSource } from './breakpoint';
 import { LocationInLoadedSource } from '../locations/location';
+import { InternalError } from '../../utils/internalError';
 
 const ImplementsBPRecipeSingleLocationStatus = Symbol();
 export interface IBPRecipeSingleLocationStatus {
@@ -42,7 +40,7 @@ export class BPRecipeIsBoundInRuntimeLocation implements IBPRecipeSingleLocation
         public readonly locationInRuntimeSource: LocationInLoadedSource,
         public readonly breakpoints: BreakpointInSource[]) {
         if (this.breakpoints.length === 0) {
-            throw new Error(localize('error.bpRecipeStatus.boundInRuntime.invalid', 'At least a single breakpoint was expected'));
+            throw new InternalError('error.bpRecipeStatus.boundInRuntime.invalid', 'At least a single breakpoint was expected');
         }
     }
 

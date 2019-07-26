@@ -18,6 +18,7 @@ import * as _ from 'lodash';
 import { notEmpty } from '../validation';
 
 import * as nls from 'vscode-nls';
+import { InternalError } from './utils/internalError';
 const localize = nls.loadMessageBundle();
 
 /**
@@ -148,7 +149,7 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
                 value = 'null';
             } else {
                 if (object.description === undefined) {
-                    throw new Error(localize('error.variables.remoteObjectLacksDescription', "Expected an remote object of type object to have a description yet it didn't: {0}", JSON.stringify(object)));
+                    throw new InternalError('error.variables.remoteObjectLacksDescription', `Expected an remote object of type object to have a description yet it didn't: ${JSON.stringify(object)}`);
                 }
 
                 // If it's a non-null object, create a variable reference so the client can ask for its props
@@ -159,7 +160,7 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
             value = 'undefined';
         } else if (object.type === 'function') {
             if (object.description === undefined) {
-                throw new Error(localize('error.variables.remoteFunctionObjectLacksDescription', "Expected a function to have a description yet it didn't: {0}", JSON.stringify(object)));
+                throw new InternalError('error.variables.remoteFunctionObjectLacksDescription', `Expected a function to have a description yet it didn't: ${JSON.stringify(object)}`);
             }
 
             const firstBraceIdx = object.description.indexOf('{');
@@ -175,7 +176,7 @@ export function remoteObjectToValue(object: CDTP.Runtime.RemoteObject, stringify
             // The value is a primitive value, or something that has a description (not object, primitive, or undefined). And force to be string
             if (typeof object.value === 'undefined' || object.type === 'number') {
                 if (object.description === undefined) {
-                    throw new Error(localize('error.variables.primitiveValueLacksDescription', "Expected an object that is neither object, not function nor undefined to have a description yet it didn't: {0}", JSON.stringify(object)));
+                    throw new InternalError('error.variables.primitiveValueLacksDescription', `Expected an object that is neither object, not function nor undefined to have a description yet it didn't: ${JSON.stringify(object)}`);
                 }
 
                 // If this is undefined, use a description.
