@@ -189,6 +189,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     public get session() { return this._session; }
 
+    private get originProvider() { return (url: string) => this.getReadonlyOrigin(url);  }
+
     /**
      * Called on 'clearEverything' or on a navigation/refresh
      */
@@ -395,7 +397,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._session.shutdown();
     }
 
-    protected async terminateSession(reason: string, restart?: IRestartRequestArgs): Promise<void> {
+    protected async terminateSession(reason: string, _disconnectArgs?: DebugProtocol.DisconnectArguments, restart?: IRestartRequestArgs): Promise<void> {
         logger.log(`Terminated: ${reason}`);
 
         if (!this._hasTerminated) {
@@ -811,7 +813,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     protected async sendLoadedSourceEvent(script: Crdp.Debugger.ScriptParsedEvent, loadedSourceEventReason: LoadedSourceEventReason = 'new'): Promise<void> {
-        const origin = this.getReadonlyOrigin();
+        const origin = this.getReadonlyOrigin(script.url);
         const source = await this._scriptContainer.scriptToSource(script, origin);
 
         // This is a workaround for an edge bug, see https://github.com/Microsoft/vscode-chrome-debug-core/pull/329
@@ -903,7 +905,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     */
     public async loadedSources(): Promise<IGetLoadedSourcesResponseBody> {
         const sources = await Promise.all(Array.from(this._scriptContainer.loadedScripts)
-            .map(script => this._scriptContainer.scriptToSource(script, this.getReadonlyOrigin())));
+            .map(script => this._scriptContainer.scriptToSource(script, this.getReadonlyOrigin(script.url))));
 
         return { sources: sources.sort((a, b) => a.path.localeCompare(b.path)) };
     }
@@ -980,7 +982,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                 }
 
                 if (stackTrace && stackTrace.callFrames.length) {
-                    const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.getReadonlyOrigin());
+                    const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.originProvider);
                     e.body.source = stackFrame.source;
                     e.body.line = stackFrame.line;
                     e.body.column = stackFrame.column;
@@ -1003,7 +1005,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const e: DebugProtocol.OutputEvent = new OutputEvent(exceptionStr + '\n', 'stderr');
             const stackTrace = params.exceptionDetails.stackTrace;
             if (stackTrace && stackTrace.callFrames.length) {
-                const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.getReadonlyOrigin());
+                const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.originProvider);
                 e.body.source = stackFrame.source;
                 e.body.line = stackFrame.line;
                 e.body.column = stackFrame.column;
@@ -1043,7 +1045,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         telemetry.reportEvent('FullSessionStatistics/SourceMaps/Overrides', { aspNetClientAppFallbackCount: sourceMapUtils.getAspNetFallbackCount() });
         this._clientRequestedSessionEnd = true;
         this.shutdown();
-        this.terminateSession('Got disconnect request');
+        this.terminateSession('Got disconnect request', args);
     }
 
     /* __GDPR__
@@ -1282,7 +1284,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const stackTraceResponse = await this._stackFrames.getStackTrace({
             args,
-            origin: this.getReadonlyOrigin(),
+            originProvider: this.originProvider,
             scripts: this._scriptContainer,
             scriptSkipper: this._scriptSkipper,
             smartStepper: this._smartStepper,
@@ -1299,7 +1301,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     /**
      * A stub method for overriding (used for the node debug adapter)
      */
-    protected getReadonlyOrigin(): string {
+    protected getReadonlyOrigin(_url: string): string {
         // To override
         return undefined;
     }
@@ -1492,7 +1494,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     }
 
     private async _shouldSmartStepCallFrame(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
-        const stackFrame = this._stackFrames.callFrameToStackFrame(frame, this._scriptContainer, this.getReadonlyOrigin());
+        const stackFrame = this._stackFrames.callFrameToStackFrame(frame, this._scriptContainer, this.originProvider);
         return this._smartStepper.shouldSmartStep(stackFrame, this.pathTransformer, this.sourceMapTransformer);
     }
 
