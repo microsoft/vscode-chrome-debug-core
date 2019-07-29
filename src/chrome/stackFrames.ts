@@ -42,17 +42,17 @@ export class StackFrames {
         return this._frameHandles.get(frameId);
     }
 
-    public async getStackTrace({ args, scripts, origin, scriptSkipper, smartStepper, transformers, pauseEvent }:
+    public async getStackTrace({ args, scripts, originProvider, scriptSkipper, smartStepper, transformers, pauseEvent }:
                 { args: DebugProtocol.StackTraceArguments;
                   scripts: ScriptContainer;
-                  origin: string;
+                  originProvider: (url: string) => string;
                   scriptSkipper: ScriptSkipper;
                   smartStepper: SmartStepper;
                   transformers: Transformers;
                   pauseEvent: Crdp.Debugger.PausedEvent; }): Promise<IStackTraceResponseBody> {
 
-        let stackFrames = pauseEvent.callFrames.map(frame => this.callFrameToStackFrame(frame, scripts, origin))
-            .concat(this.asyncFrames(pauseEvent.asyncStackTrace, scripts, origin));
+        let stackFrames = pauseEvent.callFrames.map(frame => this.callFrameToStackFrame(frame, scripts, originProvider))
+            .concat(this.asyncFrames(pauseEvent.asyncStackTrace, scripts, originProvider));
 
         const totalFrames = stackFrames.length;
         if (typeof args.startFrame === 'number') {
@@ -167,9 +167,9 @@ export class StackFrames {
         return scopesResponse;
     }
 
-    public async mapCallFrame(frame: Crdp.Runtime.CallFrame, transformers: Transformers, scripts: ScriptContainer, origin: string ): Promise<DebugProtocol.StackFrame> {
+    public async mapCallFrame(frame: Crdp.Runtime.CallFrame, transformers: Transformers, scripts: ScriptContainer, originProvider: (url: string) => string ): Promise<DebugProtocol.StackFrame> {
         const debuggerCF = this.runtimeCFToDebuggerCF(frame);
-        const stackFrame = this.callFrameToStackFrame(debuggerCF, scripts, origin);
+        const stackFrame = this.callFrameToStackFrame(debuggerCF, scripts, originProvider);
         await transformers.pathTransformer.fixSource(stackFrame.source);
         await transformers.sourceMapTransformer.fixSourceLocation(stackFrame);
         transformers.lineColTransformer.convertDebuggerLocationToClient(stackFrame);
@@ -209,11 +209,11 @@ export class StackFrames {
         return exceptionLines.join('\n');
     }
 
-    private asyncFrames(stackTrace: Crdp.Runtime.StackTrace, scripts: ScriptContainer, origin: string): DebugProtocol.StackFrame[] {
+    private asyncFrames(stackTrace: Crdp.Runtime.StackTrace, scripts: ScriptContainer, originProvider: (url: string) => string): DebugProtocol.StackFrame[] {
         if (stackTrace) {
             const frames = stackTrace.callFrames
                 .map(frame => this.runtimeCFToDebuggerCF(frame))
-                .map(frame => this.callFrameToStackFrame(frame, scripts, origin));
+                .map(frame => this.callFrameToStackFrame(frame, scripts, originProvider));
 
             frames.unshift({
                 id: this._frameHandles.create(null),
@@ -224,7 +224,7 @@ export class StackFrames {
                 presentationHint: 'label'
             });
 
-            return frames.concat(this.asyncFrames(stackTrace.parent, scripts, origin));
+            return frames.concat(this.asyncFrames(stackTrace.parent, scripts, originProvider));
         } else {
             return [];
         }
@@ -261,7 +261,7 @@ export class StackFrames {
         return formattedName;
     }
 
-    public callFrameToStackFrame(frame: Crdp.Debugger.CallFrame, scripts: ScriptContainer, origin: string): DebugProtocol.StackFrame {
+    public callFrameToStackFrame(frame: Crdp.Debugger.CallFrame, scripts: ScriptContainer, originProvider: (url: string) => string): DebugProtocol.StackFrame {
         const { location, functionName } = frame;
         const line = location.lineNumber;
         const column = location.columnNumber;
@@ -275,7 +275,7 @@ export class StackFrames {
                 name: path.basename(script.url),
                 path: script.url,
                 sourceReference,
-                origin
+                origin: originProvider(script.url)
             };
 
             // If the frame doesn't have a function name, it's either an anonymous function
