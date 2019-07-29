@@ -103,6 +103,7 @@ export class ConnectedCDA extends BaseCDAState {
         this._session.sendEvent(new InitializedEvent());
         this.events.emitStepCompleted('NotifyInitialized');
 
+        this.events.emitStepStarted('Attach.ConfigureDebuggingSession.waitForUserContentToLoad');
         return this;
     }
 
