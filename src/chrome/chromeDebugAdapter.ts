@@ -51,7 +51,7 @@ import { IEvaluateOnCallFrameRequest, IDebuggeeStateInspector } from './cdtpDebu
 import { ConnectedCDAConfiguration } from './client/chromeDebugAdapter/cdaConfiguration';
 import { CDTPScriptsRegistry } from './cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { EventsToClientReporter } from './client/eventsToClientReporter';
-import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPRemoteObjectOfTypeObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
+import { validateNonPrimitiveRemoteObject, CDTPNonPrimitiveRemoteObject, CDTPPreviewableRemoteObject, validateCDTPRemoteObjectOfTypeObject } from './cdtpDebuggee/cdtpPrimitives';
 import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isEmpty } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { CurrentStackTraceProvider } from './internal/stackTraces/currentStackTraceProvider';
@@ -988,7 +988,7 @@ export class ChromeDebugLogic {
         return this.getNumPropsByEval(objectId, getNumPropsFn);
     }
 
-    private getCollectionNumPropsByPreview(object: CDTPRemoteObjectOfTypeObject): IPropCount {
+    private getCollectionNumPropsByPreview(object: CDTPPreviewableRemoteObject): IPropCount {
         let indexedVariables = 0;
         let namedVariables = object.preview.properties.length + 1; // +1 for [[Entries]];
 
