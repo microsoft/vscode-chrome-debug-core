@@ -21,6 +21,7 @@ import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
+import { LocalizedError } from '../chrome/utils/localizedError';
 
 export type MappedPosition = MappedPosition;
 
@@ -227,7 +228,7 @@ export class SourceMap {
                 source: parseResourceIdentifier(this._generatedPath)
             };
         } else {
-            throw new Error(localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
+            throw new LocalizedError(localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
         }
     }
 

@@ -17,6 +17,7 @@ import { printClassDescription, printInstanceDescription } from '../../../utils/
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { logger } from 'vscode-debugadapter';
 import { DoNotLog } from '../../../logging/decorators';
+import { LocalizedError } from '../../../utils/localizedError';
 
 type SteppingAction = () => Promise<void>;
 
@@ -74,7 +75,7 @@ class CurrentlyStepping implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new Error(localize('error.stepping.alreadyStepping', 'Cannot start stepping again while the program is already stepping'));
+        throw new LocalizedError(localize('error.stepping.alreadyStepping', 'Cannot start stepping again while the program is already stepping'));
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
@@ -105,7 +106,7 @@ class CurrentlyPausing implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new Error(localize('error.stepping.currentlyPausing', 'Cannot start stepping while the debugger is trying to pause the program'));
+        throw new LocalizedError(localize('error.stepping.currentlyPausing', 'Cannot start stepping while the debugger is trying to pause the program'));
     }
 
     public async onProvideActionForWhenPaused(_paused: PausedEvent): Promise<IActionToTakeWhenPaused> {

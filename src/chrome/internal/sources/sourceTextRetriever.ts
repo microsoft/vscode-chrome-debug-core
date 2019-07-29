@@ -15,6 +15,7 @@ import { singleElementOfArray } from '../../collections/utilities';
 import * as utils from '../../../utils';
 import { logger } from 'vscode-debugadapter';
 import { printArray } from '../../collections/printing';
+import { LocalizedError } from '../../utils/localizedError';
 
 /**
  * Retrieves the text associated with a loaded source that maps to a JavaScript script file
@@ -48,7 +49,7 @@ export class SourceTextRetriever {
                 return utils.readFileP(loadedSource.identifier.textRepresentation);
             } else {
                 // We'll need to figure out what is the right thing to do for SourceScriptRelationship.Unknown
-                throw new Error(localize('error.sourceText.multipleScriptsNotSupported', "Support for getting the text from dynamic sources that have multiple scripts embedded hasn't been implemented yet"));
+                throw new LocalizedError(localize('error.sourceText.multipleScriptsNotSupported', "Support for getting the text from dynamic sources that have multiple scripts embedded hasn't been implemented yet"));
             }
             this._sourceToText.set(loadedSource, text);
         }

@@ -9,6 +9,7 @@ import { Protocol as CDTP } from 'devtools-protocol';
 import { IPauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../../internal/exceptions/strategies';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { LocalizedError } from '../../utils/localizedError';
 
 export interface IPauseOnExceptionsConfigurer {
     setPauseOnExceptions(strategy: IPauseOnExceptionsStrategy): Promise<void>;
@@ -35,7 +36,7 @@ export class CDTPPauseOnExceptionsConfigurer implements IPauseOnExceptionsConfig
         } else if (strategy instanceof DoNotPauseOnAnyExceptions) {
             state = 'none';
         } else {
-            throw new Error(localize('error.pauseOnException.unknownStrategy', "Can't pause on exception using an unknown strategy {0}", strategy.toString()));
+            throw new LocalizedError(localize('error.pauseOnException.unknownStrategy', "Can't pause on exception using an unknown strategy {0}", strategy.toString()));
         }
 
         return this.api.setPauseOnExceptions({ state });

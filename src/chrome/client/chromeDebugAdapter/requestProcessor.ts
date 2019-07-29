@@ -10,6 +10,7 @@ import { CommandText } from '../requests';
 import { RequestHandler, ICommandHandlerDeclarer } from '../../internal/features/components';
 import { printArray } from '../../collections/printing';
 import { DoNotLog } from '../../logging/decorators';
+import { LocalizedError } from '../../utils/localizedError';
 
 export class RequestProcessor {
     private readonly _requestNameToHandler = new ValidatedMap<CommandText, RequestHandler>();
@@ -22,7 +23,7 @@ export class RequestProcessor {
         if (requestHandler !== undefined) {
             return requestHandler.call('Process request has no this', args);
         } else {
-            throw new Error(localize('error.requestProcessor.unexpectedRequest', 'Unexpected request: The request: {0} with arguments: {1} is not expected while in state: {2}', requestName, JSON.stringify(args), this._stateDescription));
+            throw new LocalizedError(localize('error.requestProcessor.unexpectedRequest', 'Unexpected request: The request: {0} with arguments: {1} is not expected while in state: {2}', requestName, JSON.stringify(args), this._stateDescription));
         }
     }
 

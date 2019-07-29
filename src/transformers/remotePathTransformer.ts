@@ -16,6 +16,7 @@ import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
+import { LocalizedError } from '../chrome/utils/localizedError';
 
 interface IRootsState {
     install(): Promise<void>;
@@ -92,7 +93,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
         const args = configuration.args;
 
         if (isNotEmpty(args.localRoot) !== isNotEmpty(args.remoteRoot)) {
-            throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
+            throw new LocalizedError(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
         }
 
         this._state = isNotEmpty(args.localRoot) && isNotEmpty(args.remoteRoot)

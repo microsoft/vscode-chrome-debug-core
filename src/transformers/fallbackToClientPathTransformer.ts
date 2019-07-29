@@ -14,6 +14,7 @@ import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { isNotEmpty } from '../chrome/utils/typedOperators';
+import { LocalizedError } from '../chrome/utils/localizedError';
 
 /**
  * Converts a local path from Code to a path on the target. Uses the UrlPathTransforme logic and fallbacks to asking the client if neccesary
@@ -51,7 +52,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${filePath}"`);
                     resolve(filePath !== null ? parseResourceIdentifier(filePath) : url);
                 } else {
-                    reject(new Error(localize('error.fallbackToClientPathTransformer.mappingFailed', "The client responded that the url \"{0}\" couldn't be mapped to a file path due to: {1}", url.textRepresentation, response.message)));
+                    reject(new LocalizedError(localize('error.fallbackToClientPathTransformer.mappingFailed', "The client responded that the url \"{0}\" couldn't be mapped to a file path due to: {1}", url.textRepresentation, response.message)));
                 }
             });
         });

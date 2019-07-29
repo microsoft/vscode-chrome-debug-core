@@ -75,7 +75,7 @@
             "request": "launch",
             "protocol": "inspector",
             "env": {
-                "BREAK_WHILE_DEBUGGING": "true"
+                "BREAK_WHILE_DEBUGGING": "true",
             },
 
             // These paths are only valid for my particular setup! You need to replace them with your own.

@@ -16,6 +16,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from './dependencyInjection.ts/types';
 import { ILogger } from './internal/services/logging';
 import { isNotEmpty, isDefined, hasMatches } from './utils/typedOperators';
+import { LocalizedError } from './utils/localizedError';
 const localize = nls.loadMessageBundle();
 
 export class TargetVersions {
@@ -163,13 +164,13 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             filteredTargets;
 
         if (filteredTargets.length === 0) {
-            throw new Error(localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
+            throw new LocalizedError(localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
         }
 
         // If all possible targets appear to be attached to have some other devtool attached, then fail
         const targetsWithWSURLs = filteredTargets.filter(target => isNotEmpty(target.webSocketDebuggerUrl));
         if (targetsWithWSURLs.length === 0) {
-            throw new Error(localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
+            throw new LocalizedError(localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
         }
 
         return targetsWithWSURLs;

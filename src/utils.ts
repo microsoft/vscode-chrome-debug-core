@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './chrome/utils/internalError';
+import { LocalizedError } from './chrome/utils/localizedError';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -248,7 +249,7 @@ export function errP(msg?: string): Promise<never> {
         // msg is already an Error object
         e = msg;
     } else {
-        e = new Error(msg);
+        e = new LocalizedError(msg);
     }
 
     return Promise.reject(e);
@@ -597,9 +598,11 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     }
     if (e.id) {
         properties.exceptionId = e.id.toString();
-    }
-    if (e instanceof InternalError) {
+    } else if (e.errorCode) {
         properties.exceptionId = e.errorCode;
+    }
+
+    if (e.errorDetails) {
         properties.errorDetails = e.errorDetails;
     }
 }

@@ -18,6 +18,7 @@ import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScrip
 import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
 import { parseResourceIdentifier, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
+import { DoNotLog } from '../chrome/logging/decorators';
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -73,6 +74,7 @@ export class BaseSourceMapTransformer {
         this._allRuntimeScriptPaths =  newResourceIdentifierSet<string>();
     }
 
+    @DoNotLog()
     public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap | null> {
         if (isDefined(this._sourceMaps)) {
             this._allRuntimeScriptPaths.addAndReplaceIfExists(parseResourceIdentifier(pathToGenerated));

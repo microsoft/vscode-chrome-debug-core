@@ -13,6 +13,7 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
+import { LocalizedError } from '../../utils/localizedError';
 
 @injectable()
 export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
@@ -27,7 +28,7 @@ export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
         if (callFrame instanceof CallFramePresentation && callFrame.callFrame.hasState()) {
             return this._syncStepping.restartFrame(callFrame.callFrame.unmappedCallFrame);
         } else {
-            throw new Error(localize('error.stepping.frameLacksStateInfo', "Cannot restart to a frame that doesn't have state information"));
+            throw new LocalizedError(localize('error.stepping.frameLacksStateInfo', "Cannot restart to a frame that doesn't have state information"));
         }
     }
 
