@@ -7,6 +7,8 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import * as nls from 'vscode-nls';
 const localize = nls.loadMessageBundle();
 
+import { InternalError } from './chrome/utils/internalError';
+
 export const evalNotAvailableMsg = localize('eval.not.available', 'not available');
 export const runtimeNotConnectedMsg = localize('not.connected', 'not connected to runtime');
 
@@ -81,12 +83,8 @@ export function errorFromEvaluate(errMsg: string): DebugProtocol.Message {
     });
 }
 
-export function sourceRequestIllegalHandle(): DebugProtocol.Message {
-    return new ErrorWithMessage({
-        id: 2027,
-        format: localize('error.source.requestedIllegalHandle', 'sourceRequest error: illegal handle'),
-        sendTelemetry: true
-    });
+export function sourceRequestIllegalHandle(): InternalError {
+    return new InternalError('error.source.requestedIllegalHandle', 'sourceRequest error: illegal handle');
 }
 
 export function sourceRequestCouldNotRetrieveContent(): DebugProtocol.Message {
@@ -96,12 +94,8 @@ export function sourceRequestCouldNotRetrieveContent(): DebugProtocol.Message {
     });
 }
 
-export function pathFormat(): DebugProtocol.Message {
-    return new ErrorWithMessage({
-        id: 2018,
-        format: localize('error.path.onlyNativePaths', 'debug adapter only supports native paths'),
-        sendTelemetry: true
-    });
+export function pathFormat(): InternalError {
+    return new InternalError('error.path.onlyNativePaths', 'debug adapter only supports native paths');
 }
 
 export function runtimeConnectionTimeout(timeoutMs: number, errMsg: string): DebugProtocol.Message {
@@ -132,14 +126,6 @@ export function invalidThread(threadId: number): DebugProtocol.Message {
         id: 2030,
         format: localize('error.thread.invalid', 'Invalid thread {_thread}'),
         variables: { _thread: threadId + '' },
-        sendTelemetry: true
-    });
-}
-
-export function exceptionInfoRequestError(): DebugProtocol.Message {
-    return new ErrorWithMessage({
-        id: 2031,
-        format: localize('error.exceptionInfoRequest.error', 'exceptionInfoRequest error'),
         sendTelemetry: true
     });
 }
