@@ -2,7 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-
 import { IEnableableApi } from './cdtpDiagnosticsModule';
 import { Protocol as CDTP } from 'devtools-protocol';
 import { TYPES } from '../../dependencyInjection.ts/types';
