@@ -7,6 +7,9 @@ import { BreakpointInSource } from './breakpoint';
 import { LocationInLoadedSource } from '../locations/location';
 import { InternalError } from '../../utils/internalError';
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 const ImplementsBPRecipeSingleLocationStatus = Symbol();
 export interface IBPRecipeSingleLocationStatus {
     [ImplementsBPRecipeSingleLocationStatus]: string;
@@ -28,7 +31,7 @@ export class BPRecipeIsUnbound implements IBPRecipeSingleLocationStatus {
 
     public toString(): string {
         // `The JavaScript code associated with this source file hasn't been loaded into the debuggee yet`
-        return `${this.recipe} is unbound because ${this.error}`;
+        return localize('bpRecipeStatus.unbound.description', '{0} is unbound because {1}', this.recipe.toString(), this.error.message);
     }
 }
 
@@ -49,6 +52,7 @@ export class BPRecipeIsBoundInRuntimeLocation implements IBPRecipeSingleLocation
     }
 
     public toString(): string {
-        return `${this.recipe} is bound at ${this.locationInRuntimeSource} with ${this.breakpoints.join(', ')}`;
+        return localize('bpRecipeStatus.boundInRuntime.description', '{0} is bound at {1} with {2}',
+            this.recipe.toString(), this.locationInRuntimeSource.toString(), this.breakpoints.join(localize('breakpoint.listSeparator', ', ')));
     }
 }

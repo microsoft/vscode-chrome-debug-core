@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ISource } from '../sources/source';
 import { Location, ScriptOrSourceOrURLOrURLRegexp } from '../locations/location';
 import { ILoadedSource } from '../sources/loadedSource';
@@ -35,7 +38,7 @@ export abstract class BaseBPRecipe<TResource extends ScriptOrSourceOrURLOrURLReg
     }
 
     public toString(): string {
-        return `BP @ ${this.location} do: ${this.bpActionWhenHit}`;
+        return localize('breakpoint.description', 'Breakpoint at {0} do: {1}', this.location.toString(), this.bpActionWhenHit.toString());
     }
 }
 

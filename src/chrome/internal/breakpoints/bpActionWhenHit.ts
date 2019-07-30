@@ -4,6 +4,9 @@
 
 import { IEquivalenceComparable } from '../../utils/equivalence';
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 /**
  * These classes represents the different actions that a breakpoint can take when hit
  * Breakpoint: AlwaysPause
@@ -21,7 +24,7 @@ export class AlwaysPause implements IBPActionWhenHit {
     }
 
     public toString(): string {
-        return 'always pause';
+        return localize('breakpoint.normal.description', 'always pause');
     }
 }
 
@@ -34,7 +37,7 @@ export class ConditionalPause implements IBPActionWhenHit {
     }
 
     public toString(): string {
-        return `pause if: ${this.expressionOfWhenToPause}`;
+        return localize('breakpoint.conditional.description', 'pause if: {0}', this.expressionOfWhenToPause);
     }
 }
 
@@ -47,7 +50,7 @@ export class PauseOnHitCount implements IBPActionWhenHit {
     }
 
     public toString(): string {
-        return `pause when hits: ${this.pauseOnHitCondition}`;
+        return localize('breakpoint.hitCount.description', 'pause when hits: {0}', this.pauseOnHitCondition);
     }
 }
 
@@ -60,6 +63,6 @@ export class LogMessage implements IBPActionWhenHit {
     }
 
     public toString(): string {
-        return `log: ${this.expressionToLog}`;
+        return localize('breakpoint.logpoint.description', 'log: {0}', this.expressionToLog);
     }
 }

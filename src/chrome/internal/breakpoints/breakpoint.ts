@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { LocationInScript, LocationInLoadedSource } from '../locations/location';
 import { IScript } from '../scripts/script';
 import { URLRegexp } from '../locations/subtypes';
@@ -31,7 +34,7 @@ abstract class BaseBreakpoint<TResource extends BPPossibleResources> implements 
     public abstract get actualLocation(): ActualLocation<TResource>;
 
     public toString(): string {
-        return `${this.recipe} actual location is ${this.actualLocation}`;
+        return localize('breakpoint.bound.description', '{0} actual location is {1}', `${this.recipe}`, this.actualLocation.toString());
     }
 }
 

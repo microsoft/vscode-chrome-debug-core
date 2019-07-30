@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as Validation from '../../../validation';
 import { IScript, Script } from '../scripts/script';
 import { ISource, isSource } from '../sources/source';
@@ -65,7 +68,7 @@ export class Position implements IEquivalenceComparable {
     }
 
     public toString(): string {
-        return `${this.lineNumber}:${this.columnNumber}`;
+        return localize('position.description', '{0}:{1}', this.lineNumber, this.columnNumber);
     }
 }
 
@@ -129,7 +132,7 @@ abstract class BaseLocation<T extends ScriptOrSourceOrURLOrURLRegexp> implements
     }
 
     public toString(): string {
-        return `${this.resource}:${this.position}`;
+        return localize('location.description', '{0}:{1}', this.resource.toString(), this.position.toString());
     }
 }
 
@@ -185,10 +188,6 @@ export class LocationInScript extends BaseLocation<IScript> {
         return this.script === locationInScript.script &&
             this.position.isEquivalentTo(locationInScript.position);
     }
-
-    public toString(): string {
-        return `${this.resource}:${this.position}`;
-    }
 }
 
 export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSourceMap> {
@@ -211,10 +210,6 @@ export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSource
     public isSameAs(locationInScript: LocationInSourceWithSourceMap): boolean {
         return this.script === locationInScript.script &&
             this.position.isEquivalentTo(locationInScript.position);
-    }
-
-    public toString(): string {
-        return `${this.resource}:${this.position}`;
     }
 }
 
