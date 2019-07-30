@@ -61,6 +61,10 @@ suite('ConsoleHelper', () => {
             doAssertForString(Runtime.makeLog('foo %cbar', 'color: red'), 'foo \x1b[0;91mbar');
         });
 
+        test('handles empty %c patterns to reset color', () => {
+            doAssertForString(Runtime.makeLog('%cfoo %cbar', 'color: red', 'color:'), '\x1b[0;91mfoo \x1b[0mbar');
+        });
+
         test('handles %c patterns with font-weight', () => {
             doAssertForString(Runtime.makeLog('foo %cbar', 'font-weight: bold'), 'foo \x1b[0;1mbar');
         });

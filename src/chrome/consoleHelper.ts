@@ -147,12 +147,38 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
     } else if (formatSpec === 'f') {
         return +paramValue + '';
     } else if (formatSpec === 'c') {
-        const cssRegex = /\s*(.*?)\s*:\s*(.*?)\s*(?:;|$)/g;
+        return formatColorArg(arg);
+    } else if (formatSpec === 'O') {
+        if (arg.objectId) {
+            return arg;
+        } else {
+            return paramValue;
+        }
+    } else {
+        // No formatSpec, or unsupported formatSpec:
+        // %o - expandable DOM element
+        if (arg.objectId) {
+            return arg;
+        } else {
+            return paramValue;
+        }
+    }
+}
 
-        let escapedSequence = '';
-        let match = cssRegex.exec(arg.value);
-        while (match != null) {
-            if (match.length === 3) {
+function formatColorArg(arg: Crdp.Runtime.RemoteObject): string {
+    const cssRegex = /\s*(.*?)\s*:\s*(.*?)\s*(?:;|$)/g;
+
+    let escapedSequence: string | undefined;
+    let match = cssRegex.exec(arg.value);
+    while (match != null) {
+        if (match.length === 3) {
+            if (escapedSequence === undefined) {
+                // Some valid pattern appeared, initialize escapedSequence.
+                // If the pattern has no value like `color:`, then this should remain an empty string.
+                escapedSequence = '';
+            }
+
+            if (match[2]) {
                 switch (match[1]) {
                     case 'color':
                         const color = getAnsi16Color(match[2]);
@@ -177,33 +203,19 @@ function formatArg(formatSpec: string, arg: Crdp.Runtime.RemoteObject): string |
                         }
                         break;
                     default:
-                        // css not mapped, skip
+                    // css not mapped, skip
                 }
             }
-
-            match = cssRegex.exec(arg.value);
         }
 
-        if (escapedSequence.length > 0) {
-          escapedSequence = `\x1b[0${escapedSequence}m`;
-        }
-
-        return escapedSequence;
-    } else if (formatSpec === 'O') {
-        if (arg.objectId) {
-            return arg;
-        } else {
-            return paramValue;
-        }
-    } else {
-        // No formatSpec, or unsupported formatSpec:
-        // %o - expandable DOM element
-        if (arg.objectId) {
-            return arg;
-        } else {
-            return paramValue;
-        }
+        match = cssRegex.exec(arg.value);
     }
+
+    if (typeof escapedSequence === 'string') {
+        escapedSequence = `\x1b[0${escapedSequence}m`;
+    }
+
+    return escapedSequence;
 }
 
 function stackTraceToString(stackTrace: Crdp.Runtime.StackTrace): string {
