@@ -26,6 +26,7 @@ import { printClassDescription } from '../../../utils/printing';
 import { SourceToScriptMapper } from '../../services/sourceToScriptMapper';
 import { OnPausedForBreakpointCallback, defaultOnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 import { DoNotLog } from '../../../logging/decorators';
+import { InternalError } from '../../../utils/internalError';
 
 @printClassDescription
 export class HitBreakpoint extends BaseNotifyClientOfPause {
@@ -72,7 +73,7 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
         if (this._onPausedForBreakpointCallback === defaultOnPausedForBreakpointCallback) {
             this._onPausedForBreakpointCallback = onPausedForBreakpointCallback;
         } else {
-            throw new Error(`setOnPausedForBreakpointCallback was already configured to a different value`);
+            throw new InternalError('error.loadedSourceSetter.callbacAlreadyConfigured', 'setOnPausedForBreakpointCallback was already configured to a different value');
         }
     }
 

@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as semver from 'semver';
+import { InternalError } from './internalError';
 
 export class Version {
     constructor(private readonly _semverVersion: semver.SemVer) { }
@@ -12,7 +13,7 @@ export class Version {
         if (semVerOrNull !== null) {
             return new Version(semVerOrNull);
         } else {
-            throw new Error(`Couldn't parse a version number from ${versionString}`);
+            throw new InternalError('error.version.invalid', `Couldn't parse a version number from ${versionString}`);
         }
     }
 

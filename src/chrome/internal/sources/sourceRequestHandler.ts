@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
 import { injectable, inject } from 'inversify';
 import { ClientSourceParser } from '../../client/clientSourceParser';
@@ -12,6 +16,7 @@ import { ISourceToClientConverter } from '../../client/sourceToClientConverter';
 import { SourceResolver } from './sourceResolver';
 import { isDefined } from '../../utils/typedOperators';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { InternalError } from '../../utils/internalError';
 
 @injectable()
 export class SourceRequestHandler implements ICommandHandlerDeclarer {
@@ -43,7 +48,8 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
                 mimeType: 'text/javascript'
             };
         } else {
-            throw new Error(`Expected the source request to have a source argument yet it was ${args.source}`);
+            throw new InternalError('error.source.lacksSourceArg',
+                `Expected the source request to have a source argument yet it was ${args.source}`);
         }
     }
 

@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { TelemetryPropertyCollector } from '../../telemetry';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../dependencyInjection.ts/types';

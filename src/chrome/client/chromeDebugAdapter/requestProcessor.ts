@@ -1,3 +1,10 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { ValidatedMap } from '../../collections/validatedMap';
 import { CommandText } from '../requests';
 import { RequestHandler, ICommandHandlerDeclarer } from '../../internal/features/components';
@@ -15,7 +22,7 @@ export class RequestProcessor {
         if (requestHandler !== undefined) {
             return requestHandler.call('Process request has no this', args);
         } else {
-            throw new Error(`Unexpected request: The request: ${requestName} with arguments: ${JSON.stringify(args)} is not expected while in state: ${this._stateDescription}`);
+            throw new Error(localize('error.requestProcessor.unexpectedRequest', 'Unexpected request: The request: {0} with arguments: {1} is not expected while in state: {2}', requestName, JSON.stringify(args), this._stateDescription));
         }
     }
 

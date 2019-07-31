@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { LocationInScript, LocationInLoadedSource } from './locations/location';
 import { IResourceIdentifier, parseResourceIdentifier } from './sources/resourceIdentifier';
 import { CDTPScriptUrl } from './sources/resourceIdentifierSubtypes';
@@ -28,7 +31,7 @@ class CodeFlowFrameDescription implements IFormattedExceptionLineDescription {
 
     private printLocation(locationIdentifier: string, coordinates: Position, zeroBaseNumbers: boolean): string {
         const constantToAdd = zeroBaseNumbers ? 0 : 1;
-        return `${locationIdentifier}:${coordinates.lineNumber + constantToAdd}:${coordinates.columnNumber + constantToAdd}`;
+        return localize('locationAndPosition.description', '{0}:{2}:{3}', locationIdentifier, coordinates.lineNumber + constantToAdd, coordinates.columnNumber + constantToAdd);
     }
 }
 

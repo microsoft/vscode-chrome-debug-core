@@ -9,6 +9,7 @@ import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
 import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { injectable, inject, LazyServiceIdentifer } from 'inversify';
 import { PrivateTypes } from '../diTypes';
+import { InternalError } from '../../../utils/internalError';
 
 type ClientBPRecipe = IBPRecipe<ISource>;
 type DebuggeeBPRecipe = CDTPBPRecipe;
@@ -55,8 +56,8 @@ export class DebuggeeBPRsSetForClientBPRFinder {
     private clientBPRWasRemoved(clientBPRecipe: ClientBPRecipe): void {
         const debuggeBPRecipies = this._clientBPRToDebuggeeBPRItSet.get(clientBPRecipe);
         if (debuggeBPRecipies.size >= 1) {
-            throw new Error(`Tried to remove a Client breakpoint recipe (${clientBPRecipe}) which still had some `
-                + `associated debuggee breakpoint recipes (${debuggeBPRecipies})`);
+            throw new InternalError('error.debuggeeToClientBprsMap.cantRemoveBprWithReferences',
+                `Tried to remove a Client breakpoint recipe (${clientBPRecipe}) which still had some associated debuggee breakpoint recipes (${debuggeBPRecipies})`);
         }
 
         this._clientBPRToDebuggeeBPRItSet.delete(clientBPRecipe);

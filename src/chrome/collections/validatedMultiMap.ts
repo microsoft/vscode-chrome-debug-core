@@ -5,6 +5,7 @@
 import { ValidatedMap, IValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { ValidatedSet, IValidatedSet } from './validatedSet';
+import { InternalError } from '../utils/internalError';
 
 /** A multi map that throws exceptions instead of returning error codes. */
 export class ValidatedMultiMap<K, V> {
@@ -98,7 +99,7 @@ export class ValidatedMultiMap<K, V> {
     public removeValue(key: K, value: V): Set<V> {
         const existingValues = this._wrappedMap.get(key);
         if (!existingValues.delete(value)) {
-            throw new Error(`Failed to delete the value ${value} under key ${key} because it wasn't present`);
+            throw new InternalError('error.multiMap.cantRemoveNonExistantValue', `Failed to delete the value ${value} under key ${key} because it wasn't present`);
         }
 
         return existingValues;

@@ -16,6 +16,7 @@ import { HtmlToScriptPositionTranslator } from './htmlToScriptPositionTranslator
 import { IHasSourceMappingInformation } from './IHasSourceMappingInformation';
 import { isNotNull } from '../../utils/typedOperators';
 import { telemetry } from '../../../telemetry';
+import { InternalError } from '../../utils/internalError';
 
 export interface ISourceToScriptMapper<T extends IHasSourceMappingInformation = IHasSourceMappingInformation> {
     getPositionInScript(positionInSource: LocationInLoadedSource | LocationInSource): IMappedTokensInScript<T>;
@@ -112,7 +113,8 @@ export class NoMappedSourcesMapper<T extends IHasSourceMappingInformation = IHas
         if (positionInSource.resource === this._script.developmentSource || positionInSource.resource === this._script.runtimeSource) {
             return MappedTokensInScript.characterAt(createLocation(this._script, positionInSource.position));
         } else {
-            throw new Error(`This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
+            throw new InternalError('error.noMappedSourcesMapper.invalidSourceOrScript',
+                `This source mapper can only map locations from the runtime or development scripts of ${this._script} yet the location provided was ${positionInSource}`);
         }
     }
 

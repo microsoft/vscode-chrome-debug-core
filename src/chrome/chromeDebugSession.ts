@@ -18,6 +18,10 @@ import { IExtensibilityPoints } from './extensibility/extensibilityPoints';
 import { isNotEmpty, isTrue, isDefined } from './utils/typedOperators';
 import * as _ from 'lodash';
 
+import * as nls from 'vscode-nls';
+import { InternalError } from './utils/internalError';
+const localize = nls.loadMessageBundle();
+
 export interface IChromeDebugAdapterOpts {
     extensibilityPoints: IExtensibilityPoints;
 }
@@ -199,7 +203,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         return !isMessage(error) && (requestType === 'evaluate');
     }
 
-    private failedRequest(requestType: string, response: DebugProtocol.Response, error: RequestHandleError): void {
+    // RequestHandleError = Error | DebugProtocol.Message | IChromeError
+    private failedRequest(requestType: string, response: DebugProtocol.Response, error: Error): void {
         if (isMessage(error)) {
             this.sendErrorResponse(response, error as DebugProtocol.Message);
             return;
@@ -208,7 +213,7 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         if (this.isEvaluateRequest(requestType, error)) {
             // Errors from evaluate show up in the console or watches pane. Doesn't seem right
             // as it's not really a failed request. So it doesn't need the [extensionName] tag and worth special casing.
-            response.message = isDefined(error) ? error.message : 'Unknown error';
+            response.message = isDefined(error) ? error.message : localize('error.session.requests.unknown', 'Unknown error');
             response.success = false;
             this.sendResponse(response);
             return;
@@ -221,7 +226,8 @@ export class ChromeDebugSession extends LoggingDebugSession implements IObservab
         const errDiagnosticMsg = isChromeError(error) ?
             errUserMsg : _.defaultTo(error.stack, error.message);
 
-        logger.error(`Error processing "${requestType}": ${errDiagnosticMsg}`);
+        const additionalDetails = error instanceof InternalError ? `details: ${error.errorDetails}. ` : '';
+        logger.error(`Error processing "${requestType}": ${additionalDetails}${errDiagnosticMsg}`);
 
         // These errors show up in the message bar at the top (or nowhere), sometimes not obvious that they
         // come from the adapter, so add extensionName

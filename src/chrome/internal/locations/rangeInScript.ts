@@ -6,6 +6,7 @@ import { Position, Location, ScriptOrSourceOrURLOrURLRegexp, createLocation, Loc
 import { IScript } from '../scripts/script';
 import { createColumnNumber, createLineNumber, LineNumber, ColumnNumber } from './subtypes';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
+import { InternalError } from '../../utils/internalError';
 
 export class Range {
     public constructor(
@@ -13,7 +14,8 @@ export class Range {
         readonly exclusiveEnd: Position) {
         if (start.lineNumber > exclusiveEnd.lineNumber
             || (start.lineNumber === exclusiveEnd.lineNumber && start.columnNumber > exclusiveEnd.columnNumber)) {
-            throw new Error(`Can't create a range in where the end position (${exclusiveEnd}) happens before the start position ${start}`);
+            throw new InternalError('error.range.endBeforeStart',
+                `Can't create a range in where the end position (${exclusiveEnd}) happens before the start position ${start}`);
         }
     }
 
@@ -35,7 +37,7 @@ export class Range {
 
     public static enclosingAll(manyRanges: Range[]) {
         if (manyRanges.length === 0) {
-            throw new Error(`Can't find the enclosing range of an empty list of ranges`);
+            throw new InternalError('error.range.cantFindEnclosingOfEmptyList', "Can't find the enclosing range of an empty list of ranges");
         } else {
             const firstPosition = Position.appearingFirstOf(...manyRanges.map(range => range.start));
             const lastPosition = Position.appearingLastOf(...manyRanges.map(range => range.exclusiveEnd));

@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as Validation from '../../../validation';
 import { IScript, Script } from '../scripts/script';
 import { ISource, isSource } from '../sources/source';
@@ -14,6 +17,7 @@ import * as _ from 'lodash';
 import { IMappedTokensInScript } from './mappedTokensInScript';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 import { SourceWithSourceMap } from '../breakpoints/features/bpAtNotLoadedScriptViaHeuristicSetter';
+import { InternalError } from '../../utils/internalError';
 
 export type integer = number;
 
@@ -32,7 +36,7 @@ export class Position implements IEquivalenceComparable {
         if (lastPosition !== undefined) {
             return lastPosition;
         } else {
-            throw new Error(`Couldn't find the position appearing last from the list: ${positions}. Is it possible the list was empty?`);
+            throw new InternalError('error.position.failedToFindLast', `Couldn't find the position appearing last from the list: ${positions}. Is it possible the list was empty?`);
         }
     }
 
@@ -41,7 +45,7 @@ export class Position implements IEquivalenceComparable {
         if (firstPosition !== undefined) {
             return firstPosition;
         } else {
-            throw new Error(`Couldn't find the position appearing first from the list: ${positions}. Is it possible the list was empty?`);
+            throw new InternalError('error.position.failedToFindFirst', `Couldn't find the position appearing first from the list: ${positions}. Is it possible the list was empty?`);
         }
     }
 
@@ -64,7 +68,7 @@ export class Position implements IEquivalenceComparable {
     }
 
     public toString(): string {
-        return `${this.lineNumber}:${this.columnNumber}`;
+        return localize('position.description', '{0}:{1}', this.lineNumber, this.columnNumber);
     }
 }
 
@@ -104,7 +108,7 @@ export function createLocation<T extends ScriptOrSourceOrURLOrURLRegexp>(resourc
         return <Location<T>>new LocationInUrl(<IURL<CDTPScriptUrl>>resource, position); // TODO: Figure out way to remove this cast
     } else {
         Validation.breakWhileDebugging();
-        throw Error(`Can't create a location because the type of resource ${resource} wasn't recognized`);
+        throw new InternalError('error.location.unrecognizedResource', `Can't create a location because the type of resource ${resource} wasn't recognized`);
     }
 }
 
@@ -128,7 +132,7 @@ abstract class BaseLocation<T extends ScriptOrSourceOrURLOrURLRegexp> implements
     }
 
     public toString(): string {
-        return `${this.resource}:${this.position}`;
+        return localize('location.description', '{0}:{1}', this.resource.toString(), this.position.toString());
     }
 }
 
@@ -153,7 +157,8 @@ export class LocationInSource extends BaseLocation<ISource> implements ILocation
         if (this.resource.sourceIdentifier.isEquivalentTo(loadedSource.identifier)) {
             return new LocationInLoadedSource(loadedSource, this.position);
         } else {
-            throw new Error(`Can't resolve a location with a source (${this}) to a location with a loaded source that doesn't match the unresolved source: ${loadedSource}`);
+            throw new InternalError('error.locationInSource.resolvedToIncorrectSource',
+                `Can't resolve a location with a source (${this}) to a location with a loaded source that doesn't match the unresolved source: ${loadedSource}`);
         }
     }
 }
@@ -183,10 +188,6 @@ export class LocationInScript extends BaseLocation<IScript> {
         return this.script === locationInScript.script &&
             this.position.isEquivalentTo(locationInScript.position);
     }
-
-    public toString(): string {
-        return `${this.resource}:${this.position}`;
-    }
 }
 
 export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSourceMap> {
@@ -203,16 +204,12 @@ export class LocationInSourceWithSourceMap extends BaseLocation<SourceWithSource
     }
 
     public mappedToSource(): LocationInLoadedSource {
-        throw new Error(`LocationInSourceWithSourceMap.mappedToSource: Not yet implemented`);
+        throw new InternalError('error.locationInSourceWithSourceMap.mappedToSource.notImplemented', 'LocationInSourceWithSourceMap.mappedToSource: Not yet implemented');
     }
 
     public isSameAs(locationInScript: LocationInSourceWithSourceMap): boolean {
         return this.script === locationInScript.script &&
             this.position.isEquivalentTo(locationInScript.position);
-    }
-
-    public toString(): string {
-        return `${this.resource}:${this.position}`;
     }
 }
 
@@ -242,7 +239,7 @@ export class LocationInUrl extends BaseLocation<IResourceIdentifier<CDTPScriptUr
 
 export class LocationInUrlRegexp extends BaseLocation<URLRegexp> {
     public get resourceIdentifier(): IResourceIdentifier {
-        throw new Error(`A location in URL Regexp doesn't have a resource identifier: ${this.urlRegexp}`);
+        throw new InternalError('error.locationInUrlRegexp.noResourceIdentifier', `A location in URL Regexp doesn't have a resource identifier: ${this.urlRegexp}`);
     }
 
     public get urlRegexp(): URLRegexp {

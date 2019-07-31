@@ -1,6 +1,10 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import { Protocol as CDTP } from 'devtools-protocol';
 import { PausedEvent, ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../features/actionToTakeWhenPaused';
@@ -53,7 +57,7 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     }
 
     public async onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        throw new Error(`It's not expected to receive a new pause event: ${pausedEvent} when the current stack trace provided is already in a paused state due to ${this._currentPauseEvent}`);
+        throw new Error(localize('error.stackTraceProvider.unexpectedNewPausedEvent', "It's not expected to receive a new pause event: {0} when the current stack trace provided is already in a paused state due to {1}", pausedEvent.toString(), this._currentPauseEvent.toString()));
     }
 
     public onResumed(changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
@@ -102,7 +106,7 @@ class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProvid
     }
 
     private throwItIsNotPaused(): never {
-        throw new Error(`Can't obtain current stack strace when the debuggee is not paused`);
+        throw new Error(localize('error.stackTraceProvider.notPaused', "Can't obtain current stack strace when the debuggee is not paused"));
     }
 }
 

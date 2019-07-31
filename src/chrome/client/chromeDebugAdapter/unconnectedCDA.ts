@@ -14,6 +14,7 @@ import { CommandText } from '../requests';
 import { injectable, inject } from 'inversify';
 import { ConnectingCDAProvider } from './connectingCDA';
 import { ISession } from '../session';
+import { InternalError } from '../../utils/internalError';
 
 export enum ScenarioType {
     Launch,
@@ -41,9 +42,10 @@ export class UnconnectedCDA implements IDebugAdapterState {
             case 'attach':
                 return this.attach(<IAttachRequestArgs>args, telemetryPropertyCollector);
             case 'disconnect':
-                throw new Error(`The debug adapter is already disconnected`);
+                throw new InternalError('error.unconnectedDA.alreadyDisconnected', 'The debug adapter is already disconnected');
             default:
-                throw new Error(`The unconnected debug adapter is not prepared to respond to the request ${requestName}`);
+                throw new InternalError('error.unconnectedDA.unexpectedRequestWhileUnconnected',
+                    `The unconnected debug adapter is not prepared to respond to the request ${requestName}`);
         }
     }
 

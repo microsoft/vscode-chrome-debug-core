@@ -8,6 +8,7 @@ import { ILoadedSourceTreeNode } from './loadedSource';
 import { ISource } from './source';
 import { IScript } from '../scripts/script';
 import { injectable } from 'inversify';
+import { InternalError } from '../../utils/internalError';
 
 export interface ISourcesRetriever {
     loadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]>;
@@ -34,7 +35,7 @@ export class SourcesRetriever implements ISourcesRetriever {
         return await source.tryResolving(
             async loadedSource => await this._sourceTextRetriever.text(loadedSource),
             identifier => {
-                throw new Error(`Couldn't resolve the source with the path: ${identifier.textRepresentation}`);
+                throw new InternalError('error.source.cantResolve', `Couldn't resolve the source with the path: ${identifier.textRepresentation}`);
             });
     }
 

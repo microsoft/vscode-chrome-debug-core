@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import { IEnableableApi } from './cdtpDiagnosticsModule';
+import { IEnableableApi } from './cdtpDiagnosticsModule';
 import { Protocol as CDTP } from 'devtools-protocol';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
@@ -10,6 +10,7 @@ import * as utils from '../../../utils';
 import { asyncMap } from '../../collections/async';
 import { ValidatedMap } from '../../collections/validatedMap';
 import * as _ from 'lodash';
+import { InternalError } from '../../utils/internalError';
 
 export interface IDomainsEnabler {
     registerToEnable<T extends IEnableableApi<EnableParameters, EnableResponse>, EnableParameters, EnableResponse>
@@ -68,7 +69,8 @@ class GatheringDomainsToEnableDuringStartup implements IState {
             new EnableDomainFunctionAndResultPromise(enableDomain, parameters, utils.promiseDefer<EnableResponse>()));
 
         if (entry.parameters !== parameters) {
-            throw new Error(`Cannot register enable(${parameters}) for domain ${this.getDomainName(api)} because it was registered previously with enable(${entry.parameters})`);
+            throw new InternalError('error.domainEnabler.cannotReregisterWithDifferentParameters',
+                `Cannot register enable(${parameters}) for domain ${this.getDomainName(api)} because it was registered previously with enable(${entry.parameters})`);
         }
 
         return await entry.defer.promise;
@@ -79,7 +81,7 @@ class GatheringDomainsToEnableDuringStartup implements IState {
         if (name !== undefined) {
             return name;
         } else {
-            throw new Error(`Couldn't get the domain name for ${api}`);
+            throw new InternalError('error.domainEnabler.cantGetDomainNameForApi', `Couldn't get the domain name for ${api}`);
         }
     }
 }
@@ -91,7 +93,7 @@ class DomainsAlreadyEnabledAfterStartup implements IState {
     }
 
     public enableDomains(): Promise<IState> {
-        throw new Error('Startup was already finished');
+        throw new InternalError('error.domainEnabler.startupAlreadyFinished', 'Startup was already finished');
     }
 }
 

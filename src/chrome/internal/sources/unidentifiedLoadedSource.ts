@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { IScript } from '../scripts/script';
 import { CDTPScriptUrl } from './resourceIdentifierSubtypes';
 import { IResourceIdentifier, parseResourceIdentifier, ResourceName } from './resourceIdentifier';
@@ -6,6 +10,7 @@ import { ILoadedSourceToScriptRelationship, UnmappedSourceOf } from './loadedSou
 import { UnmappedSourceMapper } from '../scripts/sourcesMapper';
 import { LocationInLoadedSource, LocationInScript } from '../locations/location';
 import { IMappedTokensInScript, MappedTokensInScript } from '../locations/mappedTokensInScript';
+import { InternalError } from '../../utils/internalError';
 
 export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
     // TODO DIEGO: Move these two properties to the client layer
@@ -22,7 +27,7 @@ export class UnidentifiedLoadedSource implements ILoadedSource<CDTPScriptUrl> {
     constructor(public readonly script: IScript, public readonly name: ResourceName<CDTPScriptUrl>, public readonly origin: string) { }
 
     public get url(): never {
-        throw Error(`Can't get the url for ${this} because it doesn't have one`);
+        throw new InternalError('error.unidentifiedLoadedSource.cantGetUrl', `Can't get the url for ${this} because it doesn't have one`);
     }
 
     public get identifier(): IResourceIdentifier<CDTPScriptUrl> {

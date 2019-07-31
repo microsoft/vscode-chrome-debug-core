@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import { ValidatedMultiMap } from './validatedMultiMap';
+import { InternalError } from '../utils/internalError';
 
 export function groupByKey<T, K>(elements: T[], obtainKey: (element: T) => K): ValidatedMultiMap<K, T> {
     const groupped = ValidatedMultiMap.empty<K, T>();
@@ -24,6 +25,6 @@ export function singleElementOfArray<T>(array: ReadonlyArray<T>): T {
     if (array.length === 1) {
         return array[0];
     } else {
-        throw new Error(`Expected array ${array} to have exactly a single element yet it had ${array.length}`);
+        throw new InternalError('error.singleElementOfArray.invalid', `Expected array ${array} to have exactly a single element yet it had ${array.length}`);
     }
 }

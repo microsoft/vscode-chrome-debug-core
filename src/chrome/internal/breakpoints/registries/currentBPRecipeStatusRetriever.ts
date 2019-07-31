@@ -4,13 +4,16 @@ import { BPRecipeInSource } from '../bpRecipeInSource';
 import { injectable } from 'inversify';
 import { LocationInLoadedSource } from '../../locations/location';
 
+import * as nls from 'vscode-nls';
+const localize = nls.loadMessageBundle();
+
 class JustCreatedBPRecipeStatus implements IBPRecipeStatus {
     [ImplementsBPRecipeStatus] = 'ImplementsBPRecipeStatus';
 
     public constructor(public readonly recipe: BPRecipeInSource) { }
 
     public get statusDescription(): string {
-        return `The breakpoint hasn't been processed yet`;
+        return localize('breakpointStatus.notYetProcessed', "The breakpoint hasn't been processed yet");
     }
 
     public isVerified(): boolean {

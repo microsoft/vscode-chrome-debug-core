@@ -1,9 +1,12 @@
-import { hasMatches } from '../../../utils/typedOperators';
-import * as _ from 'lodash';
-
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
+import { hasMatches } from '../../../utils/typedOperators';
+import * as _ from 'lodash';
 
 export type HitCountConditionFunction = (numHits: number) => boolean;
 
@@ -20,7 +23,7 @@ export class HitCountConditionParser {
             const shouldPause: HitCountConditionFunction = <any>new Function('numHits', this.javaScriptCodeToEvaluateCondition(patternMatches));
             return shouldPause;
         } else {
-            throw new Error(`Didn't recognize <${this._hitCountCondition}> as a valid hit count condition`);
+            throw new Error(localize('error.hitCountParser.unrecognizedCondition', "Didn't recognize <{0}> as a valid hit count condition", this._hitCountCondition));
         }
     }
 

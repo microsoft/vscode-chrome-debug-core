@@ -29,6 +29,7 @@ export interface  IExecutionResultTelemetryProperties {
     exceptionName?: string;
     exceptionStack?: string;
     exceptionId?: string;
+    errorDetails?: string;
     startTime?: string;
     timeTakenInMilliseconds?: string;
 }

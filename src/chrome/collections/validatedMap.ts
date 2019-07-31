@@ -4,6 +4,7 @@
 
 import { printMap } from './printing';
 import { breakWhileDebugging } from '../../validation';
+import { InternalError } from '../utils/internalError';
 
 export type ValueComparerFunction<V> = (left: V, right: V) => boolean;
 
@@ -53,7 +54,8 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public delete(key: K): boolean {
         if (!this._wrappedMap.delete(key)) {
             breakWhileDebugging();
-            throw new Error(`Couldn't delete element with key ${key} because it wasn't present in the map`);
+            throw new InternalError('error.map.cantDeleteKeyNotPresent',
+                `Couldn't delete element with key ${key} because it wasn't present in the map`);
         }
 
         return true;
@@ -67,7 +69,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
         const value = this._wrappedMap.get(key);
         if (value === undefined) {
             breakWhileDebugging();
-            throw new Error(`Couldn't get the element with key '${key}' because it wasn't present in this map <${this}>`);
+            throw new InternalError('error.map.keyDoesntExistInMap', "Couldn't get the element with key '${key}' because it wasn't present in this map <${this}>");
         }
         return value;
     }
@@ -96,7 +98,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public set(key: K, value: V): this {
         if (this.has(key)) {
             breakWhileDebugging();
-            throw new Error(`Cannot set key ${key} because it already exists`);
+            throw new InternalError('error.map.cantSet', `Cannot set key ${key} because it already exists`);
         }
 
         return this.setAndReplaceIfExists(key, value);
@@ -105,7 +107,7 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
     public replaceExisting(key: K, value: V): this {
         if (!this.has(key)) {
             breakWhileDebugging();
-            throw new Error(`Cannot replace key ${key} because it doesn't exists`);
+            throw new InternalError('error.map.cantReplaceNonExistantKey', `Cannot replace key ${key} because it doesn't exists`);
         }
 
         return this.setAndReplaceIfExists(key, value);
@@ -120,7 +122,8 @@ export class ValidatedMap<K, V> implements IValidatedMap<K, V> {
         const existingValueOrUndefined = this.tryGetting(key);
         if (existingValueOrUndefined !== undefined && !comparer(existingValueOrUndefined, value)) {
             breakWhileDebugging();
-            throw new Error(`Cannot set key ${key} for value ${value} because it already exists and it's associated to a different value: ${existingValueOrUndefined}`);
+            throw new InternalError('error.map.cantResetKeyToDifferentValue',
+                `Cannot set key ${key} for value ${value} because it already exists and it's associated to a different value: ${existingValueOrUndefined}`);
         }
 
         return this.setAndReplaceIfExists(key, value);

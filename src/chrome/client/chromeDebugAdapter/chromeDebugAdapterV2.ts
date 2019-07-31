@@ -1,6 +1,7 @@
 /*---------------------------------------------------------
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ChromeDebugSession, IChromeDebugSessionOpts } from '../../chromeDebugSession';
 import { StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter, ExecutionTimingsReporter } from '../../../executionTimingsReporter';
@@ -12,6 +13,7 @@ import { TerminatingCDA } from './terminatingCDA';
 import { logger } from 'vscode-debugadapter';
 import { isUndefined } from '../../utils/typedOperators';
 import { TYPES } from '../../dependencyInjection.ts/types';
+import { InternalError } from '../../utils/internalError';
 
 export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<IStepStartedEventsEmitter & IFinishedStartingUpEventsEmitter>{
     public readonly events = new StepProgressEventsEmitter();
@@ -34,9 +36,7 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
         await this.waitUntilInitialized;
 
         const response = await this._debugSessionOptions.extensibilityPoints.processRequest(requestName, args, customizedArgs => {
-            if (isUndefined(this._state.processRequest)) {
-                throw new Error(`Invalid state: ${this._state}`);
-            }
+            this.validateProcessRequestIsDefined();
             return this._state.processRequest(requestName, customizedArgs, telemetryPropertyCollector);
         });
         switch (requestName) {
@@ -62,8 +62,12 @@ export class ChromeDebugAdapter implements IDebugAdapter, IObservableEvents<ISte
     private changeStateTo(newState: IDebugAdapterState) {
         logger.log(`Changing ChromeDebugAdapter state to ${newState}`);
         this._state = newState;
+        this.validateProcessRequestIsDefined();
+    }
+
+    private validateProcessRequestIsDefined() {
         if (isUndefined(this._state.processRequest)) {
-            throw new Error(`Invalid state: ${this._state}`);
+            throw new InternalError('error.da.cantChangeToStateLackingProcessRequest', `Invalid state: ${this._state}`);
         }
     }
 }

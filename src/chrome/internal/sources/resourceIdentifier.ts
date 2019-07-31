@@ -2,6 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as nls from 'vscode-nls';
+let localize = nls.loadMessageBundle();
+
 import * as path from 'path';
 import { IValidatedMap } from '../../collections/validatedMap';
 import { MapUsingProjection } from '../../collections/mapUsingProjection';
@@ -9,6 +12,7 @@ import { IEquivalenceComparable } from '../../utils/equivalence';
 import * as utils from '../../../utils';
 import { SetUsingProjection } from '../../collections/setUsingProjection';
 import { hasMatches } from '../../utils/typedOperators';
+import { InternalError } from '../../utils/internalError';
 
 /**
  * Hierarchy:
@@ -149,7 +153,7 @@ abstract class LocalFilePathCommonLogic<TString extends string = string> extends
     protected abstract generateCanonicalized(): string;
 
     public toString(): string {
-        return `res:${this.textRepresentation}`;
+        return localize('resourceIdentifier.resourcePrefix', 'res:{0}', this.textRepresentation);
     }
 }
 
@@ -239,7 +243,8 @@ export function parseResourceIdentifier<TString extends string = string>(textRep
             }
         }
     } else {
-        throw new Error(`Can't parse the resource identifier because the text representation was expected to be a string yet it was: ${textRepresentation}`);
+        throw new InternalError('error.resourceIdentifier.textRepresentationNotAString',
+            `Can't parse the resource identifier because the text representation was expected to be a string yet it was: ${textRepresentation}`);
     }
 }
 

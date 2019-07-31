@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { SourceAlreadyResolvedToLoadedSource, ISource } from '../internal/sources/source';
 import { HandlesRegistry } from './handlesRegistry';
@@ -5,6 +9,7 @@ import { ILoadedSource } from '../internal/sources/loadedSource';
 import { parseResourceIdentifier } from '../internal/sources/resourceIdentifier';
 import { SourceResolver } from '../internal/sources/sourceResolver';
 import { isNotEmpty, isUndefined, isDefined } from '../utils/typedOperators';
+import { InternalError } from '../utils/internalError';
 
 /**
  * Class used to parse a source of the VS Code protocol into the internal source model
@@ -22,7 +27,8 @@ export class ClientSourceParser {
             const source = this.getSourceFromId(clientSource.sourceReference);
             return new SourceAlreadyResolvedToLoadedSource(source);
         } else {
-            throw new Error(`Expected the source to have a path (${clientSource.path}) either-or a source reference (${clientSource.sourceReference})`);
+            throw new InternalError('error.clientSourceParser.doesntHaveExactlyOneOfPathOrReference',
+                `Expected the source to have a path (${clientSource.path}) either-or a source reference (${clientSource.sourceReference})`);
         }
     }
 

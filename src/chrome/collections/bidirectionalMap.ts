@@ -7,6 +7,7 @@ import { ValidatedMap } from './validatedMap';
 import { printMap } from './printing';
 import { breakWhileDebugging } from '../../validation';
 import { isDefined } from '../utils/typedOperators';
+import { InternalError } from '../utils/internalError';
 
 /** A map where we can efficiently get the key from the value or the value from the key */
 export class BidirectionalMap<Left, Right> {
@@ -83,12 +84,14 @@ export class BidirectionalMap<Left, Right> {
 
         if (existingRightForLeft !== undefined) {
             breakWhileDebugging();
-            throw new Error(`Can't set the pair left (${left}) and right (${right}) because there is already a right element (${existingRightForLeft}) associated with the left element`);
+            throw new InternalError('error.bidirectionalMap.elementAlreadyExistOnLeft',
+                `Can't set the pair left (${left}) and right (${right}) because there is already a right element (${existingRightForLeft}) associated with the left element`);
         }
 
         if (existingLeftForRight !== undefined) {
             breakWhileDebugging();
-            throw new Error(`Can't set the pair left (${left}) and right (${right}) because there is already a left element (${existingLeftForRight}) associated with the right element`);
+            throw new InternalError('error.bidirectionalMap.elementAlreadyExistOnRight',
+                `Can't set the pair left (${left}) and right (${right}) because there is already a left element (${existingLeftForRight}) associated with the right element`);
         }
 
         this._leftToRight.set(left, right);
