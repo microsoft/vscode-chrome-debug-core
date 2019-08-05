@@ -152,13 +152,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
         this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
 
-        this._scriptContainer = new ScriptContainer();
-
         this._transformers = {
             lineColTransformer: new (lineColTransformer || LineColTransformer)(this._session),
             sourceMapTransformer: new (sourceMapTransformer || EagerSourceMapTransformer)(this._scriptContainer),
             pathTransformer: new (pathTransformer || RemotePathTransformer)()
         };
+
+        this._scriptContainer = new ScriptContainer(this._transformers);
 
         this._breakpoints = new Breakpoints(this, this._chromeConnection);
         this._variablesManager = new VariablesManager(this._chromeConnection);
@@ -769,6 +769,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
         try {
+            // Important: pathTransformer.scriptParsed needs to be called before we call this.sendLoadedSourceEvent(script).
+            // this.sendLoadedSourceEvent(script) calls pathTransformer.getClientPathFromTargetPath(script.url) internally, and that won't work
+            // unless we called pathTransformer.scriptParsed first, and that method filled the cache for getClientPathFromTargetPath to use it
+            const mappedUrl = await this.pathTransformer.scriptParsed(script.url);
+
             this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
                 if (typeof this._columnBreakpointsEnabled === 'undefined') {
                     await this.detectColumnBreakpointSupport(script.scriptId);
@@ -789,8 +794,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             }
 
             this._scriptContainer.add(script);
-
-            const mappedUrl = await this.pathTransformer.scriptParsed(script.url);
 
             const sourceMapsP = this.sourceMapTransformer.scriptParsed(mappedUrl, script.url, script.sourceMapURL).then(async sources => {
                 if (this._hasTerminated) {

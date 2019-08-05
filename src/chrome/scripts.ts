@@ -1,5 +1,5 @@
 import * as utils from '../utils';
-import { CrdpScript } from './chromeDebugAdapter';
+import { CrdpScript, Transformers } from './chromeDebugAdapter';
 import { Protocol as Crdp } from 'devtools-protocol';
 import * as ChromeUtils from './chromeUtils';
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -25,10 +25,11 @@ export interface ISourceContainer {
  * A container class for loaded script files
  */
 export class ScriptContainer {
-
     private _scriptsById = new Map<Crdp.Runtime.ScriptId, CrdpScript>();
     private _scriptsByUrl = new Map<string, CrdpScript>();
     private _sourceHandles = new utils.ReverseHandles<ISourceContainer>();
+
+    public constructor(private readonly _transformers: Transformers) {}
 
     /**
      * @deprecated use the function calls instead
@@ -123,10 +124,13 @@ export class ScriptContainer {
      */
     public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string, remoteAuthority?: string): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
-        const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
-        const displayPath = Scripts.realPathToDisplayPath(properlyCasedScriptUrl);
 
-        const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
+        // Get the client path of the script when possible
+        const clientPath = this._transformers.pathTransformer.getClientPathFromTargetPath(script.url) || script.url;
+
+        const displayPath = Scripts.realPathToDisplayPath(clientPath);
+
+        const exists = await utils.existsAsync(clientPath); // script.url can start with file:/// so we use the canonicalized version
         const source = <DebugProtocol.Source>{
             name: path.basename(displayPath),
             path: displayPath,
