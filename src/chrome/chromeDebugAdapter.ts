@@ -769,6 +769,12 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
         const breakpointsAreResolvedDefer = this.getBreakpointsResolvedDefer(script.scriptId);
         try {
+            if (script.url) {
+                script.url = utils.fixDriveLetter(script.url);
+            } else {
+                script.url = ChromeDebugAdapter.EVAL_NAME_PREFIX + script.scriptId;
+            }
+
             // Important: pathTransformer.scriptParsed needs to be called before we call this.sendLoadedSourceEvent(script).
             // this.sendLoadedSourceEvent(script) calls pathTransformer.getClientPathFromTargetPath(script.url) internally, and that won't work
             // unless we called pathTransformer.scriptParsed first, and that method filled the cache for getClientPathFromTargetPath to use it
@@ -786,12 +792,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
                     await this.sendLoadedSourceEvent(script);
                 }
             });
-
-            if (script.url) {
-                script.url = utils.fixDriveLetter(script.url);
-            } else {
-                script.url = ChromeDebugAdapter.EVAL_NAME_PREFIX + script.scriptId;
-            }
 
             this._scriptContainer.add(script);
 
