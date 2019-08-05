@@ -75,7 +75,7 @@ class CurrentlyStepping implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new LocalizedError(localize('error.stepping.alreadyStepping', 'Cannot start stepping again while the program is already stepping'));
+        throw new LocalizedError('error.stepping.alreadyStepping', localize('error.stepping.alreadyStepping', 'Cannot start stepping again while the program is already stepping'));
     }
 
     public async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
@@ -106,7 +106,7 @@ class CurrentlyPausing implements SyncSteppingStatus {
         private readonly _eventsToClientReporter: IEventsToClientReporter) { }
 
     public startStepping(): SyncSteppingStatus {
-        throw new LocalizedError(localize('error.stepping.currentlyPausing', 'Cannot start stepping while the debugger is trying to pause the program'));
+        throw new LocalizedError('error.stepping.currentlyPausing', localize('error.stepping.currentlyPausing', 'Cannot start stepping while the debugger is trying to pause the program'));
     }
 
     public async onProvideActionForWhenPaused(_paused: PausedEvent): Promise<IActionToTakeWhenPaused> {

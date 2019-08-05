@@ -228,7 +228,7 @@ export class SourceMap {
                 source: parseResourceIdentifier(this._generatedPath)
             };
         } else {
-            throw new LocalizedError(localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
+            throw new LocalizedError('error.sourceMap.cantFindGeneratedPosition', localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
         }
     }
 

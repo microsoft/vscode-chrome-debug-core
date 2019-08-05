@@ -33,7 +33,7 @@ export class ScopesRequestHandler implements ICommandHandlerDeclarer {
         if (frame instanceof CallFramePresentation && frame.callFrame.hasState()) {
             return this._chromeDebugAdapter.scopes(frame.callFrame);
         } else {
-            throw new LocalizedError(localize('error.scopes.frameLacksStateInfo', "Can't get scopes for a frame that has no associated state"));
+            throw new LocalizedError('error.scopes.frameLacksStateInfo', localize('error.scopes.frameLacksStateInfo', "Can't get scopes for a frame that has no associated state"));
         }
     }
 

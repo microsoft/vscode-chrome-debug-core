@@ -61,7 +61,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
         this.telemetry.reportEvent('targetCount', { numTargets: targets.length });
 
         if (targets.length === 0) {
-            return utils.errP(localize('attach.responseButNoTargets', 'Got a response from the target app, but no target pages found'));
+            return utils.errP(localize('attach.responseButNoTargets', 'Got a response from the target app, but no target pages found'), 'attach.responseButNoTargets');
         }
 
         return this._getMatchingTargets(targets, targetFilter, targetUrl);
@@ -128,7 +128,7 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
 
         const jsonResponse = await checkDiscoveryEndpoint(`http://${address}:${port}/json/list`)
             .catch(() => checkDiscoveryEndpoint(`http://${address}:${port}/json`))
-            .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message)));
+            .catch(e => utils.errP(localize('attach.cannotConnect', 'Cannot connect to the target: {0}', e.message), 'attach.cannotConnect'));
 
         /* __GDPR__FRAGMENT__
            "StepNames" : {
@@ -146,10 +146,10 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
                         return target;
                     });
             } else {
-                return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse));
+                return utils.errP(localize('attach.invalidResponseArray', 'Response from the target seems invalid: {0}', jsonResponse), 'attach.invalidResponseArray');
             }
         } catch (e) {
-            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse));
+            return utils.errP(localize('attach.invalidResponse', 'Response from the target seems invalid. Error: {0}. Response: {1}', e.message, jsonResponse), 'attach.invalidResponse');
         }
     }
 
@@ -164,13 +164,13 @@ export class ChromeTargetDiscovery implements ITargetDiscoveryStrategy, IObserva
             filteredTargets;
 
         if (filteredTargets.length === 0) {
-            throw new LocalizedError(localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
+            throw new LocalizedError('attach.noMatchingTarget', localize('attach.noMatchingTarget', "Can't find a valid target that matches: {0}. Available pages: {1}", targetUrl, JSON.stringify(targets.map(target => target.url))));
         }
 
         // If all possible targets appear to be attached to have some other devtool attached, then fail
         const targetsWithWSURLs = filteredTargets.filter(target => isNotEmpty(target.webSocketDebuggerUrl));
         if (targetsWithWSURLs.length === 0) {
-            throw new LocalizedError(localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
+            throw new LocalizedError('attach.devToolsAttached', localize('attach.devToolsAttached', "Can't attach to this target that may have Chrome DevTools attached: {0}", filteredTargets[0].url));
         }
 
         return targetsWithWSURLs;

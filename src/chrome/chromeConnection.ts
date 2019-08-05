@@ -148,7 +148,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             await this.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
         }
         else {
-            throw new LocalizedError(localize('error.connection.unrecognizedScenarioType', 'Unrecognized scenario type. Expected either ScenarioType.Launch ({0}) or ScenarioType.Attach ({1}) but got: {2} ', ScenarioType.Launch, ScenarioType.Attach, this._configuration.scenarioType));
+            throw new LocalizedError('error.connection.unrecognizedScenarioType', localize('error.connection.unrecognizedScenarioType', 'Unrecognized scenario type. Expected either ScenarioType.Launch ({0}) or ScenarioType.Attach ({1}) but got: {2} ', ScenarioType.Launch, ScenarioType.Attach, this._configuration.scenarioType));
         }
     }
 

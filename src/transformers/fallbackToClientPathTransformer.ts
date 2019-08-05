@@ -52,7 +52,7 @@ export class FallbackToClientPathTransformer extends UrlPathTransformer {
                     logger.log(`The client responded that the url "${url}" maps to the file path "${filePath}"`);
                     resolve(filePath !== null ? parseResourceIdentifier(filePath) : url);
                 } else {
-                    reject(new LocalizedError(localize('error.fallbackToClientPathTransformer.mappingFailed', "The client responded that the url \"{0}\" couldn't be mapped to a file path due to: {1}", url.textRepresentation, response.message)));
+                    reject(new LocalizedError('error.fallbackToClientPathTransformer.mappingFailed', localize('error.fallbackToClientPathTransformer.mappingFailed', "The client responded that the url \"{0}\" couldn't be mapped to a file path due to: {1}", url.textRepresentation, response.message)));
                 }
             });
         });

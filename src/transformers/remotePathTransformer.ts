@@ -93,7 +93,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
         const args = configuration.args;
 
         if (isNotEmpty(args.localRoot) !== isNotEmpty(args.remoteRoot)) {
-            throw new LocalizedError(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
+            throw new LocalizedError('localRootAndRemoteRoot', localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
         }
 
         this._state = isNotEmpty(args.localRoot) && isNotEmpty(args.remoteRoot)

@@ -31,7 +31,7 @@ export abstract class BaseVariableContainer implements IVariableContainer {
     }
 
     public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
-        return utils.errP(localize('error.variables.cantSetVarOfThisType', 'setValue not supported by this variable type'));
+        return utils.errP(localize('error.variables.cantSetVarOfThisType', 'setValue not supported by this variable type'), 'error.variables.cantSetVarOfThisType');
     }
 }
 
@@ -49,7 +49,7 @@ export class LoggedObjects implements IVariableContainer {
     }
 
     public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
-        return utils.errP(localize('error.loggedObjects.cantSetVarOfThisType', 'setValue not supported by this variable type'));
+        return utils.errP(localize('error.loggedObjects.cantSetVarOfThisType', 'setValue not supported by this variable type'), 'error.loggedObjects.cantSetVarOfThisType');
     }
 }
 

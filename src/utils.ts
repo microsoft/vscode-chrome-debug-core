@@ -239,7 +239,7 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg?: string): Promise<never> {
+export function errP(msg?: string, errorId?: string): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
@@ -249,7 +249,7 @@ export function errP(msg?: string): Promise<never> {
         // msg is already an Error object
         e = msg;
     } else {
-        e = new LocalizedError(msg);
+        e = new LocalizedError(_.defaultTo(errorId, 'unknown.error.id'), msg);
     }
 
     return Promise.reject(e);

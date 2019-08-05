@@ -36,7 +36,7 @@ export class CDTPPauseOnExceptionsConfigurer implements IPauseOnExceptionsConfig
         } else if (strategy instanceof DoNotPauseOnAnyExceptions) {
             state = 'none';
         } else {
-            throw new LocalizedError(localize('error.pauseOnException.unknownStrategy', "Can't pause on exception using an unknown strategy {0}", strategy.toString()));
+            throw new LocalizedError('error.pauseOnException.unknownStrategy', localize('error.pauseOnException.unknownStrategy', "Can't pause on exception using an unknown strategy {0}", strategy.toString()));
         }
 
         return this.api.setPauseOnExceptions({ state });

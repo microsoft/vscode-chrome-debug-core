@@ -23,7 +23,7 @@ export class RequestProcessor {
         if (requestHandler !== undefined) {
             return requestHandler.call('Process request has no this', args);
         } else {
-            throw new LocalizedError(localize('error.requestProcessor.unexpectedRequest', 'Unexpected request: The request: {0} with arguments: {1} is not expected while in state: {2}', requestName, JSON.stringify(args), this._stateDescription));
+            throw new LocalizedError('error.requestProcessor.unexpectedRequest', localize('error.requestProcessor.unexpectedRequest', 'Unexpected request: The request: {0} with arguments: {1} is not expected while in state: {2}', requestName, JSON.stringify(args), this._stateDescription));
         }
     }
 

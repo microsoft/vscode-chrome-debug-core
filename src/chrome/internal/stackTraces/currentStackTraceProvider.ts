@@ -58,7 +58,7 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     }
 
     public async onPaused(pausedEvent: PausedEvent): Promise<IActionToTakeWhenPaused> {
-        throw new LocalizedError(localize('error.stackTraceProvider.unexpectedNewPausedEvent', "It's not expected to receive a new pause event: {0} when the current stack trace provided is already in a paused state due to {1}", pausedEvent.toString(), this._currentPauseEvent.toString()));
+        throw new LocalizedError('error.stackTraceProvider.unexpectedNewPausedEvent', localize('error.stackTraceProvider.unexpectedNewPausedEvent', "It's not expected to receive a new pause event: {0} when the current stack trace provided is already in a paused state due to {1}", pausedEvent.toString(), this._currentPauseEvent.toString()));
     }
 
     public onResumed(changeStateTo: (newState: ICurrentStackTraceProviderState) => void): void {
@@ -107,7 +107,7 @@ class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProvid
     }
 
     private throwItIsNotPaused(): never {
-        throw new LocalizedError(localize('error.stackTraceProvider.notPaused', "Can't obtain current stack strace when the debuggee is not paused"));
+        throw new LocalizedError('error.stackTraceProvider.notPaused', localize('error.stackTraceProvider.notPaused', "Can't obtain current stack strace when the debuggee is not paused"));
     }
 }
 

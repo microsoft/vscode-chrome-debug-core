@@ -95,7 +95,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
                     + ` 'hitCondition' (${actionWhenHit.hitCondition}) or 'logMessage' (${actionWhenHit.logMessage})`);
             }
         } else { // howManyDefined >= 2
-            throw new LocalizedError(localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
+            throw new LocalizedError('error.setBreakpoints.cantHaveTwoActions', localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
         }
     }
 
