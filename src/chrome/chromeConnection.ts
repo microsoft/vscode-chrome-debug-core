@@ -95,7 +95,7 @@ export interface IChromeError {
  * Connects to a target supporting the Chrome Debug Protocol and sends and receives messages
  */
 export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmitter> {
-    private static ATTACH_TIMEOUT = 10000; // ms
+    protected static ATTACH_TIMEOUT = 10000; // ms
 
     private _socket: WebSocket;
     private _crdpSocketMultiplexor: CRDPMultiplexor;

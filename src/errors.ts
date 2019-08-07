@@ -151,3 +151,21 @@ export function noStoredException(): DebugProtocol.Message {
         sendTelemetry: true
     });
 }
+
+export function failedToReadPortFromUserDataDir(dataDirPath: string, err: Error) {
+    return new ErrorWithMessage({
+        id: 2033,
+        format: localize('failed.to.read.port', 'Failed to read file {dataDirPath}, {error}'),
+        variables: { dataDirPath, error: err.message },
+        sendTelemetry: true
+    });
+}
+
+export function activePortFileContentsInvalid(dataDirPath: string, dataDirContents: string) {
+    return new ErrorWithMessage({
+        id: 2034,
+        format: localize('port.file.contents.invalid', 'File at location: "{dataDirPath}" did not contain valid port data, contents were: {dataDirContents}'),
+        variables: { dataDirPath, dataDirContents },
+        sendTelemetry: true
+    });
+}
