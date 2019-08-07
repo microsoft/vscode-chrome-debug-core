@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { Protocol as CDTP } from 'devtools-protocol';
 import { PausedEvent, ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
@@ -12,7 +11,10 @@ import { ScriptCallFrame, CallFrameWithState } from './callFrame';
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { ILoadedSource } from '../sources/loadedSource';
 import { isDefined } from '../../utils/typedOperators';
-import { LocalizedError } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 interface ICurrentStackTraceProviderState {
     ifExceptionWasThrown(exceptionWasThrownAction: (exception: CDTP.Runtime.RemoteObject) => void, noExceptionAction: () => void): void;

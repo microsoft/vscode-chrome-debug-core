@@ -23,7 +23,9 @@ import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { isTrue, isFalse, isDefined } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
 import { InternalError } from '../../utils/internalError';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from '../../utils/localizedError';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface ISkipFilesConfiguration {
     skipFiles?: string[]; // an array of file names or glob patterns

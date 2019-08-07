@@ -5,7 +5,9 @@
 import { IEquivalenceComparable } from '../../utils/equivalence';
 
 import * as nls from 'vscode-nls';
+import { registerGetLocalize } from '../../utils/localizedError';
 let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /**
  * These classes represents the different actions that a breakpoint can take when hit

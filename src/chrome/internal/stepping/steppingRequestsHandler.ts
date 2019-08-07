@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ICommandHandlerDeclarer, ICommandHandlerDeclaration, CommandHandlerDeclaration } from '../features/components';
 import { AsyncStepping } from './features/asyncStepping';
@@ -13,7 +12,10 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
-import { LocalizedError } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class SteppingRequestsHandler implements ICommandHandlerDeclarer {

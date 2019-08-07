@@ -3,7 +3,10 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
+import { registerGetLocalize } from './localizedError';
+
 let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export class InternalError extends Error {
     public constructor(public readonly errorCode: string, public readonly errorDetails: string) {

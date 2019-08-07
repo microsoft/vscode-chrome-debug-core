@@ -10,7 +10,9 @@ import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
 import { isDefined, isNotEmpty } from './utils/typedOperators';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from './utils/localizedError';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type ReasonType = 'step' | 'breakpoint' | 'exception' | 'pause' | 'entry' | 'debugger_statement' | 'frame_entry' | 'promise_rejection';
 

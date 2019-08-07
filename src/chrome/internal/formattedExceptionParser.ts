@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { LocationInScript, LocationInLoadedSource } from './locations/location';
 import { IResourceIdentifier, parseResourceIdentifier } from './sources/resourceIdentifier';
@@ -12,6 +11,10 @@ import { createLineNumber, createColumnNumber } from './locations/subtypes';
 import { Position } from '../internal/locations/location';
 import { CDTPScriptsRegistry } from '../cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { hasMatches } from '../utils/typedOperators';
+import { registerGetLocalize } from '../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface IFormattedExceptionLineDescription {
     generateDescription(zeroBaseNumbers: boolean): string;

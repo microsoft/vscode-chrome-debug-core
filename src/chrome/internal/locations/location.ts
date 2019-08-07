@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import * as Validation from '../../../validation';
 import { IScript, Script } from '../scripts/script';
@@ -18,6 +17,10 @@ import { IMappedTokensInScript } from './mappedTokensInScript';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 import { SourceWithSourceMap } from '../breakpoints/features/bpAtNotLoadedScriptViaHeuristicSetter';
 import { InternalError } from '../../utils/internalError';
+import { registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type integer = number;
 

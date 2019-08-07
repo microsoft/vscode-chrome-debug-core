@@ -20,7 +20,9 @@ import * as _ from 'lodash';
 
 import * as nls from 'vscode-nls';
 import { InternalError } from './utils/internalError';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from './utils/localizedError';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface IChromeDebugAdapterOpts {
     extensibilityPoints: IExtensibilityPoints;

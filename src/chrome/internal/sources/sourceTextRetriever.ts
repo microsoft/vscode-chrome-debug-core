@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ILoadedSource, ContentsLocation, SourceScriptRelationship } from './loadedSource';
 import { ValidatedMap } from '../../collections/validatedMap';
@@ -15,7 +14,10 @@ import { singleElementOfArray } from '../../collections/utilities';
 import * as utils from '../../../utils';
 import { logger } from 'vscode-debugadapter';
 import { printArray } from '../../collections/printing';
-import { LocalizedError } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /**
  * Retrieves the text associated with a loaded source that maps to a JavaScript script file

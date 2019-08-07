@@ -3,14 +3,16 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ValidatedMap } from '../../collections/validatedMap';
 import { CommandText } from '../requests';
 import { RequestHandler, ICommandHandlerDeclarer } from '../../internal/features/components';
 import { printArray } from '../../collections/printing';
 import { DoNotLog } from '../../logging/decorators';
-import { LocalizedError } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export class RequestProcessor {
     private readonly _requestNameToHandler = new ValidatedMap<CommandText, RequestHandler>();

@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { SourceMapConsumer, MappedPosition, NullablePosition, RawSourceMap } from 'source-map';
 import * as path from 'path';
@@ -21,7 +20,10 @@ import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
-import { LocalizedError } from '../chrome/utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type MappedPosition = MappedPosition;
 

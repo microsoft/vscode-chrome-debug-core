@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import * as WebSocket from 'ws';
 
@@ -26,7 +25,10 @@ import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
 import { InternalError } from './utils/internalError';
-import { LocalizedError } from './utils/localizedError';
+import { LocalizedError, registerGetLocalize } from './utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface ITarget {
     description: string;

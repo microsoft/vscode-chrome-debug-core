@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
  import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ChromeDebugLogic } from '../../chromeDebugAdapter';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
@@ -14,7 +13,10 @@ import { IScopesResponseBody } from '../../../debugAdapterInterfaces';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
 import { IStackTracePresentationRow } from '../stackTraces/stackTracePresentationRow';
 import { HandlesRegistry } from '../../client/handlesRegistry';
-import { LocalizedError } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class ScopesRequestHandler implements ICommandHandlerDeclarer {

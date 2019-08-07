@@ -4,12 +4,13 @@
 
 import * as nls from 'vscode-nls';
 let localize = nls.loadMessageBundle();
+import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 import { Protocol as CDTP } from 'devtools-protocol';
 import { IPauseOnExceptionsStrategy, PauseOnAllExceptions, PauseOnUnhandledExceptions, DoNotPauseOnAnyExceptions } from '../../internal/exceptions/strategies';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
-import { LocalizedError } from '../../utils/localizedError';
 
 export interface IPauseOnExceptionsConfigurer {
     setPauseOnExceptions(strategy: IPauseOnExceptionsStrategy): Promise<void>;

@@ -8,7 +8,9 @@ import { LocationInLoadedSource } from '../locations/location';
 import { InternalError } from '../../utils/internalError';
 
 import * as nls from 'vscode-nls';
+import { registerGetLocalize } from '../../utils/localizedError';
 let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 const ImplementsBPRecipeSingleLocationStatus = Symbol();
 export interface IBPRecipeSingleLocationStatus {

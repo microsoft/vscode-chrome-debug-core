@@ -9,14 +9,16 @@ import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
 import * as nls from 'vscode-nls';
 
-const localize = nls.loadMessageBundle();
 import { IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
-import { LocalizedError } from '../chrome/utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 interface IRootsState {
     install(): Promise<void>;

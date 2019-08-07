@@ -19,7 +19,9 @@ import { notEmpty } from '../validation';
 
 import * as nls from 'vscode-nls';
 import { InternalError } from './utils/internalError';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from './utils/localizedError';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping

@@ -3,11 +3,13 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { hasMatches } from '../../../utils/typedOperators';
 import * as _ from 'lodash';
-import { LocalizedError } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type HitCountConditionFunction = (numHits: number) => boolean;
 

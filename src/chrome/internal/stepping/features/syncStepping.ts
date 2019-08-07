@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ScriptCallFrame, CallFrameWithState } from '../../stackTraces/callFrame';
 import { IActionToTakeWhenPaused, NoActionIsNeededForThisPause, BaseNotifyClientOfPause } from '../../features/actionToTakeWhenPaused';
@@ -17,7 +16,10 @@ import { printClassDescription, printInstanceDescription } from '../../../utils/
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { logger } from 'vscode-debugadapter';
 import { DoNotLog } from '../../../logging/decorators';
-import { LocalizedError } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 type SteppingAction = () => Promise<void>;
 

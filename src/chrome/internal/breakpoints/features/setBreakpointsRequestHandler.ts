@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { injectable, inject } from 'inversify';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../../features/components';
@@ -29,7 +28,10 @@ import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 import { InternalError } from '../../../utils/internalError';
-import { LocalizedError } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {

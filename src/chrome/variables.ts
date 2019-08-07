@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Handles } from 'vscode-debugadapter';
@@ -16,6 +15,10 @@ import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from '
 import { isDefined, isUndefined, hasMatches, isNotEmpty, isTrue } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './utils/internalError';
+import { registerGetLocalize } from './utils/localizedError';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface IVariableContainer {
     expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
