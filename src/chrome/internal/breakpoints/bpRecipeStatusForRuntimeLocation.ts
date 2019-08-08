@@ -8,7 +8,7 @@ import { LocationInLoadedSource } from '../locations/location';
 import { InternalError } from '../../utils/internalError';
 
 import * as nls from 'vscode-nls';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

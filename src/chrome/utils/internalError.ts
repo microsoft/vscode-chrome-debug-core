@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-import { registerGetLocalize } from './localizedError';
+import { registerGetLocalize } from './localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

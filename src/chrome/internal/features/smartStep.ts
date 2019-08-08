@@ -22,7 +22,7 @@ import { printClassDescription } from '../../utils/printing';
 import * as _ from 'lodash';
 import { isNotNull } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

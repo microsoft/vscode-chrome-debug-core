@@ -11,7 +11,7 @@ import { createLineNumber, createColumnNumber } from './locations/subtypes';
 import { Position } from '../internal/locations/location';
 import { CDTPScriptsRegistry } from '../cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { hasMatches } from '../utils/typedOperators';
-import { registerGetLocalize } from '../utils/localizedError';
+import { registerGetLocalize } from '../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

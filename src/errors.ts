@@ -7,7 +7,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import * as nls from 'vscode-nls';
 
 import { InternalError } from './chrome/utils/internalError';
-import { registerGetLocalize } from './chrome/utils/localizedError';
+import { registerGetLocalize } from './chrome/utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

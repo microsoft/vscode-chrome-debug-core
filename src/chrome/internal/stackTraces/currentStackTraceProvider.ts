@@ -11,7 +11,7 @@ import { ScriptCallFrame, CallFrameWithState } from './callFrame';
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { ILoadedSource } from '../sources/loadedSource';
 import { isDefined } from '../../utils/typedOperators';
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

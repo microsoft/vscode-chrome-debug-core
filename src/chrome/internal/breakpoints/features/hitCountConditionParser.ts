@@ -6,7 +6,7 @@ import * as nls from 'vscode-nls';
 
 import { hasMatches } from '../../../utils/typedOperators';
 import * as _ from 'lodash';
-import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

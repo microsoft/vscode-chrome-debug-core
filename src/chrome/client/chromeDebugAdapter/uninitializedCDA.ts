@@ -12,7 +12,7 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
 import { isNotEmpty } from '../../utils/typedOperators';
 import { ISession } from '../session';
-import { registerGetLocalize, configureLocale } from '../../utils/localizedError';
+import { registerGetLocalize, configureLocale } from '../../utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

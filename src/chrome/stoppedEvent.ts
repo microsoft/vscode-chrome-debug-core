@@ -10,7 +10,7 @@ import * as utils from '../utils';
 
 import * as nls from 'vscode-nls';
 import { isDefined, isNotEmpty } from './utils/typedOperators';
-import { registerGetLocalize } from './utils/localizedError';
+import { registerGetLocalize } from './utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

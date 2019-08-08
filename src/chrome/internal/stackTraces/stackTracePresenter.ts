@@ -26,7 +26,7 @@ import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsP
 import * as _ from 'lodash';
 import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

@@ -15,7 +15,7 @@ import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from '
 import { isDefined, isUndefined, hasMatches, isNotEmpty, isTrue } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './utils/internalError';
-import { registerGetLocalize } from './utils/localizedError';
+import { registerGetLocalize } from './utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

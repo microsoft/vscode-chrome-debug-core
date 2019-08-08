@@ -14,7 +14,7 @@ import { URLRegexp } from '../locations/subtypes';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import { BPRecipeInLoadedSource, BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

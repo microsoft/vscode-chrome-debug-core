@@ -4,7 +4,7 @@
 
 import * as nls from 'vscode-nls';
 let localize = nls.loadMessageBundle();
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 import { Protocol as CDTP } from 'devtools-protocol';

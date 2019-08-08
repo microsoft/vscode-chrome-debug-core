@@ -25,7 +25,7 @@ import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
 import { InternalError } from './utils/internalError';
-import { LocalizedError, registerGetLocalize } from './utils/localizedError';
+import { LocalizedError, registerGetLocalize } from './utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

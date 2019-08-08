@@ -28,7 +28,7 @@ import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 import { InternalError } from '../../../utils/internalError';
-import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

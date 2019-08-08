@@ -17,7 +17,7 @@ import { IMappedTokensInScript } from './mappedTokensInScript';
 import { IHasSourceMappingInformation } from '../scripts/IHasSourceMappingInformation';
 import { SourceWithSourceMap } from '../breakpoints/features/bpAtNotLoadedScriptViaHeuristicSetter';
 import { InternalError } from '../../utils/internalError';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

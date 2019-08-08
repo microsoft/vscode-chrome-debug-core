@@ -16,7 +16,7 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from './dependencyInjection.ts/types';
 import { ILogger } from './internal/services/logging';
 import { isNotEmpty, isDefined, hasMatches } from './utils/typedOperators';
-import { LocalizedError, registerGetLocalize } from './utils/localizedError';
+import { LocalizedError, registerGetLocalize } from './utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

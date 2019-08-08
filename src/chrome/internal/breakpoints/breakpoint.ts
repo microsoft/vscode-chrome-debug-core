@@ -13,7 +13,7 @@ import { ISource } from '../sources/source';
 import { IBPRecipeForRuntimeSource } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

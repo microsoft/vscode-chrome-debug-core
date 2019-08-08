@@ -15,7 +15,7 @@ import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
-import { LocalizedError, registerGetLocalize } from '../chrome/utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

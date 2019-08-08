@@ -23,7 +23,7 @@ import { IDebuggeePausedHandler } from './debuggeePausedHandler';
 import { isTrue, isFalse, isDefined } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
 import { InternalError } from '../../utils/internalError';
-import { registerGetLocalize } from '../../utils/localizedError';
+import { registerGetLocalize } from '../../utils/localization';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 

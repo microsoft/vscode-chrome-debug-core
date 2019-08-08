@@ -14,7 +14,7 @@ import { singleElementOfArray } from '../../collections/utilities';
 import * as utils from '../../../utils';
 import { logger } from 'vscode-debugadapter';
 import { printArray } from '../../collections/printing';
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

@@ -20,7 +20,7 @@ import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
-import { LocalizedError, registerGetLocalize } from '../chrome/utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

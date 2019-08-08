@@ -12,7 +12,7 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

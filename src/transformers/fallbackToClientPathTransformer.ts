@@ -13,7 +13,7 @@ import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { isNotEmpty } from '../chrome/utils/typedOperators';
-import { LocalizedError, registerGetLocalize } from '../chrome/utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

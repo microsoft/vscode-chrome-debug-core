@@ -16,7 +16,7 @@ import { printClassDescription, printInstanceDescription } from '../../../utils/
 import { IEventsToClientReporter } from '../../../client/eventsToClientReporter';
 import { logger } from 'vscode-debugadapter';
 import { DoNotLog } from '../../../logging/decorators';
-import { LocalizedError, registerGetLocalize } from '../../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

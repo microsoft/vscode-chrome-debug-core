@@ -17,7 +17,7 @@ import { promisify } from 'util';
 import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './chrome/utils/internalError';
-import { LocalizedError } from './chrome/utils/localizedError';
+import { LocalizedError } from './chrome/utils/localization';
 
 export interface IStringDictionary<T> {
     [name: string]: T;

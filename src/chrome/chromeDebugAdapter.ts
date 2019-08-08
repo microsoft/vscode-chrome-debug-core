@@ -56,7 +56,7 @@ import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isE
 import * as _ from 'lodash';
 import { CurrentStackTraceProvider } from './internal/stackTraces/currentStackTraceProvider';
 import { InternalError } from './utils/internalError';
-import { registerGetLocalize } from './utils/localizedError';
+import { registerGetLocalize } from './utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

@@ -13,7 +13,7 @@ import { IScopesResponseBody } from '../../../debugAdapterInterfaces';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
 import { IStackTracePresentationRow } from '../stackTraces/stackTracePresentationRow';
 import { HandlesRegistry } from '../../client/handlesRegistry';
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());

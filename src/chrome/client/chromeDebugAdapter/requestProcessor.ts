@@ -9,7 +9,7 @@ import { CommandText } from '../requests';
 import { RequestHandler, ICommandHandlerDeclarer } from '../../internal/features/components';
 import { printArray } from '../../collections/printing';
 import { DoNotLog } from '../../logging/decorators';
-import { LocalizedError, registerGetLocalize } from '../../utils/localizedError';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
