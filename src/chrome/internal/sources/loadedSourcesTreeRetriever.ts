@@ -7,12 +7,15 @@ import { IScript } from '../scripts/script';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPScriptsRegistry } from '../../cdtpDebuggee/registries/cdtpScriptsRegistry';
+import { printInstanceDescription } from '../../utils/printing';
 
 /**
  * Provides a list of all the sources associated with scripts currently loaded in a tree format
  */
 @injectable()
 export class LoadedSourcesTreeRetriever {
+    public readonly toString = printInstanceDescription;
+
     constructor(@inject(TYPES.CDTPScriptsRegistry) private readonly _cdtpScriptsRegistry: CDTPScriptsRegistry) { }
 
     /*

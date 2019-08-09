@@ -142,6 +142,8 @@ class UnknownState extends CurrentlyIdle { }
 @injectable()
 @printClassDescription
 export class SyncStepping {
+    public readonly toString = printInstanceDescription;
+
     private _status: SyncSteppingStatus = new CurrentlyIdle(s => this.changeStatus(s), this._eventsToClientReporter);
 
     public stepOver = this.createSteppingMethod(() => this._debugeeStepping.stepOver());
