@@ -56,8 +56,10 @@ import { isTrue, isNotNull, isNotEmpty, isUndefined, isDefined, hasElements, isE
 import * as _ from 'lodash';
 import { CurrentStackTraceProvider } from './internal/stackTraces/currentStackTraceProvider';
 import { InternalError } from './utils/internalError';
+import { registerGetLocalize } from './utils/localization';
 
 let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 interface IPropCount {
     indexedVariables: number | undefined;
@@ -668,7 +670,7 @@ export class ChromeDebugLogic {
         if (isDefined(evalResponse.exceptionDetails)) {
             let resultValue = variable.value;
             if (isNotEmpty(resultValue) && (resultValue.startsWith('ReferenceError: ') || resultValue.startsWith('TypeError: ')) && args.context !== 'repl') {
-                resultValue = errors.evalNotAvailableMsg;
+                resultValue = errors.evalNotAvailableMsg();
             }
 
             return utils.errP(resultValue);

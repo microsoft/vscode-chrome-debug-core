@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import * as path from 'path';
 import { IValidatedMap } from '../../collections/validatedMap';
@@ -13,6 +12,10 @@ import * as utils from '../../../utils';
 import { SetUsingProjection } from '../../collections/setUsingProjection';
 import { hasMatches } from '../../utils/typedOperators';
 import { InternalError } from '../../utils/internalError';
+import { registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /**
  * Hierarchy:

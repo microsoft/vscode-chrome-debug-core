@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Handles } from 'vscode-debugadapter';
@@ -16,6 +15,10 @@ import { CDTPNonPrimitiveRemoteObject, validateNonPrimitiveRemoteObject } from '
 import { isDefined, isUndefined, hasMatches, isNotEmpty, isTrue } from './utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './utils/internalError';
+import { registerGetLocalize } from './utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface IVariableContainer {
     expand(adapter: ChromeDebugLogic, filter?: string, start?: number, count?: number): Promise<DebugProtocol.Variable[]>;
@@ -31,7 +34,7 @@ export abstract class BaseVariableContainer implements IVariableContainer {
     }
 
     public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
-        return utils.errP(localize('error.variables.cantSetVarOfThisType', 'setValue not supported by this variable type'));
+        return utils.errP(localize('error.variables.cantSetVarOfThisType', 'setValue not supported by this variable type'), 'error.variables.cantSetVarOfThisType');
     }
 }
 
@@ -49,7 +52,7 @@ export class LoggedObjects implements IVariableContainer {
     }
 
     public setValue(_adapter: ChromeDebugLogic, _name: string, _value: string): Promise<string> {
-        return utils.errP(localize('error.loggedObjects.cantSetVarOfThisType', 'setValue not supported by this variable type'));
+        return utils.errP(localize('error.loggedObjects.cantSetVarOfThisType', 'setValue not supported by this variable type'), 'error.loggedObjects.cantSetVarOfThisType');
     }
 }
 

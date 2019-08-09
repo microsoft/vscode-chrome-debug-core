@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from './chrome/utils/typedOperators';
 import * as _ from 'lodash';
 import { InternalError } from './chrome/utils/internalError';
+import { LocalizedError } from './chrome/utils/localization';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -238,7 +239,7 @@ export function stripTrailingSlash(aPath: string): string {
  * when passing on a failure from a Promise error handler.
  * @param msg - Should be either a string or an Error
  */
-export function errP(msg?: string): Promise<never> {
+export function errP(msg?: string, errorId?: string): Promise<never> {
     const isErrorLike = (thing: any): thing is Error => !!thing.message;
 
     let e: Error;
@@ -248,7 +249,7 @@ export function errP(msg?: string): Promise<never> {
         // msg is already an Error object
         e = msg;
     } else {
-        e = new Error(msg);
+        e = new LocalizedError(_.defaultTo(errorId, 'unknown.error.id'), msg);
     }
 
     return Promise.reject(e);
@@ -597,9 +598,11 @@ export function fillErrorDetails(properties: IExecutionResultTelemetryProperties
     }
     if (e.id) {
         properties.exceptionId = e.id.toString();
-    }
-    if (e instanceof InternalError) {
+    } else if (e.errorCode) {
         properties.exceptionId = e.errorCode;
+    }
+
+    if (e.errorDetails) {
         properties.errorDetails = e.errorDetails;
     }
 }

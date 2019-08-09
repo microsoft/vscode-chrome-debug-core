@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import * as WebSocket from 'ws';
 
@@ -26,6 +25,10 @@ import { IAttachRequestArgs } from '../debugAdapterInterfaces';
 import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
 import { InternalError } from './utils/internalError';
+import { LocalizedError, registerGetLocalize } from './utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface ITarget {
     description: string;
@@ -147,7 +150,7 @@ export class ChromeConnection implements IObservableEvents<IStepStartedEventsEmi
             await this.attach(attachArgs.address, attachArgs.port, attachArgs.url, attachArgs.timeout, attachArgs.extraCRDPChannelPort);
         }
         else {
-            throw new Error(localize('error.connection.unrecognizedScenarioType', 'Unrecognized scenario type. Expected either ScenarioType.Launch ({0}) or ScenarioType.Attach ({1}) but got: {2} ', ScenarioType.Launch, ScenarioType.Attach, this._configuration.scenarioType));
+            throw new LocalizedError('error.connection.unrecognizedScenarioType', localize('error.connection.unrecognizedScenarioType', 'Unrecognized scenario type. Expected either ScenarioType.Launch ({0}) or ScenarioType.Attach ({1}) but got: {2} ', ScenarioType.Launch, ScenarioType.Attach, this._configuration.scenarioType));
         }
     }
 

@@ -10,7 +10,10 @@ import { breakWhileDebugging } from '../../../validation';
 
 import * as nls from 'vscode-nls';
 import { InternalError } from '../../utils/internalError';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /** These interface and classes represent the status of a BP Recipe (Is it bound or not?) */
 export const ImplementsBPRecipeStatus = Symbol();

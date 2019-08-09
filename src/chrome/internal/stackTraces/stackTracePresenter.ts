@@ -9,7 +9,6 @@ import { injectable, inject, multiInject } from 'inversify';
 import * as errors from '../../../errors';
 
 import * as nls from 'vscode-nls';
-const localize = nls.loadMessageBundle();
 import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { IScript } from '../scripts/script';
 import { CodeFlowFrame, ScriptCallFrame, CallFrame, CallFrameWithoutState, ICallFrameState } from './callFrame';
@@ -27,6 +26,10 @@ import { ICDTPDebuggeeExecutionEventsProvider } from '../../cdtpDebuggee/eventsP
 import * as _ from 'lodash';
 import { isDefined, isNotEmpty } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
+import { registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface IStackTracePresentationDetailsProvider {
     callFrameAdditionalDetails(locationInLoadedSource: LocationInLoadedSource): ICallFramePresentationDetails[];

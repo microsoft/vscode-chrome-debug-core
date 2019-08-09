@@ -22,7 +22,9 @@ import { printClassDescription } from '../../utils/printing';
 import * as _ from 'lodash';
 import { isNotNull } from '../../utils/typedOperators';
 import { DoNotLog } from '../../logging/decorators';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from '../../utils/localization';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export interface ISmartStepLogicConfiguration {
     isEnabled: boolean;

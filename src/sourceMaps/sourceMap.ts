@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { SourceMapConsumer, MappedPosition, NullablePosition, RawSourceMap } from 'source-map';
 import * as path from 'path';
@@ -21,6 +20,10 @@ import { Range } from '../chrome/internal/locations/rangeInScript';
 import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type MappedPosition = MappedPosition;
 
@@ -227,7 +230,7 @@ export class SourceMap {
                 source: parseResourceIdentifier(this._generatedPath)
             };
         } else {
-            throw new Error(localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
+            throw new LocalizedError('error.sourceMap.cantFindGeneratedPosition', localize('error.sourceMap.cantFindGeneratedPosition', "Couldn't find generated position in source-map for {0}", JSON.stringify(lookupArgs)));
         }
     }
 

@@ -5,14 +5,14 @@
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 import * as nls from 'vscode-nls';
-const localize = nls.loadMessageBundle();
 
 import { InternalError } from './chrome/utils/internalError';
+import { registerGetLocalize } from './chrome/utils/localization';
 
-export const evalNotAvailableMsg = localize('eval.not.available', 'not available');
-export const runtimeNotConnectedMsg = localize('not.connected', 'not connected to runtime');
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
-export const noRestartFrame = localize('restartFrame.cannot', "Can't restart frame");
+export const evalNotAvailableMsg = () => localize('eval.not.available', 'not available');
 
 export class ErrorWithMessage extends Error implements DebugProtocol.Message {
     public id: number;

@@ -5,7 +5,9 @@ import { injectable } from 'inversify';
 import { LocationInLoadedSource } from '../../locations/location';
 
 import * as nls from 'vscode-nls';
-const localize = nls.loadMessageBundle();
+import { registerGetLocalize } from '../../../utils/localization';
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 class JustCreatedBPRecipeStatus implements IBPRecipeStatus {
     [ImplementsBPRecipeStatus] = 'ImplementsBPRecipeStatus';

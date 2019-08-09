@@ -3,10 +3,13 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { hasMatches } from '../../../utils/typedOperators';
 import * as _ from 'lodash';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type HitCountConditionFunction = (numHits: number) => boolean;
 
@@ -23,7 +26,7 @@ export class HitCountConditionParser {
             const shouldPause: HitCountConditionFunction = <any>new Function('numHits', this.javaScriptCodeToEvaluateCondition(patternMatches));
             return shouldPause;
         } else {
-            throw new Error(localize('error.hitCountParser.unrecognizedCondition', "Didn't recognize <{0}> as a valid hit count condition", this._hitCountCondition));
+            throw new LocalizedError('error.hitCountParser.unrecognizedCondition', localize('error.hitCountParser.unrecognizedCondition', "Didn't recognize <{0}> as a valid hit count condition", this._hitCountCondition));
         }
     }
 

@@ -9,13 +9,16 @@ import { UrlPathTransformer } from '../transformers/urlPathTransformer';
 import * as utils from '../utils';
 import * as nls from 'vscode-nls';
 
-const localize = nls.loadMessageBundle();
 import { IResourceIdentifier, parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { inject } from 'inversify';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { IConnectedCDAConfiguration } from '../chrome/client/chromeDebugAdapter/cdaConfiguration';
 import { isNotEmpty, hasMatches } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
+import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 interface IRootsState {
     install(): Promise<void>;
@@ -92,7 +95,7 @@ export class RemotePathTransformer extends UrlPathTransformer {
         const args = configuration.args;
 
         if (isNotEmpty(args.localRoot) !== isNotEmpty(args.remoteRoot)) {
-            throw new Error(localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
+            throw new LocalizedError('localRootAndRemoteRoot', localize('localRootAndRemoteRoot', 'Both localRoot and remoteRoot must be specified.'));
         }
 
         this._state = isNotEmpty(args.localRoot) && isNotEmpty(args.remoteRoot)

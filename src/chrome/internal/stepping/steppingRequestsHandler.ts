@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ICommandHandlerDeclarer, ICommandHandlerDeclaration, CommandHandlerDeclaration } from '../features/components';
 import { AsyncStepping } from './features/asyncStepping';
@@ -13,6 +12,10 @@ import { TYPES } from '../../dependencyInjection.ts/types';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { HandlesRegistry } from '../../client/handlesRegistry';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
@@ -27,7 +30,7 @@ export class SteppingRequestsHandler implements ICommandHandlerDeclarer {
         if (callFrame instanceof CallFramePresentation && callFrame.callFrame.hasState()) {
             return this._syncStepping.restartFrame(callFrame.callFrame.unmappedCallFrame);
         } else {
-            throw new Error(localize('error.stepping.frameLacksStateInfo', "Cannot restart to a frame that doesn't have state information"));
+            throw new LocalizedError('error.stepping.frameLacksStateInfo', localize('error.stepping.frameLacksStateInfo', "Cannot restart to a frame that doesn't have state information"));
         }
     }
 

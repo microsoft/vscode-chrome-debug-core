@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
  import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ChromeDebugLogic } from '../../chromeDebugAdapter';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../features/components';
@@ -14,6 +13,10 @@ import { IScopesResponseBody } from '../../../debugAdapterInterfaces';
 import { CallFramePresentation } from '../stackTraces/callFramePresentation';
 import { IStackTracePresentationRow } from '../stackTraces/stackTracePresentationRow';
 import { HandlesRegistry } from '../../client/handlesRegistry';
+import { LocalizedError, registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class ScopesRequestHandler implements ICommandHandlerDeclarer {
@@ -32,7 +35,7 @@ export class ScopesRequestHandler implements ICommandHandlerDeclarer {
         if (frame instanceof CallFramePresentation && frame.callFrame.hasState()) {
             return this._chromeDebugAdapter.scopes(frame.callFrame);
         } else {
-            throw new Error(localize('error.scopes.frameLacksStateInfo', "Can't get scopes for a frame that has no associated state"));
+            throw new LocalizedError('error.scopes.frameLacksStateInfo', localize('error.scopes.frameLacksStateInfo', "Can't get scopes for a frame that has no associated state"));
         }
     }
 

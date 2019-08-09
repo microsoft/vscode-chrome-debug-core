@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { ISource } from '../sources/source';
 import { Location, ScriptOrSourceOrURLOrURLRegexp } from '../locations/location';
@@ -15,6 +14,10 @@ import { URLRegexp } from '../locations/subtypes';
 import { IEquivalenceComparable } from '../../utils/equivalence';
 import { BPRecipeInLoadedSource, BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
+import { registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 /**
  * IBPRecipe represents the instruction/recipe to set a breakpoint with some particular properties. Assuming that IBPRecipe ends up creating an actual

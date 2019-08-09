@@ -3,7 +3,6 @@
  *--------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
 
 import { LocationInScript, LocationInLoadedSource } from '../locations/location';
 import { IScript } from '../scripts/script';
@@ -14,6 +13,10 @@ import { ISource } from '../sources/source';
 import { IBPRecipeForRuntimeSource } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
+import { registerGetLocalize } from '../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 export type BPPossibleResources = IScript | ISource | URLRegexp | IResourceIdentifier<CDTPScriptUrl>;
 export type ActualLocation<TResource extends BPPossibleResources> =

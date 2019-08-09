@@ -2,8 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
- import * as nls from 'vscode-nls';
-let localize = nls.loadMessageBundle();
+import * as nls from 'vscode-nls';
 
 import { injectable, inject } from 'inversify';
 import { ICommandHandlerDeclaration, CommandHandlerDeclaration, ICommandHandlerDeclarer } from '../../features/components';
@@ -29,6 +28,10 @@ import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 import { InternalError } from '../../../utils/internalError';
+import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
+
+let localize = nls.loadMessageBundle();
+registerGetLocalize(() => localize = nls.loadMessageBundle());
 
 @injectable()
 export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
@@ -94,7 +97,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
                     + ` 'hitCondition' (${actionWhenHit.hitCondition}) or 'logMessage' (${actionWhenHit.logMessage})`);
             }
         } else { // howManyDefined >= 2
-            throw new Error(localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
+            throw new LocalizedError('error.setBreakpoints.cantHaveTwoActions', localize('error.setBreakpoints.cantHaveTwoActions', "Expected a single one of 'condition' ({0}), 'hitCondition' ({1}) and 'logMessage' ({2}) to be defined, yet multiple were defined.", actionWhenHit.condition, actionWhenHit.hitCondition, actionWhenHit.logMessage));
         }
     }
 
