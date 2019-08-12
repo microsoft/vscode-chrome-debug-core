@@ -20,20 +20,36 @@ import { IScript } from '../../internal/scripts/script';
 import { IURL, IResourceIdentifier } from '../../internal/sources/resourceIdentifier';
 import { CDTPScriptUrl } from '../../internal/sources/resourceIdentifierSubtypes';
 import { URLRegexp } from '../../internal/locations/subtypes';
-import { MappableBreakpoint, ActualLocation } from '../../internal/breakpoints/breakpoint';
+import { MappableBreakpoint, ActualLocation, BreakpointInSource } from '../../internal/breakpoints/breakpoint';
 import { BPRecipeInScript, BPRecipeInUrl, BPRecipeInUrlRegexp, IBPRecipeForRuntimeSource } from '../../internal/breakpoints/baseMappedBPRecipe';
-import { ConditionalPause } from '../../internal/breakpoints/bpActionWhenHit';
+import { ConditionalPause, PauseOnHitCount } from '../../internal/breakpoints/bpActionWhenHit';
 import { singleElementOfArray } from '../../collections/utilities';
+import { BPRecipeInSource } from '../../internal/breakpoints/bpRecipeInSource';
 
 export enum Synchronicity {
     Sync,
     Async
 }
 
+export class BPRecipeInSourceWasResolved {
+    public constructor(
+        public readonly breakpoint: BreakpointInSource,
+        public readonly actualLocationInScript: LocationInScript,
+        public readonly resolutionSynchronicity: Synchronicity) { }
+
+    public withBPRecipe(hitCountBPRecipe: BPRecipeInSource<PauseOnHitCount>) {
+        return new BPRecipeInSourceWasResolved(this.breakpoint.withBPRecipe(hitCountBPRecipe), this.actualLocationInScript, this.resolutionSynchronicity);
+    }
+}
+
 export class BPRecipeWasResolved {
     public constructor(
         public readonly breakpoint: MappableBreakpoint<CDTPSupportedResources>,
         public readonly resolutionSynchronicity: Synchronicity) { }
+
+    public withBPRecipe(bpRecipe: BPRecipeInSource): BPRecipeInSourceWasResolved {
+        return new BPRecipeInSourceWasResolved(this.breakpoint.withBPRecipe(bpRecipe), this.breakpoint.actualLocation, this.resolutionSynchronicity);
+    }
 }
 
 export interface IEventsConsumer {

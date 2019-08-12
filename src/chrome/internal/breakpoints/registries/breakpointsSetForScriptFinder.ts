@@ -2,37 +2,31 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import * as _ from 'lodash';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
 import { LocationInScript } from '../../locations/location';
-import { CDTPBreakpoint } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { IScript } from '../../scripts/script';
-import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
-import { injectable, inject } from 'inversify';
-import { PrivateTypes } from '../diTypes';
-import { BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
-import * as _ from 'lodash';
+import { injectable } from 'inversify';
+import { BPRecipeInSourceWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import { BreakpointInSource } from '../breakpoint';
 
 /**
  * Find the list of breakpoints that we set for a particular script
  */
 @injectable()
 export class BreakpointsSetForScriptFinder {
-    private readonly _scriptToBreakpoints = ValidatedMultiMap.empty<IScript, CDTPBreakpoint>();
+    private readonly _scriptToBreakpointResolved = ValidatedMultiMap.empty<IScript, BPRecipeInSourceWasResolved>();
 
-    public constructor(@inject(PrivateTypes.IBreakpointsEventsListener) breakpointsEventsListener: IBreakpointsEventsListener) {
-        breakpointsEventsListener.listenForOnBPRecipeIsResolved(breakpoint => this.onBPRecipeIsResolved(breakpoint));
+    public bpRecipeIsResolved(bpRecipeWasResolved: BPRecipeInSourceWasResolved): void {
+        this._scriptToBreakpointResolved.add(bpRecipeWasResolved.actualLocationInScript.script, bpRecipeWasResolved);
     }
 
-    private onBPRecipeIsResolved(bpRecipeWasResolved: BPRecipeWasResolved): void {
-        this._scriptToBreakpoints.add(bpRecipeWasResolved.breakpoint.actualLocation.script, bpRecipeWasResolved.breakpoint);
-    }
-
-    public tryGettingBreakpointAtLocation(locationInScript: LocationInScript): CDTPBreakpoint[] {
-        const breakpoints = _.defaultTo(this._scriptToBreakpoints.tryGetting(locationInScript.script), new Set());
+    public tryGettingBreakpointAtLocation(locationInScript: LocationInScript): BreakpointInSource[] {
+        const breakpointsResolved = _.defaultTo(this._scriptToBreakpointResolved.tryGetting(locationInScript.script), new Set());
         const bpsAtLocation = [];
-        for (const bp of breakpoints) {
-            if (bp.actualLocation.isSameAs(locationInScript)) {
-                bpsAtLocation.push(bp);
+        for (const bpResolved of breakpointsResolved) {
+            if (bpResolved.actualLocationInScript.isSameAs(locationInScript)) {
+                bpsAtLocation.push(bpResolved.breakpoint);
             }
         }
 
@@ -40,6 +34,6 @@ export class BreakpointsSetForScriptFinder {
     }
 
     public toString(): string {
-        return `Breakpoints recipe status Registry:\nRecipe to breakpoints: ${this._scriptToBreakpoints}`;
+        return `Breakpoints recipe status Registry:\nRecipe to breakpoints: ${this._scriptToBreakpointResolved}`;
     }
 }

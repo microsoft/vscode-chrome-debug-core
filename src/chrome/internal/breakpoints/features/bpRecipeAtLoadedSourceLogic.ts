@@ -17,7 +17,6 @@ import { asyncMap } from '../../../collections/async';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { BaseNotifyClientOfPause, IActionToTakeWhenPaused, NoActionIsNeededForThisPause } from '../../features/actionToTakeWhenPaused';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
-import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
 import { Listeners } from '../../../communication/listeners';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
@@ -56,7 +55,6 @@ export class NoRecognizedBreakpoints extends NoActionIsNeededForThisPause {
 export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSetter {
     public readonly debuggeeBPRecipeAddedListeners = new Listeners<CDTPBPRecipe, void>();
     public readonly debuggeeBPRecipeRemovedListeners = new Listeners<CDTPBPRecipe, void>();
-    public readonly bpRecipeFailedToBindListeners = new Listeners<BPRecipeIsUnbound, void>();
     private _onPausedForBreakpointCallback: OnPausedForBreakpointCallback = defaultOnPausedForBreakpointCallback;
 
     public readonly withLogging = wrapWithMethodLogger(this);
@@ -93,39 +91,33 @@ export class BPRecipeAtLoadedSourceSetter implements IBPRecipeAtLoadedSourceSett
     }
 
     public async addBreakpointAtLoadedSource(bpRecipe: BPRecipeInLoadedSource<ConditionalPause | AlwaysPause>, eventsConsumer: IEventsConsumer): Promise<CDTPBreakpoint[]> {
-        try {
-            const manyBpInScriptRecipes = await this._sourceToScriptMapper.mapBPRecipe(bpRecipe);
+        const manyBpInScriptRecipes = await this._sourceToScriptMapper.mapBPRecipe(bpRecipe);
 
-            const breakpoints = _.flatten(await asyncMap(manyBpInScriptRecipes, async bpInScriptRecipe => {
-                const runtimeSource = bpInScriptRecipe.location.script.runtimeSource;
+        const breakpoints = _.flatten(await asyncMap(manyBpInScriptRecipes, async bpInScriptRecipe => {
+            const runtimeSource = bpInScriptRecipe.location.script.runtimeSource;
 
-                let breakpoints: CDTPBreakpoint[];
-                if (!runtimeSource.doesScriptHasUrl()) {
-                    breakpoints = [await this._targetBreakpoints.setBreakpoint(bpInScriptRecipe, eventsConsumer)];
-                } else {
-                    /**
-                     * If the script is a local file path, we *need* to transform it into an url to be able to set the breakpoint
-                     *
-                     * If the script has an URL and it's not a local file path, then we could actually leave it as-is.
-                     * We transform it into a regexp anyway to add a GUID to it, so CDTP will let us add the same breakpoint/recipe two times (using different guids).
-                     * That way we can always add the new breakpoints for a file, before removing the old ones (except if the script doesn't have an URL)
-                     */
-                    breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpInScriptRecipe.mappedToUrlRegexp(), eventsConsumer);
-                }
+            let breakpoints: CDTPBreakpoint[];
+            if (!runtimeSource.doesScriptHasUrl()) {
+                breakpoints = [await this._targetBreakpoints.setBreakpoint(bpInScriptRecipe, eventsConsumer)];
+            } else {
+                /**
+                 * If the script is a local file path, we *need* to transform it into an url to be able to set the breakpoint
+                 *
+                 * If the script has an URL and it's not a local file path, then we could actually leave it as-is.
+                 * We transform it into a regexp anyway to add a GUID to it, so CDTP will let us add the same breakpoint/recipe two times (using different guids).
+                 * That way we can always add the new breakpoints for a file, before removing the old ones (except if the script doesn't have an URL)
+                 */
+                breakpoints = await this._targetBreakpoints.setBreakpointByUrlRegexp(bpInScriptRecipe.mappedToUrlRegexp(), eventsConsumer);
+            }
 
-                for (const breakpoint of breakpoints) {
-                    // The onBreakpointResolvedSyncOrAsync handler will notify us that a breakpoint was bound, and send the status update to the client if neccesary
-                    await this.debuggeeBPRecipeAddedListeners.call(breakpoint.recipe);
-                }
+            for (const breakpoint of breakpoints) {
+                // The onBreakpointResolvedSyncOrAsync handler will notify us that a breakpoint was bound, and send the status update to the client if neccesary
+                await this.debuggeeBPRecipeAddedListeners.call(breakpoint.recipe);
+            }
 
-                return breakpoints;
-            }));
             return breakpoints;
-        }
-        catch (exception) {
-            this.bpRecipeFailedToBindListeners.call(new BPRecipeIsUnbound(bpRecipe.unmappedBPRecipe, exception)); // We publish it so the breakpoint itself will have this information in the tooltip
-            throw exception; // We throw the exceptio so the call that the client made will fail
-        }
+        }));
+        return breakpoints;
     }
 
     public async removeDebuggeeBPRs(clientBPRecipe: BPRecipe<ISource>): Promise<void> {

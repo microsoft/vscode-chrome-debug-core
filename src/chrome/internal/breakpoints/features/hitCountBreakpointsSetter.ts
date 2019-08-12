@@ -14,7 +14,8 @@ import { TYPES } from '../../../dependencyInjection.ts/types';
 import { PrivateTypes } from '../diTypes';
 import { IDebuggeeExecutionController } from '../../../cdtpDebuggee/features/cdtpDebugeeExecutionController';
 import { printClassDescription } from '../../../utils/printing';
-import { SingleBreakpointSetter, ISingleBreakpointSetter } from './singleBreakpointSetter';
+import { ISingleBreakpointSetter, BPRecipeInSourceWasResolvedCallback } from './singleBreakpointSetter';
+import { SingleBreakpointSetter } from './singleBreakpointSetter';
 import { IBPRecipeStatus, ImplementsBPRecipeStatus } from '../bpRecipeStatus';
 import { Listeners } from '../../../communication/listeners';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
@@ -111,14 +112,23 @@ export class HitCountBreakpointsSetter implements ISingleBreakpointSetter {
         this._singleBreakpointSetter.setOnPausedForBreakpointCallback(bpRecipes => this.onBreakpointHit(bpRecipes, onPausedForBreakpointCallback));
     }
 
+    public setBPRecipeWasResolvedCallback(callback: BPRecipeInSourceWasResolvedCallback): void {
+        this._singleBreakpointSetter.setBPRecipeWasResolvedCallback(bpRecipeWasResolved => {
+            const underlyingBPRecipe = bpRecipeWasResolved.breakpoint.recipe;
+            const hitCountBPRecipe = this.underlyingToBPRecipe.get(underlyingBPRecipe);
+            const hitCountBPRecipeWasResolved = bpRecipeWasResolved.withBPRecipe(hitCountBPRecipe);
+            callback(hitCountBPRecipeWasResolved);
+        });
+    }
+
     public async addBPRecipe(bpRecipe: HitCountBPRecipe): Promise<void> {
         const underlyingBPRecipe = bpRecipe.withAlwaysPause();
+
         this.bpRecipetoData.set(bpRecipe,
             new HitCountBreakpointData(bpRecipe, underlyingBPRecipe));
         this.underlyingToBPRecipe.set(underlyingBPRecipe, bpRecipe);
 
-        const resolvedUnderlyingBPRecipe = this.underlyingBPRecipe(bpRecipe);
-        return await this._singleBreakpointSetter.addBPRecipe(resolvedUnderlyingBPRecipe);
+        return await this._singleBreakpointSetter.addBPRecipe(underlyingBPRecipe);
     }
 
     public async removeBPRecipe(bpRecipe: HitCountBPRecipe): Promise<void> {
@@ -137,12 +147,6 @@ export class HitCountBreakpointsSetter implements ISingleBreakpointSetter {
             : new HitCountBreakpointWhenConditionWasNotSatisfied(this._debuggeeExecutionControl);
     }
 
-    public statusOfBPRecipe(bpRecipe: HitCountBPRecipe): IBPRecipeStatus {
-        const underlyingBPRecipe = this.bpRecipetoData.get(bpRecipe).underlyingBPRecipe;
-        const underlyingBPRecipeStatus = this._singleBreakpointSetter.statusOfBPRecipe(underlyingBPRecipe);
-        return new HitCountBPRecipeStatus(bpRecipe, underlyingBPRecipeStatus);
-    }
-
     private onUnderlyingBPRecipeStatusChange(statusChanged: BPRecipeStatusChanged): void {
         const bpRecipe = this.underlyingToBPRecipe.get(statusChanged.status.recipe);
         this.bpRecipeStatusChangedListeners.call(new BPRecipeStatusChanged(new HitCountBPRecipeStatus(bpRecipe, statusChanged.status),
@@ -155,10 +159,5 @@ export class HitCountBreakpointsSetter implements ISingleBreakpointSetter {
 
     public toString(): string {
         return `HitCountBreakpointsSetter: ${this.bpRecipetoData}`;
-    }
-
-    public async install(): Promise<this> {
-        await this._singleBreakpointSetter.install();
-        return this;
     }
 }

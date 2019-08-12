@@ -3,8 +3,8 @@ import { inject, injectable } from 'inversify';
 import { PrivateTypes } from '../diTypes';
 import { Listeners } from '../../../communication/listeners';
 import { BPRecipeInSource } from '../bpRecipeInSource';
-import { IBPRecipeStatus } from '../bpRecipeStatus';
-import { ISingleBreakpointSetter, SingleBreakpointSetter } from './singleBreakpointSetter';
+import { ISingleBreakpointSetter, BPRecipeInSourceWasResolvedCallback } from './singleBreakpointSetter';
+import { SingleBreakpointSetter } from './singleBreakpointSetter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import { OnPausedForBreakpointCallback } from './onPausedForBreakpointCallback';
 
@@ -24,22 +24,17 @@ export class SingleBreakpointSetterWithHitCountSupport implements ISingleBreakpo
         this._hitCountBreakpointsSetter.setOnPausedForBreakpointCallback(onPausedForBreakpointCallback);
     }
 
+    public setBPRecipeWasResolvedCallback(callback: BPRecipeInSourceWasResolvedCallback): void {
+        this._singleBreakpointSetter.setBPRecipeWasResolvedCallback(callback);
+        this._hitCountBreakpointsSetter.setBPRecipeWasResolvedCallback(callback);
+    }
+
     public async addBPRecipe(requestedBP: BPRecipeInSource): Promise<void> {
         await this.getSetterForBPRecipe(requestedBP).addBPRecipe(requestedBP);
     }
 
     public async removeBPRecipe(bpRecipeToRemove: BPRecipeInSource): Promise<void> {
         await this.getSetterForBPRecipe(bpRecipeToRemove).removeBPRecipe(bpRecipeToRemove);
-    }
-
-    public statusOfBPRecipe(bpRecipe: BPRecipeInSource): IBPRecipeStatus {
-        return this.getSetterForBPRecipe(bpRecipe).statusOfBPRecipe(bpRecipe);
-    }
-
-    public async install(): Promise<this> {
-        await this._singleBreakpointSetter.install();
-        await this._hitCountBreakpointsSetter.install();
-        return this;
     }
 
     public toString(): string {

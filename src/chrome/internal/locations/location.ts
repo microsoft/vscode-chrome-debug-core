@@ -71,7 +71,7 @@ export class Position implements IEquivalenceComparable {
     }
 
     public toString(): string {
-        return localize('position.description', '{0}:{1}', this.lineNumber, this.columnNumber);
+        return localize('position.description', '{0}:{1}', this.lineNumber + 1, this.columnNumber + 1);
     }
 }
 
