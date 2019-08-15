@@ -17,7 +17,7 @@ import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { ChromeDebugLogic } from '../chromeDebugAdapter';
 import { ComponentCustomizationCallback } from './di';
 import { MethodsCalledLogger, MethodsCalledLoggerConfiguration } from '../logging/methodsCalledLogger';
-import { printTopLevelObjectDescription } from '../logging/printObjectDescription';
+import { printTopLevelObjectDescription, printObjectDescription } from '../logging/printObjectDescription';
 import { SkipFilesLogic } from '../internal/features/skipFiles';
 import { ToggleSkipFileStatusRequestHandler } from '../internal/features/toggleSkipFileStatusRequestHandler';
 import { SourceRequestHandler } from '../internal/sources/sourceRequestHandler';
@@ -113,7 +113,7 @@ export function createWrapWithLoggerActivator<T extends object>(configuration: M
         if (objectWithLogging === possibleOverwrittenComponent) {
             return objectWithLogging;
         } else {
-            logger.log(`Dependency Injection component customization: for interface ${serviceIdentifier.toString()} replaced ${objectWithLogging} with ${possibleOverwrittenComponent}`);
+            logger.log(`Dependency Injection component customization: for interface ${serviceIdentifier.toString()} replaced ${objectWithLogging} with ${printObjectDescription(possibleOverwrittenComponent)}`);
             return <T>wrapWithLogging(configuration, possibleOverwrittenComponent, `${configuration.containerName}.${getName<T>(serviceIdentifier)}_Override`);
         }
     };
