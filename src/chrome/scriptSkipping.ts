@@ -102,10 +102,13 @@ export class ScriptSkipper {
                 if ((isSkippedFile && !inLibRange) || (!isSkippedFile && inLibRange)) {
                     const details = await this._transformers.sourceMapTransformer.allSourcePathDetails(mappedUrl);
                     const detail = details.find(d => d.inferredPath === s);
-                    libPositions.push({
-                        lineNumber: detail.startPosition.line,
-                        columnNumber: detail.startPosition.column
-                    });
+                    if (detail.startPosition) {
+                        libPositions.push({
+                            lineNumber: detail.startPosition.line,
+                            columnNumber: detail.startPosition.column
+                        });
+                    }
+
                     inLibRange = !inLibRange;
                 }
             }
