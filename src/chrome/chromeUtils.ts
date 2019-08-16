@@ -12,6 +12,8 @@ import { ITarget } from './chromeConnection';
 import { IPathMapping } from '../debugAdapterInterfaces';
 import { pathToRegex } from '../utils';
 import { isInternalRemotePath } from '../remoteMapper';
+import { Socket } from 'net';
+import * as errors from '../errors';
 
 /**
  * Takes the path component of a target url (starting with '/') and applies pathMapping
@@ -311,4 +313,49 @@ export function getUrlRegexForBreakOnLoad(url: string): string {
     const fileNameWithoutExtension = path.parse(fileNameWithoutFullPath).name;
     const escapedFileName = pathToRegex(fileNameWithoutExtension);
     return '.*[\\\\\\/]' + escapedFileName + '([^A-z^0-9].*)?$';
+}
+
+/**
+ * Checks if a given tcp port is currently in use (more accurately, is there a server socket accepting connections on that port)
+ * @param port The port to check
+ * @param host Optional host, defaults to 127.0.0.1
+ * @param timeout Timeout for the socket connect attempt
+ * @returns True if a server socket is listening on the given port, false otherwise
+ */
+export async function isPortInUse(port: number, host = '127.0.0.1', timeout = 400): Promise<boolean> {
+    // Basically just create a socket and try to connect on that port, if we can connect, it's open
+    return new Promise<boolean>((resolve, _reject) => {
+        const socket = new Socket();
+        function createCallback(inUse: boolean) {
+            return () => {
+                resolve(inUse);
+                socket.removeAllListeners();
+                socket.destroy();
+            };
+        }
+
+        socket.setTimeout(timeout);
+        socket.on('connect', createCallback(true));
+        socket.on('timeout', createCallback(false));
+        socket.on('error', createCallback(false));
+        socket.connect(port, host);
+    });
+}
+
+/**
+ * Get the port on which chrome was launched when passed "--remote-debugging-port=0"
+ * @param userDataDir The profile data directory for the Chrome instance to check
+ * @throws If reading the port failed for any reason
+ */
+export async function getLaunchedPort(userDataDir: string): Promise<number> {
+    const activePortFilePath = path.join(userDataDir, 'DevToolsActivePort');
+    try {
+        const activePortArgs = await utils.readFileP(activePortFilePath, 'utf-8');
+        const [ portStr ] = activePortArgs.split('\n'); // chrome uses \n regardless of platform in this file
+        const port = parseInt(portStr, 10);
+        if (isNaN(port)) return Promise.reject(errors.activePortFileContentsInvalid(activePortFilePath, activePortArgs));
+        return port;
+    } catch (err) {
+        return Promise.reject(errors.failedToReadPortFromUserDataDir(userDataDir, err));
+    }
 }

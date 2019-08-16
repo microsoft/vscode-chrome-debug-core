@@ -107,7 +107,8 @@ export function pathResolve(...segments: string[]): string {
 }
 
 export function registerMockReadFile(...entries: { absPath: string; data: string }[]): void {
-    const fsMock = Mock.ofInstance(fs, MockBehavior.Strict);
+    const fsMock = Mock.ofInstance(fs, MockBehavior.Loose);
+    fsMock.callBase = true; // use real fs if we didn't mock the call
     mockery.registerMock('fs', fsMock.object);
 
     entries.forEach(entry => {
