@@ -14,11 +14,13 @@ import { IDebuggeeRuntimeVersionProvider } from '../../../cdtpDebuggee/features/
 import { PausedEvent } from '../../../cdtpDebuggee/eventsProviders/cdtpDebuggeeExecutionEventsProvider';
 import { wrapWithMethodLogger } from '../../../logging/methodsCalledLogger';
 import { IDebuggeePausedHandler } from '../../features/debuggeePausedHandler';
-import { injectable, inject } from 'inversify';
+import { injectable, inject, multiInject } from 'inversify';
 import { TYPES } from '../../../dependencyInjection.ts/types';
 import { printClassDescription } from '../../../utils/printing';
 import { PrivateTypes } from '../diTypes';
 import { DoNotLog } from '../../../logging/decorators';
+import { BPRecipeInSourceWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import { asyncMap } from '../../../collections/async';
 
 @printClassDescription
 export class HitStillPendingBreakpoint extends BaseNotifyClientOfPause {
@@ -61,10 +63,14 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
         @inject(TYPES.IDebuggeeExecutionController) private readonly _debugeeExecutionControl: IDebuggeeExecutionController,
         @inject(TYPES.IEventsToClientReporter) private readonly _eventsToClientReporter: IEventsToClientReporter,
         @inject(TYPES.IDebuggeeRuntimeVersionProvider) private readonly _debugeeVersionProvider: IDebuggeeRuntimeVersionProvider,
-        @inject(PrivateTypes.ExistingBPsForJustParsedScriptSetter) private readonly _existingBPsForJustParsedScriptSetter: ExistingBPsForJustParsedScriptSetter,
-        @inject(PrivateTypes.BreakpointsSetForScriptFinder) private readonly _breakpointsRegistry: BreakpointsSetForScriptFinder,
+        @multiInject(PrivateTypes.ExistingBPsForJustParsedScriptSetter) private readonly _existingBPsForJustParsedScriptSetters: ExistingBPsForJustParsedScriptSetter[],
+        @inject(PrivateTypes.BreakpointsSetForScriptFinder) private readonly _breakpointsSetForScriptFinder: BreakpointsSetForScriptFinder,
     ) {
         this._debuggeePausedHandler.registerActionProvider(paused => this.withLogging.onProvideActionForWhenPaused(paused));
+    }
+
+    public bpRecipeIsResolved(bpRecipeWasResolved: BPRecipeInSourceWasResolved): void {
+        this._breakpointsSetForScriptFinder.bpRecipeIsResolved(bpRecipeWasResolved);
     }
 
     public async enableIfNeccesary(): Promise<WhenWasEnabled> {
@@ -86,12 +92,12 @@ export class PauseScriptLoadsToSetBPs implements IInstallableComponent {
     @DoNotLog()
     private async onProvideActionForWhenPaused(paused: PausedEvent): Promise<IActionToTakeWhenPaused> {
         if (this.isInstrumentationPause(paused)) {
-            await this._existingBPsForJustParsedScriptSetter.waitUntilBPsAreSet(paused.callFrames[0].location.script);
+            await asyncMap(this._existingBPsForJustParsedScriptSetters, setter => setter.waitUntilBPsAreSet(paused.callFrames[0].location.script));
 
             // If we pause before starting the script, we can just resume, and we'll a breakpoint if it's on 0,0
             if (!this._scriptFirstStatementStopsBeforeFile) {
                 // On Chrome 69 we pause inside the script, so we need to check if there is a breakpoint at 0,0 that we need to use
-                const breakpoints = this._breakpointsRegistry.tryGettingBreakpointAtLocation(paused.callFrames[0].location);
+                const breakpoints = this._breakpointsSetForScriptFinder.tryGettingBreakpointAtLocation(paused.callFrames[0].location);
                 if (breakpoints.length > 0) {
                     return new HitStillPendingBreakpoint(this._eventsToClientReporter);
                 }

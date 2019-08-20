@@ -7,6 +7,7 @@ export const PrivateTypes = {
     SingleBreakpointSetterWithHitCountSupport: Symbol.for('SingleBreakpointSetterWithHitCountSupport'),
     CurrentBPRecipesForSourceRegistry: Symbol.for('CurrentBPRecipesForSourceRegistry'),
     CurrentBPRecipeStatusRetriever: Symbol.for('CurrentBPRecipeStatusRetriever'),
+    IBreakpointsUpdater: Symbol.for('IBreakpointsUpdater'),
     BPRecipeStatusCalculator: Symbol.for('BPRecipeStatusCalculator'),
     PauseScriptLoadsToSetBPs: Symbol.for('PauseScriptLoadsToSetBPs'),
     ExistingBPsForJustParsedScriptSetter: Symbol.for('ExistingBPsForJustParsedScriptSetter'),

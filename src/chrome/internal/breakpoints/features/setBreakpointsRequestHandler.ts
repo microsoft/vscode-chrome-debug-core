@@ -29,6 +29,7 @@ import { isDefined, isNotEmpty } from '../../../utils/typedOperators';
 import { ISourceToClientConverter } from '../../../client/sourceToClientConverter';
 import { InternalError } from '../../../utils/internalError';
 import { LocalizedError, registerGetLocalize } from '../../../utils/localization';
+import { PrivateTypes } from '../diTypes';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -41,7 +42,7 @@ export class SetBreakpointsRequestHandler implements ICommandHandlerDeclarer {
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._sourceToClientConverter, this._lineColTransformer);
 
     public constructor(
-        @inject(TYPES.IBreakpointsUpdater) protected readonly _breakpointsLogic: BreakpointsUpdater,
+        @inject(PrivateTypes.IBreakpointsUpdater) protected readonly _breakpointsLogic: BreakpointsUpdater,
         private readonly _handlesRegistry: HandlesRegistry,
         @inject(TYPES.LineColTransformer) private readonly _lineColTransformer: LineColTransformer,
         @inject(TYPES.SourceToClientConverter) private readonly _sourceToClientConverter: ISourceToClientConverter,

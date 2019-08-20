@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-type Callback<Args, Result> = (args: Args) => Result;
+export type Callback<Args, Result> = (args: Args) => Result;
 
 /**
  * This class is used to manage and call a set of listeners, such as the listeners to onScriptParsed
@@ -20,5 +20,9 @@ export class Listeners<Args, Result> {
 
     public hasListeners(): boolean {
         return this._listeners.length > 0;
+    }
+
+    public toString(): string {
+        return `#Listeners = ${this._listeners.length}`;
     }
 }

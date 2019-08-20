@@ -14,6 +14,8 @@ import { IBPRecipeForRuntimeSource } from './baseMappedBPRecipe';
 import { BPRecipeInSource } from './bpRecipeInSource';
 import { IBPRecipe, BPInScriptSupportedHitActions } from './bpRecipe';
 import { registerGetLocalize } from '../../utils/localization';
+import { InternalError } from '../../utils/internalError';
+import { PauseOnHitCount } from './bpActionWhenHit';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -47,6 +49,17 @@ export class MappableBreakpoint<TResource extends MappableBPPossibleResources> e
         super();
     }
 
+    public withBPRecipe(bpRecipe: BPRecipeInSource): BreakpointInSource {
+        const locationInSource = this.actualLocation.mappedToSource();
+        if (locationInSource.resourceIdentifier.isEquivalentTo(bpRecipe.location.resourceIdentifier) &&
+              locationInSource.position.isEquivalentTo(bpRecipe.location.position)) {
+            return new BreakpointInSource(bpRecipe, locationInSource);
+        } else {
+            throw new InternalError('error.breakpoint.mismatchedLocation',
+                `Can't re-create the breakpoint with a recipe located in a different place. Original location: ${this.recipe.location}. Replacement: ${bpRecipe.location}`);
+        }
+    }
+
     public mappedToSource(): BreakpointInSource {
         return new BreakpointInSource(this.recipe.unmappedBPRecipe, this.actualLocation.mappedToSource());
     }
@@ -59,5 +72,15 @@ export class BreakpointInUrl extends MappableBreakpoint<IURL<CDTPScriptUrl>> { }
 export class BreakpointInSource extends BaseBreakpoint<ISource> {
     constructor(public readonly recipe: BPRecipeInSource, public readonly actualLocation: ActualLocation<ISource>) {
         super();
+    }
+
+    public withBPRecipe(bpRecipe: BPRecipeInSource<PauseOnHitCount>): BreakpointInSource {
+        if (this.recipe.location.resourceIdentifier.isEquivalentTo(bpRecipe.location.resourceIdentifier) &&
+            this.recipe.location.position.isEquivalentTo(bpRecipe.location.position)) {
+            return new BreakpointInSource(bpRecipe, this.actualLocation);
+        } else {
+            throw new InternalError('error.breakpoint.source.mismatchedLocation',
+                `Can't re-create the breakpoint with a recipe located in a different place. Original location: ${this.recipe.location}. Replacement: ${bpRecipe.location}`);
+        }
     }
 }

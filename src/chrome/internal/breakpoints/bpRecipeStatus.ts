@@ -99,7 +99,7 @@ export class BPRecipeHasOnlyUnboundSubstatuses implements IBPRecipeStatus {
     }
 
     public isVerified(): boolean {
-        return true;
+        return false;
     }
 
     public get statusDescription(): string {

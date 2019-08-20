@@ -29,7 +29,6 @@ const TYPES = {
     ClientToInternal: Symbol.for('ClientToInternal'),
     InternalToClient: Symbol.for('InternalToClient'),
     StackTracesLogic: Symbol.for('StackTracesLogic'),
-    IBreakpointsUpdater: Symbol.for('IBreakpointsUpdater'),
     PauseOnExceptionOrRejection: Symbol.for('PauseOnExceptionOrRejection'),
     Stepping: Symbol.for('Stepping'),
     DotScriptCommand: Symbol.for('DotScriptCommand'),

@@ -7,13 +7,11 @@ import { LocationInLoadedSource } from '../../locations/location';
 import { ValidatedMap, IValidatedMap } from '../../../collections/validatedMap';
 import { BPRecipeInSource } from '../bpRecipeInSource';
 import { BPRecipeIsUnbound, BPRecipeIsBoundInRuntimeLocation } from '../bpRecipeStatusForRuntimeLocation';
-import { IBreakpointsEventsListener } from '../features/breakpointsEventSystem';
 import { printMap } from '../../../collections/printing';
 import { ValidatedMultiMap } from '../../../collections/validatedMultiMap';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import { Listeners } from '../../../communication/listeners';
-import { PrivateTypes } from '../diTypes';
-import { BPRecipeWasResolved, Synchronicity } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
+import { Synchronicity, BPRecipeInSourceWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 
 export class BPRecipeStatusChanged {
     public constructor(public readonly status: IBPRecipeStatus, public readonly changeSynchronicity: Synchronicity) { }
@@ -33,14 +31,6 @@ export class BPRecipeStatusCalculator {
     private readonly _recipeToStatusAtLocation = new ValidatedMap<BPRecipeInSource, IValidatedMap<LocationInLoadedSource, BPRecipeIsBoundInRuntimeLocation>>();
     private readonly _recipeToUnboundStatus = ValidatedMultiMap.empty<BPRecipeInSource, BPRecipeIsUnbound>();
 
-    public constructor(
-        @inject(PrivateTypes.IBreakpointsEventsListener) breakpointsEventsListener: IBreakpointsEventsListener) {
-        breakpointsEventsListener.listenForOnClientBPRecipeAdded(clientBPRecipe => this.onClientBPRecipeAdded(clientBPRecipe));
-        breakpointsEventsListener.listenForOnClientBPRecipeRemoved(clientBPRecipe => this.onClientBPRecipeRemoved(clientBPRecipe));
-        breakpointsEventsListener.listenForOnBPRecipeIsResolved(bpRecipeWasResolved => this.onBPRecipeIsResolved(bpRecipeWasResolved));
-        breakpointsEventsListener.listenForOnBPRecipeFailedToBind(bpRecipeIsUnbound => this.onBPRecipeFailedToBind(bpRecipeIsUnbound));
-    }
-
     public statusOfBPRecipe(bpRecipe: BPRecipeInSource): IBPRecipeStatus {
         const boundSubstatuses = Array.from(this._recipeToStatusAtLocation.get(bpRecipe).values());
         const unboundSubstatuses = Array.from(this._recipeToUnboundStatus.get(bpRecipe));
@@ -48,28 +38,28 @@ export class BPRecipeStatusCalculator {
         return createBPRecipieStatus(bpRecipe, boundSubstatuses, unboundSubstatuses);
     }
 
-    private onClientBPRecipeAdded(bpRecipe: BPRecipeInSource): void {
+    public clientBPRecipeIsBeingAdded(bpRecipe: BPRecipeInSource): void {
         this._recipeToStatusAtLocation.set(bpRecipe, new ValidatedMap<LocationInLoadedSource, BPRecipeIsBoundInRuntimeLocation>());
         this._recipeToUnboundStatus.addKeyIfNotExistant(bpRecipe);
     }
 
-    private onBPRecipeIsResolved(bpRecipeWasResolved: BPRecipeWasResolved): void {
-        const bpRecipe = bpRecipeWasResolved.breakpoint.recipe.unmappedBPRecipe;
-        const locationInRuntimeSource = bpRecipeWasResolved.breakpoint.actualLocation.mappedToRuntimeSource();
+    public clientBPRecipeWasRemoved(bpRecipe: BPRecipeInSource): void {
+        this._recipeToStatusAtLocation.delete(bpRecipe);
+        this._recipeToUnboundStatus.delete(bpRecipe);
+    }
+
+    public bpRecipeIsResolved(bpRecipeWasResolved: BPRecipeInSourceWasResolved): void {
+        const bpRecipe = bpRecipeWasResolved.breakpoint.recipe;
+        const locationInRuntimeSource = bpRecipeWasResolved.breakpoint.actualLocation;
         const runtimeSourceToBPRStatus = this._recipeToStatusAtLocation.get(bpRecipe);
         runtimeSourceToBPRStatus.set(locationInRuntimeSource, new BPRecipeIsBoundInRuntimeLocation(bpRecipe, locationInRuntimeSource,
-            [bpRecipeWasResolved.breakpoint.mappedToSource()]));
+            [bpRecipeWasResolved.breakpoint]));
         this.bpRecipeStatusChangedListeners.call(new BPRecipeStatusChanged(this.statusOfBPRecipe(bpRecipe), bpRecipeWasResolved.resolutionSynchronicity));
     }
 
-    private onBPRecipeFailedToBind(bpRecipeIsUnbound: BPRecipeIsUnbound): void {
+    public bpRecipeFailedToBind(bpRecipeIsUnbound: BPRecipeIsUnbound): void {
         this._recipeToUnboundStatus.add(bpRecipeIsUnbound.recipe, bpRecipeIsUnbound);
         this.bpRecipeStatusChangedListeners.call(new BPRecipeStatusChanged(this.statusOfBPRecipe(bpRecipeIsUnbound.recipe), Synchronicity.Sync));
-    }
-
-    private onClientBPRecipeRemoved(bpRecipe: BPRecipeInSource): void {
-        this._recipeToStatusAtLocation.delete(bpRecipe);
-        this._recipeToUnboundStatus.delete(bpRecipe);
     }
 
     public toString(): string {

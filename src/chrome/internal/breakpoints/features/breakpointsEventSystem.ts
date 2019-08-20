@@ -1,10 +1,8 @@
 import { CDTPBPRecipe } from '../../../cdtpDebuggee/cdtpPrimitives';
 import { BPRecipeInSource } from '../bpRecipeInSource';
-import { BPRecipeIsUnbound } from '../bpRecipeStatusForRuntimeLocation';
 import { injectable } from 'inversify';
 import { BPRecipeAtLoadedSourceSetter } from './bpRecipeAtLoadedSourceLogic';
 import { SingleBreakpointSetter } from './singleBreakpointSetter';
-import { BPRecipeWasResolved } from '../../../cdtpDebuggee/features/cdtpDebuggeeBreakpointsSetter';
 import { BPRecipeStatusChanged } from '../registries/bpRecipeStatusCalculator';
 import * as _ from 'lodash';
 
@@ -13,8 +11,6 @@ export interface IBreakpointsEventsListener {
     listenForOnClientBPRecipeRemoved(listener: (bpRecipie: BPRecipeInSource) => void): void;
     listenForOnDebuggeeBPRecipeAdded(listener: (bpRecipie: CDTPBPRecipe) => void): void;
     listenForOnDebuggeeBPRecipeRemoved(listener: (bpRecipie: CDTPBPRecipe) => void): void;
-    listenForOnBPRecipeIsResolved(listener: (bpRecipeWasResolved: BPRecipeWasResolved) => void): void;
-    listenForOnBPRecipeFailedToBind(listener: (bpRecipieIsUnbound: BPRecipeIsUnbound) => void): void;
 }
 
 /**
@@ -50,18 +46,6 @@ export class BreakpointsEventSystem implements IBreakpointsEventsListener {
     public listenForOnDebuggeeBPRecipeRemoved(listener: (bpRecipie: CDTPBPRecipe) => void): void {
         this.schedule(() => {
             this._bpRecipeAtLoadedSourceSetter!.debuggeeBPRecipeRemovedListeners.add(listener);
-        });
-    }
-
-    public listenForOnBPRecipeIsResolved(listener: (bpRecipeWasResolved: BPRecipeWasResolved) => void): void {
-        this.schedule(() => {
-            this._singleBreakpointSetter!.bpRecipeIsResolvedListeners.add(listener);
-        });
-    }
-
-    public listenForOnBPRecipeFailedToBind(listener: (bpRecipieIsUnbound: BPRecipeIsUnbound) => void): void {
-        this.schedule(() => {
-            this._bpRecipeAtLoadedSourceSetter!.bpRecipeFailedToBindListeners.add(listener);
         });
     }
 
