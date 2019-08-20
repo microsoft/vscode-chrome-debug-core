@@ -37,8 +37,8 @@ export class BPRecipeInSourceWasResolved {
         public readonly actualLocationInScript: LocationInScript,
         public readonly resolutionSynchronicity: Synchronicity) { }
 
-    public withBPRecipe(hitCountBPRecipe: BPRecipeInSource<PauseOnHitCount>) {
-        return new BPRecipeInSourceWasResolved(this.breakpoint.withBPRecipe(hitCountBPRecipe), this.actualLocationInScript, this.resolutionSynchronicity);
+    public copyReplacingBPRecipe(hitCountBPRecipe: BPRecipeInSource<PauseOnHitCount>) {
+        return new BPRecipeInSourceWasResolved(this.breakpoint.copyReplacingBPRecipe(hitCountBPRecipe), this.actualLocationInScript, this.resolutionSynchronicity);
     }
 }
 
@@ -47,8 +47,8 @@ export class BPRecipeWasResolved {
         public readonly breakpoint: MappableBreakpoint<CDTPSupportedResources>,
         public readonly resolutionSynchronicity: Synchronicity) { }
 
-    public withBPRecipe(bpRecipe: BPRecipeInSource): BPRecipeInSourceWasResolved {
-        return new BPRecipeInSourceWasResolved(this.breakpoint.withBPRecipe(bpRecipe), this.breakpoint.actualLocation, this.resolutionSynchronicity);
+    public copyReplacingBPRecipe(bpRecipe: BPRecipeInSource): BPRecipeInSourceWasResolved {
+        return new BPRecipeInSourceWasResolved(this.breakpoint.copyReplacingBPRecipe(bpRecipe), this.breakpoint.actualLocation, this.resolutionSynchronicity);
     }
 }
 

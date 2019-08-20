@@ -49,7 +49,7 @@ export class MappableBreakpoint<TResource extends MappableBPPossibleResources> e
         super();
     }
 
-    public withBPRecipe(bpRecipe: BPRecipeInSource): BreakpointInSource {
+    public copyReplacingBPRecipe(bpRecipe: BPRecipeInSource): BreakpointInSource {
         const locationInSource = this.actualLocation.mappedToSource();
         if (locationInSource.resourceIdentifier.isEquivalentTo(bpRecipe.location.resourceIdentifier) &&
               locationInSource.position.isEquivalentTo(bpRecipe.location.position)) {
@@ -74,7 +74,7 @@ export class BreakpointInSource extends BaseBreakpoint<ISource> {
         super();
     }
 
-    public withBPRecipe(bpRecipe: BPRecipeInSource<PauseOnHitCount>): BreakpointInSource {
+    public copyReplacingBPRecipe(bpRecipe: BPRecipeInSource<PauseOnHitCount>): BreakpointInSource {
         if (this.recipe.location.resourceIdentifier.isEquivalentTo(bpRecipe.location.resourceIdentifier) &&
             this.recipe.location.position.isEquivalentTo(bpRecipe.location.position)) {
             return new BreakpointInSource(bpRecipe, this.actualLocation);
