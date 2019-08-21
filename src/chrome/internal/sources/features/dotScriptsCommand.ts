@@ -12,6 +12,7 @@ import { CDTPScriptsRegistry } from '../../../cdtpDebuggee/registries/cdtpScript
 import { IScriptSourcesRetriever } from '../../../cdtpDebuggee/features/cdtpScriptSourcesRetriever';
 import { parseResourceIdentifier } from '../resourceIdentifier';
 import { isNotEmpty } from '../../../utils/typedOperators';
+import { SourceContents } from '../sourceContents';
 
 @injectable()
 export class DotScriptCommand {
@@ -25,29 +26,21 @@ export class DotScriptCommand {
      * Handle the .scripts command, which can be used as `.scripts` to return a list of all script details,
      * or `.scripts <url>` to show the contents of the given script.
      */
-    public handleScriptsCommand(scriptsRest: string): Promise<void> {
-        let outputStringP: Promise<string>;
+    public async handleScriptsCommand(scriptsRest: string): Promise<void> {
+        let outputStringP: SourceContents;
         if (isNotEmpty(scriptsRest)) {
             // `.scripts <url>` was used, look up the script by url
             const requestedScript = this._scriptsRegistry.getScriptsByPath(parseResourceIdentifier(scriptsRest));
             if (requestedScript.length > 0) {
-                outputStringP = this._scriptSources.getScriptSource(requestedScript[0])
-                    .then(result => {
-                        const maxLength = 1e5;
-                        return result.length > maxLength ?
-                            result.substr(0, maxLength) + '[⋯]' :
-                            result;
-                    });
+                outputStringP = (await this._scriptSources.getScriptSource(requestedScript[0])).truncated();
             } else {
-                outputStringP = Promise.resolve(`No runtime script with url: ${scriptsRest}\n`);
+                outputStringP =  SourceContents.nonCustomerContent(`No runtime script with url: ${scriptsRest}\n`);
             }
         } else {
-            outputStringP = this.getAllScriptsString();
+            outputStringP = SourceContents.nonCustomerContent(await this.getAllScriptsString());
         }
 
-        return outputStringP.then(scriptsStr => {
-            this._eventsToClientReporter.sendOutput({ output: scriptsStr, category: 'stdout' });
-        });
+        this._eventsToClientReporter.sendCustomerContentOutput({ output: await outputStringP.contents, category: 'stdout' });
     }
 
     private async getAllScriptsString(): Promise<string> {

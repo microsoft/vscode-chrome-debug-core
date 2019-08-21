@@ -23,12 +23,18 @@ import { ConnectedCDAConfiguration } from './chromeDebugAdapter/cdaConfiguration
 import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { isDefined } from '../utils/typedOperators';
 import { DoNotLog } from '../logging/decorators';
+import { PossiblyCustomerContent } from '../logging/gdpr';
 
 export interface IOutputParameters {
     readonly output: string;
     readonly category: string;
     readonly variablesReference?: number;
     readonly location?: LocationInLoadedSource;
+}
+
+interface ICustomerContentOutputParameters {
+    readonly output: PossiblyCustomerContent<string>;
+    readonly category: string;
 }
 
 export interface ISourceWasLoadedParameters {
@@ -54,6 +60,7 @@ export interface IDebuggeeIsStoppedParameters {
 
 export interface IEventsToClientReporter {
     sendOutput(params: IOutputParameters): void;
+    sendCustomerContentOutput(params: ICustomerContentOutputParameters): void;
     sendSourceWasLoaded(params: ISourceWasLoadedParameters): Promise<void>;
     sendBPStatusChanged(params: IBPStatusChangedParameters): Promise<void>;
     sendExceptionThrown(params: IExceptionThrownParameters): Promise<void>;
@@ -90,6 +97,12 @@ export class EventsToClientReporter implements IEventsToClientReporter {
             await this._locationInSourceToClientConverter.toLocationInSource(params.location, event.body);
         }
 
+        this._session.sendEvent(event);
+    }
+
+    @DoNotLog()
+    public sendCustomerContentOutput(params: ICustomerContentOutputParameters): void {
+        const event = new OutputEvent(params.output.customerContentData, params.category) as DebugProtocol.OutputEvent;
         this._session.sendEvent(event);
     }
 

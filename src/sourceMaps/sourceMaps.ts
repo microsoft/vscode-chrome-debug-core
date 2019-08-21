@@ -10,6 +10,7 @@ import { createLineNumber, createColumnNumber } from '../chrome/internal/locatio
 import { parseResourceIdentifier, IResourceIdentifier, newResourceIdentifierMap } from '../chrome/internal/sources/resourceIdentifier';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { isNotNull } from '../chrome/utils/typedOperators';
+import { SourceMapUrl } from './sourceMapUrl';
 
 export class SourceMaps {
     // Maps absolute paths to generated/authored source files to their corresponding SourceMap object
@@ -75,7 +76,7 @@ export class SourceMaps {
     /**
      * Given a new path to a new script file, finds and loads the sourcemap for that file
      */
-    public async processNewSourceMap(pathToGenerated: string, sourceMapURL: string, isVSClient = false): Promise<SourceMap | null> {
+    public async processNewSourceMap(pathToGenerated: string, sourceMapURL: SourceMapUrl, isVSClient = false): Promise<SourceMap | null> {
         const pathToGeneratedIdentifier = parseResourceIdentifier(pathToGenerated);
         const maybeSourceMap = this._generatedPathToSourceMap.tryGetting(pathToGeneratedIdentifier);
 

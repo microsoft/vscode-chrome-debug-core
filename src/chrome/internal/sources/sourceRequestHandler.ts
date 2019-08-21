@@ -17,6 +17,7 @@ import { SourceResolver } from './sourceResolver';
 import { isDefined } from '../../utils/typedOperators';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { InternalError } from '../../utils/internalError';
+import { DoNotLog } from '../../logging/decorators';
 
 @injectable()
 export class SourceRequestHandler implements ICommandHandlerDeclarer {
@@ -39,12 +40,13 @@ export class SourceRequestHandler implements ICommandHandlerDeclarer {
         return { sources: await asyncMap(await this._sourcesRetriever.loadedSourcesTrees(), st => this.toSourceTree(st)) };
     }
 
+    @DoNotLog()
     public async source(args: DebugProtocol.SourceArguments, _telemetryPropertyCollector?: ITelemetryPropertyCollector, _requestSeq?: number): Promise<ISourceResponseBody> {
         if (isDefined(args.source)) {
             const source = this._clientSourceParser.toSource(args.source);
             const sourceText = await this._sourcesRetriever.text(source);
             return {
-                content: sourceText,
+                content: sourceText.customerContentData,
                 mimeType: 'text/javascript'
             };
         } else {
