@@ -116,7 +116,7 @@ export class HitCountBreakpointsSetter implements ISingleBreakpointSetter {
         this._singleBreakpointSetter.setBPRecipeWasResolvedCallback(bpRecipeWasResolved => {
             const underlyingBPRecipe = bpRecipeWasResolved.breakpoint.recipe;
             const hitCountBPRecipe = this.underlyingToBPRecipe.get(underlyingBPRecipe);
-            const hitCountBPRecipeWasResolved = bpRecipeWasResolved.withBPRecipe(hitCountBPRecipe);
+            const hitCountBPRecipeWasResolved = bpRecipeWasResolved.copyReplacingBPRecipe(hitCountBPRecipe);
             callback(hitCountBPRecipeWasResolved);
         });
     }
