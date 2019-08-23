@@ -18,22 +18,6 @@ export class CustomerContent<T> implements PossiblyCustomerContent<T> {
         });
     }
 
-    public static maybeNull<T>(data: T | null): PossiblyCustomerContent<T> | null {
-        return data !== null
-            ? new CustomerContent(data)
-            : null;
-    }
-
-    public static maybeUndefined<T>(data: T | undefined): PossiblyCustomerContent<T> | undefined {
-        return data !== undefined
-            ? new CustomerContent(data)
-            : undefined;
-    }
-
-    public static fromAsync<T>(promisedData: Promise<T>): Promise<PossiblyCustomerContent<T>> {
-        return promisedData.then(data => new CustomerContent(data));
-    }
-
     public transform<U>(transformFunction: (customerContentData: T) => U): PossiblyCustomerContent<U> {
         return new CustomerContent(transformFunction(this.customerContentData));
     }

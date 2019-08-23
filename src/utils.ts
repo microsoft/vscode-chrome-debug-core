@@ -335,7 +335,7 @@ export function fsReadDirP(path: string): Promise<string[]> {
 }
 
 export function readFileP(path: string, encoding = 'utf8'): Promise<PossiblyCustomerContent<string>> {
-    return CustomerContent.fromAsync(promisify(fs.readFile)(path, encoding));
+    return promisify(fs.readFile)(path, encoding).then(data => new CustomerContent(data));
 }
 
 export async function writeFileP(filePath: string, data: string): Promise<void> {

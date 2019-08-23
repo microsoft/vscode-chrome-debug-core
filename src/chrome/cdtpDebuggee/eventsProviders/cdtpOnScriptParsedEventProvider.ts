@@ -154,7 +154,7 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
 }
 
 function sourceMapURL(params: CDTP.Debugger.ScriptParsedEvent): SourceMapUrl | undefined {
-    return SourceMapUrl.maybeUndefined(params.sourceMapURL);
+    return SourceMapUrl.create(params.sourceMapURL, undefined);
 }
 
 abstract class ScriptCreator {

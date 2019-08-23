@@ -10,16 +10,17 @@ export class SourceMapUrl {
     private readonly _url: PossiblyCustomerContent<string>;
     public readonly isInlineSourceMap: boolean;
 
-    public constructor(url: string) {
+    private constructor(url: string) {
         this.isInlineSourceMap = url.indexOf('data:application/json') >= 0;
         this._url = this.isInlineSourceMap ? new CustomerContent(url) : new NonCustomerContent(url);
     }
 
-    public static maybeUndefined(url: string | undefined): SourceMapUrl | undefined {
+    /** Create a source map url assuring that we are not creating an empty source map url */
+    public static create<Null extends null | undefined>(url: string | Null, nullValue: Null): SourceMapUrl | Null {
         if (url) {
             return new SourceMapUrl(url);
         } else {
-            return undefined; // Convert '' to undefined
+            return nullValue; // Convert '' to null or undefined
         }
     }
 

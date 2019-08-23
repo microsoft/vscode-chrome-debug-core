@@ -92,7 +92,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
             const line = lines[l].trim();
             const matches = EagerSourceMapTransformer.SOURCE_MAPPING_MATCHER.exec(line);
             if (hasMatches(matches) && matches.length === 2) {
-                return new SourceMapUrl(matches[1].trim());
+                return SourceMapUrl.create(matches[1].trim(), null);
             }
         }
 
