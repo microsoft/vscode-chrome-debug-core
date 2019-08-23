@@ -2,9 +2,9 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { PossiblyCustomerContent } from '../../logging/gdpr';
+import { PossiblyCustomerContent, CustomerContent } from '../../logging/gdpr';
 
-export type SourceContents = PossiblyCustomerContent<string>;
+export class SourceContents extends CustomerContent<string> {}
 
 export function truncate(possiblyCustomerContent: PossiblyCustomerContent<string>): PossiblyCustomerContent<string> {
     const maxLength = 1e5;

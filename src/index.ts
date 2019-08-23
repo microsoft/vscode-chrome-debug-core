@@ -75,6 +75,7 @@ import { EagerSourceMapTransformer } from './transformers/eagerSourceMapTransfor
 import { ISourceToClientConverter } from './chrome/client/sourceToClientConverter';
 import { IEventsToClientReporter } from './chrome/client/eventsToClientReporter';
 import { UserPageLaunchedError } from './chrome/client/clientLifecycleRequestsHandler';
+import { SourceContents } from './chrome/internal/sources/sourceContents';
 
 export {
     chromeConnection,
@@ -224,4 +225,6 @@ export {
     UserPageLaunchedError,
 
     ExecutionTimingsReporter,
+
+    SourceContents
 };
