@@ -12,7 +12,8 @@ import { CDTPScriptsRegistry } from '../../../cdtpDebuggee/registries/cdtpScript
 import { IScriptSourcesRetriever } from '../../../cdtpDebuggee/features/cdtpScriptSourcesRetriever';
 import { parseResourceIdentifier } from '../resourceIdentifier';
 import { isNotEmpty } from '../../../utils/typedOperators';
-import { SourceContents } from '../sourceContents';
+import { SourceContents, truncate } from '../sourceContents';
+import { NonCustomerContent } from '../../../logging/gdpr';
 
 @injectable()
 export class DotScriptCommand {
@@ -32,15 +33,15 @@ export class DotScriptCommand {
             // `.scripts <url>` was used, look up the script by url
             const requestedScript = this._scriptsRegistry.getScriptsByPath(parseResourceIdentifier(scriptsRest));
             if (requestedScript.length > 0) {
-                outputStringP = (await this._scriptSources.getScriptSource(requestedScript[0])).truncated();
+                outputStringP = truncate(await this._scriptSources.getScriptSource(requestedScript[0]));
             } else {
-                outputStringP =  SourceContents.nonCustomerContent(`No runtime script with url: ${scriptsRest}\n`);
+                outputStringP =  new NonCustomerContent(`No runtime script with url: ${scriptsRest}\n`);
             }
         } else {
-            outputStringP = SourceContents.nonCustomerContent(await this.getAllScriptsString());
+            outputStringP = new NonCustomerContent(await this.getAllScriptsString());
         }
 
-        this._eventsToClientReporter.sendCustomerContentOutput({ output: await outputStringP.contents, category: 'stdout' });
+        this._eventsToClientReporter.sendCustomerContentOutput({ output: await outputStringP, category: 'stdout' });
     }
 
     private async getAllScriptsString(): Promise<string> {

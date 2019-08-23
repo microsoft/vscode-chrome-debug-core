@@ -8,6 +8,7 @@ import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { inject, injectable } from 'inversify';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { SourceContents } from '../../internal/sources/sourceContents';
+import { CustomerContent } from '../../logging/gdpr';
 
 export interface IScriptSourcesRetriever {
     getScriptSource(script: IScript): Promise<SourceContents>;
@@ -25,6 +26,6 @@ export class CDTPScriptSourcesRetriever implements IScriptSourcesRetriever {
 
     public async getScriptSource(script: IScript): Promise<SourceContents> {
         const scriptSource = (await this.api.getScriptSource({ scriptId: this._scriptsRegistry.getCdtpId(script) })).scriptSource;
-        return SourceContents.customerContent(scriptSource);
+        return new CustomerContent(scriptSource);
     }
 }

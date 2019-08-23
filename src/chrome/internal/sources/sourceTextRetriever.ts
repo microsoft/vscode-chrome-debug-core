@@ -49,7 +49,7 @@ export class SourceTextRetriever {
                 text = this._scriptSources.getScriptSource(scripts[0]);
             } else if (loadedSource.contentsLocation === ContentsLocation.PersistentStorage) {
                 // If this is a file, we don't want to cache it, so we return the contents immediately
-                return utils.readFileP(loadedSource.identifier.textRepresentation).then(contents => new SourceContents(contents));
+                return utils.readFileP(loadedSource.identifier.textRepresentation);
             } else {
                 // We'll need to figure out what is the right thing to do for SourceScriptRelationship.Unknown
                 throw new LocalizedError('error.sourceText.multipleScriptsNotSupported', localize('error.sourceText.multipleScriptsNotSupported', "Support for getting the text from dynamic sources that have multiple scripts embedded hasn't been implemented yet"));
