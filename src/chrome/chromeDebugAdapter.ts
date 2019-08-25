@@ -983,7 +983,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
                 if (stackTrace && stackTrace.callFrames.length) {
                     const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.originProvider);
-                    e.body.source = stackFrame.source;
+                    e.body.source = mapInternalSourceToRemoteClient(stackFrame.source, this._launchAttachArgs.remoteAuthority);
                     e.body.line = stackFrame.line;
                     e.body.column = stackFrame.column;
                 }
@@ -1006,7 +1006,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             const stackTrace = params.exceptionDetails.stackTrace;
             if (stackTrace && stackTrace.callFrames.length) {
                 const stackFrame = await this._stackFrames.mapCallFrame(stackTrace.callFrames[0], this._transformers, this._scriptContainer, this.originProvider);
-                e.body.source = stackFrame.source;
+                e.body.source = mapInternalSourceToRemoteClient(stackFrame.source, this._launchAttachArgs.remoteAuthority);
                 e.body.line = stackFrame.line;
                 e.body.column = stackFrame.column;
             }
