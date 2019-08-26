@@ -27,6 +27,7 @@
         "src/**/*.ts",
         "test/testDebug/**/*.ts",
         "test-DoNot-/**/*.ts",
+        "test/v2/**/*.ts",
         "node_modules/@types/**/*.ts"
     ]
 }

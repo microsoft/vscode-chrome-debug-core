@@ -9,11 +9,12 @@ import { ISource } from './source';
 import { IScript } from '../scripts/script';
 import { injectable } from 'inversify';
 import { InternalError } from '../../utils/internalError';
+import { SourceContents } from './sourceContents';
 
 export interface ISourcesRetriever {
     loadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]>;
     loadedSourcesTreeForScript(script: IScript): ILoadedSourceTreeNode;
-    text(source: ISource): Promise<string>;
+    text(source: ISource): Promise<SourceContents>;
 }
 
 @injectable()
@@ -31,7 +32,7 @@ export class SourcesRetriever implements ISourcesRetriever {
         return this._sourceTreeNodeLogic.getLoadedSourcesTreeForScript(script);
     }
 
-    public async text(source: ISource): Promise<string> {
+    public async text(source: ISource): Promise<SourceContents> {
         return await source.tryResolving(
             async loadedSource => await this._sourceTextRetriever.text(loadedSource),
             identifier => {

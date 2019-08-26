@@ -21,6 +21,7 @@ import { SetUsingProjection } from '../chrome/collections/setUsingProjection';
 import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
 import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
+import { SourceMapContents } from './sourceMapContents';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -112,9 +113,9 @@ export class SourceMap {
      * generatedPath: an absolute local path or a URL
      * json: sourcemap contents as string
      */
-    public static async create(generatedPath: string, json: string, pathMapping?: IPathMapping,
+    public static async create(generatedPath: string, json: SourceMapContents, pathMapping?: IPathMapping,
         sourceMapPathOverrides?: utils.IStringDictionary<string>, isVSClient = false): Promise<SourceMap> {
-        const sourceMap: RawSourceMap = JSON.parse(json);
+        const sourceMap = json.parsed();
         logger.log(`SourceMap: creating for ${generatedPath}`);
         logger.log(`SourceMap: sourceRoot: ${sourceMap.sourceRoot}`);
         if (isNotEmpty(sourceMap.sourceRoot) && sourceMap.sourceRoot.toLowerCase() === '/source/') {

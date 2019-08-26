@@ -28,6 +28,7 @@ import { BaseSourceMapTransformer } from '../../../transformers/baseSourceMapTra
 import { isNotEmpty } from '../../utils/typedOperators';
 import { CDTPExecutionContextEventsProvider } from './cdtpExecutionContextEventsProvider';
 import { DebuggerInternalSourceUrlPrefix } from '../features/cdtpDebugeeStateInspector';
+import { SourceMapUrl } from '../../../sourceMaps/sourceMapUrl';
 
 /**
  * A new JavaScript Script has been parsed by the debuggee and it's about to be executed
@@ -42,7 +43,7 @@ export interface IScriptParsedEvent {
     readonly executionContext: IExecutionContext;
     readonly executionContextAuxData?: any;
     readonly isLiveEdit?: boolean;
-    readonly sourceMapURL?: string;
+    readonly sourceMapURL?: SourceMapUrl;
     readonly hasSourceURL?: boolean;
     readonly isModule?: boolean;
     readonly length?: integer;
@@ -58,7 +59,7 @@ export class ScriptParsedEvent implements IScriptParsedEvent {
     public readonly executionContext: IExecutionContext;
     public readonly executionContextAuxData?: any;
     public readonly isLiveEdit?: boolean;
-    public readonly sourceMapURL?: string;
+    public readonly sourceMapURL?: SourceMapUrl;
     public readonly hasSourceURL?: boolean;
     public readonly isModule?: boolean;
     public readonly length?: integer;
@@ -143,13 +144,17 @@ export class CDTPOnScriptParsedEventProvider extends CDTPEventsEmitterDiagnostic
                 executionContext: executionContext,
                 executionContextAuxData: params.executionContextAuxData,
                 isLiveEdit: params.isLiveEdit,
-                sourceMapURL: params.sourceMapURL,
+                sourceMapURL: sourceMapURL(params),
                 hasSourceURL: params.hasSourceURL,
                 isModule: params.isModule,
                 length: params.length,
                 script: await this._scriptsRegistry.getScriptByCdtpId(params.scriptId)
             });
     }
+}
+
+function sourceMapURL(params: CDTP.Debugger.ScriptParsedEvent): SourceMapUrl | undefined {
+    return SourceMapUrl.create(params.sourceMapURL, undefined);
 }
 
 abstract class ScriptCreator {
@@ -183,7 +188,7 @@ abstract class ScriptCreator {
     }
 
     private sourceMap(): Promise<SourceMap | null> {
-        return this._sourceMapTransformer.scriptParsed(this.runtimeSourcePath.canonicalized, this._scriptParsedEvent.sourceMapURL);
+        return this._sourceMapTransformer.scriptParsed(this.runtimeSourcePath.canonicalized, sourceMapURL(this._scriptParsedEvent));
     }
 
     protected abstract createScript(executionContext: IExecutionContext, sourceMapperProvider: (script: IScript) => IMappedSourcesMapper,

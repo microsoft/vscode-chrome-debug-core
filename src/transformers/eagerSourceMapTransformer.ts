@@ -13,6 +13,8 @@ import { injectable, inject } from 'inversify';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { isDefined, isNotEmpty, isNotNull, hasMatches } from '../chrome/utils/typedOperators';
+import { PossiblyCustomerContent } from '../chrome/logging/gdpr';
+import { SourceMapUrl } from '../sourceMaps/sourceMapUrl';
 
 /**
  * Load SourceMaps on launch. Requires reading the file and parsing out the sourceMappingURL, because
@@ -74,11 +76,7 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
      * Try to find the 'sourceMappingURL' in content or the file with the given path.
      * Returns null if no source map url is found or if an error occured.
      */
-    private findSourceMapUrlInFile(pathToGenerated: string, content?: string): Promise<string | null> {
-        if (isNotEmpty(content)) {
-            return Promise.resolve(this.findSourceMapUrl(content));
-        }
-
+    private findSourceMapUrlInFile(pathToGenerated: string): Promise<SourceMapUrl | null> {
         return utils.readFileP(pathToGenerated)
             .then(fileContents => this.findSourceMapUrl(fileContents));
     }
@@ -88,13 +86,13 @@ export class EagerSourceMapTransformer extends BaseSourceMapTransformer {
      * Relative file paths are converted into absolute paths.
      * Returns null if no source map url is found.
      */
-    private findSourceMapUrl(contents: string): string | null {
-        const lines = contents.split('\n');
+    private findSourceMapUrl(contents: PossiblyCustomerContent<string>): SourceMapUrl | null {
+        const lines = contents.customerContentData.split('\n');
         for (let l = lines.length - 1; l >= Math.max(lines.length - 10, 0); l--) {    // only search for url in the last 10 lines
             const line = lines[l].trim();
             const matches = EagerSourceMapTransformer.SOURCE_MAPPING_MATCHER.exec(line);
             if (hasMatches(matches) && matches.length === 2) {
-                return matches[1].trim();
+                return SourceMapUrl.create(matches[1].trim(), null);
             }
         }
 

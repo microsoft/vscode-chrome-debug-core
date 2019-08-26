@@ -18,6 +18,7 @@ import { isDefined, hasMatches, hasNoMatches, isNotEmpty, isTrue, isEmpty } from
 import * as _ from 'lodash';
 import { InternalError } from './chrome/utils/internalError';
 import { LocalizedError } from './chrome/utils/localization';
+import { PossiblyCustomerContent, CustomerContent } from './chrome/logging/gdpr';
 
 export interface IStringDictionary<T> {
     [name: string]: T;
@@ -333,8 +334,8 @@ export function fsReadDirP(path: string): Promise<string[]> {
     return promisify(fs.readdir)(path);
 }
 
-export function readFileP(path: string, encoding = 'utf8'): Promise<string> {
-    return promisify(fs.readFile)(path, encoding);
+export function readFileP(path: string, encoding = 'utf8'): Promise<PossiblyCustomerContent<string>> {
+    return promisify(fs.readFile)(path, encoding).then(data => new CustomerContent(data));
 }
 
 export async function writeFileP(filePath: string, data: string): Promise<void> {

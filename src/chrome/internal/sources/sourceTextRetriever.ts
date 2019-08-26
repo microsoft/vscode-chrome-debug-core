@@ -18,6 +18,7 @@ import { LocalizedError, registerGetLocalize } from '../../utils/localization';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
+import { SourceContents } from './sourceContents';
 
 /**
  * Retrieves the text associated with a loaded source that maps to a JavaScript script file
@@ -25,13 +26,13 @@ registerGetLocalize(() => localize = nls.loadMessageBundle());
  */
 @injectable()
 export class SourceTextRetriever {
-    private _sourceToText = new ValidatedMap<ILoadedSource, Promise<string>>();
+    private _sourceToText = new ValidatedMap<ILoadedSource, Promise<SourceContents>>();
 
     constructor(@inject(TYPES.IScriptSources) private readonly _scriptSources: IScriptSourcesRetriever) { }
 
     // We want this method to add an entry to the map this._sourceToText atomically, so if we get 2 simultaneous calls,
     // the second call will return the promise/result of the first call
-    public text(loadedSource: ILoadedSource): Promise<string> {
+    public text(loadedSource: ILoadedSource): Promise<SourceContents> {
         let text = this._sourceToText.tryGetting(loadedSource);
 
         if (text === undefined) {

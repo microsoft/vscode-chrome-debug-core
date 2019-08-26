@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import * as os from 'os';
 import * as url from 'url';
+import * as _ from 'lodash';
 
 import * as sourceMapUtils from './sourceMapUtils';
 import * as utils from '../utils';
@@ -14,6 +15,8 @@ import { logger } from 'vscode-debugadapter';
 import { SourceMap } from './sourceMap';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
 import { isDefined, isNotNull, isNull, isTrue } from '../chrome/utils/typedOperators';
+import { SourceMapUrl } from './sourceMapUrl';
+import { SourceMapContents } from './sourceMapContents';
 
 export class SourceMapFactory {
     constructor(
@@ -26,7 +29,7 @@ export class SourceMapFactory {
      * pathToGenerated - an absolute local path or a URL.
      * mapPath - a path relative to pathToGenerated.
      */
-    getMapForGeneratedPath(pathToGenerated: string, mapPath: string, isVSClient = false): Promise<SourceMap | null> {
+    getMapForGeneratedPath(pathToGenerated: string, mapPath: SourceMapUrl, isVSClient = false): Promise<SourceMap | null> {
         let msg = `SourceMaps.getMapForGeneratedPath: Finding SourceMap for ${pathToGenerated} by URI: ${mapPath}`;
         if (isDefined(this._pathMapping)) {
             msg += ` and webRoot/pathMapping: ${JSON.stringify(this._pathMapping)}`;
@@ -36,13 +39,14 @@ export class SourceMapFactory {
 
         // For an inlined sourcemap, mapPath is a data URI containing a blob of base64 encoded data, starting
         // with a tag like "data:application/json;charset:utf-8;base64,". The data should start after the last comma.
-        let sourceMapContentsP: Promise<string | null>;
-        if (mapPath.indexOf('data:application/json') >= 0) {
+        let sourceMapContentsP: Promise<SourceMapContents | null>;
+        if (mapPath.isInlineSourceMap) {
             // Sourcemap is inlined
             logger.log(`SourceMaps.getMapForGeneratedPath: Using inlined sourcemap in ${pathToGenerated}`);
-            sourceMapContentsP = Promise.resolve(this.getInlineSourceMapContents(mapPath));
+            sourceMapContentsP = Promise.resolve(mapPath.inlineSourceMapContents());
         } else {
-            sourceMapContentsP = this.getSourceMapContent(pathToGenerated, mapPath);
+            // The mapPath is not data:application/json so it can't have the sources content embedded
+            sourceMapContentsP = this.getSourceMapContent(pathToGenerated, mapPath.customerContentData);
         }
 
         return sourceMapContentsP.then(async contents => {
@@ -61,36 +65,9 @@ export class SourceMapFactory {
     }
 
     /**
-     * Parses sourcemap contents from inlined base64-encoded data
-     */
-    private getInlineSourceMapContents(sourceMapData: string): string | null {
-        const firstCommaPos = sourceMapData.indexOf(',');
-        if (firstCommaPos < 0) {
-            logger.log(`SourceMaps.getInlineSourceMapContents: Inline sourcemap is malformed. Starts with: ${sourceMapData.substr(0, 200)}`);
-            return null;
-        }
-        const header = sourceMapData.substr(0, firstCommaPos);
-        const data = sourceMapData.substr(firstCommaPos + 1);
-
-        try {
-            if (header.indexOf(';base64') !== -1) {
-                const buffer = new Buffer(data, 'base64');
-                return buffer.toString();
-            } else {
-                // URI encoded.
-                return decodeURI(data);
-            }
-        } catch (e) {
-            logger.error(`SourceMaps.getInlineSourceMapContents: exception while processing data uri (${e.stack})`);
-        }
-
-        return null;
-    }
-
-    /**
      * Resolves a sourcemap's path and loads the data
      */
-    private getSourceMapContent(pathToGenerated: string, mapPathArg: string): Promise<string | null> {
+    private getSourceMapContent(pathToGenerated: string, mapPathArg: string): Promise<SourceMapContents | null> {
         const mapPath = sourceMapUtils.resolveMapPath(pathToGenerated, mapPathArg, this._pathMapping);
         if (isNull(mapPath)) {
             return Promise.resolve(null);
@@ -109,8 +86,8 @@ export class SourceMapFactory {
         });
     }
 
-    private loadSourceMapContents(mapPathOrURL: string): Promise<string | null> {
-        let contentsP: Promise<string | null>;
+    private loadSourceMapContents(mapPathOrURL: string): Promise<SourceMapContents | null> {
+        let contentsP: Promise<SourceMapContents | null>;
         if (utils.isURL(mapPathOrURL) && !utils.isFileUrl(mapPathOrURL)) {
             logger.log(`SourceMaps.loadSourceMapContents: Downloading sourcemap file from ${mapPathOrURL}`);
             contentsP = this.downloadSourceMapContents(mapPathOrURL).catch(_e => {
@@ -126,7 +103,7 @@ export class SourceMapFactory {
                         logger.log(`SourceMaps.loadSourceMapContents: Could not read sourcemap file - ` + err.message);
                         resolve(null);
                     } else {
-                        resolve(isDefined(data) ? data.toString() : undefined);
+                        resolve(isDefined(data) ? new SourceMapContents(data.toString()) : undefined);
                     }
                 });
             });
@@ -135,7 +112,7 @@ export class SourceMapFactory {
         return contentsP;
     }
 
-    private async downloadSourceMapContents(sourceMapUri: string): Promise<string | null> {
+    private async downloadSourceMapContents(sourceMapUri: string): Promise<SourceMapContents | null> {
         try {
             return await this._downloadSourceMapContents(sourceMapUri);
         } catch (e) {
@@ -148,7 +125,7 @@ export class SourceMapFactory {
         }
     }
 
-    private async _downloadSourceMapContents(sourceMapUri: string): Promise<string | null> {
+    private async _downloadSourceMapContents(sourceMapUri: string): Promise<SourceMapContents | null> {
         // use sha256 to ensure the hash value can be used in filenames
         let cachedSourcemapPath: string | null = null;
         if (isTrue(this._enableSourceMapCaching)) {
@@ -170,6 +147,6 @@ export class SourceMapFactory {
             await utils.writeFileP(cachedSourcemapPath, responseText);
         }
 
-        return responseText;
+        return new SourceMapContents(responseText);
     }
 }

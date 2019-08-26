@@ -15,10 +15,11 @@ import { inject, injectable } from 'inversify';
 import { IResourceIdentifier } from '..';
 import { LocationInLoadedSource } from '../chrome/internal/locations/location';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
-import { isTrue, isDefined, isEmpty, isNotNull, isNull, isUndefined } from '../chrome/utils/typedOperators';
+import { isTrue, isDefined, isNotNull, isNull, isUndefined } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
 import { parseResourceIdentifier, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
 import { DoNotLog } from '../chrome/logging/decorators';
+import { SourceMapUrl } from '../sourceMaps/sourceMapUrl';
 
 export interface ISourceLocation {
     source: ILoadedSource;
@@ -75,11 +76,11 @@ export class BaseSourceMapTransformer {
     }
 
     @DoNotLog()
-    public async scriptParsed(pathToGenerated: string, sourceMapURL: string | undefined): Promise<SourceMap | null> {
+    public async scriptParsed(pathToGenerated: string, sourceMapURL: SourceMapUrl | undefined): Promise<SourceMap | null> {
         if (isDefined(this._sourceMaps)) {
             this._allRuntimeScriptPaths.addAndReplaceIfExists(parseResourceIdentifier(pathToGenerated));
 
-            if (isEmpty(sourceMapURL)) {
+            if (sourceMapURL === undefined) {
                 // We've seen some cases where Node.js doesn't return the SourceMapURL when the file has one. We use our
                 // cache in case we were able to read it with the EagerSourceMapReader
                 return _.defaultTo(this._sourceMaps.tryGettingSourceMapFromGeneratedPath(pathToGenerated), null);
