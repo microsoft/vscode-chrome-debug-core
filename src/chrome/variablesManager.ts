@@ -173,14 +173,6 @@ export class VariablesManager {
         error => Promise.reject(errors.errorFromEvaluate(error.message)));
     }
 
-    /* __GDPR__
-        "ClientRequest/setVariable" : {
-            "${include}": [
-                "${IExecutionResultTelemetryProperties}",
-                "${DebugCommonProperties}"
-            ]
-        }
-    */
     public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
         const handle = this._variableHandles.get(args.variablesReference);
         if (!handle) {

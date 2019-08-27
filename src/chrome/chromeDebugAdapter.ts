@@ -9,7 +9,7 @@ import { ICommonRequestArgs, ILaunchRequestArgs, ISetBreakpointsArgs, ISetBreakp
     IAttachRequestArgs, IScopesResponseBody, IVariablesResponseBody,
     ISourceResponseBody, IThreadsResponseBody, IEvaluateResponseBody, IDebugAdapter,
     ICompletionsResponseBody, IToggleSkipFileStatusArgs,
-    ISetBreakpointResult, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector, IGetLoadedSourcesResponseBody, TimeTravelRuntime, IExceptionInfoResponseBody } from '../debugAdapterInterfaces';
+    ISetBreakpointResult, IRestartRequestArgs, IInitializeRequestArgs, ITelemetryPropertyCollector, IGetLoadedSourcesResponseBody, TimeTravelRuntime, IExceptionInfoResponseBody, ISetVariableResponseBody } from '../debugAdapterInterfaces';
 import { IChromeDebugAdapterOpts, ChromeDebugSession } from './chromeDebugSession';
 import { ChromeConnection } from './chromeConnection';
 import * as ChromeUtils from './chromeUtils';
@@ -1551,6 +1551,18 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
 
         return this.chrome.Debugger.evaluateOnCallFrame(args);
+    }
+
+    /* __GDPR__
+        "ClientRequest/setVariable" : {
+            "${include}": [
+                "${IExecutionResultTelemetryProperties}",
+                "${DebugCommonProperties}"
+            ]
+        }
+    */
+    public setVariable(args: DebugProtocol.SetVariableArguments): Promise<ISetVariableResponseBody> {
+        return this._variablesManager.setVariable(args);
     }
 
     /* __GDPR__
