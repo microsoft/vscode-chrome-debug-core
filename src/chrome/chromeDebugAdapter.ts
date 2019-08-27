@@ -555,6 +555,13 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             if (this._breakOnLoadHelper) {
                 this._breakOnLoadHelper.setBrowserVersion((await this._chromeConnection.version).browser);
             }
+
+            /* __GDPR__FRAGMENT__
+               "StepNames" : {
+                  "Attach.ConfigureDebuggingSession.End" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
+               }
+             */
+            this.events.emitStepStarted('Attach.ConfigureDebuggingSession.End');
         }
     }
 
