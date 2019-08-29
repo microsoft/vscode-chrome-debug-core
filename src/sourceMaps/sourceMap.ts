@@ -22,6 +22,7 @@ import { isNotEmpty, isDefined, isNull } from '../chrome/utils/typedOperators';
 import { wrapWithMethodLogger } from '../chrome/logging/methodsCalledLogger';
 import { LocalizedError, registerGetLocalize } from '../chrome/utils/localization';
 import { SourceMapContents } from './sourceMapContents';
+import { telemetry } from '../telemetry';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -132,25 +133,14 @@ export class SourceMap {
         // sourceMap.sources are initially relative paths, file:/// urls, made-up urls like webpack:///./app.js, or paths that start with /.
         // resolve them to file:/// urls, using computedSourceRoot, to be simpler and unambiguous, since
         // it needs to look them up later in exactly the same format.
-        const normalizedSources = sourceMap.sources.map(sourcePath => {
-            if (isDefined(sourceMapPathOverrides)) {
-                const fullSourceEntry = sourceMapUtils.getFullSourceEntry(sourceMap.sourceRoot, sourcePath);
-                const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry.textRepresentation, sourceMapPathOverrides, isVSClient);
-                if (fullSourceEntry.textRepresentation !== mappedFullSourceEntry) {
-                    return mappedFullSourceEntry; // If we found a path override that applies, return the result of applying it
-                }
-            }
-
-            if (sourcePath.startsWith('file://')) {
-                // strip file://
-                return new LocalFileURL(sourcePath).filePathRepresentation;
-            }
-
-            if (!path.isAbsolute(sourcePath)) {
-                // Overrides not applied, use the computed sourceRoot
-                return path.resolve(computedSourceRoot, sourcePath);
-            } else {
-                return sourcePath;
+        const normalizedSources: string[] = [];
+        sourceMap.sources.forEach(sourcePath => {
+            try {
+                normalizedSources.push(SourceMap.normalizeSource(sourceMapPathOverrides, sourceMap, isVSClient, computedSourceRoot, sourcePath));
+            } catch (exception) {
+                // If we fail to process a single source path, we'll try to process the other ones anyways instead of just failing everything
+                // this is important because we've seen some sourcemap with null source entries
+                telemetry.reportError('Failed to parse sourcemap source', exception);
             }
         });
 
@@ -167,6 +157,28 @@ export class SourceMap {
         const consumerWithLogging = wrapWithMethodLogger(consumer, `SourceMap: ${path.basename(generatedPath)}`);
         consumer.computeColumnSpans(); // So allGeneratedPositionsFor will return the last column info
         return new SourceMap(generatedPath, sourceMap, parseResourceIdentifiers(consumer.sources), setOfNormalizedSources, consumerWithLogging);
+    }
+
+    private static normalizeSource(sourceMapPathOverrides: utils.IStringDictionary<string> | undefined, sourceMap: RawSourceMap, isVSClient: boolean, computedSourceRoot: string, sourcePath: string): string {
+        if (isDefined(sourceMapPathOverrides)) {
+            const fullSourceEntry = sourceMapUtils.getFullSourceEntry(sourceMap.sourceRoot, sourcePath);
+            const mappedFullSourceEntry = sourceMapUtils.applySourceMapPathOverrides(fullSourceEntry.textRepresentation, sourceMapPathOverrides, isVSClient);
+            if (fullSourceEntry.textRepresentation !== mappedFullSourceEntry) {
+                return mappedFullSourceEntry; // If we found a path override that applies, return the result of applying it
+            }
+        }
+
+        if (sourcePath.startsWith('file://')) {
+            // strip file://
+            return new LocalFileURL(sourcePath).filePathRepresentation;
+        }
+
+        if (!path.isAbsolute(sourcePath)) {
+            // Overrides not applied, use the computed sourceRoot
+            return path.resolve(computedSourceRoot, sourcePath);
+        } else {
+            return sourcePath;
+        }
     }
 
     public get generatedPath(): IResourceIdentifier {
