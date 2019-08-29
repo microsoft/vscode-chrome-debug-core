@@ -17,4 +17,8 @@ export class SourceMapContents {
         delete sourceMap.sourcesContent; // We don't use sourcesContent. We delete it so that sourcesContent won't have any more customer data and it'll be safe to log, etc...
         return sourceMap;
     }
+
+    public toString(): string {
+        return this._data.toString();
+    }
 }

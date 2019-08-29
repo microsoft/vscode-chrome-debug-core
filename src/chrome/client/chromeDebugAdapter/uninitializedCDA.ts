@@ -13,6 +13,7 @@ import { inject, injectable } from 'inversify';
 import { isNotEmpty } from '../../utils/typedOperators';
 import { ISession } from '../session';
 import { registerGetLocalize, configureLocale } from '../../utils/localization';
+import { addCustomToStringToJSON } from '../../logging/json';
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
 
@@ -69,7 +70,7 @@ export class UninitializedCDA extends BaseCDAState {
         };
 
         const newState = this._unconnectedCDAProvider(args);
-        return { capabilities, newState };
+        return { capabilities: addCustomToStringToJSON(capabilities), newState };
     }
 
     public toString(): string {

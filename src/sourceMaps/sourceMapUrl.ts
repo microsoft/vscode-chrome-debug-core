@@ -55,4 +55,8 @@ export class SourceMapUrl {
 
         return null;
     }
+
+    public toString(): string {
+        return this._url.toString();
+    }
 }

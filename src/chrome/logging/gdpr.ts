@@ -8,6 +8,8 @@
 
     /** Transform the data. If it is customer data, the result will sill be customer data */
     transform<U>(transformFunction: (customerContentData: T) => U): PossiblyCustomerContent<U>;
+
+    toString(): string;
 }
 
 /** Used to protect CustomerContent data so we don't inadvertently log it or send it as telemetry */
@@ -36,5 +38,9 @@ export class NonCustomerContent<T> implements PossiblyCustomerContent<T> {
 
     public transform<U>(transformFunction: (customerContentData: T) => U): PossiblyCustomerContent<U> {
         return new NonCustomerContent(transformFunction(this.customerContentData));
+    }
+
+    public toString(): string {
+        return `${this.customerContentData}`;
     }
 }
