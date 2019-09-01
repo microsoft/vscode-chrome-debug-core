@@ -89,10 +89,10 @@ export function promiseTimeout(p?: Promise<any>, timeoutMs = 1000, timeoutMsg = 
     });
 }
 
-export async function retryAsync(fn: () => Promise<any>, timeoutMs: number, intervalDelay = 0): Promise<any> {
+export async function retryAsync<T>(fn: () => Promise<T>, timeoutMs: number, intervalDelay = 0): Promise<T> {
     const startTime = Date.now();
 
-    async function tryUntilTimeout(): Promise<any> {
+    async function tryUntilTimeout(): Promise<T> {
         try {
             return await fn();
         } catch (e) {
