@@ -141,6 +141,10 @@ export class SourceMap {
                 // If we fail to process a single source path, we'll try to process the other ones anyways instead of just failing everything
                 // this is important because we've seen some sourcemap with null source entries
                 telemetry.reportError('Failed to parse sourcemap source', exception);
+
+                // We add the unnormalized source when things fail. Processing this source will most likely fail in other places of the code.
+                // We need to insert something to preserve the indexes of the sources matching the ones for the mappings, etc...
+                normalizedSources.push(`${sourcePath}`);
             }
         });
 
