@@ -1,9 +1,9 @@
 export class JSONObject {
-    private constructor(jsonProperties: object) {
+    private constructor(jsonProperties: unknown) {
         Object.assign(this, jsonProperties);
     }
 
-    public static create<T>(jsonProperties: object): JSONObject & T {
+    public static create<T>(jsonProperties: T): JSONObject & T {
         return <JSONObject & T>new JSONObject(jsonProperties);
     }
 
@@ -12,6 +12,6 @@ export class JSONObject {
     }
 }
 
-export function addCustomToStringToJSON<T>(jsonObject: object): T & JSONObject {
+export function addCustomToStringToJSON<T>(jsonObject: T): T & JSONObject {
     return JSONObject.create(jsonObject);
 }
