@@ -38,4 +38,8 @@ export class AsyncStepping {
 
         return new NoActionIsNeededForThisPause(this);
     }
+
+    public toString(): string {
+        return 'AsyncStepping';
+    }
 }

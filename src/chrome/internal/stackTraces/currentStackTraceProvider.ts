@@ -12,6 +12,7 @@ import { CodeFlowStackTrace } from './codeFlowStackTrace';
 import { ILoadedSource } from '../sources/loadedSource';
 import { isDefined } from '../../utils/typedOperators';
 import { LocalizedError, registerGetLocalize } from '../../utils/localization';
+import { printClassDescription } from '../../utils/printing';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -78,6 +79,7 @@ class CurrentStackTraceProviderWhenPaused implements ICurrentStackTraceProviderS
     }
 }
 
+@printClassDescription
 class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProviderState {
     public isPaused(): boolean {
         return false;
@@ -110,6 +112,10 @@ class CurrentStackTraceProviderWhenNotPaused implements ICurrentStackTraceProvid
 
     private throwItIsNotPaused(): never {
         throw new LocalizedError('error.stackTraceProvider.notPaused', localize('error.stackTraceProvider.notPaused', "Can't obtain current stack strace when the debuggee is not paused"));
+    }
+
+    public toString(): string {
+        return 'CurrentStackTraceProviderWhenNotPaused';
     }
 }
 

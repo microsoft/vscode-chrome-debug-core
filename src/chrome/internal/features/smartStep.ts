@@ -128,4 +128,8 @@ export class SmartStepLogic implements IStackTracePresentationDetailsProvider {
     public configure(): void {
         this._isEnabled = !!utils.defaultIfUndefined(this._configuration.args.smartStep, this._configuration.isVSClient);
     }
+
+    public toString(): string {
+        return 'SmartStep';
+    }
 }

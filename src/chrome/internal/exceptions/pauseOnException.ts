@@ -129,4 +129,8 @@ export class PauseOnExceptionOrRejection {
             throw errors.noStoredException();
         }
     }
+
+    public toString(): string {
+        return 'PauseOnExceptionOrRejection';
+    }
 }
