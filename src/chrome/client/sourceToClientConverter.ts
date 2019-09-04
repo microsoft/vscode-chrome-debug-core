@@ -4,8 +4,10 @@ import { ILoadedSource } from '../internal/sources/loadedSource';
 import { HandlesRegistry } from './handlesRegistry';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LocalFileURL } from '../internal/sources/resourceIdentifier';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { DoNotLog } from '../logging/decorators';
+import { TYPES } from '../dependencyInjection.ts/types';
+import { ISourcesRetriever } from '../internal/sources/sourcesRetriever';
 
 export interface ISourceToClientConverter {
     toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source>;
@@ -13,7 +15,8 @@ export interface ISourceToClientConverter {
 
 @injectable()
 export class SourceToClientConverter implements ISourceToClientConverter {
-    constructor(private readonly _handlesRegistry: HandlesRegistry) { }
+    constructor(private readonly _handlesRegistry: HandlesRegistry,
+        @inject(TYPES.ISourcesRetriever) private readonly _sourcesRetriever: ISourcesRetriever) { }
 
     @DoNotLog()
     public async toSource(loadedSource: ILoadedSource): Promise<DebugProtocol.Source> {
@@ -24,12 +27,15 @@ export class SourceToClientConverter implements ISourceToClientConverter {
             ? sourceIdentifier.filePathRepresentation
             : sourceIdentifier.textRepresentation;
 
+        const shouldIncludeSourceReference = !exists && this._sourcesRetriever.retrievability(loadedSource).isRetrievable;
         // if the path exists, do not send the sourceReference
         // new Source sends 0 for undefined
         const source = {
             name: pathModule.basename(sourceTextRepresentation),
             path: sourceTextRepresentation,
-            sourceReference: exists ? undefined : this._handlesRegistry.sources.getIdByObject(loadedSource),
+            sourceReference: (shouldIncludeSourceReference)
+                ? this._handlesRegistry.sources.getIdByObject(loadedSource)
+                : undefined,
         };
 
         return source;

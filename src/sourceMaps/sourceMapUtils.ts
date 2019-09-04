@@ -9,8 +9,7 @@ import { logger } from 'vscode-debugadapter';
 import * as chromeUtils from '../chrome/chromeUtils';
 import * as utils from '../utils';
 import { ISourceMapPathOverrides, IPathMapping } from '../debugAdapterInterfaces';
-import { IResourceIdentifier } from '..';
-import { parseResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
+import { parseResourceIdentifier, IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { isNotEmpty, hasNoMatches, isEmpty, defaultWhenEmpty } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
 

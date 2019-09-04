@@ -51,7 +51,7 @@ import { IDebuggeeRuntimeVersionProvider, CDTPComponentsVersions } from './chrom
 import { IBrowserNavigator } from './chrome/cdtpDebuggee/features/cdtpBrowserNavigator';
 import { ISourcesRetriever } from './chrome/internal/sources/sourcesRetriever';
 import { ISource } from './chrome/internal/sources/source';
-import { ILoadedSourceTreeNode, SourceScriptRelationship, ILoadedSource } from './chrome/internal/sources/loadedSource';
+import { ILoadedSourceTreeNode, SourceScriptRelationship, ILoadedSource, ContentsLocation } from './chrome/internal/sources/loadedSource';
 import { IScript } from './chrome/internal/scripts/script';
 import * as utilities from './chrome/collections/utilities';
 import { CDTPDomainsEnabler } from './chrome/cdtpDebuggee/infrastructure/cdtpDomainsEnabler';
@@ -77,6 +77,8 @@ import { IEventsToClientReporter } from './chrome/client/eventsToClientReporter'
 import { UserPageLaunchedError } from './chrome/client/clientLifecycleRequestsHandler';
 import { SourceContents } from './chrome/internal/sources/sourceContents';
 import { IExecutionContextEventsProvider } from './chrome/cdtpDebuggee/eventsProviders/cdtpExecutionContextEventsProvider';
+import { IPossiblyRetrievableText, RetrievableText, NonRetrievableText, ISourceTextRetriever, GetSourceTextRetrievability } from './chrome/internal/sources/sourceTextRetriever';
+import { IScriptSourcesRetriever } from './chrome/cdtpDebuggee/features/cdtpScriptSourcesRetriever';
 
 export {
     chromeConnection,
@@ -232,6 +234,20 @@ export {
     ICommandHandlerDeclaration,
 
     CommandHandlerDeclaration,
-  
-    IExecutionContextEventsProvider
+
+    IExecutionContextEventsProvider,
+
+    IPossiblyRetrievableText,
+
+    RetrievableText,
+
+    NonRetrievableText,
+
+    ContentsLocation,
+
+    ISourceTextRetriever,
+
+    GetSourceTextRetrievability,
+
+    IScriptSourcesRetriever,
 };

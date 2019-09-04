@@ -1,6 +1,6 @@
 import { IdentifiedLoadedSource } from '../sources/identifiedLoadedSource';
 import { Position } from '../locations/location';
-import { ILoadedSource } from '../../..';
+import { ILoadedSource } from '../sources/loadedSource';
 
 export interface IHasSourceMappingInformation {
     readonly mappedSources: IdentifiedLoadedSource[]; // Sources before compilation

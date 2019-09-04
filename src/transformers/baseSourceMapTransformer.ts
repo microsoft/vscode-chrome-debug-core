@@ -12,12 +12,11 @@ import { logger } from 'vscode-debugadapter';
 import { ILoadedSource } from '../chrome/internal/sources/loadedSource';
 import { TYPES } from '../chrome/dependencyInjection.ts/types';
 import { inject, injectable } from 'inversify';
-import { IResourceIdentifier } from '..';
 import { LocationInLoadedSource } from '../chrome/internal/locations/location';
 import { CDTPScriptsRegistry } from '../chrome/cdtpDebuggee/registries/cdtpScriptsRegistry';
 import { isTrue, isDefined, isNotNull, isNull, isUndefined } from '../chrome/utils/typedOperators';
 import * as _ from 'lodash';
-import { parseResourceIdentifier, newResourceIdentifierSet } from '../chrome/internal/sources/resourceIdentifier';
+import { parseResourceIdentifier, newResourceIdentifierSet, IResourceIdentifier } from '../chrome/internal/sources/resourceIdentifier';
 import { DoNotLog } from '../chrome/logging/decorators';
 import { SourceMapUrl } from '../sourceMaps/sourceMapUrl';
 

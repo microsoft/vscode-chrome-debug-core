@@ -2,25 +2,27 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { SourceTextRetriever } from './sourceTextRetriever';
+import { IPossiblyRetrievableText, ISourceTextRetriever } from './sourceTextRetriever';
 import { LoadedSourcesTreeRetriever } from './loadedSourcesTreeRetriever';
-import { ILoadedSourceTreeNode } from './loadedSource';
+import { ILoadedSourceTreeNode, ILoadedSource } from './loadedSource';
 import { ISource } from './source';
 import { IScript } from '../scripts/script';
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
 import { InternalError } from '../../utils/internalError';
 import { SourceContents } from './sourceContents';
+import { TYPES } from '../../dependencyInjection.ts/types';
 
 export interface ISourcesRetriever {
     loadedSourcesTrees(): Promise<ILoadedSourceTreeNode[]>;
     loadedSourcesTreeForScript(script: IScript): ILoadedSourceTreeNode;
     text(source: ISource): Promise<SourceContents>;
+    retrievability(loadedSource: ILoadedSource): IPossiblyRetrievableText;
 }
 
 @injectable()
 export class SourcesRetriever implements ISourcesRetriever {
     constructor(
-        private readonly _sourceTextRetriever: SourceTextRetriever,
+        @inject(TYPES.ISourceTextRetriever) private readonly _sourceTextRetriever: ISourceTextRetriever,
         private readonly _sourceTreeNodeLogic: LoadedSourcesTreeRetriever) {
     }
 
@@ -38,6 +40,10 @@ export class SourcesRetriever implements ISourcesRetriever {
             identifier => {
                 throw new InternalError('error.source.cantResolve', `Couldn't resolve the source with the path: ${identifier.textRepresentation}`);
             });
+    }
+
+    public retrievability(loadedSource: ILoadedSource): IPossiblyRetrievableText {
+        return this._sourceTextRetriever.retrievability(loadedSource);
     }
 
     public toString(): string {
