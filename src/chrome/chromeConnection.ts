@@ -26,6 +26,7 @@ import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
 import { InternalError } from './utils/internalError';
 import { LocalizedError, registerGetLocalize } from './utils/localization';
+import * as _ from 'lodash';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -77,6 +78,10 @@ class LoggingSocket extends WebSocket {
                 if ((msgObj.result && msgObj.result.scriptSource)) {
                     // If this message contains the source of a script, we log everything but the source
                     msgObj.result.scriptSource = '<removed script source for logs>';
+                    logger.log('← From target: ' + JSON.stringify(msgObj));
+                } else if ((_.get(msgObj, 'params.sourceMapURL', '').startsWith('data:application/json'))) {
+                    // If this message contains a source map url, we log everything else
+                    msgObj.params.sourceMapURL = '<removed source map url for logs>';
                     logger.log('← From target: ' + JSON.stringify(msgObj));
                 } else {
                     logger.log('← From target: ' + msgStr);

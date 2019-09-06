@@ -111,7 +111,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     @DoNotLog()
     public sendCustomerContentOutput(params: ICustomerContentOutputParameters): void {
-        const event = new OutputEvent(params.output.customerContentData, params.category) as DebugProtocol.OutputEvent;
+        const event = new OutputEvent(params.output.customerContentData, params.category, { doNotLogOutput: true }) as DebugProtocol.OutputEvent;
         this._session.sendEvent(event);
     }
 
