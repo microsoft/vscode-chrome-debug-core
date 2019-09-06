@@ -26,6 +26,7 @@ import { ITelemetryPropertyCollector } from '../telemetry';
 import { isDefined } from './utils/typedOperators';
 import { InternalError } from './utils/internalError';
 import { LocalizedError, registerGetLocalize } from './utils/localization';
+import * as _ from 'lodash';
 
 let localize = nls.loadMessageBundle();
 registerGetLocalize(() => localize = nls.loadMessageBundle());
@@ -81,6 +82,10 @@ class LoggingSocket extends WebSocket {
                 } else if (msgObj.result && msgObj.result.content) {
                     // Don't log responses to Page.getResourceContent (It's source code)
                     msgObj.result.content = '<removed content for logs>';
+                    msgStr = JSON.stringify(msgObj);
+                } else if ((_.get(msgObj, 'params.sourceMapURL', '').startsWith('data:application/json'))) {
+                    // If this message contains a source map url, we log everything else
+                    msgObj.params.sourceMapURL = '<removed source map url for logs>';
                     msgStr = JSON.stringify(msgObj);
                 }
                 logger.log('← From target: ' + msgStr);
