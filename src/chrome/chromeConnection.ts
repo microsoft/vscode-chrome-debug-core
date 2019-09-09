@@ -75,17 +75,20 @@ class LoggingSocket extends WebSocket {
 
             if (msgObj && !(msgObj.method && msgObj.method.startsWith('Network.'))) {
                 // Not really the right place to examine the content of the message, but don't log annoying Network activity notifications.
-                if ((msgObj.result && msgObj.result.scriptSource)) {
+                if (msgObj.result && msgObj.result.scriptSource) {
                     // If this message contains the source of a script, we log everything but the source
                     msgObj.result.scriptSource = '<removed script source for logs>';
-                    logger.log('← From target: ' + JSON.stringify(msgObj));
+                    msgStr = JSON.stringify(msgObj);
+                } else if (msgObj.result && msgObj.result.content) {
+                    // Don't log responses to Page.getResourceContent (It's source code)
+                    msgObj.result.content = '<removed content for logs>';
+                    msgStr = JSON.stringify(msgObj);
                 } else if ((_.get(msgObj, 'params.sourceMapURL', '').startsWith('data:application/json'))) {
                     // If this message contains a source map url, we log everything else
                     msgObj.params.sourceMapURL = '<removed source map url for logs>';
-                    logger.log('← From target: ' + JSON.stringify(msgObj));
-                } else {
-                    logger.log('← From target: ' + msgStr);
+                    msgStr = JSON.stringify(msgObj);
                 }
+                logger.log('← From target: ' + msgStr);
             }
         });
     }
