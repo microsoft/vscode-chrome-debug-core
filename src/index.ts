@@ -39,7 +39,7 @@ import { IExtensibilityPoints, OnlyProvideCustomLauncherExtensibilityPoints } fr
 import { IDebuggeeLauncher, ILaunchResult, IDebuggeeRunner, IDebuggeeInitializer, TerminatingReason } from './chrome/debugeeStartup/debugeeLauncher';
 import { inject, injectable, postConstruct, interfaces, multiInject } from 'inversify';
 import { ConnectedCDAConfiguration, IConnectedCDAConfiguration } from './chrome/client/chromeDebugAdapter/cdaConfiguration';
-import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent } from './chrome/internal/features/components';
+import { IInstallableComponent, ICommandHandlerDeclarer, IServiceComponent, CommandHandlerDeclaration, ICommandHandlerDeclaration } from './chrome/internal/features/components';
 import { TYPES } from './chrome/dependencyInjection.ts/types';
 import { IDebuggeeStateInspector } from './chrome/cdtpDebuggee/features/cdtpDebugeeStateInspector';
 import { CDTPEventsEmitterDiagnosticsModule, CDTPEnableableDiagnosticsModule } from './chrome/cdtpDebuggee/infrastructure/cdtpDiagnosticsModule';
@@ -229,5 +229,9 @@ export {
 
     SourceContents,
 
+    ICommandHandlerDeclaration,
+
+    CommandHandlerDeclaration,
+  
     IExecutionContextEventsProvider
 };
