@@ -76,6 +76,7 @@ import { ISourceToClientConverter } from './chrome/client/sourceToClientConverte
 import { IEventsToClientReporter } from './chrome/client/eventsToClientReporter';
 import { UserPageLaunchedError } from './chrome/client/clientLifecycleRequestsHandler';
 import { SourceContents } from './chrome/internal/sources/sourceContents';
+import { IExecutionContextEventsProvider } from './chrome/cdtpDebuggee/eventsProviders/cdtpExecutionContextEventsProvider';
 
 export {
     chromeConnection,
@@ -230,5 +231,7 @@ export {
 
     ICommandHandlerDeclaration,
 
-    CommandHandlerDeclaration
+    CommandHandlerDeclaration,
+  
+    IExecutionContextEventsProvider
 };

@@ -24,6 +24,7 @@ import { LineColTransformer } from '../../transformers/lineNumberTransformer';
 import { isDefined } from '../utils/typedOperators';
 import { DoNotLog } from '../logging/decorators';
 import { PossiblyCustomerContent } from '../logging/gdpr';
+import { Listeners } from '../communication/listeners';
 
 export interface IOutputParameters {
     readonly output: string;
@@ -66,6 +67,10 @@ export interface IEventsToClientReporter {
     sendExceptionThrown(params: IExceptionThrownParameters): Promise<void>;
     sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void>;
     sendDebuggeeIsResumed(): Promise<void>;
+
+    // Events provided
+    listenToDebuggeeWasStopped(listener: (params: IDebuggeeIsStoppedParameters) => void): void;
+    listenToDebuggeeWasResumed(listener: () => void): void;
 }
 
 /**
@@ -77,6 +82,10 @@ export class EventsToClientReporter implements IEventsToClientReporter {
     private readonly _exceptionStackTracePrinter = new ExceptionStackTracePrinter(this._configuration);
     private readonly _locationInSourceToClientConverter = new LocationInSourceToClientConverter(this._sourceToClientConverter, this._lineColTransformer);
     private readonly _bpRecipieStatusToClientConverter = new BPRecipieStatusToClientConverter(this._handlesRegistry, this._sourceToClientConverter, this._lineColTransformer);
+
+    // Events provided' listeners
+    private readonly _debuggeeWasStoppedListeners = new Listeners<IDebuggeeIsStoppedParameters, void>();
+    private readonly _debuggeeWasResumedListeners = new Listeners<void, void>();
 
     constructor(
         @inject(TYPES.ConnectedCDAConfiguration) private readonly _configuration: ConnectedCDAConfiguration,
@@ -102,7 +111,7 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     @DoNotLog()
     public sendCustomerContentOutput(params: ICustomerContentOutputParameters): void {
-        const event = new OutputEvent(params.output.customerContentData, params.category) as DebugProtocol.OutputEvent;
+        const event = new OutputEvent(params.output.customerContentData, params.category, { doNotLogOutput: true }) as DebugProtocol.OutputEvent;
         this._session.sendEvent(event);
     }
 
@@ -133,11 +142,22 @@ export class EventsToClientReporter implements IEventsToClientReporter {
 
     @DoNotLog()
     public async sendDebuggeeIsStopped(params: IDebuggeeIsStoppedParameters): Promise<void> {
-        return this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
+        this._session.sendEvent(new StoppedEvent2(params.reason, /*threadId=*/ChromeDebugLogic.THREAD_ID, params.exception));
+        this._debuggeeWasStoppedListeners.call(params);
     }
 
     @DoNotLog()
     public async sendDebuggeeIsResumed(): Promise<void> {
-        return this._session.sendEvent(new ContinuedEvent(ChromeDebugLogic.THREAD_ID));
+        this._session.sendEvent(new ContinuedEvent(ChromeDebugLogic.THREAD_ID));
+
+        this._debuggeeWasResumedListeners.call();
+    }
+
+    public listenToDebuggeeWasStopped(listener: (params: IDebuggeeIsStoppedParameters) => void): void {
+        this._debuggeeWasStoppedListeners.add(listener);
+    }
+
+    public listenToDebuggeeWasResumed(listener: () => void): void {
+        this._debuggeeWasResumedListeners.add(listener);
     }
 }
