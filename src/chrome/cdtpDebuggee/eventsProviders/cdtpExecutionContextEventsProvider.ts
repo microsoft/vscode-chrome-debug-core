@@ -10,9 +10,11 @@ import { CDTPScriptsRegistry } from '../registries/cdtpScriptsRegistry';
 import { TYPES } from '../../dependencyInjection.ts/types';
 import { CDTPDomainsEnabler } from '../infrastructure/cdtpDomainsEnabler';
 import { FrameId } from '../cdtpPrimitives';
+import { IExecutionContext } from '../../internal/scripts/executionContext';
 
 export interface IExecutionContextEventsProvider {
     onExecutionContextsCleared(listener: (args: void) => void): void;
+    onExecutionContextCreated(listener: (executionContext: IExecutionContext) => void): void;
 }
 
 @injectable()
