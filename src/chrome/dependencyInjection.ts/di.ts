@@ -7,13 +7,14 @@ import { bindAll, createWrapWithLoggerActivator } from './bind';
 import { MethodsCalledLoggerConfiguration, ReplacementInstruction } from '../logging/methodsCalledLogger';
 import { addCDTPBindings } from '../cdtpDebuggee/cdtpDIContainer';
 import { addBreakpointsFeatureBindings } from '../internal/breakpoints/diBindings';
+import { isValueComponent } from './types';
 
 export type GetComponentByID = <T>(identifier: interfaces.ServiceIdentifier<T>) => T;
 export type ComponentCustomizationCallback = <T>(identifier: interfaces.ServiceIdentifier<T>, injectable: T, getComponentById: GetComponentByID) => T;
 
 export type IdentifierToClass = IdentifierToClassMapping | IdentifierToClassPairs;
-export type IdentifierToClassMapping = Map<interfaces.ServiceIdentifier<any>, interfaces.Newable<any>>;
-export type IdentifierToClassPairs = [interfaces.ServiceIdentifier<any>, interfaces.Newable<any>][];
+export type IdentifierToClassMapping = Map<interfaces.ServiceIdentifier<any>, interfaces.Newable<any> | Function>;
+export type IdentifierToClassPairs = [interfaces.ServiceIdentifier<any>, interfaces.Newable<any> | Function][];
 
 // Hides the current DI framework from the rest of our implementation
 export class DependencyInjection {
@@ -28,7 +29,7 @@ export class DependencyInjection {
     }
 
     public configureClass<T>(interfaceClass: interfaces.ServiceIdentifier<T>, value: interfaces.Newable<T>): this {
-        this._container.bind(interfaceClass).to(value).inSingletonScope().onActivation(createWrapWithLoggerActivator(this._loggingConfiguration, interfaceClass));
+        this._container.bind(interfaceClass).to(value).inSingletonScope().onActivation(createWrapWithLoggerActivator(this._loggingConfiguration, interfaceClass, this._componentCustomizationCallback));
         return this;
     }
 
@@ -37,8 +38,8 @@ export class DependencyInjection {
         return this;
     }
 
-    public configureValue<T>(valueClass: interfaces.Newable<T> | symbol, value: T): this {
-        this._container.bind(valueClass).toConstantValue(value);
+    public configureValue<T>(valueClass: interfaces.ServiceIdentifier<T>, value: T): this {
+        this._container.bind(valueClass).toConstantValue(value).onActivation(createWrapWithLoggerActivator(this._loggingConfiguration, valueClass, this._componentCustomizationCallback));
         return this;
     }
 
@@ -73,7 +74,11 @@ export class DependencyInjection {
 
     public configureMultipleClasses(identifierToClassMapping: IdentifierToClass): this {
         for (const entry of identifierToClassMapping) {
-            this.configureClass(entry[0], entry[1]);
+            if (isValueComponent(entry[0])) {
+                this.configureValue(entry[0], entry[1]);
+            } else {
+                this.configureClass(entry[0], <interfaces.Newable<unknown>>entry[1]);
+            }
         }
 
         return this;
@@ -89,7 +94,8 @@ export class DependencyInjection {
 
     public configureExportedAndPrivateClasses(subcontainerName: string, exportedClassesMapping: IdentifierToClassMapping,
         privateClassesMapping: IdentifierToClass): DependencyInjection {
-        const privateClassesContainer = new DependencyInjection(subcontainerName, (_identifier, component) => component, this._container)
+        const privateClassesContainer = new DependencyInjection(subcontainerName, (identifier, component) =>
+            this._componentCustomizationCallback(identifier, component, otherIdentifier => this._container.get(otherIdentifier)), this._container)
             .configureMultipleClasses(privateClassesMapping).configureMultipleClasses(exportedClassesMapping);
 
         this.importFromOtherContainer(exportedClassesMapping.keys(), privateClassesContainer);

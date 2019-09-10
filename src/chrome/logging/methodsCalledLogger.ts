@@ -61,6 +61,10 @@ export class MethodsCalledLogger<T extends object> {
     }
 
     public wrapped(): T {
+        if (typeof this._objectToWrap === 'number') {
+            return this._objectToWrap;
+        }
+
         const handler = {
             get: <K extends keyof T>(target: T, propertyKey: K, receiver: any) => {
                 const originalPropertyValue = target[propertyKey];

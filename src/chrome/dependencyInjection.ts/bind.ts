@@ -43,6 +43,7 @@ import { CompletionsRequestHandler } from '../internal/completions/completionsRe
 import { SourceToClientConverter } from '../client/sourceToClientConverter';
 import { NotifyClientOfLoadedSources } from '../internal/sources/features/notifyClientOfLoadedSources';
 import { logger } from 'vscode-debugadapter';
+import { SourceTextRetriever } from '../internal/sources/sourceTextRetriever';
 
 // TODO: This file needs a lot of work. We need to improve/simplify all this code when possible
 interface IHasContainerName {
@@ -55,6 +56,7 @@ export function bindAll(loggingConfiguration: MethodsCalledLoggerConfiguration, 
     bind(loggingConfiguration, di, TYPES.IEventsToClientReporter, EventsToClientReporter, callback);
     bind(loggingConfiguration, di, TYPES.ChromeDebugLogic, ChromeDebugLogic, callback);
     bind(loggingConfiguration, di, TYPES.ISourcesRetriever, SourcesRetriever, callback);
+    bind(loggingConfiguration, di, TYPES.ISourceTextRetriever, SourceTextRetriever, callback);
     bind(loggingConfiguration, di, TYPES.SourceToClientConverter, SourceToClientConverter, callback);
 
     bind(loggingConfiguration, di, TYPES.StackTracesLogic, StackTracePresenter, callback);
@@ -105,7 +107,10 @@ export function createWrapWithLoggerActivator<T extends object>(configuration: M
     serviceIdentifier: interfaces.ServiceIdentifier<T>,
     callback?: ComponentCustomizationCallback): (context: interfaces.Context, injectable: T) => T {
     return (_context: interfaces.Context, injectable: T) => {
-        (<IHasContainerName>injectable).__containerName = configuration.containerName;
+        if (!(typeof injectable === 'number')) {
+            (<IHasContainerName>injectable).__containerName = configuration.containerName;
+        }
+
         const objectWithLogging = wrapWithLogging(configuration, injectable, `${configuration.containerName}.${getName(serviceIdentifier)}`);
         const possibleOverwrittenComponent = isDefined(callback)
             ? callback(serviceIdentifier, objectWithLogging, identifier => _context.container.get(identifier))

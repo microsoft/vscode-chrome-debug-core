@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import 'reflect-metadata';
+import { interfaces } from 'inversify';
 
 // TODO: Add all necesary types so we can use inversifyjs to create our components
 const TYPES = {
@@ -25,6 +26,8 @@ const TYPES = {
     IDebuggeeLauncher: Symbol.for('IDebuggeeLauncher'),
     ChromeDebugLogic: Symbol.for('ChromeDebugLogic'),
     ISourcesRetriever: Symbol.for('ISourcesRetriever'),
+    ISourceTextRetriever: Symbol.for('ISourceTextRetriever'),
+    GetSourceTextRetrievability: Symbol.for('GetSourceTextRetrievability'),
     CDTPScriptsRegistry: Symbol.for('CDTPScriptsRegistry'),
     ClientToInternal: Symbol.for('ClientToInternal'),
     InternalToClient: Symbol.for('InternalToClient'),
@@ -79,5 +82,11 @@ const TYPES = {
     IClientCapabilities: Symbol.for('IClientCapabilities'),
     IServiceComponent: Symbol.for('IServiceComponent'),
 };
+
+const valueComponents = new Set<interfaces.ServiceIdentifier<unknown>>([TYPES.GetSourceTextRetrievability]);
+
+export function isValueComponent(componentIdentifier: interfaces.ServiceIdentifier<unknown>): boolean {
+    return valueComponents.has(componentIdentifier);
+}
 
 export { TYPES };

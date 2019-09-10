@@ -28,8 +28,9 @@ import { TYPES } from '../dependencyInjection.ts/types';
 import { interfaces } from 'inversify';
 import { DependencyInjection } from '../dependencyInjection.ts/di';
 import { CDTPNetworkCacheConfigurer } from './features/cdtpNetworkCacheConfigurer';
+import { getSourceTextRetrievability } from '../internal/sources/sourceTextRetriever';
 
-const exportedIdentifierToClassMapping = new ValidatedMap<symbol, interfaces.Newable<any>>([
+const exportedIdentifierToClassMapping = new ValidatedMap<symbol, interfaces.Newable<any> | Function>([
     [TYPES.IDebuggeeExecutionController, CDTPDebuggeeExecutionController],
     [TYPES.IDebuggeeStateInspector, CDTPDebuggeeStateInspector],
     [TYPES.IUpdateDebuggeeState, CDTPDebuggeeStateSetter],
@@ -40,6 +41,7 @@ const exportedIdentifierToClassMapping = new ValidatedMap<symbol, interfaces.New
     [TYPES.IDOMInstrumentationBreakpointsSetter, CDTPDOMInstrumentationBreakpointsSetter],
     [TYPES.IAsyncDebuggingConfiguration, CDTPAsyncDebuggingConfigurer],
     [TYPES.IScriptSources, CDTPScriptSourcesRetriever],
+    [TYPES.GetSourceTextRetrievability, getSourceTextRetrievability],
     [TYPES.CDTPScriptsRegistry, CDTPScriptsRegistry],
     [TYPES.IPauseOnExceptions, CDTPPauseOnExceptionsConfigurer],
     [TYPES.IBreakpointFeaturesSupport, CDTPBreakpointFeaturesSupport],
