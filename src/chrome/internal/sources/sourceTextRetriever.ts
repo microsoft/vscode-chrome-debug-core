@@ -92,9 +92,11 @@ export function getSourceTextRetrievability(scriptSources: IScriptSourcesRetriev
          * so we just return the source of the first script. This won't be ideal if for some reason the source of both scripts
          * isn't the same.
          */
-        logger.warn(`${loadedSource} is associated with several ${printArray('scripts', scripts)} returning arbitrarily the source of the first one`);
-        const singleScript = scripts[0];
-        return new RetrievableText(() => scriptSources.getScriptSource(singleScript));
+        return new RetrievableText(() => {
+            logger.warn(`${loadedSource} is associated with several ${printArray('scripts', scripts)} returning arbitrarily the source of the first one`);
+            const singleScript = scripts[0];
+                return scriptSources.getScriptSource(singleScript);
+        });
     } else if (loadedSource.contentsLocation === ContentsLocation.PersistentStorage) {
         // If this is a file, we don't want to cache it, so we return the contents immediately
         return new RetrievableText(() => utils.readFileP(loadedSource.identifier.textRepresentation));
