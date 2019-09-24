@@ -400,7 +400,7 @@ suite('ChromeDebugAdapter', () => {
                 .returns(() => Promise.resolve(generatedScriptPath));
 
             mockSourceMapTransformer.setup(x => x.setBreakpoints(It.isAny(), It.isAnyNumber(), It.isAny()))
-                .returns(( args: ISetBreakpointsArgs, ids: number[]) => {
+                .returns((args: ISetBreakpointsArgs, ids: number[]) => {
                     args.source.path = generatedScriptPath;
                     return { args, ids };
                 });

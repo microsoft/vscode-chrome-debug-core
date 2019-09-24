@@ -56,13 +56,13 @@ suite('UrlPathTransformer', () => {
                 .returns(() => Promise.resolve(CLIENT_PATH)).verifiable();
 
             await transformer.scriptParsed(TARGET_URL);
-            transformer.setBreakpoints(<any>SET_BP_ARGS);
+            SET_BP_ARGS.source = transformer.setBreakpoints(SET_BP_ARGS.source);
             assert.deepEqual(SET_BP_ARGS, EXPECTED_SET_BP_ARGS);
         });
 
         test(`doesn't modify the args when it can't map the client script to the target script`, () => {
             const origArgs = JSON.parse(JSON.stringify(SET_BP_ARGS));
-            transformer.setBreakpoints(<any>SET_BP_ARGS);
+            SET_BP_ARGS.source = transformer.setBreakpoints(SET_BP_ARGS.source);
             assert.deepEqual(SET_BP_ARGS, origArgs);
         });
 

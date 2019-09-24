@@ -272,7 +272,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             supportsDelayedStackTraceLoading: true,
             supportsValueFormattingOptions: true,
             supportsEvaluateForHovers: true,
-            supportsLoadedSourcesRequest: true
+            supportsLoadedSourcesRequest: true,
+            supportsBreakpointLocationsRequest: true
         };
     }
 
@@ -1679,4 +1680,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return this._breakpoints.validateBreakpointsPath(args);
     }
 
+    public breakpointLocations(args: DebugProtocol.BreakpointLocationsArguments, _telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): Promise<DebugProtocol.BreakpointLocationsResponse['body']> {
+        return this._breakpoints.getBreakpointsLocations(args, this._scriptContainer, requestSeq);
+    }
 }

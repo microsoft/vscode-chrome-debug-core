@@ -6,7 +6,7 @@ import * as path from 'path';
 import { DebugProtocol } from 'vscode-debugprotocol';
 
 import { ISetBreakpointsArgs, ILaunchRequestArgs, IAttachRequestArgs,
-    ISetBreakpointsResponseBody, IInternalStackTraceResponseBody, IScopesResponseBody, IInternalStackFrame } from '../debugAdapterInterfaces';
+    IInternalStackTraceResponseBody, IScopesResponseBody, IInternalStackFrame } from '../debugAdapterInterfaces';
 import { MappedPosition, ISourcePathDetails } from '../sourceMaps/sourceMap';
 import { SourceMaps } from '../sourceMaps/sourceMaps';
 import * as utils from '../utils';
@@ -175,14 +175,17 @@ export class BaseSourceMapTransformer {
     /**
      * Apply sourcemapping back to authored files from the response
      */
-    public setBreakpointsResponse(response: ISetBreakpointsResponseBody, requestSeq: number): void {
+    public setBreakpointsResponse(breakpoints: DebugProtocol.Breakpoint[], shouldFilter: boolean, requestSeq: number): DebugProtocol.Breakpoint[] {
         if (this._sourceMaps && this._requestSeqToSetBreakpointsArgs.has(requestSeq)) {
             const args = this._requestSeqToSetBreakpointsArgs.get(requestSeq);
             if (args.authoredPath) {
                 // authoredPath is set, so the file was mapped to source.
                 // Remove breakpoints from files that map to the same file, and map back to source.
-                response.breakpoints = response.breakpoints.filter((_, i) => i < args.originalBPs.length);
-                response.breakpoints.forEach((bp, i) => {
+                if (shouldFilter) {
+                    breakpoints = breakpoints.filter((_, i) => i < args.originalBPs.length);
+                }
+
+                breakpoints.forEach((bp, i) => {
                     const mapped = this._sourceMaps.mapToAuthored(args.generatedPath, bp.line, bp.column);
                     if (mapped) {
                         logger.log(`SourceMaps.setBP: Mapped ${args.generatedPath}:${bp.line + 1}:${bp.column + 1} to ${mapped.source}:${mapped.line + 1}`);
@@ -198,6 +201,8 @@ export class BaseSourceMapTransformer {
                 });
             }
         }
+
+        return breakpoints;
     }
 
     /**

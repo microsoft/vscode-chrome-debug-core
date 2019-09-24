@@ -215,7 +215,7 @@ suite('BaseSourceMapTransformer', () => {
                     source: { path: AUTHORED_PATH },
                     breakpoints: AUTHORED_BPS()
                 }, 0);
-                transformer.setBreakpointsResponse(response, 0);
+                response.breakpoints = transformer.setBreakpointsResponse(response.breakpoints, true, 0);
                 assert.deepEqual(response, expected);
             });
 
@@ -228,7 +228,7 @@ suite('BaseSourceMapTransformer', () => {
                     source: { path: RUNTIME_PATH },
                     breakpoints: RUNTIME_BPS()
                 }, 0);
-                transformer.setBreakpointsResponse(response, 0);
+                response.breakpoints = transformer.setBreakpointsResponse(response.breakpoints, true, 0);
                 assert.deepEqual(response, expected);
             });
 
@@ -248,7 +248,7 @@ suite('BaseSourceMapTransformer', () => {
                 const transformer = getTransformer(/*sourceMaps=*/true, /*suppressDefaultMock=*/true);
                 transformer.setBreakpoints(setBPArgs, /*requestSeq=*/0);
                 transformer.setBreakpoints(setBPArgs2, /*requestSeq=*/1);
-                transformer.setBreakpointsResponse(response, /*requestSeq=*/1);
+                response.breakpoints = transformer.setBreakpointsResponse(response.breakpoints, true, /*requestSeq=*/1);
 
                 assert.deepEqual(response, expected);
                 mock.verifyAll();

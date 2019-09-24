@@ -100,7 +100,7 @@ export class Breakpoints {
                 if (sourceMapTransformerResponse && sourceMapTransformerResponse.ids) {
                     ids = sourceMapTransformerResponse.ids;
                 }
-                args = this.adapter.pathTransformer.setBreakpoints(args);
+                args.source = this.adapter.pathTransformer.setBreakpoints(args.source);
 
                 // Get the target url of the script
                 let targetScriptUrl: string;
@@ -146,7 +146,7 @@ export class Breakpoints {
                             // We need to send the original args to avoid adjusting the line and column numbers twice here
                             return this.unverifiedBpResponseForBreakpoints(originalArgs, requestSeq, targetScriptUrl, body.breakpoints, localize('bp.fail.unbound', 'Breakpoint set but not yet bound'));
                         }
-                        this.adapter.sourceMapTransformer.setBreakpointsResponse(body, requestSeq);
+                        body.breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(body.breakpoints, true, requestSeq) || body.breakpoints;
                         this.adapter.lineColTransformer.setBreakpointsResponse(body);
                         return body;
                     });
@@ -262,6 +262,88 @@ export class Breakpoints {
                 scriptId
             }
         };
+    }
+
+    /**
+     * Using the request object from the DAP, set all breakpoints on the target
+     * @param args The setBreakpointRequest arguments from the DAP client
+     * @param scripts The script container associated with this instance of the adapter
+     * @param requestSeq The request sequence number from the DAP
+     * @param ids IDs passed in for previously unverified breakpoints
+     */
+    public async getBreakpointsLocations(args: DebugProtocol.BreakpointLocationsArguments, scripts: ScriptContainer, requestSeq: number): Promise<DebugProtocol.BreakpointLocationsResponse['body']> {
+
+        if (args.source.path) {
+            args.source.path = this.adapter.displayPathToRealPath(args.source.path);
+            args.source.path = utils.canonicalizeUrl(args.source.path);
+        }
+
+        await this.validateBreakpointsPath(args);
+
+        // Deep copy the args that we are going to modify, and keep the original values in originalArgs
+        args = JSON.parse(JSON.stringify(args));
+        args.endLine = this.adapter.lineColTransformer.convertClientLineToDebugger(typeof args.endLine === 'number' ? args.endLine : args.line + 1);
+        args.endColumn = this.adapter.lineColTransformer.convertClientLineToDebugger(args.endColumn || 1);
+        args.line = this.adapter.lineColTransformer.convertClientLineToDebugger(args.line);
+        args.column = this.adapter.lineColTransformer.convertClientColumnToDebugger(args.column || 1);
+
+        if (args.source.path) {
+            const source1 = JSON.parse(JSON.stringify(args.source));
+            const startArgs = this.adapter.sourceMapTransformer.setBreakpoints({ breakpoints: [{ line: args.line, column: args.column }], source: source1 }, requestSeq);
+            args.line = startArgs.args.breakpoints[0].line;
+            args.column = startArgs.args.breakpoints[0].column;
+
+            const endArgs = this.adapter.sourceMapTransformer.setBreakpoints({ breakpoints: [{ line: args.endLine, column: args.endColumn }], source: args.source }, requestSeq);
+            args.endLine = endArgs.args.breakpoints[0].line;
+            args.endColumn = endArgs.args.breakpoints[0].column;
+        }
+
+        args.source = this.adapter.pathTransformer.setBreakpoints(args.source);
+
+        // Get the target url of the script
+        let targetScriptUrl: string;
+        if (args.source.sourceReference) {
+            const handle = scripts.getSource(args.source.sourceReference);
+            if ((!handle || !handle.scriptId) && args.source.path) {
+                // A sourcemapped script with inline sources won't have a scriptId here, but the
+                // source.path has been fixed.
+                targetScriptUrl = args.source.path;
+            } else {
+                const targetScript = scripts.getScriptById(handle.scriptId);
+                if (targetScript) {
+                    targetScriptUrl = targetScript.url;
+                }
+            }
+        } else if (args.source.path) {
+            targetScriptUrl = args.source.path;
+        }
+
+        if (targetScriptUrl) {
+            const script = scripts.getScriptByUrl(targetScriptUrl);
+            if (script) {
+                const end = typeof args.endLine === 'number' ?
+                    { scriptId: script.scriptId, lineNumber: args.endLine, columnNumber: args.endColumn || 0 } :
+                    { scriptId: script.scriptId, lineNumber: args.line + 1, columnNumber: 0 };
+
+                const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
+                    start: { scriptId: script.scriptId, lineNumber: args.line, columnNumber: args.column || 0 },
+                    end,
+                    restrictToFunction: false
+                });
+                let breakpoints = possibleBpResponse.locations.map(loc => {
+                    return <DebugProtocol.Breakpoint>{
+                        line: loc.lineNumber,
+                        column: loc.columnNumber
+                    };
+                });
+                breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(breakpoints, false, requestSeq);
+                const response = { breakpoints };
+                this.adapter.lineColTransformer.setBreakpointsResponse(response);
+                return response as DebugProtocol.BreakpointLocationsResponse['body'];
+            }
+        }
+
+        return null;
     }
 
     /**
