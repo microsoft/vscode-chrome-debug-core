@@ -157,7 +157,7 @@ export class Breakpoints {
             e => this.unverifiedBpResponse(args, requestSeq, undefined, e.message));
     }
 
-    public validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
+    protected validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
         if (!args.source.path || args.source.sourceReference) return Promise.resolve();
 
         // When break on load is active, we don't need to validate the path, so return
@@ -185,7 +185,7 @@ export class Breakpoints {
      * Responses from setBreakpointByUrl are transformed to look like the response from setBreakpoint, so they can be
      * handled the same.
      */
-    async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[], scripts: ScriptContainer) {
+    protected async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[], scripts: ScriptContainer) {
         let responsePs: Promise<ISetBreakpointResult>[];
         if (ChromeUtils.isEvalScript(url)) {
             // eval script with no real url - use debugger_setBreakpoint

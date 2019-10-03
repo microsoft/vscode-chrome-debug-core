@@ -16,6 +16,7 @@ import { IDebugAdapter } from '../debugAdapterInterfaces';
 import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, TelemetryPropertyCollector, ITelemetryPropertyCollector } from '../telemetry';
 import * as utils from '../utils';
 import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
+import { Breakpoints } from './breakpoints';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -26,6 +27,8 @@ export interface IChromeDebugAdapterOpts {
     pathTransformer?: { new(): BasePathTransformer };
     sourceMapTransformer?: { new(sourceHandles: any): BaseSourceMapTransformer };
     lineColTransformer?: { new(session: any): LineColTransformer };
+
+    breakpoints?: typeof Breakpoints;
 }
 
 export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {

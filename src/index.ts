@@ -29,6 +29,8 @@ import * as executionTimingsReporter from './executionTimingsReporter';
 
 import { Protocol as Crdp } from 'devtools-protocol';
 import { Version, TargetVersions } from './chrome/chromeTargetDiscoveryStrategy';
+import { Breakpoints } from './chrome/breakpoints';
+import { ScriptContainer } from './chrome/scripts';
 
 export {
     chromeConnection,
@@ -58,5 +60,8 @@ export {
     Version,
     TargetVersions,
 
-    Crdp
+    Crdp,
+
+    Breakpoints,
+    ScriptContainer
 };

@@ -18,7 +18,7 @@ import { ScopeContainer, isIndexedPropName } from './variables';
 import * as variables from './variables';
 import { formatConsoleArguments, formatExceptionDetails, clearConsoleCode } from './consoleHelper';
 import { StoppedEvent2, ReasonType } from './stoppedEvent';
-import { stackTraceWithoutLogpointFrame, InternalSourceBreakpoint } from './internalSourceBreakpoint';
+import { stackTraceWithoutLogpointFrame } from './internalSourceBreakpoint';
 
 import * as errors from '../errors';
 import * as utils from '../utils';
@@ -144,8 +144,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _transformers: Transformers;
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter }: IChromeDebugAdapterOpts,
-        session: ChromeDebugSession) {
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, breakpoints }: IChromeDebugAdapterOpts,
+        session: ChromeDebugSession
+    ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
         this._batchTelemetryReporter = new BatchTelemetryReporter(telemetry);
         this._session = session;
@@ -160,7 +161,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             pathTransformer: new (pathTransformer || RemotePathTransformer)()
         };
 
-        this._breakpoints = new Breakpoints(this, this._chromeConnection);
+        this._breakpoints = new (breakpoints || Breakpoints)(this, this._chromeConnection);
         this._variablesManager = new VariablesManager(this._chromeConnection);
         this._stackFrames = new StackFrames();
         this._scriptSkipper = new ScriptSkipper(this._chromeConnection, this._transformers);
@@ -1544,7 +1545,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     }
 
-    protected async evaluateOnCallFrame(expression: string, frame: Crdp.Debugger.CallFrame, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
+    async evaluateOnCallFrame(expression: string, frame: Crdp.Debugger.CallFrame, extraArgs?: Partial<Crdp.Runtime.EvaluateRequest>): Promise<Crdp.Debugger.EvaluateOnCallFrameResponse | Crdp.Runtime.EvaluateResponse> {
         const callFrameId = frame.callFrameId;
         let args: Crdp.Debugger.EvaluateOnCallFrameRequest = {
             callFrameId,
@@ -1670,14 +1671,6 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private getScriptByUrl(url: string): Crdp.Debugger.ScriptParsedEvent {
         return this._scriptContainer.getScriptByUrl(url);
-    }
-
-    protected async addBreakpoints(url: string, breakpoints: InternalSourceBreakpoint[]): Promise<ISetBreakpointResult[]> {
-        return this._breakpoints.addBreakpoints(url, breakpoints, this._scriptContainer);
-    }
-
-    protected validateBreakpointsPath(args: ISetBreakpointsArgs): Promise<void> {
-        return this._breakpoints.validateBreakpointsPath(args);
     }
 
     public breakpointLocations(args: DebugProtocol.BreakpointLocationsArguments, _telemetryPropertyCollector?: ITelemetryPropertyCollector, requestSeq?: number): Promise<DebugProtocol.BreakpointLocationsResponse['body']> {
