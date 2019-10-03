@@ -278,7 +278,12 @@ export class Breakpoints {
             args.source.path = utils.canonicalizeUrl(args.source.path);
         }
 
-        await this.validateBreakpointsPath(args);
+        try {
+            await this.validateBreakpointsPath(args);
+        } catch (e) {
+            logger.log('breakpointsLocations failed: ' + e.message);
+            return { breakpoints: [] };
+        }
 
         // Deep copy the args that we are going to modify, and keep the original values in originalArgs
         args = JSON.parse(JSON.stringify(args));
