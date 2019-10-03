@@ -17,6 +17,7 @@ import { telemetry, ExceptionType, IExecutionResultTelemetryProperties, Telemetr
 import * as utils from '../utils';
 import { ExecutionTimingsReporter, StepProgressEventsEmitter, IObservableEvents, IStepStartedEventsEmitter, IFinishedStartingUpEventsEmitter } from '../executionTimingsReporter';
 import { Breakpoints } from './breakpoints';
+import { ScriptContainer } from '../chrome/scripts';
 
 export interface IChromeDebugAdapterOpts {
     targetFilter?: ITargetFilter;
@@ -29,6 +30,7 @@ export interface IChromeDebugAdapterOpts {
     lineColTransformer?: { new(session: any): LineColTransformer };
 
     breakpoints?: typeof Breakpoints;
+    scriptContainer?: typeof ScriptContainer;
 }
 
 export interface IChromeDebugSessionOpts extends IChromeDebugAdapterOpts {

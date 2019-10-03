@@ -6,7 +6,7 @@ import { logger } from 'vscode-debugadapter';
 import { IToggleSkipFileStatusArgs } from '../debugAdapterInterfaces';
 import { ChromeConnection } from './chromeConnection';
 import { Protocol as Crdp } from 'devtools-protocol';
-import { ScriptContainer, Scripts } from './scripts';
+import { ScriptContainer } from './scripts';
 import { Transformers } from './chromeDebugAdapter';
 import * as utils from '../utils';
 
@@ -50,7 +50,7 @@ export class ScriptSkipper {
 
         // e.g. strip <node_internals>/
         if (args.path) {
-            args.path = Scripts.displayPathToRealPath(args.path);
+            args.path = scripts.displayPathToRealPath(args.path);
         }
 
         const aPath = args.path || scripts.fakeUrlForSourceReference(args.sourceReference);

@@ -42,7 +42,7 @@ import { mapRemoteClientToInternalPath, mapInternalSourceToRemoteClient } from '
 import { Breakpoints } from './breakpoints';
 import { VariablesManager } from './variablesManager';
 import { StackFrames } from './stackFrames';
-import { ScriptContainer, Scripts } from './scripts';
+import { ScriptContainer } from './scripts';
 import { SmartStepper } from './smartStep';
 import { ScriptSkipper } from './scriptSkipping';
 let localize = nls.loadMessageBundle();
@@ -144,7 +144,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private _transformers: Transformers;
 
-    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, breakpoints }: IChromeDebugAdapterOpts,
+    public constructor({ chromeConnection, lineColTransformer, sourceMapTransformer, pathTransformer, targetFilter, breakpoints, scriptContainer }: IChromeDebugAdapterOpts,
         session: ChromeDebugSession
     ) {
         telemetry.setupEventHandler(e => session.sendEvent(e));
@@ -153,7 +153,7 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         this._chromeConnection = new (chromeConnection || ChromeConnection)(undefined, targetFilter);
         this.events = new StepProgressEventsEmitter(this._chromeConnection.events ? [this._chromeConnection.events] : []);
 
-        this._scriptContainer = new ScriptContainer();
+        this._scriptContainer = new (scriptContainer || ScriptContainer)();
 
         this._transformers = {
             lineColTransformer: new (lineColTransformer || LineColTransformer)(this._session),
@@ -1315,8 +1315,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         return undefined;
     }
 
-    public realPathToDisplayPath(realPath: string): string { return Scripts.realPathToDisplayPath(realPath); }
-    public displayPathToRealPath(displayPath: string): string { return Scripts.displayPathToRealPath(displayPath); }
+    public realPathToDisplayPath(realPath: string): string { return this._scriptContainer.realPathToDisplayPath(realPath); }
+    public displayPathToRealPath(displayPath: string): string { return this._scriptContainer.displayPathToRealPath(displayPath); }
 
     /* __GDPR__
         "ClientRequest/scopes" : {

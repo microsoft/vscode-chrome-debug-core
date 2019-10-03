@@ -124,7 +124,7 @@ export class ScriptContainer {
     public async scriptToSource(script: Crdp.Debugger.ScriptParsedEvent, origin: string, remoteAuthority?: string): Promise<DebugProtocol.Source> {
         const sourceReference = this.getSourceReferenceForScriptId(script.scriptId);
         const properlyCasedScriptUrl = utils.canonicalizeUrl(script.url);
-        const displayPath = Scripts.realPathToDisplayPath(properlyCasedScriptUrl);
+        const displayPath = this.realPathToDisplayPath(properlyCasedScriptUrl);
 
         const exists = await utils.existsAsync(properlyCasedScriptUrl); // script.url can start with file:/// so we use the canonicalized version
         const source = <DebugProtocol.Source>{
@@ -157,16 +157,10 @@ export class ScriptContainer {
 
     public displayNameForSourceReference(sourceReference: number): string {
         const handle = this._sourceHandles.get(sourceReference);
-        return (handle && Scripts.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
+        return (handle && this.displayNameForScriptId(handle.scriptId)) || sourceReference + '';
     }
-}
 
-/**
- * A collection of pure functions dealing with scripts
- */
-export namespace Scripts {
-
-    export function displayNameForScriptId(scriptId: number|string): string {
+    public displayNameForScriptId(scriptId: number|string): string {
         return `${ChromeUtils.EVAL_NAME_PREFIX}${scriptId}`;
     }
 
@@ -174,7 +168,7 @@ export namespace Scripts {
      * Called when returning a stack trace, for the path for Sources that have a sourceReference, so consumers can
      * tweak it, since it's only for display.
      */
-    export function realPathToDisplayPath(realPath: string): string {
+    public realPathToDisplayPath(realPath: string): string {
         if (ChromeUtils.isEvalScript(realPath)) {
             return `${ChromeDebugAdapter.EVAL_ROOT}/${realPath}`;
         }
@@ -185,7 +179,7 @@ export namespace Scripts {
     /**
      * Get the original path back from a displayPath created from `realPathToDisplayPath`
      */
-    export function displayPathToRealPath(displayPath: string): string {
+    public displayPathToRealPath(displayPath: string): string {
         if (displayPath.startsWith(ChromeDebugAdapter.EVAL_ROOT)) {
             return displayPath.substr(ChromeDebugAdapter.EVAL_ROOT.length + 1); // Trim "<eval>/"
         }

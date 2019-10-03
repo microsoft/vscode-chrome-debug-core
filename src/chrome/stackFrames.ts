@@ -8,7 +8,7 @@ import { IStackTraceResponseBody,
     IInternalStackTraceResponseBody } from '../debugAdapterInterfaces';
 import { Protocol as Crdp } from 'devtools-protocol';
 import { Transformers } from './chromeDebugAdapter';
-import { ScriptContainer, Scripts } from './scripts';
+import { ScriptContainer } from './scripts';
 import { SmartStepper } from './smartStep';
 import { ScriptSkipper } from './scriptSkipping';
 
@@ -92,7 +92,7 @@ export class StackFrames {
 
             // Allow consumer to adjust final path
             if (frame.source.path && frame.source.sourceReference) {
-                frame.source.path = Scripts.realPathToDisplayPath(frame.source.path);
+                frame.source.path = scripts.realPathToDisplayPath(frame.source.path);
             }
 
             // And finally, remove the fake eval path and fix the name, if it was never resolved to a real path
