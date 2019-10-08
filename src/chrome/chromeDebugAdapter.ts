@@ -81,6 +81,11 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
     public static EVAL_NAME_PREFIX = ChromeUtils.EVAL_NAME_PREFIX;
     public static EVAL_ROOT = '<eval>';
 
+    /**
+     * Names of variables and properties to be filtered out of the results
+     * from the adapter.
+     */
+    private static FILTERED_VARIABLE_NAMES = ['[[StableObjectId]]'];
     private static SCRIPTS_COMMAND = '.scripts';
     private static THREAD_ID = 1;
     private static ASYNC_CALL_STACK_DEPTH = 4;
@@ -1345,8 +1350,9 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             ]
         }
     */
-    public variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
-        return this._variablesManager.getVariables(args);
+    public async variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
+        const { variables } = await this._variablesManager.getVariables(args);
+        return { variables: variables.filter(v => ChromeDebugAdapter.FILTERED_VARIABLE_NAMES.indexOf(v.name) === -1) };
     }
 
     /* __GDPR__
