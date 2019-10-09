@@ -42,6 +42,9 @@ export class Breakpoints {
     // use methods getValueFromCommittedBreakpointsByUrl and setValueForCommittedBreakpointsByUrl
     private _committedBreakpointsByUrl = new Map<string, ISetBreakpointResult[]>();
     private _setBreakpointsRequestQ: Promise<any> = Promise.resolve();
+    public get breakpointsQueueDrained(): Promise<void> {
+        return this._setBreakpointsRequestQ;
+    }
     public get committedBreakpointsByUrl(): Map<string, ISetBreakpointResult[]> {
         return this._committedBreakpointsByUrl;
     }
