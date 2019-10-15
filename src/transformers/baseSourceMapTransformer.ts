@@ -193,8 +193,10 @@ export class BaseSourceMapTransformer {
                         bp.column = mapped.column;
                     } else {
                         logger.log(`SourceMaps.setBP: Can't map ${args.generatedPath}:${bp.line + 1}:${bp.column + 1}, keeping original line numbers.`);
-                        bp.line = args.originalBPs[i].line;
-                        bp.column = args.originalBPs[i].column;
+                        if (args.originalBPs[i]) {
+                            bp.line = args.originalBPs[i].line;
+                            bp.column = args.originalBPs[i].column;
+                        }
                     }
 
                     this._requestSeqToSetBreakpointsArgs.delete(requestSeq);
