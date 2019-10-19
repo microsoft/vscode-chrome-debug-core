@@ -785,8 +785,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         try {
             this.doAfterProcessingSourceEvents(async () => { // This will block future 'removed' source events, until this processing has been completed
                 if (typeof this._columnBreakpointsEnabled === 'undefined') {
-                    await this.detectColumnBreakpointSupport(script.scriptId);
-                    await this.sendInitializedEvent();
+                    if (!script.url.includes('internal/per_context')) {
+                        await this.detectColumnBreakpointSupport(script.scriptId);
+                        await this.sendInitializedEvent();
+                    }
                 }
 
                 if (this._earlyScripts) {
