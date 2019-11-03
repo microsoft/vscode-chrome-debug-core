@@ -1512,7 +1512,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
 
     private async _shouldSmartStepCallFrame(frame: Crdp.Debugger.CallFrame): Promise<boolean> {
         const stackFrame = this._stackFrames.callFrameToStackFrame(frame, this._scriptContainer, this.originProvider);
-        return this._smartStepper.shouldSmartStep(stackFrame, this.pathTransformer, this.sourceMapTransformer);
+        const fakeResponse = { stackFrames: [stackFrame] };
+        await this.pathTransformer.stackTraceResponse(fakeResponse);
+        await this.sourceMapTransformer.stackTraceResponse(fakeResponse);
+        return this._smartStepper.shouldSmartStep(fakeResponse.stackFrames[0], this.pathTransformer, this.sourceMapTransformer);
     }
 
     /**
