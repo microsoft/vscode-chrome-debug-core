@@ -333,21 +333,27 @@ export class Breakpoints {
                     { scriptId: script.scriptId, lineNumber: args.endLine, columnNumber: args.endColumn || 0 } :
                     { scriptId: script.scriptId, lineNumber: args.line + 1, columnNumber: 0 };
 
-                const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
-                    start: { scriptId: script.scriptId, lineNumber: args.line, columnNumber: args.column || 0 },
-                    end,
-                    restrictToFunction: false
-                });
-                let breakpoints = possibleBpResponse.locations.map(loc => {
-                    return <DebugProtocol.Breakpoint>{
-                        line: loc.lineNumber,
-                        column: loc.columnNumber
-                    };
-                });
-                breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(breakpoints, false, requestSeq);
-                const response = { breakpoints };
-                this.adapter.lineColTransformer.setBreakpointsResponse(response);
-                return response as DebugProtocol.BreakpointLocationsResponse['body'];
+                try {
+                    const possibleBpResponse = await this.chrome.Debugger.getPossibleBreakpoints({
+                        start: { scriptId: script.scriptId, lineNumber: args.line, columnNumber: args.column || 0 },
+                        end,
+                        restrictToFunction: false
+                    });
+                    let breakpoints = possibleBpResponse.locations.map(loc => {
+                        return <DebugProtocol.Breakpoint>{
+                            line: loc.lineNumber,
+                            column: loc.columnNumber
+                        };
+                    });
+                    breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(breakpoints, false, requestSeq);
+                    const response = { breakpoints };
+                    this.adapter.lineColTransformer.setBreakpointsResponse(response);
+                    return response as DebugProtocol.BreakpointLocationsResponse['body'];
+                } catch (e) {
+                    // getPossibleBPs not supported
+                    logger.log('breakpointsLocations failed: ' + e.message);
+                    return { breakpoints: [] };
+                }
             }
         }
 
