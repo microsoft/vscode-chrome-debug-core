@@ -1353,7 +1353,8 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
         }
     */
     public async variables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
-        const { variables } = await this._variablesManager.getVariables(args);
+        const result = await this._variablesManager.getVariables(args);
+        const variables = result ? result.variables : [];
         return { variables: variables.filter(v => ChromeDebugAdapter.FILTERED_VARIABLE_NAMES.indexOf(v.name) === -1) };
     }
 

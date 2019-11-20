@@ -27,7 +27,7 @@ export class VariablesManager {
         this._variableHandles = new variables.VariableHandles();
     }
 
-    public getVariables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody> {
+    public getVariables(args: DebugProtocol.VariablesArguments): Promise<IVariablesResponseBody | undefined> {
         if (!this.chrome) {
             return utils.errP(errors.runtimeNotConnectedMsg);
         }
