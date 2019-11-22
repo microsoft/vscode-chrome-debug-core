@@ -338,16 +338,20 @@ export class Breakpoints {
                     end,
                     restrictToFunction: false
                 });
-                let breakpoints = possibleBpResponse.locations.map(loc => {
-                    return <DebugProtocol.Breakpoint>{
-                        line: loc.lineNumber,
-                        column: loc.columnNumber
-                    };
-                });
-                breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(breakpoints, false, requestSeq);
-                const response = { breakpoints };
-                this.adapter.lineColTransformer.setBreakpointsResponse(response);
-                return response as DebugProtocol.BreakpointLocationsResponse['body'];
+                if (possibleBpResponse.locations) {
+                    let breakpoints = possibleBpResponse.locations.map(loc => {
+                        return <DebugProtocol.Breakpoint>{
+                            line: loc.lineNumber,
+                            column: loc.columnNumber
+                        };
+                    });
+                    breakpoints = this.adapter.sourceMapTransformer.setBreakpointsResponse(breakpoints, false, requestSeq);
+                    const response = { breakpoints };
+                    this.adapter.lineColTransformer.setBreakpointsResponse(response);
+                    return response as DebugProtocol.BreakpointLocationsResponse['body'];
+                } else {
+                    return { breakpoints: [] };
+                }
             }
         }
 
