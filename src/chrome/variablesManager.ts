@@ -104,9 +104,10 @@ export class VariablesManager {
     }
 
     public setPropertyValue(objectId: string, propName: string, value: string): Promise<string> {
-        const setPropertyValueFn = `function() { return this["{propName}"] = {value} }`;
+        const setPropertyValueFn = `function() { return this["${propName}"] = ${value}; }`;
         return this.chrome.Runtime.callFunctionOn({
-            objectId, functionDeclaration: setPropertyValueFn,
+            objectId,
+            functionDeclaration: setPropertyValueFn,
             silent: true
         }).then(response => {
             if (response.exceptionDetails) {
