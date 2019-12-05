@@ -1600,7 +1600,10 @@ export abstract class ChromeDebugAdapter implements IDebugAdapter {
             return utils.errP(errors.noRestartFrame);
         }
 
-        await this.chrome.Debugger.restartFrame({ callFrameId: callFrame.callFrameId });
+        try {
+            await this.chrome.Debugger.restartFrame({ callFrameId: callFrame.callFrameId });
+        } catch (_e) { } // Fails in Electron 6, ignore: https://github.com/microsoft/vscode/issues/86411
+
         this._expectingStopReason = 'frame_entry';
         return this.chrome.Debugger.stepInto({ });
     }
