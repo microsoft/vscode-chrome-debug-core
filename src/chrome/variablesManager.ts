@@ -307,13 +307,18 @@ export class VariablesManager {
             if (response.exceptionDetails) {
                 const errMsg = ChromeUtils.errorMessageFromExceptionDetails(response.exceptionDetails);
                 return Promise.reject<IPropCount>(errors.errorFromEvaluate(errMsg));
-            } else {
+            } else if (response.result) {
                 const resultProps = response.result.value;
                 if (resultProps.length !== 2) {
                     return Promise.reject<IPropCount>(errors.errorFromEvaluate('Did not get expected props, got ' + JSON.stringify(resultProps)));
                 }
 
                 return { indexedVariables: resultProps[0], namedVariables: resultProps[1] };
+            } else {
+                return {
+                    indexedVariables: undefined,
+                    namedVariables: undefined
+                };
             }
         },
         error => Promise.reject<IPropCount>(errors.errorFromEvaluate(error.message)));
