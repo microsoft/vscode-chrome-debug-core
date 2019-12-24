@@ -137,7 +137,7 @@ suite('Variables', () => {
 
     suite('createFunctionVariable()', () => {
 
-        const _variableHandles = new Variables.VariableHandles()
+        const _variableHandles = new Variables.VariableHandles();
 
         function getFunctionRemoteObject(func: any, funcName: string): any {
             return {
@@ -148,7 +148,7 @@ suite('Variables', () => {
                     objectId: '123',
                     type: 'function',
                 }
-            }
+            };
         }
 
         test('not empty description', () => {
@@ -170,7 +170,7 @@ suite('Variables', () => {
                 description: hasDescription ? '' + value : undefined,
                 value: value,
                 type: typeof value,
-            }
+            };
         }
 
         function testPrimitiveRemoteObject(obj: any, expected: string): void {
