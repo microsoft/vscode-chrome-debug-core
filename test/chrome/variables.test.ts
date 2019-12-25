@@ -155,13 +155,13 @@ suite('Variables', () => {
             const rawObject = getFunctionRemoteObject(() => { console.log(123); return 123; }, 'testFunction');
             const processedObject = Variables.createFunctionVariable(rawObject.name, rawObject.value, 'variables', _variableHandles, '');
             assert.equal(processedObject.value, '() => { … }');
-        })
+        });
 
         test('empty description', () => {
             const rawObject = getFunctionRemoteObject(undefined, 'testFunction');
             const processedObject = Variables.createFunctionVariable(rawObject.name, rawObject.value, 'variables', _variableHandles, '');
             assert.equal(processedObject.value, 'function() { … }');
-        })
+        });
     });
 
     suite('getRemoteObjectPreview_primitive()', () => {
@@ -179,35 +179,23 @@ suite('Variables', () => {
 
         test('number with description', () => {
             testPrimitiveRemoteObject(getPrimitiveRemoteObject(123, true), '123');
-        })
-
-        test('boolean with description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject(false, true), 'false');
-        })
-
-        test('string with description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject('string', true), '"string"');
-        })
-
-        test('undefined with description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject(undefined, true), 'undefined');
-        })
+        });
 
         test('number without description', () => {
             testPrimitiveRemoteObject(getPrimitiveRemoteObject(123, false), '123');
-        })
+        });
 
-        test('boolean without description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject(false, false), 'false');
-        })
+        test('boolean with description', () => {
+            testPrimitiveRemoteObject(getPrimitiveRemoteObject(false, true), 'false');
+        });
 
-        test('string without description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject('string', false), '"string"');
-        })
+        test('string with description', () => {
+            testPrimitiveRemoteObject(getPrimitiveRemoteObject('string', true), '"string"');
+        });
 
-        test('undefined without description', () => {
-            testPrimitiveRemoteObject(getPrimitiveRemoteObject(undefined, false), 'undefined');
-        })
+        test('undefined with description', () => {
+            testPrimitiveRemoteObject(getPrimitiveRemoteObject(undefined, true), 'undefined');
+        });
     });
 
     suite('isIndexedPropName()', () => {
