@@ -269,7 +269,7 @@ export function getRemoteObjectPreview_primitive(object: Crdp.Runtime.RemoteObje
     } else if (object.type === 'number') {
         // .value is truncated, so use .description, the full string representation
         // Should be like '3' or 'Infinity'.
-        return object.description;
+        return object.description || '' + object.value;
     } else if (object.type === 'boolean') {
         // Never stringified
         return '' + object.value;
@@ -367,14 +367,19 @@ export function createFunctionVariable(name: string,
                                 parentEvaluateName?: string): DebugProtocol.Variable {
 
     let value: string;
-    const firstBraceIdx = object.description.indexOf('{');
-    if (firstBraceIdx >= 0) {
-        value = object.description.substring(0, firstBraceIdx) + '{ … }';
+
+    if (object.description) {
+        const firstBraceIdx = object.description.indexOf('{');
+        if (firstBraceIdx >= 0) {
+            value = object.description.substring(0, firstBraceIdx) + '{ … }';
+        } else {
+            const firstArrowIdx = object.description.indexOf('=>');
+            value = firstArrowIdx >= 0 ?
+                object.description.substring(0, firstArrowIdx + 2) + ' …' :
+                object.description;
+        }
     } else {
-        const firstArrowIdx = object.description.indexOf('=>');
-        value = firstArrowIdx >= 0 ?
-            object.description.substring(0, firstArrowIdx + 2) + ' …' :
-            object.description;
+        value = 'function() { … }';
     }
 
     const evaluateName = ChromeUtils.getEvaluateName(parentEvaluateName, name);
