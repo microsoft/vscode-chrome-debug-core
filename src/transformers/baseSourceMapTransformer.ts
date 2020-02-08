@@ -14,6 +14,7 @@ import { logger } from 'vscode-debugadapter';
 
 import * as nls from 'vscode-nls';
 import { ScriptContainer } from '../chrome/scripts';
+import { isInternalRemotePath } from '../remoteMapper';
 const localize = nls.loadMessageBundle();
 
 interface ISavedSetBreakpointsArgs {
@@ -231,31 +232,34 @@ export class BaseSourceMapTransformer {
         await this._processingNewSourceMap;
 
         const mapped = this._sourceMaps.mapToAuthored(sourceLocation.source.path, sourceLocation.line, sourceLocation.column);
-        if (mapped && utils.existsSync(mapped.source)) {
-            // Script was mapped to a valid path
+        if (mapped && (isInternalRemotePath(mapped.source) || utils.existsSync(mapped.source))) {
+            // Script was mapped to a valid local path or internal path
             sourceLocation.source.path = mapped.source;
             sourceLocation.source.sourceReference = undefined;
             sourceLocation.source.name = path.basename(mapped.source);
             sourceLocation.line = mapped.line;
             sourceLocation.column = mapped.column;
             sourceLocation.isSourceMapped = true;
-        } else {
-            const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
-            if (mapped && inlinedSource) {
-                // Clear the path and set the sourceReference - the client will ask for
-                // the source later and it will be returned from the sourcemap
-                sourceLocation.source.name = path.basename(mapped.source);
-                sourceLocation.source.path = mapped.source;
-                sourceLocation.source.sourceReference = this._scriptContainer.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
-                sourceLocation.source.origin = localize('origin.inlined.source.map', 'read-only inlined content from source map');
-                sourceLocation.line = mapped.line;
-                sourceLocation.column = mapped.column;
-                sourceLocation.isSourceMapped = true;
-            } else if (utils.existsSync(sourceLocation.source.path)) {
-                // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
-                sourceLocation.source.sourceReference = undefined;
-                sourceLocation.source.origin = undefined;
-            }
+            return;
+        }
+        const inlinedSource = mapped && this._sourceMaps.sourceContentFor(mapped.source);
+        if (mapped && inlinedSource) {
+            // Clear the path and set the sourceReference - the client will ask for
+            // the source later and it will be returned from the sourcemap
+            sourceLocation.source.name = path.basename(mapped.source);
+            sourceLocation.source.path = mapped.source;
+            sourceLocation.source.sourceReference = this._scriptContainer.getSourceReferenceForScriptPath(mapped.source, inlinedSource);
+            sourceLocation.source.origin = localize('origin.inlined.source.map', 'read-only inlined content from source map');
+            sourceLocation.line = mapped.line;
+            sourceLocation.column = mapped.column;
+            sourceLocation.isSourceMapped = true;
+            return;
+        }
+        if (utils.existsSync(sourceLocation.source.path)) {
+            // Script could not be mapped, but does exist on disk. Keep it and clear the sourceReference.
+            sourceLocation.source.sourceReference = undefined;
+            sourceLocation.source.origin = undefined;
+            return;
         }
     }
 

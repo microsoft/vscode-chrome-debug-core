@@ -15,6 +15,7 @@ import * as testUtils from '../testUtils';
 import { SourceMaps } from '../../src/sourceMaps/sourceMaps';
 import { MappedPosition } from '../../src/sourceMaps/sourceMap';
 import * as utils from '../../src/utils';
+import * as remoteMapper from '../../src/remoteMapper';
 
 /* tslint:disable:no-function-expression */
 
@@ -51,6 +52,7 @@ import {BaseSourceMapTransformer as _BaseSourceMapTransformer } from '../../src/
 
 suite('BaseSourceMapTransformer', () => {
     let utilsMock: IMock<typeof utils>;
+    let remoteMapperMock: IMock<typeof remoteMapper>;
 
     setup(() => {
         testUtils.setupUnhandledRejectionListener();
@@ -59,6 +61,10 @@ suite('BaseSourceMapTransformer', () => {
         utilsMock = Mock.ofInstance(utils);
         utilsMock.callBase = true;
         mockery.registerMock('../utils', utilsMock.object);
+
+        remoteMapperMock = Mock.ofInstance(remoteMapper);
+        remoteMapperMock.callBase = true;
+        mockery.registerMock('../remoteMapper', remoteMapperMock.object);
 
         // Set up mockery
         mockery.enable({ warnOnReplace: false, useCleanCache: true, warnOnUnregistered: false });
@@ -260,6 +266,21 @@ suite('BaseSourceMapTransformer', () => {
         test('modifies the response stackFrames', async () => {
             utilsMock
                 .setup(x => x.existsSync(It.isValue(AUTHORED_PATH)))
+                .returns(() => true);
+
+            const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
+            const expected = testUtils.getStackTraceResponseBody(AUTHORED_PATH, AUTHORED_BPS(), undefined, /*isSourceMapped=*/true);
+
+            await getTransformer().stackTraceResponse(response);
+            assert.deepEqual(response, expected);
+        });
+
+        test(`apply to mapped source when using internal remote url`, async () => {
+            utilsMock
+                .setup(x => x.existsSync(It.isValue(AUTHORED_PATH)))
+                .returns(() => false);
+            remoteMapperMock
+                .setup(x => x.isInternalRemotePath(It.isValue(AUTHORED_PATH)))
                 .returns(() => true);
 
             const response = testUtils.getStackTraceResponseBody(RUNTIME_PATH, RUNTIME_BPS(), [1, 2, 3]);
