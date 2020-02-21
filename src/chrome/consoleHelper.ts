@@ -46,8 +46,9 @@ export function formatConsoleArguments(type: Crdp.Runtime.ConsoleAPICalledEvent[
         case 'startGroupCollapsed':
             let startMsg = '‹Start group›';
             const formattedGroupParams = resolveParams(args);
-            if (formattedGroupParams.length && formattedGroupParams[0].type === 'string') {
-                startMsg += ': ' + formattedGroupParams.shift().value;
+            const previewMessage = formattedGroupParams.find(x => x && x.type === 'string');
+            if (previewMessage) {
+                startMsg += ': ' + previewMessage.value;
             }
 
             args = [{ type: 'string', value: startMsg}, ...formattedGroupParams];
