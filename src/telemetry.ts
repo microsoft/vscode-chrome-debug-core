@@ -10,16 +10,16 @@ import { fillErrorDetails } from './utils';
    "IExecutionResultTelemetryProperties" : {
         "successful" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
         "exceptionType" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
-        "exceptionMessage" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "!exceptionMessage" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
         "exceptionName" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
-        "exceptionStack" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
-        "exceptionId" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "!exceptionStack" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
+        "!exceptionId" : { "classification": "CallstackOrException", "purpose": "PerformanceAndHealth" },
         "startTime" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" },
         "timeTakenInMilliseconds" : { "classification": "SystemMetaData", "purpose": "PerformanceAndHealth" }
    }
  */
 export type ExceptionType = 'uncaughtException' | 'unhandledRejection' | 'firstChance';
-export interface  IExecutionResultTelemetryProperties {
+export interface IExecutionResultTelemetryProperties {
     // There is an issue on some clients and reportEvent only currently accept strings properties,
     // hence all the following properties must be strings.
     successful?: 'true' | 'false';
@@ -32,6 +32,9 @@ export interface  IExecutionResultTelemetryProperties {
     timeTakenInMilliseconds?: string;
 }
 
+// telemetry keys to prefix with `!` over DAP for classification in VS Code.
+const prefixTelemetryKeys: ReadonlyArray<keyof IExecutionResultTelemetryProperties> = ['exceptionStack', 'exceptionMessage', 'exceptionId'];
+
 export interface ITelemetryReporter {
     reportEvent(name: string, data?: any): void;
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void;
@@ -42,11 +45,20 @@ export class TelemetryReporter implements ITelemetryReporter {
     private _globalTelemetryProperties: any = {};
 
     reportEvent(name: string, data?: any): void {
-        if (this._sendEvent) {
-            const combinedData = Object.assign({}, this._globalTelemetryProperties, data);
-            const event = new OutputEvent(name, 'telemetry', combinedData);
-            this._sendEvent(event);
+        if (!this._sendEvent) {
+            return;
         }
+
+        const combinedData = Object.assign({}, this._globalTelemetryProperties, data);
+        for (const key of prefixTelemetryKeys) {
+            if (combinedData.hasOwnProperty(key)) {
+                combinedData[`!${key}`] = combinedData[key];
+                delete combinedData[key];
+            }
+        }
+
+        const event = new OutputEvent(name, 'telemetry', combinedData);
+        this._sendEvent(event);
     }
 
     setupEventHandler(_sendEvent: (event: DebugProtocol.Event) => void): void {
