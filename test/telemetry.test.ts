@@ -26,6 +26,6 @@ suite('telemetry', () => {
             exceptionMessage: 'some error',
             exceptionName: 'SomeError',
             exceptionStack: 'foo.js:123',
-        } as IExecutionResultTelemetryProperties)
+        } as IExecutionResultTelemetryProperties);
     });
 });
