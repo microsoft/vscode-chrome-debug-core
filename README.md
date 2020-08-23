@@ -13,6 +13,7 @@ A library for building VS Code debug adapters for targets that support the [Chro
 - [VS Code NWjs Debugger](https://github.com/karikera/vscode-nwjs)
 - [VS Code Cordova](https://github.com/Microsoft/vscode-cordova)
 - [VS Code NativeScript debugger](https://github.com/NativeScript/nativescript-vscode-extension)
+- [Microsoft Office Add-in Debugger for Visual Studio Code](https://github.com/OfficeDev/vscode-debugger-extension-for-office-addins)
 - Visual Studio 2017 Update 2 Node.js Debugger
 
 ---
