@@ -277,7 +277,8 @@ export function errP(msg: string|Error): Promise<never> {
  */
 export function getURL(aUrl: string, options: https.RequestOptions = {}): Promise<string> {
     return new Promise((resolve, reject) => {
-        const parsedUrl = url.parse(aUrl);
+        // Support urls without protocol (e.g //example.com)
+        const parsedUrl = url.parse(aUrl, false, true);
         const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
         options = <https.RequestOptions>{
             rejectUnauthorized: false,
@@ -308,7 +309,7 @@ export function getURL(aUrl: string, options: https.RequestOptions = {}): Promis
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
 export function isURL(urlOrPath: string): boolean {
-    return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath).protocol;
+    return urlOrPath && !path.isAbsolute(urlOrPath) && !!url.parse(urlOrPath, false, true).protocol;
 }
 
 export function isAbsolute(_path: string): boolean {
