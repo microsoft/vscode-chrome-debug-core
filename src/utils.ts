@@ -309,12 +309,15 @@ export function getURL(aUrl: string, options: https.RequestOptions = {}): Promis
  * Returns true if urlOrPath is like "http://localhost" and not like "c:/code/file.js" or "/code/file.js"
  */
 export function isURL(urlOrPath: string): boolean {
-    if (!urlOrPath || path.isAbsolute(urlOrPath)) {
+    if (!urlOrPath) {
         return false;
     }
     const { protocol, slashes } = url.parse(urlOrPath, false, true);
-    // protocol will be true if the url has a protocol; for protocol-less urls (//example.com/foo), we check if slashes were found
-    return !!protocol || slashes;
+    if (slashes) {
+        // for protocol-less urls (//example.com/foo), we check if slashes were found
+        return true;
+    }
+    return !path.isAbsolute(urlOrPath) && !!protocol;
 }
 
 export function isAbsolute(_path: string): boolean {
