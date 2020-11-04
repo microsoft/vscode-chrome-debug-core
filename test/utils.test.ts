@@ -255,6 +255,7 @@ suite('Utils', () => {
             assertIsURL('file:///c:/project/code.js');
             assertIsURL('webpack:///webpack/webpackthing');
             assertIsURL('https://a.b.c:123/asdf?fsda');
+            assertIsURL('//a.b.c:123/asdf?fsda');
         });
 
         test('returns false for not-URLs', () => {
