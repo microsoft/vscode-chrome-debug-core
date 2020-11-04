@@ -314,7 +314,7 @@ export function isURL(urlOrPath: string): boolean {
     }
     const { protocol, slashes } = url.parse(urlOrPath, false, true);
     // protocol will be true if the url has a protocol; for protocol-less urls (//example.com/foo), we check if slashes were found
-    return protocol || slashes;
+    return !!protocol || slashes;
 }
 
 export function isAbsolute(_path: string): boolean {
